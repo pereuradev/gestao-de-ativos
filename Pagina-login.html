@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>pagina-Login | TI TECH Assets</title>
+    <meta
+      name="description"
+      content="P&aacute;gina inicial de login do portal interno da TI TECH Solutions"
+    />
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="css/pagina-login.css?v=20260624-focus-fix" />
+    <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
+    <script src="js/typewriter.js?v=20260619-stable" defer></script>
+    <script src="js/pagina-login.js?v=20260618-headline-loop" defer></script>
+  </head>
+
+  <body class="theme-dark page-loading">
+    <main class="app-shell">
+      <section id="loginView" class="login-page" aria-label="P&aacute;gina de login">
+        <div class="theme-floating">
+          <button
+            id="themeToggleLogin"
+            class="theme-toggle"
+            type="button"
+            aria-label="Alternar para modo claro"
+          >
+            <span class="theme-icon" aria-hidden="true">
+              <i class="bi bi-sun"></i>
+            </span>
+
+            <span class="theme-copy">
+              <span class="label">Modo claro</span>
+              <small>Trocar tema</small>
+            </span>
+          </button>
+        </div>
+
+        <aside class="login-brand">
+          <div class="brand-content">
+            <a
+              class="logo-link"
+              href="https://www.titechsolutions.com.br/"
+              aria-label="Acessar site da TI TECH Solutions"
+            >
+              <img
+                class="brand-logo"
+                src="assets/logo-branca.png"
+                alt="TI TECH Solutions"
+              />
+            </a>
+
+            <div class="brand-text">
+              <h1 class="brand-title">
+                <span
+                  class="typewriter-heading"
+                  style="--typewriter-min: 24ch"
+                  data-typewriter-loop
+                  data-typewriter-phrases="Gest&atilde;o interna simples.|Segura e eficiente.|Controle com clareza."
+                >Gest&atilde;o interna simples.</span><span  aria-hidden="true"></span>
+              </h1>
+              <p class="brand-lead">
+                Um portal interno desenvolvido para facilitar o controle de
+                ativos, melhorar a organiza&ccedil;&atilde;o dos dados e apoiar decis&otilde;es mais
+                r&aacute;pidas no dia a dia da opera&ccedil;&atilde;o.
+              </p>
+            </div>
+          </div>
+        </aside>
+
+        <section class="login-side">
+          <div class="login-card" aria-label="Formul&aacute;rio de acesso">
+            <a
+              class="logo-link"
+              href="https://www.titechsolutions.com.br/"
+              aria-label="Acessar site da TI TECH Solutions"
+            >
+              <img
+                class="login-card-logo logo-dark"
+                src="assets/logo.png"
+                alt="TI TECH Solutions"
+              />
+              <img
+                class="login-card-logo logo-light"
+                src="assets/logo-branca.png"
+                alt="TI TECH Solutions"
+              />
+            </a>
+
+            <h1>
+              <span
+                class="typewriter-heading"
+                style="--typewriter-min: 19ch"
+              >Acessar portal</span><span  aria-hidden="true"></span>
+            </h1>
+
+            <div class="segment-control" aria-label="Tipo de acesso">
+              <button class="active" data-role="Colaborador" type="button">
+                Colaborador
+              </button>
+              <button data-role="Administrador" type="button">
+                Administrador
+              </button>
+            </div>
+
+            <form id="loginForm" action="Backend/login-usuario.php" method="post" novalidate>
+              <div class="form-group">
+                <label class="form-label" for="email">E-mail corporativo</label>
+
+                <div class="input-wrap">
+                  <input
+                    id="email"
+                    name="email"
+                    class="form-control"
+                    type="email"
+                    placeholder="nome@titechsolutions.com.br"
+                    autocomplete="email"
+                  />
+
+                  <i class="bi bi-envelope field-icon" aria-hidden="true"></i>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="password">Senha</label>
+
+                <div class="input-wrap">
+                  <input
+                    id="password"
+                    name="senha"
+                    class="form-control"
+                    type="password"
+                    placeholder="Digite sua senha"
+                    autocomplete="current-password"
+                  />
+
+                  <button
+                    id="passwordToggle"
+                    class="password-toggle"
+                    type="button"
+                    aria-label="Mostrar senha"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="remember-line">
+                <label class="d-flex align-items-center gap-2">
+                  <input id="rememberProfile" type="checkbox" />
+                  <span class="remember-copy d-grid lh-sm">
+                    <span class="fw-semibold">Lembrar perfil</span>
+                    <small id="rememberProfileStatus" class="remember-status">
+                      Perfil selecionado: Colaborador
+                    </small>
+                  </span>
+                </label>
+
+                <a
+                  id="forgotPasswordLink"
+                  class="link-btn"
+                  href="#recuperar-senha"
+                >
+                  Esqueci minha senha
+                </a>
+              </div>
+
+              <div id="loginError" class="login-error" aria-live="polite"></div>
+
+              <button id="loginButton" class="primary-btn" type="submit">
+                <i class="bi bi-lock"></i>
+                <span>Entrar</span>
+              </button>
+
+              <div class="register-callout">
+                <span>Novo no portal?</span>
+                <a
+                  id="registerUserLink"
+                  class="secondary-action"
+                  href="Pagina-cadastro.html"
+                >
+                  <i class="bi bi-person-plus" aria-hidden="true"></i>
+                  Cadastrar usu&aacute;rio
+                </a>
+              </div>
+            </form>
+          </div>
+        </section>
+      </section>
+    </main>
+    <div id="toastStack" class="toast-stack" aria-live="polite"></div>
+    <div class="custom-cursor" aria-hidden="true"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
+

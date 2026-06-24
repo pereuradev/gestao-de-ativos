@@ -1,0 +1,223 @@
+.asset-edit-card {
+  margin-top: 22px;
+}
+
+.asset-filter-bar {
+  margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(170px, auto) minmax(190px, auto) minmax(170px, auto) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.asset-edit-search {
+  width: 100%;
+}
+
+.asset-filter-bar select,
+.filter-clear-button {
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--text);
+  background: var(--soft);
+  outline: 0;
+  font: inherit;
+  font-weight: 850;
+}
+
+.asset-filter-bar select {
+  min-width: 0;
+  padding: 0 34px 0 12px;
+}
+
+.theme-light .asset-filter-bar select,
+.theme-light .filter-clear-button {
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.filter-clear-button {
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted);
+  transition:
+    background var(--transition),
+    border-color var(--transition),
+    color var(--transition),
+    transform var(--transition);
+}
+
+.filter-clear-button:hover {
+  color: var(--text);
+  border-color: rgba(79, 199, 177, 0.36);
+  background: rgba(79, 199, 177, 0.12);
+  transform: translateY(-1px);
+}
+
+.asset-edit-table {
+  min-width: 1320px;
+}
+
+.asset-edit-table td strong {
+  min-width: 210px;
+}
+
+.asset-actions-cell {
+  width: 210px;
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.table-action {
+  min-height: 38px;
+  min-width: 86px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 850;
+  box-shadow: 0 12px 24px rgba(6, 22, 34, 0.12);
+  transition:
+    filter var(--transition),
+    box-shadow var(--transition),
+    transform var(--transition);
+}
+
+.table-action:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: 0 16px 28px rgba(6, 22, 34, 0.16);
+}
+
+.edit-asset-button {
+  background: linear-gradient(135deg, #2fc46f, #178f46);
+}
+
+.edit-asset-button:hover {
+  background: linear-gradient(135deg, #35d47a, #18984b);
+}
+
+.delete-asset-button {
+  background: linear-gradient(135deg, #f0444f, #d92431);
+}
+
+.delete-asset-button:hover {
+  background: linear-gradient(135deg, #ff5260, #df2937);
+}
+
+.asset-page-message {
+  display: none;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-weight: 800;
+}
+
+.asset-page-message.show {
+  display: block;
+}
+
+.asset-page-message.success {
+  color: #05291f;
+  background: rgba(102, 213, 194, 0.88);
+}
+
+.asset-page-message.error {
+  color: #ffffff;
+  background: rgba(224, 93, 93, 0.78);
+}
+
+.edit-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  padding: 18px;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.54);
+  backdrop-filter: blur(8px);
+}
+
+.edit-modal-backdrop[hidden] {
+  display: none;
+}
+
+.edit-modal-card {
+  width: min(860px, 100%);
+  max-height: min(860px, calc(100vh - 36px));
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--surface-strong);
+  box-shadow: var(--shadow);
+}
+
+.theme-light .edit-modal-card {
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.edit-modal-header {
+  margin-bottom: 18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.edit-modal-header h3 {
+  margin: 4px 0 0;
+  letter-spacing: 0;
+}
+
+.modal-close-button {
+  flex: 0 0 auto;
+}
+
+.asset-modal-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 1180px) {
+  .asset-filter-bar {
+    grid-template-columns: minmax(260px, 1fr) minmax(170px, 0.5fr) minmax(190px, 0.5fr);
+  }
+
+  .filter-clear-button {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 760px) {
+  .asset-filter-bar,
+  .asset-modal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .asset-actions-cell {
+    width: auto;
+  }
+
+  .row-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .table-action,
+  .filter-clear-button {
+    width: 100%;
+  }
+}

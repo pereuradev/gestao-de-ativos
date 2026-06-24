@@ -1,0 +1,169 @@
+.locations-hero {
+  position: relative;
+  overflow: hidden;
+  overflow: clip;
+  contain: paint;
+  min-height: 320px;
+  padding-right: clamp(28px, 5vw, 64px);
+  background-color: #031629;
+  background-image: url("../assets/FUNDO-LOCALIZACOES.png");
+  background-position: 74% 34%;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-clip: padding-box;
+  border: 0;
+  box-shadow:
+    var(--shadow),
+    inset 0 0 140px rgba(3, 16, 29, 0.64);
+}
+
+.locations-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, rgba(3, 16, 29, 0.99) 0%, rgba(3, 16, 29, 0.96) 30%, rgba(3, 16, 29, 0.68) 50%, rgba(3, 16, 29, 0.18) 72%, rgba(3, 16, 29, 0) 100%),
+    linear-gradient(180deg, rgba(3, 16, 29, 0.24) 0%, rgba(3, 16, 29, 0) 45%, rgba(3, 16, 29, 0.4) 100%);
+}
+
+.theme-light .locations-hero {
+  border: 1px solid rgba(34, 137, 150, 0.16);
+  background-color: #eaf6fb;
+  background-image:
+    linear-gradient(0deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.18)),
+    url("../assets/FUNDO-LOCALIZACOES.png");
+  background-position: center, 74% 34%;
+  background-repeat: no-repeat, no-repeat;
+  background-size: 100% 100%, cover;
+  box-shadow:
+    0 18px 48px rgba(9, 31, 48, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.72);
+}
+
+.theme-light .locations-hero::before {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(246, 252, 255, 0.94) 30%, rgba(236, 247, 251, 0.68) 50%, rgba(236, 247, 251, 0.18) 72%, rgba(236, 247, 251, 0) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 45%, rgba(255, 255, 255, 0.32) 100%);
+}
+
+.locations-hero .hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+}
+
+.theme-light .locations-hero .hero-content h2,
+.theme-light .locations-hero .hero-content p:not(.section-tag) {
+  color: #071827;
+  text-shadow: 0 10px 28px rgba(255, 255, 255, 0.62);
+}
+
+.locations-layout {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: minmax(340px, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.location-form-card,
+.location-records-card {
+  position: relative;
+}
+
+.locations-layout .location-records-card {
+  align-self: start;
+  margin-top: 0;
+}
+
+.location-form-grid {
+  grid-template-columns: minmax(0, 1.1fr) minmax(180px, 0.9fr);
+}
+
+.location-form-grid .wide-field {
+  grid-column: 1 / -1;
+}
+
+.location-search {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.location-table {
+  width: 100%;
+  min-width: 720px;
+}
+
+.location-table td strong {
+  min-width: 210px;
+}
+
+.location-table .status-badge {
+  min-width: 74px;
+  padding: 7px 11px;
+  color: #ffffff;
+  border: 1px solid rgba(22, 143, 69, 0.28);
+  box-shadow: 0 10px 22px rgba(35, 196, 94, 0.18);
+}
+
+.location-table .status-active {
+  background: linear-gradient(135deg, #23c45e, #168f45);
+}
+
+.location-table .status-inactive {
+  background: linear-gradient(135deg, #f0444f, #d92431);
+  border-color: rgba(217, 36, 49, 0.3);
+  box-shadow: 0 10px 22px rgba(240, 68, 79, 0.16);
+}
+
+.location-address {
+  display: block;
+  max-width: 340px;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.location-table-wrap {
+  margin-top: 0;
+}
+
+@media (max-width: 1180px) {
+  .locations-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 780px) {
+  .locations-hero {
+    min-height: 280px;
+    padding-right: 24px;
+    background-position: 70% 34%;
+    background-size: cover;
+  }
+
+  .theme-light .locations-hero {
+    background-position: center, 70% 34%;
+    background-size: 100% 100%, cover;
+  }
+
+  .location-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .location-form-grid .wide-field {
+    grid-column: auto;
+  }
+
+  .location-address {
+    max-width: 100%;
+  }
+}

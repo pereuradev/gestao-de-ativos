@@ -1,0 +1,307 @@
+<?php
+
+declare(strict_types=1);
+
+header("Content-Type: application/json; charset=utf-8");
+
+require_once __DIR__ . "/config.php";
+
+$supabaseUrl = configObrigatoria("SUPABASE_URL");
+$supabaseAnonKey = configObrigatoria("SUPABASE_ANON_KEY");
+
+function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+{
+    http_response_code($statusCode);
+    echo json_encode(
+        array_merge(["ok" => $ok, "message" => $message], $extra),
+        JSON_UNESCAPED_UNICODE
+    );
+    exit;
+}
+
+function campo(string $nome, string $padrao = ""): string
+{
+    return trim((string)($_POST[$nome] ?? $padrao));
+}
+
+function apenasNumeros(string $valor): string
+{
+    return preg_replace("/\D+/", "", $valor) ?? "";
+}
+
+function validarCampoPermitido(string $valor, array $permitidos, string $padrao): string
+{
+    return in_array($valor, $permitidos, true) ? $valor : $padrao;
+}
+
+function emailCorporativoValido(string $email): bool
+{
+    return str_ends_with(strtolower($email), "@titechsolutions.com.br");
+}
+
+function gerarHashSenha(string $senha): string
+{
+    $hash = password_hash($senha, PASSWORD_ARGON2ID, [
+        "memory_cost" => 65536,
+        "time_cost" => 4,
+        "threads" => 2,
+    ]);
+
+    if ($hash === false) {
+        responder(false, "Nao foi possivel proteger a senha do usuario.", 500);
+    }
+
+    return $hash;
+}
+
+function criarUsuarioSupabase(string $url, string $anonKey, array $payload): array
+{
+    $ch = curl_init();
+
+    curl_setopt_array($ch, [
+        CURLOPT_URL => rtrim($url, "/") . "/auth/v1/signup",
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            "Content-Type: application/json",
+            "apikey: " . $anonKey,
+            "Authorization: Bearer " . $anonKey,
+        ],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_TIMEOUT => 30,
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+
+    curl_close($ch);
+
+    if ($curlError) {
+        responder(false, "Erro ao comunicar com o Supabase: " . $curlError, 502);
+    }
+
+    $authData = json_decode((string)$response, true);
+
+    if ($httpCode < 200 || $httpCode >= 300) {
+        $message = $authData["msg"] ?? $authData["message"] ?? "Erro ao criar usuario no Supabase Auth.";
+
+        if (stripos($message, "already") !== false || stripos($message, "registered") !== false) {
+            $message = "Este e-mail ja esta cadastrado.";
+        }
+
+        responder(false, $message, 400, ["supabase_status" => $httpCode]);
+    }
+
+    return is_array($authData) ? $authData : [];
+}
+
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+    responder(false, "Metodo nao permitido.", 405);
+}
+
+$nomeCompleto = campo("nome_completo");
+$email = campo("email");
+$senha = (string)($_POST["senha"] ?? "");
+$tipoUsuario = validarCampoPermitido(
+    campo("tipo_usuario", "Colaborador"),
+    ["Colaborador", "Administrador"],
+    "Colaborador"
+);
+$departamento = validarCampoPermitido(
+    campo("departamento"),
+    ["TI", "Operacao", "Financeiro", "Administrativo", "Gestao"],
+    ""
+);
+$empresa = campo("empresa");
+$rg = campo("rg");
+$cpf = campo("cpf");
+$celular = campo("celular");
+$dataNascimento = campo("data_nascimento");
+
+if (
+    $nomeCompleto === "" ||
+    $email === "" ||
+    $senha === "" ||
+    $rg === "" ||
+    $cpf === "" ||
+    $celular === "" ||
+    $dataNascimento === "" ||
+    $departamento === "" ||
+    $empresa === ""
+) {
+    responder(false, "Preencha todos os campos para continuar.", 422);
+}
+
+if (count(preg_split("/\s+/", $nomeCompleto, -1, PREG_SPLIT_NO_EMPTY)) < 2) {
+    responder(false, "Informe nome e sobrenome.", 422);
+}
+
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    responder(false, "Digite um e-mail valido.", 422);
+}
+
+if (!emailCorporativoValido($email)) {
+    responder(false, "Use um e-mail corporativo autorizado.", 422);
+}
+
+if (strlen(apenasNumeros($rg)) < 7) {
+    responder(false, "Informe um RG valido.", 422);
+}
+
+if (strlen(apenasNumeros($cpf)) !== 11) {
+    responder(false, "Informe um CPF valido.", 422);
+}
+
+if (strlen(apenasNumeros($celular)) !== 11) {
+    responder(false, "Informe um telefone celular valido com DDD.", 422);
+}
+
+$nascimento = DateTime::createFromFormat("Y-m-d", $dataNascimento);
+
+if (!$nascimento || $nascimento > new DateTime("today")) {
+    responder(false, "Informe uma data de nascimento valida.", 422);
+}
+
+if (strlen($senha) < 6) {
+    responder(false, "A senha precisa ter pelo menos 6 caracteres.", 422);
+}
+
+$senhaHash = gerarHashSenha($senha);
+
+try {
+    require_once __DIR__ . "/Conexao.php";
+
+    $stmt = $pdo->prepare("
+        select email, cpf, rg
+        from public.perfis_usuarios
+        where email = :email
+           or cpf = :cpf
+           or rg = :rg
+        limit 1
+    ");
+    $stmt->execute([
+        ":email" => $email,
+        ":cpf" => $cpf,
+        ":rg" => $rg,
+    ]);
+
+    $usuarioExistente = $stmt->fetch();
+
+    if ($usuarioExistente) {
+        if (($usuarioExistente["email"] ?? "") === $email) {
+            responder(false, "Este e-mail ja esta cadastrado.", 409);
+        }
+
+        if (($usuarioExistente["cpf"] ?? "") === $cpf) {
+            responder(false, "Este CPF ja esta cadastrado.", 409);
+        }
+
+        if (($usuarioExistente["rg"] ?? "") === $rg) {
+            responder(false, "Este RG ja esta cadastrado.", 409);
+        }
+    }
+} catch (Throwable $erro) {
+    responder(false, "Erro ao consultar o banco de dados.", 500);
+}
+
+$metadata = [
+    "nome_completo" => $nomeCompleto,
+    "tipo_usuario" => $tipoUsuario,
+    "departamento" => $departamento,
+    "empresa" => $empresa,
+    "rg" => $rg,
+    "cpf" => $cpf,
+    "celular" => $celular,
+    "data_nascimento" => $dataNascimento,
+];
+
+$authData = criarUsuarioSupabase($supabaseUrl, $supabaseAnonKey, [
+    "email" => $email,
+    "password" => $senha,
+    "data" => $metadata,
+]);
+
+$userId = $authData["user"]["id"] ?? $authData["id"] ?? null;
+
+if (!$userId) {
+    responder(false, "Usuario criado, mas o Supabase nao retornou o ID.", 500);
+}
+
+try {
+    $sql = "
+        insert into public.perfis_usuarios (
+            id,
+            nome_completo,
+            email,
+            tipo_usuario,
+            departamento,
+            empresa,
+            rg,
+            cpf,
+            celular,
+            data_nascimento,
+            senha,
+            status
+        ) values (
+            :id,
+            :nome_completo,
+            :email,
+            :tipo_usuario,
+            :departamento,
+            :empresa,
+            :rg,
+            :cpf,
+            :celular,
+            :data_nascimento,
+            :senha,
+            'Ativo'
+        )
+        on conflict (id) do update set
+            nome_completo = excluded.nome_completo,
+            email = excluded.email,
+            tipo_usuario = excluded.tipo_usuario,
+            departamento = excluded.departamento,
+            empresa = excluded.empresa,
+            rg = excluded.rg,
+            cpf = excluded.cpf,
+            celular = excluded.celular,
+            data_nascimento = excluded.data_nascimento,
+            senha = excluded.senha,
+            status = 'Ativo',
+            atualizado_em = now()
+    ";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([
+        ":id" => $userId,
+        ":nome_completo" => $nomeCompleto,
+        ":email" => $email,
+        ":tipo_usuario" => $tipoUsuario,
+        ":departamento" => $departamento,
+        ":empresa" => $empresa,
+        ":rg" => $rg,
+        ":cpf" => $cpf,
+        ":celular" => $celular,
+        ":data_nascimento" => $dataNascimento,
+        ":senha" => $senhaHash,
+    ]);
+} catch (Throwable $erro) {
+    $message = $erro->getMessage();
+
+    if (str_contains($message, "perfis_usuarios_email_key")) {
+        responder(false, "Este e-mail ja esta cadastrado.", 409);
+    }
+
+    if (str_contains($message, "perfis_usuarios_cpf_key")) {
+        responder(false, "Este CPF ja esta cadastrado.", 409);
+    }
+
+    if (str_contains($message, "perfis_usuarios_rg_key")) {
+        responder(false, "Este RG ja esta cadastrado.", 409);
+    }
+
+    responder(false, "Usuario criado no Auth, mas houve erro ao salvar o perfil.", 500);
+}
+
+responder(true, "Usuario cadastrado com sucesso.", 201, ["redirect" => "./Pagina-login.html"]);

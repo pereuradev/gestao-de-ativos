@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Cadastro de usuÃ¡rio | TI TECH Assets</title>
+    <meta
+      name="description"
+      content="PÃ¡gina de cadastro de usuÃ¡rio do portal interno da TI TECH Solutions"
+    />
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="css/pagina-cadastro.css?v=20260624-focus-fix" />
+    <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
+    <script src="js/typewriter.js?v=20260619-stable" defer></script>
+    <script src="js/pagina-cadastro.js?v=20260618-headline-loop" defer></script>
+  </head>
+
+  <body class="theme-dark page-loading">
+    <main class="app-shell">
+      <section class="signup-page" aria-label="PÃ¡gina de cadastro de usuÃ¡rio">
+        <div class="theme-floating">
+          <button
+            id="themeToggleSignup"
+            class="theme-toggle"
+            type="button"
+            aria-label="Alternar para modo claro"
+          >
+            <span class="theme-icon" aria-hidden="true">
+              <i class="bi bi-sun"></i>
+            </span>
+
+            <span class="theme-copy">
+              <span class="label">Modo claro</span>
+              <small>Trocar tema</small>
+            </span>
+          </button>
+        </div>
+
+        <aside class="signup-brand">
+          <div class="brand-content">
+            <a
+              class="logo-link"
+              href="https://www.titechsolutions.com.br/"
+              aria-label="Acessar site da TI TECH Solutions"
+            >
+              <img
+                class="brand-logo"
+                src="assets/logo-branca.png"
+                alt="TI TECH Solutions"
+              />
+            </a>
+
+            <div class="brand-text">
+              <p class="eyebrow">Portal de ativos</p>
+              <h1 class="brand-title">
+                <span
+                  class="typewriter-heading"
+                  style="--typewriter-min: 22ch"
+                  data-typewriter-loop
+                  data-typewriter-phrases="Novo acesso com controle.|Cadastro seguro.|Dados bem organizados."
+                >Novo acesso com controle.</span><span  aria-hidden="true"></span>
+              </h1>
+              <p class="brand-lead">
+                Cadastre usuÃ¡rios com clareza, perfil correto e dados
+                corporativos consistentes para manter a operaÃ§Ã£o organizada.
+              </p>
+            </div>
+            </div>
+          </div>
+        </aside>
+
+        <section class="signup-side">
+          <div class="signup-card" aria-label="FormulÃ¡rio de cadastro">
+            <div class="card-topline">
+              <a
+                class="logo-link"
+                href="https://www.titechsolutions.com.br/"
+                aria-label="Acessar site da TI TECH Solutions"
+              >
+                <img
+                  class="signup-card-logo logo-dark"
+                  src="assets/logo.png"
+                  alt="TI TECH Solutions"
+                />
+                <img
+                  class="signup-card-logo logo-light"
+                  src="assets/logo-branca.png"
+                  alt="TI TECH Solutions"
+                />
+              </a>
+
+              <a
+                id="backToLoginTop"
+                class="ghost-link"
+                href="Pagina-login.html"
+              >
+                <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                Login
+              </a>
+            </div>
+
+            <div class="form-heading">
+              <p class="eyebrow">Cadastro de usuÃ¡rio</p>
+              <h1>
+                <span
+                  class="typewriter-heading"
+                  style="--typewriter-min: 18ch"
+                  data-typewriter-phrases="Criar acesso.|Cadastro seguro.|Perfil para o portal."
+                >Criar acesso</span><span aria-hidden="true"></span>
+              </h1>
+              <p>
+                Informe os dados corporativos, tipo e grupo inicial do usuÃ¡rio
+                no portal.
+              </p>
+            </div>
+
+            <form
+              id="signupForm"
+              action="Backend/cadastrar-usuario.php"
+              method="POST"
+              novalidate
+            >
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="fullName">
+                    Nome completo
+                  </label>
+
+                  <div class="input-wrap">
+                    <input
+                      id="fullName"
+                      name="nome_completo"
+                      class="form-control"
+                      type="text"
+                      placeholder="Nome e sobrenome"
+                      autocomplete="name"
+                      required
+                    />
+                    <i class="bi bi-person field-icon" aria-hidden="true"></i>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="email">
+                    E-mail corporativo
+                  </label>
+
+                  <div class="input-wrap">
+                    <input
+                      id="email"
+                      name="email"
+                      class="form-control"
+                      type="email"
+                      placeholder="nome@titechsolutions.com.br"
+                      autocomplete="email"
+                      required
+                    />
+                    <i class="bi bi-envelope field-icon" aria-hidden="true"></i>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Tipo</label>
+
+                  <input
+                    id="selectedRole"
+                    name="tipo_usuario"
+                    type="hidden"
+                    value="Colaborador"
+                  />
+
+                  <div class="segment-control" aria-label="Tipo de usuÃ¡rio">
+                    <button
+                      class="active"
+                      data-role="Colaborador"
+                      type="button"
+                    >
+                      Colaborador
+                    </button>
+
+                    <button
+                      data-role="Administrador"
+                      type="button"
+                    >
+                      Administrador
+                    </button>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="group">
+                    Grupo
+                  </label>
+
+                  <div class="input-wrap">
+                    <select
+                      id="group"
+                      name="departamento"
+                      class="form-control"
+                      required
+                    >
+                      <option value="">Selecione</option>
+                      <option value="TI">TI</option>
+                      <option value="Operacao">Operacao</option>
+                      <option value="Financeiro">Financeiro</option>
+                      <option value="Administrativo">Administrativo</option>
+                      <option value="Gestao">Gestao</option>
+                    </select>
+
+                    <i class="bi bi-people field-icon" aria-hidden="true"></i>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="rg">
+                    RG
+                  </label>
+
+                  <div class="input-wrap">
+                    <input
+                      id="rg"
+                      name="rg"
+                      class="form-control"
+                      type="text"
+                      placeholder="00.000.000-0"
+                      inputmode="numeric"
+                      autocomplete="off"
+                    />
+                    <i
+                      class="bi bi-card-text field-icon"
+                      aria-hidden="true"
+                    ></i>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="cpf">
+                    CPF
+                  </label>
+
+                  <div class="input-wrap">
+                    <input
+                      id="cpf"
+                      name="cpf"
+                      class="form-control"
+                      type="text"
+                      placeholder="000.000.000-00"
+                      inputmode="numeric"
+                      autocomplete="off"
+                    />
+                    <i
+                      class="bi bi-person-vcard field-icon"
+                      aria-hidden="true"
+                    ></i>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="cellphone">
+                    Telefone celular
+                  </label>
+
+                  <div class="input-wrap">
+                    <input
+                      id="cellphone"
+                      name="celular"
+                      class="form-control"
+                      type="tel"
+                      placeholder="(00) 00000-0000"
+                      inputmode="tel"
+                      autocomplete="tel"
+                    />
+                    <i class="bi bi-phone field-icon" aria-hidden="true"></i>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="birthDate">
+                    Data de nasc.
+                  </label>
+
+                  <div class="input-wrap">
+                    <input
+                      id="birthDate"
+                      name="data_nascimento"
+                      class="form-control"
+                      type="date"
+                      autocomplete="bday"
+                    />
+                    <i
+                      class="bi bi-calendar3 field-icon"
+                      aria-hidden="true"
+                    ></i>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="company">
+                    Empresa
+                  </label>
+
+                  <div class="input-wrap">
+                    <input
+                      id="company"
+                      name="empresa"
+                      class="form-control"
+                      type="text"
+                      placeholder="Nome da empresa"
+                      autocomplete="organization"
+                    />
+                    <i
+                      class="bi bi-buildings field-icon"
+                      aria-hidden="true"
+                    ></i>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="password">
+                    Senha
+                  </label>
+
+                  <div class="input-wrap">
+                    <input
+                      id="password"
+                      name="senha"
+                      class="form-control"
+                      type="password"
+                      placeholder="MÃ­nimo de 6 caracteres"
+                      autocomplete="new-password"
+                      required
+                    />
+
+                    <button
+                      class="password-toggle"
+                      data-target="password"
+                      type="button"
+                      aria-label="Mostrar senha"
+                    >
+                      <i class="bi bi-eye"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="password-meter" aria-live="polite">
+                <div class="meter-track">
+                  <span id="passwordStrengthBar"></span>
+                </div>
+                <small id="passwordStrengthText">
+                  ForÃ§a da senha: aguardando
+                </small>
+              </div>
+
+              <div
+                id="signupError"
+                class="signup-error"
+                aria-live="polite"
+              ></div>
+
+              <button id="signupButton" class="primary-btn" type="submit">
+                <i class="bi bi-person-check"></i>
+                <span>Cadastrar usuÃ¡rio</span>
+              </button>
+
+              <div class="login-callout">
+                <span>JÃ¡ tem acesso?</span>
+
+                <a
+                  id="backToLoginBottom"
+                  class="secondary-action"
+                  href="Pagina-login.html"
+                >
+                  Entrar no portal
+                </a>
+              </div>
+            </form>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <div id="toastStack" class="toast-stack" aria-live="polite"></div>
+    <div class="custom-cursor" aria-hidden="true"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
+
+

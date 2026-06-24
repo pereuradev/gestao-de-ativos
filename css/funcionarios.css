@@ -1,0 +1,158 @@
+.funcionarios-page .employees-hero {
+  isolation: isolate;
+  min-height: 240px;
+  background-color: #061829;
+  background-image: url("../assets/FUNDO-FUNCIONARIOS.png");
+  background-position: center;
+  background-attachment: scroll;
+  background-repeat: no-repeat;
+  background-size: cover;
+  border: 0;
+  box-shadow:
+    var(--shadow),
+    inset 0 0 150px rgba(3, 16, 29, 0.86);
+}
+
+.funcionarios-page .employees-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(3, 16, 29, 0.98) 0%, rgba(6, 24, 41, 0.94) 35%, rgba(10, 37, 60, 0.72) 66%, rgba(3, 16, 29, 0.92) 100%),
+    linear-gradient(180deg, rgba(3, 16, 29, 0.96) 0%, rgba(3, 16, 29, 0.3) 28%, rgba(3, 16, 29, 0.26) 66%, rgba(3, 16, 29, 0.96) 100%),
+    radial-gradient(ellipse at center, rgba(3, 16, 29, 0.04) 18%, rgba(3, 16, 29, 0.82) 100%);
+}
+
+.funcionarios-page .employees-hero .hero-content h2 {
+  color: #f6fbff;
+  text-shadow: 0 10px 28px rgba(3, 16, 29, 0.52);
+}
+
+.funcionarios-page .employees-hero .hero-content p:not(.section-tag) {
+  color: rgba(246, 251, 255, 0.84);
+  text-shadow: 0 8px 22px rgba(3, 16, 29, 0.42);
+}
+
+.theme-light .funcionarios-page .employees-hero {
+  border: 0;
+  box-shadow:
+    0 22px 70px rgba(9, 31, 48, 0.11),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.62);
+}
+
+.theme-light .funcionarios-page .employees-hero::before {
+  background:
+    linear-gradient(90deg, rgba(244, 249, 251, 0.98) 0%, rgba(234, 243, 247, 0.9) 38%, rgba(221, 235, 241, 0.58) 68%, rgba(6, 24, 41, 0.34) 100%),
+    linear-gradient(180deg, rgba(244, 249, 251, 0.82) 0%, rgba(244, 249, 251, 0.12) 34%, rgba(244, 249, 251, 0.16) 66%, rgba(244, 249, 251, 0.84) 100%);
+}
+
+.theme-light .funcionarios-page .employees-hero .hero-content h2 {
+  color: #0b1f30;
+  text-shadow: 0 10px 28px rgba(255, 255, 255, 0.5);
+}
+
+.theme-light .funcionarios-page .employees-hero .hero-content p:not(.section-tag) {
+  color: #315369;
+  text-shadow: 0 8px 22px rgba(255, 255, 255, 0.55);
+}
+
+.funcionarios-page .metrics-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.employees-records-card {
+  overflow: hidden;
+}
+
+.employee-search {
+  width: min(360px, 36vw);
+}
+
+.employees-table {
+  min-width: 1080px;
+}
+
+.employees-table td {
+  line-height: 1.45;
+}
+
+.employee-email {
+  display: block;
+  max-width: 260px;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.employee-row[hidden],
+.employee-empty-row[hidden],
+.employee-filter-empty[hidden] {
+  display: none;
+}
+
+.employee-filter-empty {
+  margin-top: 16px;
+}
+
+.funcionarios-page .status-badge {
+  gap: 7px;
+}
+
+.funcionarios-page .status-badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.18);
+}
+
+.funcionarios-page .status-active::before {
+  background: #087f5b;
+}
+
+.funcionarios-page .status-inactive::before {
+  background: #ffffff;
+}
+
+.funcionarios-page .status-neutral::before {
+  background: var(--mint);
+}
+
+@media (max-width: 1180px) {
+  .funcionarios-page .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 920px) {
+  .employee-search {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .funcionarios-page .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .employees-table {
+    min-width: 0;
+  }
+
+  .employee-email {
+    max-width: 100%;
+  }
+
+  .funcionarios-page .records-table td {
+    grid-template-columns: minmax(96px, 0.38fr) minmax(0, 0.62fr);
+  }
+}

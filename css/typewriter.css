@@ -1,0 +1,50 @@
+.typewriter-heading {
+  display: inline-block;
+  max-width: 100%;
+  min-width: min(var(--typewriter-min, 12ch), 100%);
+  min-height: var(--typewriter-min-height, 1em);
+  color: inherit;
+  overflow-wrap: anywhere;
+  vertical-align: baseline;
+}
+
+.typewriter-heading::selection {
+  color: #05202c;
+  background: rgba(102, 213, 194, 0.34);
+}
+
+body.theme-dark .typewriter-heading::selection {
+  color: #f5fffd;
+  background: rgba(102, 213, 194, 0.28);
+}
+
+.typewriter-heading-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 0.86em;
+  margin-left: 0.08em;
+  border-radius: 999px;
+  background: var(--mint, #66d5c2);
+  box-shadow: 0 0 12px rgba(102, 213, 194, 0.46);
+  animation: typewriterCursor 1.05s steps(2, start) infinite;
+  transform: translateY(0.08em);
+  vertical-align: baseline;
+}
+
+@keyframes typewriterCursor {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 540px) {
+  .typewriter-heading {
+    min-width: min(var(--typewriter-min, 12ch), 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typewriter-heading-cursor {
+    animation: none;
+  }
+}
