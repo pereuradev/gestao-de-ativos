@@ -112,6 +112,73 @@ body.theme-light {
     linear-gradient(135deg, #f4f9fb 0%, #eaf3f7 54%, #ddebf1 100%);
 }
 
+body[data-accent="teal"] {
+  --cyan: #4aa3c7;
+  --teal: #4fc7b1;
+  --mint: #66d5c2;
+}
+
+body[data-accent="green"] {
+  --cyan: #22c55e;
+  --teal: #16a34a;
+  --mint: #86efac;
+}
+
+body[data-accent="blue"] {
+  --cyan: #38bdf8;
+  --teal: #2563eb;
+  --mint: #7dd3fc;
+}
+
+body[data-accent="violet"] {
+  --cyan: #a78bfa;
+  --teal: #7c3aed;
+  --mint: #c4b5fd;
+}
+
+body[data-density="compact"] {
+  --radius: 14px;
+}
+
+body[data-density="compact"] .main-area {
+  padding: 18px;
+}
+
+body[data-density="compact"] .topbar {
+  min-height: 64px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+}
+
+body[data-density="compact"] .hero-panel {
+  min-height: 230px;
+  padding: clamp(20px, 3vw, 32px);
+}
+
+body[data-density="compact"] .metric-card {
+  min-height: 118px;
+  padding: 15px;
+}
+
+body[data-density="compact"] .content-card {
+  padding: 18px;
+}
+
+body[data-density="compact"] .records-table th,
+body[data-density="compact"] .records-table td {
+  padding-top: 11px;
+  padding-bottom: 11px;
+}
+
+body[data-motion="reduced"] *,
+body[data-motion="reduced"] *::before,
+body[data-motion="reduced"] *::after {
+  transition-duration: 0.01ms !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+}
+
 body.page-loading {
   opacity: 0;
   transform: translateY(10px);
@@ -470,7 +537,7 @@ button {
   color: #ffffff;
   font-weight: 850;
   white-space: nowrap;
-  background: linear-gradient(135deg, #071a2b, #0a5267 58%, #167766);
+  background: linear-gradient(135deg, #071a2b, var(--cyan) 58%, var(--teal));
   box-shadow: 0 16px 32px rgba(79, 199, 177, 0.2);
   transition:
     transform var(--transition),
@@ -680,7 +747,7 @@ button {
 
 .primary-button {
   color: #ffffff;
-  background: linear-gradient(135deg, #071a2b, #0a5267 58%, #167766);
+  background: linear-gradient(135deg, #071a2b, var(--cyan) 58%, var(--teal));
   box-shadow: 0 16px 32px rgba(79, 199, 177, 0.22);
 }
 
@@ -773,7 +840,7 @@ button {
 
 .site-metric-card:hover .metric-icon {
   color: #ffffff;
-  background: linear-gradient(135deg, #0a5267, #167766);
+  background: linear-gradient(135deg, var(--cyan), var(--teal));
 }
 
 .chart-card {
@@ -1371,7 +1438,7 @@ body.theme-dark .records-actions select option:checked {
   padding: 8px 10px;
   border-radius: 999px;
   color: #ffffff;
-  background: linear-gradient(135deg, #0a5267, #167766);
+  background: linear-gradient(135deg, var(--cyan), var(--teal));
   font-size: 0.84rem;
   font-weight: 850;
   text-align: center;

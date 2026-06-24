@@ -1,0 +1,417 @@
+.settings-page .settings-hero {
+  isolation: isolate;
+  min-height: 250px;
+  background-color: #061829;
+  background-image:
+    linear-gradient(90deg, rgba(3, 16, 29, 0.98) 0%, rgba(6, 24, 41, 0.92) 38%, rgba(10, 37, 60, 0.58) 68%, rgba(3, 16, 29, 0.64) 100%),
+    radial-gradient(circle at 82% 26%, rgba(79, 199, 177, 0.24), transparent 28%),
+    linear-gradient(135deg, #03101d 0%, #08233a 100%);
+  border: 0;
+  box-shadow:
+    var(--shadow),
+    inset 0 0 150px rgba(3, 16, 29, 0.76);
+}
+
+.settings-page .settings-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, rgba(102, 213, 194, 0.08) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(180deg, rgba(74, 163, 199, 0.07) 0 1px, transparent 1px 64px);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 36%, #000 100%);
+}
+
+.settings-page .settings-hero .hero-content h2 {
+  color: #f6fbff;
+  text-shadow: 0 10px 28px rgba(3, 16, 29, 0.52);
+}
+
+.settings-page .settings-hero .hero-content p:not(.section-tag) {
+  color: rgba(246, 251, 255, 0.84);
+}
+
+.theme-light .settings-page .settings-hero {
+  background-image:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 250, 252, 0.9) 38%, rgba(235, 246, 249, 0.56) 70%, rgba(10, 37, 60, 0.16) 100%),
+    radial-gradient(circle at 82% 26%, rgba(79, 199, 177, 0.2), transparent 28%),
+    linear-gradient(135deg, #f7fbfd 0%, #e5f1f5 100%);
+  box-shadow:
+    0 22px 70px rgba(9, 31, 48, 0.11),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.68);
+}
+
+.theme-light .settings-page .settings-hero .hero-content h2 {
+  color: #0b1f30;
+  text-shadow: 0 10px 28px rgba(255, 255, 255, 0.52);
+}
+
+.theme-light .settings-page .settings-hero .hero-content p:not(.section-tag) {
+  color: #315369;
+}
+
+.settings-summary-grid {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.settings-metric strong {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 1.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-metric .status-badge {
+  min-width: 0;
+  font-size: 0.82rem;
+}
+
+.positive-icon {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.14);
+}
+
+.settings-layout {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: minmax(320px, 0.82fr) minmax(0, 1.18fr);
+  gap: 16px;
+}
+
+.profile-card,
+.preferences-card {
+  padding: 22px;
+}
+
+.profile-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.profile-avatar {
+  width: 74px;
+  height: 74px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 74px;
+  border-radius: 24px;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.34), transparent 34%),
+    linear-gradient(135deg, var(--cyan), var(--teal));
+  box-shadow: 0 18px 36px rgba(79, 199, 177, 0.22);
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.profile-heading h3 {
+  margin: 4px 0 4px;
+  font-size: 1.35rem;
+}
+
+.profile-heading p:not(.section-tag) {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.profile-details {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-field {
+  min-height: 82px;
+  padding: 14px;
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--soft);
+}
+
+.profile-field span,
+.preference-group legend,
+.preference-preview span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.profile-field strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.95rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preferences-card {
+  overflow: hidden;
+}
+
+.compact-preference-button {
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 14px;
+}
+
+.preferences-form {
+  display: grid;
+  gap: 18px;
+}
+
+.preference-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  border: 0;
+}
+
+.accent-options,
+.segmented-control {
+  display: grid;
+  gap: 10px;
+}
+
+.accent-options {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.accent-option,
+.segmented-control label,
+.toggle-row,
+.preference-preview {
+  border: 1px solid var(--line);
+  background: var(--soft);
+  transition:
+    border-color var(--transition),
+    background var(--transition),
+    box-shadow var(--transition),
+    transform var(--transition);
+}
+
+.accent-option {
+  min-height: 104px;
+  padding: 14px;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 10px;
+  border-radius: 18px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.accent-option input,
+.segmented-control input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.accent-option span {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  box-shadow:
+    inset 0 0 0 4px rgba(255, 255, 255, 0.28),
+    0 12px 24px rgba(4, 20, 35, 0.18);
+}
+
+.accent-teal span {
+  background: linear-gradient(135deg, #4aa3c7, #66d5c2);
+}
+
+.accent-green span {
+  background: linear-gradient(135deg, #16a34a, #86efac);
+}
+
+.accent-blue span {
+  background: linear-gradient(135deg, #2563eb, #38bdf8);
+}
+
+.accent-violet span {
+  background: linear-gradient(135deg, #7c3aed, #c084fc);
+}
+
+.accent-option:has(input:checked),
+.segmented-control label:has(input:checked),
+.toggle-row:has(input:checked) {
+  border-color: color-mix(in srgb, var(--mint) 68%, transparent);
+  background: rgba(79, 199, 177, 0.14);
+  box-shadow:
+    0 0 0 4px rgba(79, 199, 177, 0.11),
+    0 16px 34px rgba(4, 20, 35, 0.12);
+}
+
+.accent-option:hover,
+.segmented-control label:hover,
+.toggle-row:hover {
+  transform: translateY(-2px);
+}
+
+.segmented-control {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.segmented-control label {
+  min-height: 52px;
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+.segmented-control span {
+  height: 100%;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 850;
+}
+
+.toggle-list {
+  display: grid;
+  gap: 10px;
+}
+
+.toggle-row {
+  min-height: 78px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border-radius: 18px;
+  cursor: pointer;
+}
+
+.toggle-row strong,
+.toggle-row small {
+  display: block;
+}
+
+.toggle-row strong {
+  font-size: 0.94rem;
+}
+
+.toggle-row small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.toggle-row input {
+  width: 48px;
+  height: 28px;
+  appearance: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    border-color var(--transition);
+}
+
+.toggle-row input::before {
+  content: "";
+  width: 20px;
+  height: 20px;
+  margin: 3px;
+  display: block;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+  transition: transform var(--transition);
+}
+
+.toggle-row input:checked {
+  border-color: rgba(34, 197, 94, 0.34);
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+}
+
+.toggle-row input:checked::before {
+  transform: translateX(20px);
+}
+
+.preference-preview {
+  min-height: 76px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-radius: 18px;
+}
+
+.preference-preview strong {
+  display: block;
+  margin-top: 4px;
+}
+
+#preferencesMessage {
+  margin-top: 16px;
+}
+
+#preferencesMessage:empty {
+  display: none;
+}
+
+@media (max-width: 1180px) {
+  .settings-summary-grid,
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .accent-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .settings-summary-grid,
+  .profile-details,
+  .accent-options,
+  .segmented-control {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-heading,
+  .preference-preview {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .profile-avatar {
+    width: 64px;
+    height: 64px;
+    flex-basis: 64px;
+    border-radius: 20px;
+  }
+}

@@ -33,6 +33,7 @@ function startPageAnimation() {
 
 function loadSavedTheme() {
   applyTheme(getSavedItem("titech-theme") || "dark");
+  loadInterfacePreferences();
 }
 
 function setupThemeToggle() {
@@ -79,6 +80,27 @@ function applyTheme(theme) {
   if (label) {
     label.textContent = isDark ? "Modo escuro" : "Modo claro";
   }
+}
+
+function loadInterfacePreferences() {
+  applyAccent(getSavedItem("titech-accent") || "teal");
+  applyDensity(getSavedItem("titech-density") || "comfortable");
+  applyMotionPreference(getSavedItem("titech-motion") || "normal");
+}
+
+function applyAccent(accent) {
+  const allowedAccents = ["teal", "green", "blue", "violet"];
+  const nextAccent = allowedAccents.includes(accent) ? accent : "teal";
+
+  document.body.dataset.accent = nextAccent;
+}
+
+function applyDensity(density) {
+  document.body.dataset.density = density === "compact" ? "compact" : "comfortable";
+}
+
+function applyMotionPreference(motion) {
+  document.body.dataset.motion = motion === "reduced" ? "reduced" : "normal";
 }
 
 function setupSidebar() {
@@ -164,6 +186,10 @@ Object.assign(window, {
   loadSavedTheme,
   setupThemeToggle,
   applyTheme,
+  loadInterfacePreferences,
+  applyAccent,
+  applyDensity,
+  applyMotionPreference,
   setupSidebar,
   openSidebar,
   closeSidebar,
