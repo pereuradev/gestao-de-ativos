@@ -893,6 +893,7 @@ function renderEvolutionChart({
             text: yTitle,
             color: textColor,
             font: {
+              size: 16,
               weight: 800,
             },
           },

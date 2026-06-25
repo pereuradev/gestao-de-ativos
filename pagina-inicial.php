@@ -275,7 +275,7 @@ $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
         <!-- Total de ativos preenchido dinamicamente pelo JavaScript -->
         <article class="metric-card">
           <div class="metric-icon">
-            <i class="bi bi-database"></i>
+            <i class="bi bi-database-fill"></i>
           </div>
 
           <div>

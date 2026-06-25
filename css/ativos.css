@@ -1,3 +1,19 @@
+:root {
+  --font-main: "Inter", system-ui, sans-serif;
+  --navy-950: #03101d;
+  --navy-900: #061829;
+  --navy-800: #0a253c;
+  --navy-700: #0e334e;
+  --cyan: #4aa3c7;
+  --teal: #4fc7b1;
+  --mint: #66d5c2;
+  --danger: #e05d5d;
+  --white: #ffffff;
+  --radius: 18px;
+  --sidebar-width: 292px;
+  --transition: 0.25s ease;
+  --theme-transition: 0.62s cubic-bezier(0.22, 1, 0.36, 1);
+}
 .asset-view-card {
   margin-top: 22px;
 }
@@ -37,25 +53,25 @@
 }
 
 .filter-clear-button {
+   min-height: 46px;
   padding: 0 14px;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: var(--muted);
+  gap: 10px;
+  border-radius: 16px;
+  color: var(--danger);
+  font-weight: 800;
+  background: rgba(224, 93, 93, 0.11);
   transition:
-    background var(--transition),
-    border-color var(--transition),
-    color var(--transition),
-    transform var(--transition);
+    transform var(--transition),
+    background var(--transition);
 }
 
 .filter-clear-button:hover {
-  color: var(--text);
-  border-color: rgba(79, 199, 177, 0.36);
-  background: rgba(79, 199, 177, 0.12);
-  transform: translateY(-1px);
+  background: rgba(224, 93, 93, 0.17);
+  transform: translateY(-2px);
 }
+
 
 .asset-view-table {
   min-width: 1180px;
