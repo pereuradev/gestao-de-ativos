@@ -295,21 +295,40 @@ $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
       </section>
 
       <!-- Card do grÃ¡fico de evoluÃ§Ã£o do estoque -->
-      <section class="content-card chart-card" aria-labelledby="stockChartTitle">
-        <div class="card-header">
+      <section class="content-card chart-card asset-evolution-card" aria-labelledby="stockChartTitle">
+        <div class="card-header asset-chart-header">
           <div>
-            <p class="section-tag">Estoque</p>
-            <h3 id="stockChartTitle">Evolu&ccedil;&atilde;o de itens em estoque</h3>
+            <p class="section-tag">Invent&aacute;rio</p>
+            <h3 id="stockChartTitle">Evolu&ccedil;&atilde;o de ativos cadastrados</h3>
+            <p class="chart-subtitle">Acompanhe todos os itens registrados no sistema por per&iacute;odo.</p>
           </div>
 
           <!-- Link simples para recarregar/voltar para a pÃ¡gina inicial -->
-          <a class="text-button compact-action" href="pagina-inicial.php">
-            Ir para p&aacute;gina inicial
-          </a>
+          <div class="chart-period-filter" aria-label="Filtrar per&iacute;odo do gr&aacute;fico">
+            <button class="is-active" type="button" data-stock-period="semana">Semana</button>
+            <button type="button" data-stock-period="hoje">Hoje</button>
+            <button type="button" data-stock-period="mes">M&ecirc;s</button>
+            <button type="button" data-stock-period="ano">Ano</button>
+          </div>
+        </div>
+
+        <div class="asset-chart-summary" aria-label="Resumo do per&iacute;odo">
+          <div>
+            <span>Total cadastrado</span>
+            <strong id="stockPeriodTotal">--</strong>
+          </div>
+          <div>
+            <span>Novos registros</span>
+            <strong id="stockPeriodNew">--</strong>
+          </div>
+          <div>
+            <span>Crescimento</span>
+            <strong id="stockPeriodDelta">--</strong>
+          </div>
         </div>
 
         <!-- Ãrea onde o Chart.js vai desenhar o grÃ¡fico -->
-        <div class="chart-shell">
+        <div class="chart-shell asset-evolution-shell">
           <canvas id="stockEvolutionChart" aria-label="Gr&aacute;fico evolutivo dos itens em estoque"></canvas>
         </div>
       </section>

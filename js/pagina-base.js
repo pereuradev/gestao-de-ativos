@@ -14,6 +14,7 @@ const FALLBACK_DATA = {
   categorias: [],
   status_ativos: [],
   estoque_evolucao: [],
+  ativos_evolucao: {},
   cadastros_evolucao: [],
 };
 
@@ -37,6 +38,8 @@ let stockChart = null;
 let registrationsChart = null;
 
 let productHealthChart = null;
+let productHealthFilter = "todos";
+let stockEvolutionPeriod = "semana";
 
 // Timer usado para remover a classe de animação da troca de tema.
 let themeTimer = null;
@@ -91,6 +94,7 @@ function initPage() {
   setupSidebar();
   setupAssetMenu();
   setupCategorySearch();
+  setupStockPeriodFilter();
   loadDashboardData();
 }
 
@@ -346,6 +350,9 @@ function normalizeDashboardPayload(payload) {
   const data = payload && typeof payload === "object" ? payload : {};
   const categories = Array.isArray(data.categorias) ? data.categorias : [];
   const assetStatuses = Array.isArray(data.status_ativos) ? data.status_ativos : [];
+  const assetEvolution = data.ativos_evolucao && typeof data.ativos_evolucao === "object"
+    ? data.ativos_evolucao
+    : {};
 
   return {
     total_ativos: normalizeNumber(data.total_ativos),
@@ -369,6 +376,12 @@ function normalizeDashboardPayload(payload) {
 
     // Normaliza as séries usadas nos gráficos.
     estoque_evolucao: normalizeEvolutionSeries(data.estoque_evolucao),
+    ativos_evolucao: {
+      hoje: normalizeEvolutionSeries(assetEvolution.hoje),
+      semana: normalizeEvolutionSeries(assetEvolution.semana || data.estoque_evolucao),
+      mes: normalizeEvolutionSeries(assetEvolution.mes),
+      ano: normalizeEvolutionSeries(assetEvolution.ano),
+    },
     cadastros_evolucao: normalizeEvolutionSeries(data.cadastros_evolucao),
   };
 }
@@ -389,6 +402,7 @@ function normalizeEvolutionSeries(series) {
     .map((item) => ({
       label: String(item?.label || "").trim(),
       total: normalizeNumber(item?.total),
+      novos: normalizeNumber(item?.novos) ?? 0,
     }))
     .filter((item) => item.label !== "" && item.total !== null);
 }
@@ -427,8 +441,16 @@ function renderDashboard(data) {
   renderCategories(data.categorias || []);
   renderProductHealthChart(data.status_ativos || [], data.total_ativos);
   renderDynamicCategoryLinks(data.categorias || []);
-  renderStockEvolutionChart(data.estoque_evolucao || []);
+  renderStockEvolutionChart(getStockEvolutionSeries(data));
   renderRegistrationEvolutionChart(data.cadastros_evolucao || []);
+}
+
+function getStockEvolutionSeries(data) {
+  const seriesByPeriod = data.ativos_evolucao || {};
+
+  return seriesByPeriod[stockEvolutionPeriod]?.length
+    ? seriesByPeriod[stockEvolutionPeriod]
+    : data.estoque_evolucao || [];
 }
 
 function renderProductHealthChart(statuses, totalAssets) {
@@ -438,13 +460,13 @@ function renderProductHealthChart(statuses, totalAssets) {
   const total = totalAssets !== null && totalAssets !== undefined ? totalAssets : totalFromStatuses;
   const items = buildProductHealthItems(statuses);
   const chartItems = items.filter((item) => item.total > 0);
+  const selectedItem = items.find((item) => item.key === productHealthFilter);
   const hasData = chartItems.length > 0;
-  const visibleItems = hasData
-    ? chartItems
-    : [{ label: "SEM DADOS", total: 1, color: "rgba(148, 163, 184, 0.45)" }];
+  const visibleItems = buildProductHealthChartItems(chartItems, selectedItem, totalFromStatuses);
+  const centerTotal = selectedItem ? selectedItem.total : total;
 
-  setText("productHealthTotal", formatNumber(total));
-  renderProductHealthLegend(legend, items, totalFromStatuses);
+  setText("productHealthTotal", formatNumber(centerTotal));
+  renderProductHealthLegend(legend, items, totalFromStatuses, productHealthFilter);
 
   if (!canvas || !window.Chart) return;
 
@@ -460,6 +482,7 @@ function renderProductHealthChart(statuses, totalAssets) {
         {
           data: visibleItems.map((item) => item.total),
           backgroundColor: visibleItems.map((item) => item.color),
+          hoverBackgroundColor: visibleItems.map((item) => item.hoverColor || item.color),
           borderColor: "rgba(255, 255, 255, 0)",
           borderWidth: 0,
           hoverOffset: hasData ? 8 : 0,
@@ -469,11 +492,31 @@ function renderProductHealthChart(statuses, totalAssets) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: {
+        duration: 850,
+        easing: "easeOutQuart",
+      },
       cutout: "72%",
+      onHover(event, elements) {
+        if (event.native?.target) {
+          event.native.target.style.cursor = elements.length && hasData ? "pointer" : "default";
+        }
+      },
+      onClick(_event, elements) {
+        if (!hasData || !elements.length) return;
+
+        const item = visibleItems[elements[0].index];
+
+        if (!item?.filterKey || item.filterKey === "restante") return;
+
+        productHealthFilter = productHealthFilter === item.filterKey ? "todos" : item.filterKey;
+        renderProductHealthChart(dashboardData.status_ativos || [], dashboardData.total_ativos);
+      },
       plugins: {
         legend: { display: false },
         tooltip: {
-          enabled: hasData,
+          enabled: false,
+          external: createProductHealthTooltip,
           callbacks: {
             label(context) {
               const value = Number(context.parsed || 0);
@@ -486,6 +529,40 @@ function renderProductHealthChart(statuses, totalAssets) {
       },
     },
   });
+}
+
+function buildProductHealthChartItems(chartItems, selectedItem, total) {
+  if (!chartItems.length) {
+    return [{ label: "SEM DADOS", total: 1, color: "rgba(148, 163, 184, 0.45)" }];
+  }
+
+  if (!selectedItem) {
+    return chartItems.map((item) => ({
+      ...item,
+      filterKey: item.key,
+      hoverColor: item.color,
+    }));
+  }
+
+  const remainder = Math.max(0, total - selectedItem.total);
+  const filteredItems = [{
+    ...selectedItem,
+    filterKey: selectedItem.key,
+    hoverColor: selectedItem.color,
+  }];
+
+  if (remainder > 0) {
+    filteredItems.push({
+      key: "restante",
+      label: "OUTROS STATUS",
+      total: remainder,
+      color: "rgba(148, 163, 184, 0.22)",
+      hoverColor: "rgba(148, 163, 184, 0.32)",
+      filterKey: "restante",
+    });
+  }
+
+  return filteredItems;
 }
 
 function buildProductHealthItems(statuses) {
@@ -510,43 +587,147 @@ function getProductStatusMeta(status) {
   ) || PRODUCT_HEALTH_STATUS_META[0];
 }
 
-function renderProductHealthLegend(legend, items, total) {
+function renderProductHealthLegend(legend, items, total, activeFilter) {
   if (!legend) return;
 
   legend.innerHTML = "";
 
-  items.forEach((item) => {
-    const row = document.createElement("div");
-    const swatch = document.createElement("span");
-    const label = document.createElement("span");
-    const value = document.createElement("strong");
-    const percent = total ? Math.round((item.total / total) * 100) : 0;
-
-    row.className = "product-health-legend-item";
-    row.classList.toggle("is-muted", item.total === 0);
-    swatch.className = "product-health-swatch";
-    swatch.style.background = item.color;
-    label.textContent = item.label;
-    value.textContent = `${formatNumber(item.total)} / ${percent}%`;
-
-    row.append(swatch, label, value);
-    legend.appendChild(row);
+  const allButton = createProductHealthLegendButton({
+    item: {
+      key: "todos",
+      label: "TODOS",
+      total,
+      color: "linear-gradient(135deg, var(--cyan), var(--teal))",
+    },
+    total,
+    activeFilter,
+    muted: total === 0,
   });
+
+  legend.appendChild(allButton);
+
+  items.forEach((item) => {
+    legend.appendChild(createProductHealthLegendButton({
+      item,
+      total,
+      activeFilter,
+      muted: item.total === 0,
+    }));
+  });
+}
+
+function createProductHealthLegendButton({
+  item,
+  total,
+  activeFilter,
+  muted,
+}) {
+  const row = document.createElement("button");
+  const swatch = document.createElement("span");
+  const label = document.createElement("span");
+  const value = document.createElement("strong");
+  const percent = total ? Math.round((item.total / total) * 100) : 0;
+
+  row.type = "button";
+  row.className = "product-health-legend-item";
+  row.dataset.healthFilter = item.key;
+  row.classList.toggle("is-muted", muted);
+  row.classList.toggle("is-active", activeFilter === item.key);
+  row.setAttribute("aria-pressed", String(activeFilter === item.key));
+  row.setAttribute("aria-label", `Filtrar por ${item.label}`);
+  swatch.className = "product-health-swatch";
+  swatch.style.background = item.color;
+  label.textContent = item.label;
+  value.textContent = `${formatNumber(item.total)} / ${percent}%`;
+
+  row.addEventListener("click", () => {
+    productHealthFilter = activeFilter === item.key ? "todos" : item.key;
+    renderProductHealthChart(dashboardData.status_ativos || [], dashboardData.total_ativos);
+  });
+
+  row.append(swatch, label, value);
+
+  return row;
+}
+
+function createProductHealthTooltip(context) {
+  const { chart, tooltip } = context;
+  const parent = chart.canvas.parentNode;
+
+  if (!parent) return;
+
+  let tooltipElement = parent.querySelector(".product-health-tooltip");
+
+  if (!tooltipElement) {
+    tooltipElement = document.createElement("div");
+    tooltipElement.className = "product-health-tooltip";
+    parent.appendChild(tooltipElement);
+  }
+
+  if (tooltip.opacity === 0) {
+    tooltipElement.classList.remove("show");
+    return;
+  }
+
+  const title = tooltip.title?.[0] || "";
+  const label = tooltip.body?.[0]?.lines?.[0] || "";
+
+  tooltipElement.innerHTML = `
+    <span>${escapeHtml(title)}</span>
+    <strong>${escapeHtml(label.replace(`${title}: `, ""))}</strong>
+  `;
+  tooltipElement.classList.add("show");
 }
 
 /**
  * Renderiza o gráfico de evolução de estoque.
  */
 function renderStockEvolutionChart(series) {
+  updateStockEvolutionSummary(series);
+
   stockChart = renderEvolutionChart({
     chart: stockChart,
     canvasId: "stockEvolutionChart",
     series,
-    label: "Itens em estoque",
-    yTitle: "Itens",
-    tooltipSuffix: "itens em estoque",
+    label: "Novos ativos",
+    yTitle: "Novos ativos",
+    tooltipSuffix: "novos ativos",
     colorVar: "--mint",
-    backgroundColor: "rgba(79, 199, 177, 0.16)",
+    backgroundColor: "rgba(79, 199, 177, 0.2)",
+    secondaryColorVar: "--cyan",
+    valueKey: "novos",
+  });
+}
+
+function updateStockEvolutionSummary(series) {
+  const first = series[0]?.total ?? 0;
+  const last = series.at(-1)?.total ?? 0;
+  const totalNew = series.reduce((sum, item) => sum + (item.novos || 0), 0);
+  const delta = last - first;
+
+  setText("stockPeriodTotal", formatNumber(last));
+  setText("stockPeriodNew", formatNumber(totalNew));
+  setText("stockPeriodDelta", `${delta >= 0 ? "+" : ""}${formatNumber(delta)}`);
+}
+
+function setupStockPeriodFilter() {
+  const buttons = document.querySelectorAll("[data-stock-period]");
+
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const period = button.dataset.stockPeriod || "semana";
+
+      stockEvolutionPeriod = period;
+
+      buttons.forEach((item) => {
+        const isActive = item === button;
+
+        item.classList.toggle("is-active", isActive);
+        item.setAttribute("aria-pressed", String(isActive));
+      });
+
+      renderStockEvolutionChart(getStockEvolutionSeries(dashboardData));
+    });
   });
 }
 
@@ -580,6 +761,8 @@ function renderEvolutionChart({
   tooltipSuffix,
   colorVar,
   backgroundColor,
+  secondaryColorVar = colorVar,
+  valueKey = "total",
 }) {
   const canvas = document.getElementById(canvasId);
 
@@ -587,7 +770,7 @@ function renderEvolutionChart({
   if (!canvas || !window.Chart) return chart;
 
   // Separa os valores e labels que serão usados no gráfico.
-  const values = series.map((item) => item.total);
+  const values = series.map((item) => item[valueKey] ?? item.total);
   const labels = series.map((item) => item.label);
 
   // Pega variáveis CSS do tema atual para aplicar no gráfico.
@@ -595,7 +778,14 @@ function renderEvolutionChart({
   const textColor = styles.getPropertyValue("--text").trim() || "#f6fbff";
   const mutedColor = styles.getPropertyValue("--muted").trim() || "#9cb8c9";
   const lineColor = styles.getPropertyValue(colorVar).trim() || "#66d5c2";
+  const secondaryColor = styles.getPropertyValue(secondaryColorVar).trim() || lineColor;
   const gridColor = styles.getPropertyValue("--line").trim() || "rgba(255, 255, 255, 0.13)";
+  const context = canvas.getContext("2d");
+  const gradient = context.createLinearGradient(0, 0, 0, canvas.offsetHeight || 320);
+
+  gradient.addColorStop(0, backgroundColor);
+  gradient.addColorStop(0.72, "rgba(79, 199, 177, 0.035)");
+  gradient.addColorStop(1, "rgba(79, 199, 177, 0)");
 
   // Destrói o gráfico anterior antes de criar outro.
   // Isso evita sobreposição e bugs visuais.
@@ -613,14 +803,16 @@ function renderEvolutionChart({
           label,
           data: values,
           borderColor: lineColor,
-          backgroundColor,
-          borderWidth: 3,
+          backgroundColor: gradient,
+          borderWidth: 4,
           pointBackgroundColor: lineColor,
-          pointBorderColor: textColor,
-          pointBorderWidth: 2,
+          pointBorderColor: "#f8feff",
+          pointBorderWidth: 3,
           pointRadius: 4,
-          pointHoverRadius: 6,
-          tension: 0.38,
+          pointHoverRadius: 7,
+          pointHoverBackgroundColor: secondaryColor,
+          pointHoverBorderColor: "#ffffff",
+          tension: 0.42,
           fill: true,
         },
       ],
@@ -646,11 +838,20 @@ function renderEvolutionChart({
           backgroundColor: "rgba(3, 16, 29, 0.92)",
           borderColor: "rgba(79, 199, 177, 0.28)",
           borderWidth: 1,
+          titleColor: "#f8feff",
+          bodyColor: "#d9fbf6",
           displayColors: false,
-          padding: 12,
+          padding: 14,
+          cornerRadius: 14,
           callbacks: {
+            title(items) {
+              return items[0]?.label || "";
+            },
             label(context) {
-              return `${formatNumber(context.parsed.y)} ${tooltipSuffix}`;
+              const item = series[context.dataIndex] || {};
+              const total = item.total !== undefined ? ` | ${formatNumber(item.total)} no total` : "";
+
+              return `${formatNumber(context.parsed.y)} ${tooltipSuffix}${total}`;
             },
           },
         },
@@ -658,11 +859,15 @@ function renderEvolutionChart({
 
       scales: {
         x: {
+          border: {
+            display: false,
+          },
           grid: {
-            color: gridColor,
+            color: "rgba(255, 255, 255, 0.055)",
           },
           ticks: {
             color: mutedColor,
+            maxRotation: 0,
             font: {
               weight: 700,
             },
@@ -670,6 +875,9 @@ function renderEvolutionChart({
         },
         y: {
           beginAtZero: true,
+          border: {
+            display: false,
+          },
           grid: {
             color: gridColor,
           },
@@ -862,5 +1070,14 @@ function normalizeText(value) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 

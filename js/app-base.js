@@ -2,6 +2,7 @@
 const THEME_TRANSITION_MS = 660;
 
 let themeTimer = null;
+let systemThemeListenerAttached = false;
 
 function getSavedItem(key) {
   try {
@@ -34,6 +35,7 @@ function startPageAnimation() {
 function loadSavedTheme() {
   applyTheme(getSavedItem("titech-theme") || "dark");
   loadInterfacePreferences();
+  setupSystemThemeListener();
 }
 
 function setupThemeToggle() {
@@ -62,10 +64,12 @@ function setupThemeToggle() {
 
 function applyTheme(theme) {
   const themeToggle = document.getElementById("themeToggle");
-  const isDark = theme !== "light";
+  const nextTheme = ["dark", "light", "auto"].includes(theme) ? theme : "dark";
+  const isDark = resolveThemeMode(nextTheme) === "dark";
 
   document.body.classList.toggle("theme-dark", isDark);
   document.body.classList.toggle("theme-light", !isDark);
+  document.body.dataset.themePreference = nextTheme;
   updateBrandLogo(isDark);
 
   if (!themeToggle) return;
@@ -74,18 +78,43 @@ function applyTheme(theme) {
   const label = themeToggle.querySelector("span");
 
   if (icon) {
-    icon.className = isDark ? "bi bi-moon-stars-fill" : "bi bi-sun-fill";
+    icon.className = nextTheme === "auto"
+      ? "bi bi-circle-half"
+      : isDark ? "bi bi-moon-stars-fill" : "bi bi-sun-fill";
   }
 
   if (label) {
-    label.textContent = isDark ? "Modo escuro" : "Modo claro";
+    label.textContent = nextTheme === "auto" ? "Modo auto" : isDark ? "Modo escuro" : "Modo claro";
   }
+}
+
+function resolveThemeMode(theme) {
+  if (theme !== "auto") {
+    return theme === "light" ? "light" : "dark";
+  }
+
+  return window.matchMedia?.("(prefers-color-scheme: light)")?.matches ? "light" : "dark";
+}
+
+function setupSystemThemeListener() {
+  if (systemThemeListenerAttached || !window.matchMedia) return;
+
+  const mediaQuery = window.matchMedia("(prefers-color-scheme: light)");
+  const updateAutoTheme = () => {
+    if (getSavedItem("titech-theme") === "auto") {
+      applyTheme("auto");
+    }
+  };
+
+  mediaQuery.addEventListener?.("change", updateAutoTheme);
+  systemThemeListenerAttached = true;
 }
 
 function loadInterfacePreferences() {
   applyAccent(getSavedItem("titech-accent") || "teal");
   applyDensity(getSavedItem("titech-density") || "comfortable");
   applyMotionPreference(getSavedItem("titech-motion") || "normal");
+  applyCursorPreference(getSavedItem("titech-cursor") || "normal");
 }
 
 function applyAccent(accent) {
@@ -101,6 +130,10 @@ function applyDensity(density) {
 
 function applyMotionPreference(motion) {
   document.body.dataset.motion = motion === "reduced" ? "reduced" : "normal";
+}
+
+function applyCursorPreference(cursor) {
+  document.body.dataset.cursor = cursor === "enhanced" ? "enhanced" : "normal";
 }
 
 function setupSidebar() {
@@ -186,10 +219,12 @@ Object.assign(window, {
   loadSavedTheme,
   setupThemeToggle,
   applyTheme,
+  resolveThemeMode,
   loadInterfacePreferences,
   applyAccent,
   applyDensity,
   applyMotionPreference,
+  applyCursorPreference,
   setupSidebar,
   openSidebar,
   closeSidebar,
