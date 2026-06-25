@@ -338,7 +338,7 @@ $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
 
       <!-- Observação: este fechamento já existia no arquivo original.
            Revise a hierarquia das sections se o layout desta área ficar desalinhado. -->
-      </section>
+
 
       <!-- Grid com lista de categorias e atalhos principais -->
       <section class="content-grid">
