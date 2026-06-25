@@ -266,7 +266,7 @@ $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
           </div>
 
           <div>
-            <span>Portal institucional</span>
+            <span>Site Oficial TiTechSolutions</span>
             <strong>Ir para o nosso site</strong>
             <p>Conhe&ccedil;a as solu&ccedil;&otilde;es no nosso site oficial da TI TECH.</p>
           </div>
@@ -335,11 +335,6 @@ $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
           <canvas id="stockEvolutionChart" aria-label="Gr&aacute;fico evolutivo dos itens em estoque"></canvas>
         </div>
       </section>
-
-      <!-- Observação: este fechamento já existia no arquivo original.
-           Revise a hierarquia das sections se o layout desta área ficar desalinhado. -->
-
-
       <!-- Grid com lista de categorias e atalhos principais -->
       <section class="content-grid">
 
