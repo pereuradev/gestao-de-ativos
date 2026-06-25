@@ -236,7 +236,7 @@ try {
       <section class="metrics-grid" aria-label="Resumo das marcas">
         <article class="metric-card">
           <div class="metric-icon">
-            <i class="bi bi-building-fill"></i>
+          <i class="bi bi-tags-fill"></i>
           </div>
 
           <div>
