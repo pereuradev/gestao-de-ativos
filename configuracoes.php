@@ -1,19 +1,31 @@
 <?php
 
+// Esta página concentra as configurações do usuário logado.
+// Primeiro validamos a sessão, depois buscamos os dados no banco
+// e, por fim, usamos essas informações para montar a interface.
+
 declare(strict_types=1);
 
+// Inicia a sessão para conseguir acessar os dados do usuário autenticado.
 session_start();
 
+// Se não existir usuário válido na sessão, não deixa acessar a página direto pela URL.
+// Nesse caso, o usuário é mandado de volta para a tela de login.
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     header("Location: Pagina-login.html?sessao=expirada");
     exit;
 }
 
+// Atalho para escapar textos antes de jogar no HTML.
+// Isso evita que algum valor vindo do banco ou da sessão quebre a página
+// ou abra brecha para injeção de código no navegador.
 function e(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
 }
 
+// Busca um campo dentro do perfil e devolve um valor padrão quando ele está vazio.
+// Ajuda a evitar vários ifs espalhados no HTML só para mostrar "--".
 function campoPerfil(array $perfil, string $campo, string $padrao = "--"): string
 {
     $valor = trim((string)($perfil[$campo] ?? ""));
@@ -21,6 +33,8 @@ function campoPerfil(array $perfil, string $campo, string $padrao = "--"): strin
     return $valor !== "" ? $valor : $padrao;
 }
 
+// Formata datas vindas do banco para o padrão brasileiro.
+// Se a data vier inválida, a tela continua funcionando e mostra apenas "--".
 function formatarDataPerfil(?string $value): string
 {
     if (!$value) {
@@ -36,6 +50,8 @@ function formatarDataPerfil(?string $value): string
     }
 }
 
+// Monta as iniciais do usuário para usar no avatar do crachá digital.
+// Exemplo: "Pietro Pereira" vira "PP".
 function iniciaisUsuario(string $nome): string
 {
     $partes = preg_split("/\s+/", trim($nome)) ?: [];
@@ -56,6 +72,8 @@ function iniciaisUsuario(string $nome): string
     return $iniciais !== "" ? $iniciais : "TT";
 }
 
+// Converte o status do usuário em uma classe CSS.
+// Assim o PHP decide o estado e o CSS cuida do visual.
 function statusClasseConfiguracao(string $status): string
 {
     $statusNormalizado = strtolower(trim($status));
@@ -71,13 +89,19 @@ function statusClasseConfiguracao(string $status): string
     return "status-neutral";
 }
 
+// Começamos usando os dados que já estão salvos na sessão.
+// Se o banco responder, esses dados serão complementados logo abaixo.
 $usuario = $_SESSION["usuario"];
 $perfil = $usuario;
 $erroBanco = "";
 
 try {
+    // Carrega a conexão com o banco.
+    // O __DIR__ evita problema de caminho quando o arquivo é chamado de lugares diferentes.
     require __DIR__ . "/Backend/Conexao.php";
 
+    // Consulta os dados completos do usuário no Supabase/PostgreSQL.
+    // A busca usa id ou email para funcionar mesmo se algum desses dados estiver ausente na sessão.
     $stmt = $pdo->prepare("
         select
             id,
@@ -99,6 +123,7 @@ try {
          limit 1
     ");
 
+    // Os valores são enviados separados da SQL para evitar SQL Injection.
     $stmt->execute([
         ":id" => (string)($usuario["id"] ?? ""),
         ":email" => (string)($usuario["email"] ?? ""),
@@ -106,13 +131,19 @@ try {
 
     $perfilBanco = $stmt->fetch();
 
+    // Se encontrou o usuário no banco, junta os dados da sessão com os dados mais completos.
+    // O banco fica com prioridade quando houver campos repetidos.
     if (is_array($perfilBanco)) {
         $perfil = array_merge($usuario, $perfilBanco);
     }
 } catch (Throwable) {
+    // Não travamos a página se o banco falhar.
+    // A tela ainda abre com os dados da sessão e mostra um aviso discreto ao usuário.
     $erroBanco = "Nao foi possivel carregar todos os dados do banco. Mostrando informacoes da sessao.";
 }
 
+// A partir daqui, os dados são tratados para exibição.
+// Separar essa preparação do HTML deixa a tela mais organizada.
 $nomeUsuarioTexto = campoPerfil($perfil, "nome_completo", "Usuario TI TECH");
 $tipoUsuarioTexto = campoPerfil($perfil, "tipo_usuario", "Colaborador");
 $emailUsuarioTexto = campoPerfil($perfil, "email");
@@ -128,6 +159,8 @@ $ultimoAcesso = date("d/m/Y H:i");
 $codigoInterno = "TT-USER-" . str_pad(substr(preg_replace("/\D/", "", (string)($perfil["id"] ?? "")), 0, 3) ?: "001", 3, "0", STR_PAD_LEFT);
 $isAdministrador = strtolower($tipoUsuarioTexto) === "administrador";
 
+// Todos os valores que vão aparecer na página são escapados antes de entrar no HTML.
+// É uma camada simples, mas importante, de segurança na renderização.
 $nomeUsuario = e($nomeUsuarioTexto);
 $tipoUsuario = e($tipoUsuarioTexto);
 $emailUsuario = e($emailUsuarioTexto);
@@ -141,6 +174,8 @@ $iniciais = e(iniciaisUsuario($nomeUsuarioTexto));
 $statusClasse = e(statusClasseConfiguracao($statusUsuarioTexto));
 $codigoInternoEscapado = e($codigoInterno);
 
+// Lista de permissões exibida na tela.
+// Algumas ações dependem do perfil administrador, outras ficam disponíveis para qualquer usuário logado.
 $permissoes = [
     ["label" => "Cadastrar funcionários", "allowed" => $isAdministrador],
     ["label" => "Editar ativos", "allowed" => true],
@@ -149,6 +184,8 @@ $permissoes = [
     ["label" => "Gerenciar usuários", "allowed" => $isAdministrador],
 ];
 
+// Histórico usado na linha do tempo da página.
+// Alguns itens ainda são exemplos visuais até existir uma tabela real de auditoria/eventos.
 $atividades = [
     ["icon" => "bi-box-arrow-in-right", "title" => "Login realizado", "text" => "Acesso validado no portal interno.", "time" => $ultimoAcesso],
     ["icon" => "bi-sliders", "title" => "Preferências alteradas", "text" => "Configurações visuais salvas neste navegador.", "time" => "Hoje"],
@@ -160,22 +197,30 @@ $atividades = [
 <html lang="pt-BR">
 
 <head>
+  <!-- Configurações básicas da página e responsividade. -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <title>Configura&ccedil;&otilde;es | TI TECH Solutions</title>
   <meta name="description" content="Painel de configura&ccedil;&otilde;es de conta, seguran&ccedil;a e prefer&ecirc;ncias do portal TI TECH Solutions" />
+  <!-- Ícone da aba do navegador. -->
   <link rel="icon" type="image/png" href="assets/favicon.png" />
+
+  <!-- Pré-conexão e fonte principal usada na interface. -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
+
+  <!-- CSS separado por responsabilidade: base do sistema, efeitos gerais e ajustes específicos desta página. -->
   <link rel="stylesheet" href="css/pagina-base.css?v=20260624-settings-panel" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260624-focus-fix" />
   <link rel="stylesheet" href="css/configuracoes.css?v=20260624-settings-panel" />
 
+
+  <!-- Scripts carregados com defer para não bloquear a montagem do HTML. -->
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
   <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
   <script src="js/app-base.js?v=20260624-settings-panel" defer></script>
@@ -183,8 +228,11 @@ $atividades = [
 </head>
 
 <body class="theme-dark page-loading">
+  <!-- Estrutura principal da aplicação: menu lateral + área de conteúdo. -->
   <div class="app-shell">
+    <!-- Menu lateral usado para navegar entre as áreas do sistema. -->
     <aside class="sidebar" id="sidebar">
+      <!-- Cabeçalho do menu com logo e botão de fechar no mobile. -->
       <div class="sidebar-header">
         <a href="https://www.titechsolutions.com.br/" class="brand-area" aria-label="Acessar site da TI TECH Solutions">
           <img class="brand-logo" src="assets/logo-branca.png" alt="TI TECH Solutions" />
@@ -195,6 +243,7 @@ $atividades = [
         </button>
       </div>
 
+      <!-- Links principais do sistema. O aria-label ajuda leitores de tela a entenderem a navegação. -->
       <nav class="sidebar-nav" aria-label="Menu principal">
         <a class="nav-link" href="pagina-inicial.php">
           <i class="bi bi-speedometer2"></i>
@@ -216,6 +265,7 @@ $atividades = [
           <span>Localiza&ccedil;&otilde;es</span>
         </a>
 
+        <!-- Grupo recolhível para evitar que o menu fique grande demais. -->
         <div class="nav-group" data-nav-group>
           <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="registrationSubmenu">
             <i class="bi bi-folder-plus"></i>
@@ -230,6 +280,7 @@ $atividades = [
           </div>
         </div>
 
+        <!-- Segundo grupo recolhível, agora para telas de edição. -->
         <div class="nav-group" data-nav-group>
           <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="editingSubmenu">
             <i class="bi bi-pencil-square"></i>
@@ -255,6 +306,7 @@ $atividades = [
         </a>
       </nav>
 
+      <!-- Rodapé do menu com resumo do usuário logado e botão de logout. -->
       <div class="sidebar-footer">
         <div class="sidebar-summary">
           <span><?php echo $tipoUsuario; ?></span>
@@ -268,9 +320,12 @@ $atividades = [
       </div>
     </aside>
 
+    <!-- Camada escura usada quando o menu lateral abre em telas menores. -->
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
+    <!-- Conteúdo principal da página. O data-user-role permite que o JavaScript/CSS adaptem comportamentos pelo cargo. -->
     <main class="main-area settings-page" data-user-role="<?php echo e(strtolower($tipoUsuarioTexto)); ?>">
+      <!-- Barra superior com título da página e atalho para alternar tema. -->
       <header class="topbar">
         <div class="topbar-left">
           <button class="icon-button menu-button" id="openSidebar" type="button" aria-label="Abrir menu">
@@ -293,6 +348,7 @@ $atividades = [
         </div>
       </header>
 
+      <!-- Bloco de apresentação da página, dando contexto ao usuário sobre o que ele pode configurar. -->
       <section class="hero-panel settings-hero" aria-labelledby="settingsTitle">
         <div class="hero-content">
           <p class="section-tag">Central do usu&aacute;rio</p>
@@ -311,13 +367,16 @@ $atividades = [
         </div>
       </section>
 
+      <!-- Aviso exibido somente quando a consulta ao banco falha. -->
       <?php if ($erroBanco !== "") : ?>
         <div class="dashboard-status error-status" role="status">
           <?php echo e($erroBanco); ?>
         </div>
       <?php endif; ?>
 
+      <!-- Resumo rápido da conta antes das configurações detalhadas. -->
       <section class="settings-overview" aria-label="Resumo das configura&ccedil;&otilde;es">
+        <!-- Crachá digital com os principais dados do usuário logado. -->
         <article class="content-card digital-badge-card" id="conta">
           <div class="badge-topline">
             <span>Cracha digital</span>
@@ -352,6 +411,7 @@ $atividades = [
           </div>
         </article>
 
+        <!-- Índice interno para o usuário pular direto para uma seção da página. -->
         <aside class="content-card settings-index" aria-label="Se&ccedil;&otilde;es da p&aacute;gina">
           <p class="section-tag">Se&ccedil;&otilde;es</p>
           <nav class="settings-section-nav">
@@ -365,7 +425,9 @@ $atividades = [
         </aside>
       </section>
 
+      <!-- Grade principal de cards. Cada article representa uma área de configuração. -->
       <section class="settings-grid" aria-label="Painel de configura&ccedil;&otilde;es">
+        <!-- Dados operacionais do perfil, exibidos de forma somente leitura. -->
         <article class="content-card profile-card" aria-labelledby="profileTitle">
           <div class="card-header">
             <div>
@@ -387,6 +449,7 @@ $atividades = [
           </div>
         </article>
 
+        <!-- Preferências visuais salvas pelo JavaScript, como tema, cor e densidade da interface. -->
         <article class="content-card preferences-card" id="interface" aria-labelledby="interfaceTitle">
           <div class="card-header">
             <div>
@@ -400,6 +463,7 @@ $atividades = [
           </div>
 
           <form class="preferences-form" id="preferencesForm">
+            <!-- Cores de destaque da interface. O JS lê o radio selecionado e aplica a classe/variável correspondente. -->
             <fieldset class="preference-group">
               <legend>Prefer&ecirc;ncia de cor</legend>
               <div class="accent-options" role="radiogroup" aria-label="Prefer&ecirc;ncia de cor">
@@ -410,6 +474,7 @@ $atividades = [
               </div>
             </fieldset>
 
+            <!-- Escolha do tema visual: escuro, claro ou automático pelo sistema. -->
             <fieldset class="preference-group">
               <legend>Modo de tela</legend>
               <div class="segmented-control three-options" role="radiogroup" aria-label="Modo de tela">
@@ -419,6 +484,7 @@ $atividades = [
               </div>
             </fieldset>
 
+            <!-- Ajustes finos de experiência para adaptar a tela ao jeito de trabalho do usuário. -->
             <fieldset class="preference-group">
               <legend>Ajustes de UX</legend>
               <div class="toggle-list">
@@ -445,6 +511,7 @@ $atividades = [
           <div class="form-message success" id="preferencesMessage" role="status"></div>
         </article>
 
+        <!-- Área de segurança. A validação visual da senha fica no JS; a troca real precisa ser feita no backend. -->
         <article class="content-card security-card wide-card" id="seguranca" aria-labelledby="securityTitle">
           <div class="card-header">
             <div>
@@ -458,6 +525,7 @@ $atividades = [
           </div>
 
           <div class="security-layout">
+            <!-- Formulário de senha preparado para receber integração real depois. -->
             <form class="password-form" id="passwordForm">
               <label class="asset-field">
                 <span>Senha atual</span>
@@ -491,6 +559,7 @@ $atividades = [
               </button>
             </form>
 
+            <!-- Ações de segurança que funcionam como atalhos visuais para recursos futuros. -->
             <div class="security-actions">
               <article class="action-tile">
                 <i class="bi bi-phone-lock"></i>
@@ -511,6 +580,7 @@ $atividades = [
           </div>
         </article>
 
+        <!-- Preferências de alertas. Os data-setting facilitam salvar cada opção no localStorage ou no banco depois. -->
         <article class="content-card notifications-card" id="notificacoes" aria-labelledby="notificationsTitle">
           <div class="card-header">
             <div>
@@ -529,6 +599,7 @@ $atividades = [
           </div>
         </article>
 
+        <!-- Preferências de navegação para ajustar o dashboard ao fluxo de trabalho do usuário. -->
         <article class="content-card dashboard-card" aria-labelledby="dashboardPrefsTitle">
           <div class="card-header">
             <div>
@@ -559,6 +630,7 @@ $atividades = [
           </div>
         </article>
 
+        <!-- Modo de trabalho: muda a experiência mental do usuário sem precisar trocar de página. -->
         <article class="content-card work-mode-card wide-card" aria-labelledby="workModeTitle">
           <div class="card-header">
             <div>
@@ -574,6 +646,7 @@ $atividades = [
           </div>
         </article>
 
+        <!-- Lista de permissões calculada no PHP a partir do tipo de usuário. -->
         <article class="content-card permissions-card" id="permissoes" aria-labelledby="permissionsTitle">
           <div class="card-header">
             <div>
@@ -582,6 +655,7 @@ $atividades = [
             </div>
           </div>
           <div class="permission-list">
+            <!-- Cada permissão ganha classe visual diferente: permitido ou bloqueado. -->
             <?php foreach ($permissoes as $permissao) : ?>
               <div class="permission-item <?php echo $permissao["allowed"] ? "allowed" : "blocked"; ?>">
                 <span><i class="bi <?php echo $permissao["allowed"] ? "bi-check-circle-fill" : "bi-lock-fill"; ?>"></i><?php echo e($permissao["label"]); ?></span>
@@ -591,6 +665,7 @@ $atividades = [
           </div>
         </article>
 
+        <!-- Linha do tempo do usuário. Hoje mistura eventos reais da sessão com itens mockados para layout. -->
         <article class="content-card activity-card" aria-labelledby="activityTitle">
           <div class="card-header">
             <div>
@@ -599,6 +674,7 @@ $atividades = [
             </div>
           </div>
           <ol class="activity-timeline">
+            <!-- Renderiza os eventos da linha do tempo definidos no array $atividades. -->
             <?php foreach ($atividades as $atividade) : ?>
               <li>
                 <i class="bi <?php echo e($atividade["icon"]); ?>"></i>
@@ -612,6 +688,7 @@ $atividades = [
           </ol>
         </article>
 
+        <!-- Diagnóstico do ambiente do usuário. Os dados com id são preenchidos pelo JavaScript no navegador. -->
         <article class="content-card diagnostics-card wide-card" id="sistema" aria-labelledby="systemTitle">
           <div class="card-header">
             <div>
@@ -635,6 +712,7 @@ $atividades = [
         </article>
       </section>
 
+      <!-- Toast usado para mensagens rápidas sem interromper a navegação. -->
       <div class="settings-toast" id="settingsToast" role="status" aria-live="polite"></div>
     </main>
   </div>
