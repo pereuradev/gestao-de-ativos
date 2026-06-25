@@ -112,7 +112,16 @@ $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
           <span>Funcion&aacute;rios</span>
         </a>
 
-        <!-- Grupo expansÃ­vel de cadastros -->
+        <a class="nav-link" href="marcas-visualizacao.php">
+          <i class="bi bi-tags-fill"></i>
+          <span>Marcas</span>
+        </a>
+        <a class="nav-link" href="locais-visualizacao.php">
+          <i class="bi bi-geo-alt-fill"></i>
+          <span>Localiza&ccedil;&otilde;es</span>
+        </a>
+
+<!-- Grupo expansÃ­vel de cadastros -->
         <div class="nav-group" data-nav-group>
           <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="registrationSubmenu">
             <i class="bi bi-folder-plus"></i>
@@ -138,6 +147,7 @@ $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
           <div class="nav-submenu" id="editingSubmenu">
             <a href="edicao-ativos.php">Ativos</a>
             <a href="edicao-marcas.php">Marcas</a>
+            <a href="edicao-locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>
 

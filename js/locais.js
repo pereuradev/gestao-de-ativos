@@ -127,8 +127,25 @@ function setLocationMessage(message, type) {
 function setupLocationFilters() {
   document.getElementById("locationSearch")?.addEventListener("input", filterLocations);
   document.getElementById("locationStatusFilter")?.addEventListener("change", filterLocations);
+  document.getElementById("clearLocationFilters")?.addEventListener("click", clearLocationFilters);
 
   filterLocations();
+}
+
+function clearLocationFilters() {
+  const search = document.getElementById("locationSearch");
+  const status = document.getElementById("locationStatusFilter");
+
+  if (search) {
+    search.value = "";
+  }
+
+  if (status) {
+    status.value = "todos";
+  }
+
+  filterLocations();
+  search?.focus();
 }
 
 function filterLocations() {

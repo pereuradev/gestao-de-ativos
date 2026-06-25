@@ -5,87 +5,92 @@ declare(strict_types=1);
 session_start();
 
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
-    header("Location: Pagina-login.html?sessao=expirada");
-    exit;
+  header("Location: Pagina-login.html?sessao=expirada");
+  exit;
 }
 
 if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {
-    $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+  $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
 }
 
 function e(string $value): string
 {
-    return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
+  return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
 }
 
-function formatarDataMarca(?string $value): string
+function formatarDataLocal(?string $value): string
 {
-    if (!$value) {
-        return "--";
-    }
+  if (!$value) {
+    return "--";
+  }
 
-    try {
-        return (new DateTimeImmutable($value))
-            ->setTimezone(new DateTimeZone("America/Sao_Paulo"))
-            ->format("d/m/Y H:i");
-    } catch (Throwable) {
-        return "--";
-    }
+  try {
+    return (new DateTimeImmutable($value))
+      ->setTimezone(new DateTimeZone("America/Sao_Paulo"))
+      ->format("d/m/Y H:i");
+  } catch (Throwable) {
+    return "--";
+  }
 }
 
-$usuario = $_SESSION["usuario"];
-$nomeUsuario = e((string)($usuario["nome_completo"] ?? "Usuario"));
-$tipoUsuario = e((string)($usuario["tipo_usuario"] ?? ""));
-$csrfToken = e((string)$_SESSION["csrf_token"]);
-
-$marcas = [];
-$totalMarcas = 0;
-$marcasAtivas = 0;
-$marcasInativas = 0;
-$erroBanco = "";
-
-try {
-    require __DIR__ . "/Backend/Conexao.php";
-
-    $pdo->exec("
-        create table if not exists public.marcas_ativos (
+function garantirTabelaLocais(PDO $pdo): void
+{
+  $pdo->exec("
+        create table if not exists public.locais (
             id uuid primary key default gen_random_uuid(),
-            nome text not null unique,
-            status text not null default 'Ativa'
-                check (status in ('Ativa', 'Inativa')),
+            nome text not null,
+            endereco text,
+            status text not null default 'Ativo',
             criado_em timestamptz not null default now(),
             atualizado_em timestamptz not null default now()
         )
     ");
 
-    $pdo->exec("
-        create unique index if not exists marcas_ativos_nome_lower_unique
-            on public.marcas_ativos (lower(nome))
-    ");
+  $pdo->exec("alter table public.locais add column if not exists endereco text");
+  $pdo->exec("alter table public.locais add column if not exists status text not null default 'Ativo'");
+  $pdo->exec("alter table public.locais add column if not exists criado_em timestamptz not null default now()");
+  $pdo->exec("alter table public.locais add column if not exists atualizado_em timestamptz not null default now()");
+}
 
-    $resumoStmt = $pdo->prepare("
+$usuario = $_SESSION["usuario"];
+$nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
+$tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
+$csrfToken = e((string) $_SESSION["csrf_token"]);
+
+$locais = [];
+$totalLocais = 0;
+$locaisAtivos = 0;
+$locaisInativos = 0;
+$erroBanco = "";
+
+try {
+  require __DIR__ . "/Backend/Conexao.php";
+
+  garantirTabelaLocais($pdo);
+
+  $resumoStmt = $pdo->prepare("
         select
             count(*)::int as total,
-            count(*) filter (where status = 'Ativa')::int as ativas,
-            count(*) filter (where status = 'Inativa')::int as inativas
-          from public.marcas_ativos
+            count(*) filter (where status = 'Ativo')::int as ativos,
+            count(*) filter (where status = 'Inativo')::int as inativos
+          from public.locais
     ");
-    $resumoStmt->execute();
-    $resumo = $resumoStmt->fetch() ?: [];
+  $resumoStmt->execute();
+  $resumo = $resumoStmt->fetch() ?: [];
 
-    $totalMarcas = (int)($resumo["total"] ?? 0);
-    $marcasAtivas = (int)($resumo["ativas"] ?? 0);
-    $marcasInativas = (int)($resumo["inativas"] ?? 0);
+  $totalLocais = (int) ($resumo["total"] ?? 0);
+  $locaisAtivos = (int) ($resumo["ativos"] ?? 0);
+  $locaisInativos = (int) ($resumo["inativos"] ?? 0);
 
-    $marcasStmt = $pdo->prepare("
-        select id, nome, status, criado_em, atualizado_em
-          from public.marcas_ativos
+  $locaisStmt = $pdo->prepare("
+        select id, nome, endereco, status, criado_em, atualizado_em
+          from public.locais
       order by nome asc
     ");
-    $marcasStmt->execute();
-    $marcas = $marcasStmt->fetchAll();
+  $locaisStmt->execute();
+  $locais = $locaisStmt->fetchAll();
 } catch (Throwable) {
-    $erroBanco = "Nao foi possivel carregar as marcas do banco agora.";
+  $erroBanco = "Nao foi possivel carregar os locais do banco agora.";
 }
 ?>
 <!doctype html>
@@ -96,8 +101,8 @@ try {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="csrf-token" content="<?php echo $csrfToken; ?>" />
 
-  <title>Edi&ccedil;&atilde;o de marcas | TI TECH Solutions</title>
-  <meta name="description" content="Tabela para alterar ou excluir marcas de ativos da TI TECH Solutions" />
+  <title>Edi&ccedil;&atilde;o de localiza&ccedil;&otilde;es | TI TECH Solutions</title>
+  <meta name="description" content="Tabela para alterar ou excluir localizacoes de ativos da TI TECH Solutions" />
   <link rel="icon" type="image/png" href="assets/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -106,13 +111,14 @@ try {
 
   <link rel="stylesheet" href="css/pagina-base.css?v=20260625-brand-hero" />
   <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260619-select-options" />
-  <link rel="stylesheet" href="css/edicao-marcas.css?v=20260619-brand-status-actions" />
+  <link rel="stylesheet" href="css/locais.css?v=20260625-view-page" />
+  <link rel="stylesheet" href="css/edicao-locais.css?v=20260625-location-edit" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260624-focus-fix" />
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
   <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
   <script src="js/app-base.js?v=20260624-common-ui" defer></script>
-  <script src="js/edicao-marcas.js?v=20260624-common-ui" defer></script>
+  <script src="js/edicao-locais.js?v=20260625-location-edit" defer></script>
 </head>
 
 <body class="theme-dark page-loading">
@@ -172,8 +178,8 @@ try {
 
           <div class="nav-submenu" id="editingSubmenu">
             <a href="edicao-ativos.php">Ativos</a>
-            <a class="active-submenu" href="edicao-marcas.php">Marcas</a>
-            <a href="edicao-locais.php">Localiza&ccedil;&otilde;es</a>
+            <a href="edicao-marcas.php">Marcas</a>
+            <a class="active-submenu" href="edicao-locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>
 
@@ -213,15 +219,15 @@ try {
           <div>
             <p class="eyebrow">Edi&ccedil;&atilde;o</p>
             <h1>
-              <span class="typewriter-heading" style="--typewriter-min: 18ch">Edi&ccedil;&atilde;o de marcas</span><span aria-hidden="true"></span>
+              <span class="typewriter-heading" style="--typewriter-min: 26ch">Edi&ccedil;&atilde;o de localiza&ccedil;&otilde;es</span><span aria-hidden="true"></span>
             </h1>
           </div>
         </div>
 
         <div class="topbar-actions">
-          <a class="secondary-button compact-button" href="marcas.php">
+          <a class="secondary-button compact-button" href="locais.php">
             <i class="bi bi-plus-circle"></i>
-            Nova marca
+            Nova localiza&ccedil;&atilde;o
           </a>
 
           <button class="theme-toggle" id="themeToggle" type="button">
@@ -231,28 +237,28 @@ try {
         </div>
       </header>
 
-      <section class="hero-panel compact-hero brand-partners-hero" aria-labelledby="brandEditTitle">
+      <section class="hero-panel compact-hero locations-hero" aria-labelledby="locationEditTitle">
         <div class="hero-content">
-          <h2 id="brandEditTitle">
-            <span class="typewriter-heading" style="--typewriter-min: 23ch" data-typewriter-loop
-              data-typewriter-phrases="Tabela de marcas.|Altere dados com seguranca.|Exclua registros duplicados.">Tabela de marcas.</span><span aria-hidden="true"></span>
+          <h2 id="locationEditTitle">
+            <span class="typewriter-heading" style="--typewriter-min: 26ch" data-typewriter-loop
+              data-typewriter-phrases="Tabela de localiza&ccedil;&otilde;es.|Altere endere&ccedil;os com seguran&ccedil;a.|Organize setores e unidades.">Tabela de localiza&ccedil;&otilde;es.</span><span aria-hidden="true"></span>
           </h2>
           <p>
-            Consulte as marcas cadastradas, altere nome ou status e remova registros que n&atilde;o devem aparecer
-            no cadastro de ativos.
+            Consulte as localiza&ccedil;&otilde;es cadastradas, altere nome, refer&ecirc;ncia ou status
+            e remova registros que n&atilde;o devem aparecer no cadastro de ativos.
           </p>
         </div>
       </section>
 
-      <section class="metrics-grid" aria-label="Resumo das marcas">
+      <section class="metrics-grid" aria-label="Resumo das localizacoes">
         <article class="metric-card">
           <div class="metric-icon">
-            <i class="bi bi-building-fill"></i>
+            <i class="bi bi-geo-alt-fill"></i>
           </div>
 
           <div>
-            <span>Total de marcas</span>
-            <strong id="totalBrandsMetric"><?php echo e((string)$totalMarcas); ?></strong>
+            <span>Total de locais</span>
+            <strong id="totalLocationsMetric"><?php echo e((string) $totalLocais); ?></strong>
           </div>
         </article>
 
@@ -262,8 +268,8 @@ try {
           </div>
 
           <div>
-            <span>Ativas</span>
-            <strong id="activeBrandsMetric"><?php echo e((string)$marcasAtivas); ?></strong>
+            <span>Ativos</span>
+            <strong id="activeLocationsMetric"><?php echo e((string) $locaisAtivos); ?></strong>
           </div>
         </article>
 
@@ -273,8 +279,8 @@ try {
           </div>
 
           <div>
-            <span>Inativas</span>
-            <strong id="inactiveBrandsMetric"><?php echo e((string)$marcasInativas); ?></strong>
+            <span>Inativos</span>
+            <strong id="inactiveLocationsMetric"><?php echo e((string) $locaisInativos); ?></strong>
           </div>
         </article>
       </section>
@@ -285,74 +291,80 @@ try {
         </div>
       <?php endif; ?>
 
-      <section class="content-card records-card brand-edit-card" aria-label="Tabela de edicao de marcas">
+      <section class="content-card records-card location-edit-card" aria-label="Tabela de edicao de localizacoes">
         <div class="card-header records-header">
           <div>
             <p class="section-tag">Banco de dados</p>
-            <h3>Marcas cadastradas</h3>
+            <h3>Localiza&ccedil;&otilde;es cadastradas</h3>
           </div>
 
           <div class="records-actions">
-            <span id="brandResultCount"><?php echo e((string)count($marcas)); ?> registros</span>
-            <select id="brandStatusFilter" aria-label="Filtrar marcas por status">
+            <span id="locationResultCount"><?php echo e((string) count($locais)); ?> registros</span>
+            <select id="locationStatusFilter" aria-label="Filtrar localizacoes por status">
               <option value="todos">Todos</option>
-              <option value="ativa">Ativas</option>
-              <option value="inativa">Inativas</option>
+              <option value="ativo">Ativos</option>
+              <option value="inativo">Inativos</option>
             </select>
           </div>
         </div>
 
-        <div id="brandPageMessage" class="brand-page-message" role="status" aria-live="polite"></div>
+        <div id="locationPageMessage" class="location-page-message" role="status" aria-live="polite"></div>
 
-        <div class="brand-edit-toolbar">
-          <div class="search-box brand-edit-search">
+        <div class="location-edit-toolbar">
+          <div class="search-box location-edit-search">
             <i class="bi bi-search"></i>
-            <input id="brandSearch" type="search" placeholder="Buscar marca" aria-label="Buscar marca"
-              autocomplete="off" />
+            <input id="locationSearch" type="search" placeholder="Buscar local ou refer&ecirc;ncia"
+              aria-label="Buscar local ou refer&ecirc;ncia" autocomplete="off" />
           </div>
         </div>
 
         <div class="records-table-wrap">
-          <table class="records-table brand-edit-table">
+          <table class="records-table location-edit-table">
             <thead>
               <tr>
-                <th>Marca</th>
+                <th>Local</th>
                 <th>Status</th>
-                <th>Criada em</th>
-                <th>Atualizada em</th>
+                <th>Criado em</th>
+                <th>Atualizado em</th>
                 <th>A&ccedil;&otilde;es</th>
               </tr>
             </thead>
-            <tbody id="brandTableBody">
-              <?php foreach ($marcas as $marca): ?>
+            <tbody id="locationTableBody">
+              <?php foreach ($locais as $local): ?>
                 <?php
-                $id = (string)($marca["id"] ?? "");
-                $nome = (string)($marca["nome"] ?? "");
-                $status = (string)($marca["status"] ?? "");
+                $id = (string) ($local["id"] ?? "");
+                $nome = (string) ($local["nome"] ?? "");
+                $endereco = (string) ($local["endereco"] ?? "");
+                $status = (string) ($local["status"] ?? "Ativo");
+                $search = strtolower(trim($nome . " " . $endereco));
                 ?>
-                <tr class="registration-row brand-row"
+                <tr class="registration-row location-row"
                   data-id="<?php echo e($id); ?>"
                   data-name="<?php echo e($nome); ?>"
+                  data-address="<?php echo e($endereco); ?>"
                   data-status="<?php echo e(strtolower($status)); ?>"
                   data-status-raw="<?php echo e($status); ?>"
-                  data-search="<?php echo e(strtolower($nome)); ?>">
-                  <td data-label="Marca">
-                    <strong data-brand-name><?php echo e($nome); ?></strong>
+                  data-search="<?php echo e($search); ?>">
+                  <td data-label="Local">
+                    <strong data-location-name><?php echo e($nome); ?></strong>
+                    <span class="location-address" data-location-address>
+                      <?php echo e($endereco !== "" ? $endereco : "Sem referencia informada"); ?>
+                    </span>
                   </td>
                   <td data-label="Status">
-                    <span data-brand-status class="status-badge <?php echo $status === "Ativa" ? "status-active" : "status-inactive"; ?>">
+                    <span data-location-status class="status-badge <?php echo $status === "Ativo" ? "status-active" : "status-inactive"; ?>">
                       <?php echo e($status); ?>
                     </span>
                   </td>
-                  <td data-label="Criada em"><?php echo e(formatarDataMarca((string)($marca["criado_em"] ?? ""))); ?></td>
-                  <td data-label="Atualizada em" data-brand-updated><?php echo e(formatarDataMarca((string)($marca["atualizado_em"] ?? ""))); ?></td>
-                  <td data-label="A&ccedil;&otilde;es" class="brand-actions-cell">
+                  <td data-label="Criado em"><?php echo e(formatarDataLocal((string) ($local["criado_em"] ?? ""))); ?></td>
+                  <td data-label="Atualizado em" data-location-updated><?php echo e(formatarDataLocal((string) ($local["atualizado_em"] ?? ""))); ?></td>
+                  <td data-label="A&ccedil;&otilde;es" class="location-actions-cell">
                     <div class="row-actions">
-                      <button class="table-action edit-brand-button" type="button" data-brand-action="edit">
+                      <button class="table-action edit-location-button" type="button" data-location-action="edit">
                         <i class="bi bi-pencil-square"></i>
                         <span>Alterar</span>
                       </button>
-                      <button class="table-action delete-brand-button" type="button" data-brand-action="delete">
+                      <button class="table-action delete-location-button" type="button" data-location-action="delete">
                         <i class="bi bi-trash3"></i>
                         <span>Excluir</span>
                       </button>
@@ -364,20 +376,20 @@ try {
           </table>
         </div>
 
-        <div id="brandEmptyState" class="empty-state records-empty" <?php echo $marcas ? "hidden" : ""; ?>>
+        <div id="locationEmptyState" class="empty-state records-empty" <?php echo $locais ? "hidden" : ""; ?>>
           <i class="bi bi-info-circle"></i>
-          <span>Nenhuma marca encontrada.</span>
+          <span>Nenhuma localiza&ccedil;&atilde;o encontrada.</span>
         </div>
       </section>
     </main>
   </div>
 
-  <div class="edit-modal-backdrop" id="brandEditModal" hidden>
-    <section class="edit-modal-card" role="dialog" aria-modal="true" aria-labelledby="brandEditModalTitle">
+  <div class="edit-modal-backdrop" id="locationEditModal" hidden>
+    <section class="edit-modal-card" role="dialog" aria-modal="true" aria-labelledby="locationEditModalTitle">
       <div class="edit-modal-header">
         <div>
-          <p class="section-tag">Alterar marca</p>
-          <h3 id="brandEditModalTitle">Dados da marca</h3>
+          <p class="section-tag">Alterar localiza&ccedil;&atilde;o</p>
+          <h3 id="locationEditModalTitle">Dados do local</h3>
         </div>
 
         <button class="icon-button modal-close-button" type="button" aria-label="Fechar edicao" data-close-edit-modal>
@@ -385,16 +397,16 @@ try {
         </button>
       </div>
 
-      <form id="brandEditForm" class="asset-form enhanced-asset-form" action="Backend/atualizar-marca.php" method="post" novalidate>
-        <input id="editBrandId" type="hidden" name="id" />
+      <form id="locationEditForm" class="asset-form enhanced-asset-form" action="Backend/atualizar-local.php" method="post" novalidate>
+        <input id="editLocationId" type="hidden" name="id" />
         <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
 
-        <div class="asset-form-grid brand-form-grid">
+        <div class="asset-form-grid location-form-grid">
           <label class="asset-field priority-field">
-            <span>Nome da marca <strong>*</strong></span>
+            <span>Nome do local <strong>*</strong></span>
             <div class="input-shell">
-              <i class="bi bi-building"></i>
-              <input id="editBrandName" name="nome" type="text" maxlength="80" autocomplete="off" required />
+              <i class="bi bi-geo-alt"></i>
+              <input id="editLocationName" name="nome" type="text" maxlength="100" autocomplete="off" required />
             </div>
           </label>
 
@@ -402,15 +414,23 @@ try {
             <span>Status <strong>*</strong></span>
             <div class="input-shell select-shell">
               <i class="bi bi-toggle-on"></i>
-              <select id="editBrandStatus" name="status" required>
-                <option value="Ativa">Ativa</option>
-                <option value="Inativa">Inativa</option>
+              <select id="editLocationStatus" name="status" required>
+                <option value="Ativo">Ativo</option>
+                <option value="Inativo">Inativo</option>
               </select>
+            </div>
+          </label>
+
+          <label class="asset-field wide-field">
+            <span>Endere&ccedil;o ou refer&ecirc;ncia</span>
+            <div class="input-shell">
+              <i class="bi bi-signpost-split"></i>
+              <input id="editLocationAddress" name="endereco" type="text" maxlength="160" autocomplete="off" />
             </div>
           </label>
         </div>
 
-        <div id="brandEditMessage" class="form-message" role="status" aria-live="polite"></div>
+        <div id="locationEditMessage" class="form-message" role="status" aria-live="polite"></div>
 
         <div class="asset-form-actions enhanced-form-actions">
           <button class="form-action-button danger-button" type="button" data-close-edit-modal>
@@ -418,7 +438,7 @@ try {
             <span>Cancelar</span>
           </button>
 
-          <button id="saveBrandButton" class="form-action-button success-button" type="submit">
+          <button id="saveLocationButton" class="form-action-button success-button" type="submit">
             <i class="bi bi-check-circle"></i>
             <span>Salvar altera&ccedil;&otilde;es</span>
           </button>
@@ -429,7 +449,3 @@ try {
 </body>
 
 </html>
-
-
-
-

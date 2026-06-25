@@ -9,10 +9,6 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
   exit;
 }
 
-if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {
-  $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
-}
-
 function e(string $value): string
 {
   return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
@@ -36,7 +32,6 @@ function formatarDataMarca(?string $value): string
 $usuario = $_SESSION["usuario"];
 $nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
 $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
-$csrfToken = e((string) $_SESSION["csrf_token"]);
 
 $marcas = [];
 $totalMarcas = 0;
@@ -58,33 +53,22 @@ try {
         )
     ");
 
-  $pdo->exec("
-        create unique index if not exists marcas_ativos_nome_lower_unique
-            on public.marcas_ativos (lower(nome))
-    ");
-
-  $totalStmt = $pdo->prepare("select count(*)::int from public.marcas_ativos");
-  $totalStmt->execute();
-  $totalMarcas = (int) $totalStmt->fetchColumn();
-
-  $ativasStmt = $pdo->prepare("
-        select count(*)::int
+  $resumoStmt = $pdo->prepare("
+        select
+            count(*)::int as total,
+            count(*) filter (where status = 'Ativa')::int as ativas,
+            count(*) filter (where status = 'Inativa')::int as inativas
           from public.marcas_ativos
-         where status = :status
     ");
-  $ativasStmt->execute([":status" => "Ativa"]);
-  $marcasAtivas = (int) $ativasStmt->fetchColumn();
+  $resumoStmt->execute();
+  $resumo = $resumoStmt->fetch() ?: [];
 
-  $inativasStmt = $pdo->prepare("
-        select count(*)::int
-          from public.marcas_ativos
-         where status = :status
-    ");
-  $inativasStmt->execute([":status" => "Inativa"]);
-  $marcasInativas = (int) $inativasStmt->fetchColumn();
+  $totalMarcas = (int) ($resumo["total"] ?? 0);
+  $marcasAtivas = (int) ($resumo["ativas"] ?? 0);
+  $marcasInativas = (int) ($resumo["inativas"] ?? 0);
 
   $marcasStmt = $pdo->prepare("
-        select id, nome, status, criado_em, atualizado_em
+        select id, nome, status, criado_em
           from public.marcas_ativos
       order by nome asc
     ");
@@ -101,8 +85,8 @@ try {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <title>Cadastro de marcas | TI TECH Solutions</title>
-  <meta name="description" content="Cadastro de marcas para padronizar o cadastro de ativos da TI TECH Solutions" />
+  <title>Marcas cadastradas | TI TECH Solutions</title>
+  <meta name="description" content="Visualizacao das marcas cadastradas para ativos da TI TECH Solutions" />
   <link rel="icon" type="image/png" href="assets/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -110,8 +94,7 @@ try {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <link rel="stylesheet" href="css/pagina-base.css?v=20260625-brand-hero" />
-  <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260619-select-options" />
-  <link rel="stylesheet" href="css/marcas.css?v=20260625-view-only" />
+  <link rel="stylesheet" href="css/marcas.css?v=20260625-view-page" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260624-focus-fix" />
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
@@ -144,7 +127,7 @@ try {
           <span>Funcion&aacute;rios</span>
         </a>
 
-        <a class="nav-link" href="marcas-visualizacao.php">
+        <a class="nav-link active" href="marcas-visualizacao.php">
           <i class="bi bi-tags-fill"></i>
           <span>Marcas</span>
         </a>
@@ -154,8 +137,8 @@ try {
           <span>Localiza&ccedil;&otilde;es</span>
         </a>
 
-        <div class="nav-group open" data-nav-group>
-          <button class="nav-link nav-toggle active" type="button" aria-expanded="true"
+        <div class="nav-group" data-nav-group>
+          <button class="nav-link nav-toggle" type="button" aria-expanded="false"
             aria-controls="registrationSubmenu">
             <i class="bi bi-folder-plus"></i>
             <span>Cadastros</span>
@@ -164,7 +147,7 @@ try {
 
           <div class="nav-submenu" id="registrationSubmenu">
             <a href="cadastro-ativos.php">Ativos</a>
-            <a class="active-submenu" href="marcas.php">Marcas</a>
+            <a href="marcas.php">Marcas</a>
             <a href="locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>
@@ -217,18 +200,17 @@ try {
           </button>
 
           <div>
-            <p class="eyebrow">Cadastros</p>
+            <p class="eyebrow">Visualiza&ccedil;&atilde;o</p>
             <h1>
-              <span style="--typewriter-min: 18ch">Cadastro de marcas</span><span 
-                aria-hidden="true"></span>
+              <span class="typewriter-heading" style="--typewriter-min: 18ch">Marcas cadastradas</span><span aria-hidden="true"></span>
             </h1>
           </div>
         </div>
 
         <div class="topbar-actions">
-          <a class="secondary-button compact-button" href="marcas-visualizacao.php">
-            <i class="bi bi-table"></i>
-            Visualizar marcas
+          <a class="secondary-button compact-button" href="marcas.php">
+            <i class="bi bi-plus-circle"></i>
+            Nova marca
           </a>
 
           <button class="theme-toggle" id="themeToggle" type="button">
@@ -238,16 +220,15 @@ try {
         </div>
       </header>
 
-      <section class="hero-panel compact-hero brand-partners-hero" aria-labelledby="brandsRegistrationTitle">
+      <section class="hero-panel compact-hero brand-partners-hero" aria-labelledby="brandsViewTitle">
         <div class="hero-content">
-          <h2 id="brandsRegistrationTitle">
-            <span class="typewriter-heading" style="--typewriter-min: 22ch" data-typewriter-loop
-              data-typewriter-phrases="Marcas padronizadas.|Menos erro no cadastro.|Sele&ccedil;&atilde;o direta nos ativos.">Marcas
-              padronizadas.</span><span aria-hidden="true"></span>
+          <h2 id="brandsViewTitle">
+            <span class="typewriter-heading" style="--typewriter-min: 21ch" data-typewriter-loop
+              data-typewriter-phrases="Consulta de marcas.|Marcas do inventario.|Base padronizada.">Consulta de marcas.</span><span aria-hidden="true"></span>
           </h2>
           <p>
-            Cadastre fabricantes e marcas uma vez para selecionar depois no cadastro de ativos,
-            mantendo os nomes consistentes no banco.
+            Visualize as marcas cadastradas, filtre por status e encontre fabricantes rapidamente
+            para manter o invent&aacute;rio consistente.
           </p>
         </div>
       </section>
@@ -293,65 +274,76 @@ try {
         </div>
       <?php endif; ?>
 
-      <section class="brands-layout" aria-label="Cadastro de marcas">
-        <article class="content-card asset-form-card asset-form-card-enhanced brand-form-card">
-          <div class="card-header asset-card-header">
-            <div>
-              <p class="section-tag">Formul&aacute;rio</p>
-              <h3>Cadastrar marca</h3>
-              <span class="card-subtitle">Use o nome oficial ou mais conhecido da marca. O cadastro bloqueia
-                duplicidades por nome.</span>
-            </div>
+      <section class="content-card records-card asset-view-card brand-view-card" aria-label="Tabela de marcas">
+        <div class="card-header records-header">
+          <div>
+            <p class="section-tag">Visualiza&ccedil;&atilde;o</p>
+            <h3>Marcas cadastradas</h3>
           </div>
 
-          <form id="brandForm" class="asset-form enhanced-asset-form" action="Backend/cadastrar-marca.php" method="post"
-            novalidate>
-            <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
+          <div class="records-actions">
+            <span id="brandResultCount"><?php echo e((string) count($marcas)); ?> registros</span>
+          </div>
+        </div>
 
-            <div class="asset-form-grid brand-form-grid">
-              <label class="asset-field priority-field">
-                <span>Nome da marca <strong>*</strong></span>
-                <div class="input-shell">
-                  <i class="bi bi-building"></i>
-                  <input name="nome" type="text" placeholder="Ex: Zebra, Honeywell, Samsung" maxlength="80"
-                    autocomplete="off" required />
-                </div>
-              </label>
+        <div class="asset-filter-bar brand-filter-bar" aria-label="Filtros das marcas">
+          <div class="search-box brand-search">
+            <i class="bi bi-search"></i>
+            <input id="brandSearch" type="search" placeholder="Buscar marca" aria-label="Buscar marca"
+              autocomplete="off" />
+          </div>
 
-              <label class="asset-field">
-                <span>Status <strong>*</strong></span>
-                <div class="input-shell select-shell">
-                  <i class="bi bi-toggle-on"></i>
-                  <select name="status" required>
-                    <option value="Ativa" selected>Ativa</option>
-                    <option value="Inativa">Inativa</option>
-                  </select>
-                </div>
-              </label>
-            </div>
+          <select id="brandStatusFilter" aria-label="Filtrar marcas por status">
+            <option value="todos">Todos os status</option>
+            <option value="ativa">Ativas</option>
+            <option value="inativa">Inativas</option>
+          </select>
 
-            <div id="brandFormMessage" class="form-message" role="status" aria-live="polite"></div>
+          <button id="clearBrandFilters" class="filter-clear-button" type="button">
+            <i class="bi bi-x-circle"></i>
+            <span>Limpar</span>
+          </button>
+        </div>
 
-            <div class="asset-form-actions enhanced-form-actions">
-              <button class="form-action-button danger-button" type="reset">
-                <i class="bi bi-arrow-counterclockwise"></i>
-                <span>Limpar campos</span>
-              </button>
+        <div class="records-table-wrap brand-table-wrap">
+          <table class="records-table brand-table">
+            <thead>
+              <tr>
+                <th>Marca</th>
+                <th>Status</th>
+                <th>Criada em</th>
+              </tr>
+            </thead>
+            <tbody id="brandTableBody">
+              <?php foreach ($marcas as $marca): ?>
+                <?php
+                $nome = (string) ($marca["nome"] ?? "");
+                $status = (string) ($marca["status"] ?? "");
+                ?>
+                <tr class="registration-row brand-row" data-status="<?php echo e(strtolower($status)); ?>"
+                  data-search="<?php echo e(strtolower($nome)); ?>">
+                  <td data-label="Marca">
+                    <strong><?php echo e($nome); ?></strong>
+                  </td>
+                  <td data-label="Status">
+                    <span class="status-badge <?php echo $status === "Ativa" ? "status-active" : "status-inactive"; ?>">
+                      <?php echo e($status); ?>
+                    </span>
+                  </td>
+                  <td data-label="Criada em"><?php echo e(formatarDataMarca((string) ($marca["criado_em"] ?? ""))); ?></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
 
-              <button id="brandSubmitButton" class="form-action-button success-button" type="submit">
-                <i class="bi bi-plus-circle"></i>
-                <span>Cadastrar marca</span>
-              </button>
-            </div>
-          </form>
-        </article>
+        <div id="brandEmptyState" class="empty-state records-empty" <?php echo $marcas ? "hidden" : ""; ?>>
+          <i class="bi bi-info-circle"></i>
+          <span>Nenhuma marca encontrada.</span>
+        </div>
       </section>
     </main>
   </div>
 </body>
 
 </html>
-
-
-
-

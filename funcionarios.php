@@ -147,6 +147,16 @@ try {
           <span>Funcion&aacute;rios</span>
         </a>
 
+        <a class="nav-link" href="marcas-visualizacao.php">
+          <i class="bi bi-tags-fill"></i>
+          <span>Marcas</span>
+        </a>
+
+        <a class="nav-link" href="locais-visualizacao.php">
+          <i class="bi bi-geo-alt-fill"></i>
+          <span>Localiza&ccedil;&otilde;es</span>
+        </a>
+
         <div class="nav-group" data-nav-group>
           <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="registrationSubmenu">
             <i class="bi bi-folder-plus"></i>
@@ -171,6 +181,7 @@ try {
           <div class="nav-submenu" id="editingSubmenu">
             <a href="edicao-ativos.php">Ativos</a>
             <a href="edicao-marcas.php">Marcas</a>
+            <a href="edicao-locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>
 

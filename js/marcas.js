@@ -122,8 +122,25 @@ function setBrandMessage(message, type) {
 function setupBrandFilters() {
   document.getElementById("brandSearch")?.addEventListener("input", filterBrands);
   document.getElementById("brandStatusFilter")?.addEventListener("change", filterBrands);
+  document.getElementById("clearBrandFilters")?.addEventListener("click", clearBrandFilters);
 
   filterBrands();
+}
+
+function clearBrandFilters() {
+  const search = document.getElementById("brandSearch");
+  const status = document.getElementById("brandStatusFilter");
+
+  if (search) {
+    search.value = "";
+  }
+
+  if (status) {
+    status.value = "todos";
+  }
+
+  filterBrands();
+  search?.focus();
 }
 
 function filterBrands() {
@@ -163,7 +180,6 @@ function prependBrandRow(brand) {
   const nameCell = createElement("td");
   const statusCell = createElement("td");
   const createdCell = createElement("td", "", "Agora");
-  const updatedCell = createElement("td", "", "Agora");
   const nameStrong = createElement("strong", "", name);
   const badge = createElement(
     "span",
@@ -176,11 +192,10 @@ function prependBrandRow(brand) {
   nameCell.dataset.label = "Marca";
   statusCell.dataset.label = "Status";
   createdCell.dataset.label = "Criada em";
-  updatedCell.dataset.label = "Atualizada em";
 
   nameCell.append(nameStrong);
   statusCell.append(badge);
-  row.append(nameCell, statusCell, createdCell, updatedCell);
+  row.append(nameCell, statusCell, createdCell);
   tbody.prepend(row);
 }
 
