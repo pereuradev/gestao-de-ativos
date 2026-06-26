@@ -5,59 +5,59 @@ declare(strict_types=1);
 session_start();
 
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
-    header("Location: Pagina-login.html?sessao=expirada");
-    exit;
+  header("Location: Pagina-login.html?sessao=expirada");
+  exit;
 }
 
 if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {
-    $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+  $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
 }
 
 function e(string $value): string
 {
-    return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
+  return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
 }
 
 function formatarData(?string $value): string
 {
-    if (!$value) {
-        return "--";
-    }
+  if (!$value) {
+    return "--";
+  }
 
-    try {
-        return (new DateTimeImmutable($value))
-            ->setTimezone(new DateTimeZone("America/Sao_Paulo"))
-            ->format("d/m/Y H:i");
-    } catch (Throwable) {
-        return "--";
-    }
+  try {
+    return (new DateTimeImmutable($value))
+      ->setTimezone(new DateTimeZone("America/Sao_Paulo"))
+      ->format("d/m/Y H:i");
+  } catch (Throwable) {
+    return "--";
+  }
 }
 
 $usuario = $_SESSION["usuario"];
-$nomeUsuario = e((string)($usuario["nome_completo"] ?? "Usuario"));
-$tipoUsuario = e((string)($usuario["tipo_usuario"] ?? ""));
-$sidebarRoleRaw = strtolower(trim((string)($usuario["tipo_usuario"] ?? "")));
+$nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
+$tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
+$sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
 $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
 $sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
 $sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
-$sidebarEmail = e((string)($usuario["email"] ?? ""));
-$sidebarDepartment = e((string)($usuario["departamento"] ?? "Sem departamento"));
-$sidebarNameText = (string)($usuario["nome_completo"] ?? "Usuario");
+$sidebarEmail = e((string) ($usuario["email"] ?? ""));
+$sidebarDepartment = e((string) ($usuario["departamento"] ?? "Sem departamento"));
+$sidebarNameText = (string) ($usuario["nome_completo"] ?? "Usuario");
 $sidebarNameParts = preg_split("/\s+/", trim($sidebarNameText)) ?: [];
 $sidebarInitialsText = "";
 foreach ($sidebarNameParts as $sidebarNamePart) {
-    if ($sidebarNamePart === "") {
-        continue;
-    }
+  if ($sidebarNamePart === "") {
+    continue;
+  }
 
-    $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
+  $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
 
-    if (strlen($sidebarInitialsText) >= 2) {
-        break;
-    }
+  if (strlen($sidebarInitialsText) >= 2) {
+    break;
+  }
 }
 $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
-$csrfToken = e((string)$_SESSION["csrf_token"]);
+$csrfToken = e((string) $_SESSION["csrf_token"]);
 
 $categorias = [];
 $locais = [];
@@ -68,36 +68,36 @@ $ativosDisponiveis = 0;
 $erroBanco = "";
 $statusPadrao = "DisponÃ­vel";
 $statusOptions = [
-    "DisponÃ­vel",
-    "Em uso",
-    "HomologaÃ§Ã£o",
-    "ManutenÃ§Ã£o",
+  "DisponÃ­vel",
+  "Em uso",
+  "HomologaÃ§Ã£o",
+  "ManutenÃ§Ã£o",
 ];
 
 try {
-    require __DIR__ . "/Backend/Conexao.php";
-    require __DIR__ . "/Backend/status-ativos.php";
+  require __DIR__ . "/Backend/Conexao.php";
+  require __DIR__ . "/Backend/status-ativos.php";
 
-    $statusOptions = nomesStatusAtivos($pdo);
-    $statusPadrao = statusAtivoPadrao();
+  $statusOptions = nomesStatusAtivos($pdo);
+  $statusPadrao = statusAtivoPadrao();
 
-    $categoriasStmt = $pdo->prepare("
+  $categoriasStmt = $pdo->prepare("
         select id, nome
           from public.categorias_ativos
       order by nome asc
     ");
-    $categoriasStmt->execute();
-    $categorias = $categoriasStmt->fetchAll();
+  $categoriasStmt->execute();
+  $categorias = $categoriasStmt->fetchAll();
 
-    $locaisStmt = $pdo->prepare("
+  $locaisStmt = $pdo->prepare("
         select id, nome
           from public.locais
       order by nome asc
     ");
-    $locaisStmt->execute();
-    $locais = $locaisStmt->fetchAll();
+  $locaisStmt->execute();
+  $locais = $locaisStmt->fetchAll();
 
-    $pdo->exec("
+  $pdo->exec("
         create table if not exists public.marcas_ativos (
             id uuid primary key default gen_random_uuid(),
             nome text not null unique,
@@ -108,33 +108,33 @@ try {
         )
     ");
 
-    $pdo->exec("
+  $pdo->exec("
         create unique index if not exists marcas_ativos_nome_lower_unique
             on public.marcas_ativos (lower(nome))
     ");
 
-    $marcasStmt = $pdo->prepare("
+  $marcasStmt = $pdo->prepare("
         select id, nome
           from public.marcas_ativos
          where status = :status
       order by nome asc
     ");
-    $marcasStmt->execute([":status" => "Ativa"]);
-    $marcas = $marcasStmt->fetchAll();
+  $marcasStmt->execute([":status" => "Ativa"]);
+  $marcas = $marcasStmt->fetchAll();
 
-    $totalStmt = $pdo->prepare("select count(*)::int from public.ativos");
-    $totalStmt->execute();
-    $totalAtivos = (int)$totalStmt->fetchColumn();
+  $totalStmt = $pdo->prepare("select count(*)::int from public.ativos");
+  $totalStmt->execute();
+  $totalAtivos = (int) $totalStmt->fetchColumn();
 
-    $disponiveisStmt = $pdo->prepare("
+  $disponiveisStmt = $pdo->prepare("
         select count(*)::int
           from public.ativos
          where status = :status
     ");
-    $disponiveisStmt->execute([":status" => $statusPadrao]);
-    $ativosDisponiveis = (int)$disponiveisStmt->fetchColumn();
+  $disponiveisStmt->execute([":status" => $statusPadrao]);
+  $ativosDisponiveis = (int) $disponiveisStmt->fetchColumn();
 
-    $ultimosStmt = $pdo->prepare("
+  $ultimosStmt = $pdo->prepare("
         select
             a.nome,
             a.numero_serie,
@@ -150,10 +150,10 @@ try {
       order by a.criado_em desc
          limit 8
     ");
-    $ultimosStmt->execute();
-    $ultimosAtivos = $ultimosStmt->fetchAll();
+  $ultimosStmt->execute();
+  $ultimosAtivos = $ultimosStmt->fetchAll();
 } catch (Throwable) {
-    $erroBanco = "Nao foi possivel carregar os dados do banco agora.";
+  $erroBanco = "Nao foi possivel carregar os dados do banco agora.";
 }
 ?>
 <!doctype html>
@@ -203,7 +203,10 @@ try {
           <i class="bi bi-speedometer2"></i>
           <span>P&aacute;gina Inicial</span>
         </a>
-
+        <a class="nav-link" href="dashboard.php">
+          <i class="bi bi-graph-up-arrow"></i>
+          <span>Dashboard</span>
+        </a>
         <a class="nav-link" href="funcionarios.php">
           <i class="bi bi-people-fill"></i>
           <span>Funcion&aacute;rios</span>
@@ -223,8 +226,9 @@ try {
           <i class="bi bi-geo-alt-fill"></i>
           <span>Localiza&ccedil;&otilde;es</span>
         </a>
-<div class="nav-group open" data-nav-group>
-          <button class="nav-link nav-toggle active" type="button" aria-expanded="true" aria-controls="registrationSubmenu">
+        <div class="nav-group open" data-nav-group>
+          <button class="nav-link nav-toggle active" type="button" aria-expanded="true"
+            aria-controls="registrationSubmenu">
             <i class="bi bi-folder-plus"></i>
             <span>Cadastros</span>
             <i class="bi bi-chevron-down nav-chevron"></i>
@@ -270,7 +274,8 @@ try {
           <div class="sidebar-user-info">
             <strong title="<?php echo $nomeUsuario; ?>"><?php echo $nomeUsuario; ?></strong>
             <span class="sidebar-role <?php echo $sidebarRoleClass; ?>"><?php echo $sidebarRoleLabel; ?></span>
-            <small title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
+            <small
+              title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
             <small title="<?php echo $sidebarDepartment; ?>"><?php echo $sidebarDepartment; ?></small>
           </div>
         </div>
@@ -293,11 +298,8 @@ try {
           <div>
             <p class="eyebrow">Cadastros</p>
             <h1>
-              <span
-                class="typewriter-heading"
-                style="--typewriter-min: 18ch"
-               
-              >Cadastro de ativos</span><span  aria-hidden="true"></span>
+              <span class="typewriter-heading" style="--typewriter-min: 18ch">Cadastro de ativos</span><span
+                aria-hidden="true"></span>
             </h1>
           </div>
         </div>
@@ -318,12 +320,9 @@ try {
       <section class="hero-panel compact-hero asset-inventory-hero" aria-labelledby="assetsRegistrationTitle">
         <div class="hero-content">
           <h2 id="assetsRegistrationTitle">
-            <span
-              class="typewriter-heading"
-              style="--typewriter-min: 23ch"
-              data-typewriter-loop
-              data-typewriter-phrases="Novo item de estoque.|Cadastro conectado ao banco.|Entrada registrada no sistema."
-            >Novo item de estoque.</span><span  aria-hidden="true"></span>
+            <span class="typewriter-heading" style="--typewriter-min: 23ch" data-typewriter-loop
+              data-typewriter-phrases="Novo item de estoque.|Cadastro conectado ao banco.|Entrada registrada no sistema.">Novo
+              item de estoque.</span><span aria-hidden="true"></span>
           </h2>
           <p>
             Cadastre equipamentos, perif&eacute;ricos e acess&oacute;rios direto na tabela de ativos.
@@ -340,7 +339,7 @@ try {
 
           <div>
             <span>Total de ativos</span>
-            <strong id="totalAssetsMetric"><?php echo e((string)$totalAtivos); ?></strong>
+            <strong id="totalAssetsMetric"><?php echo e((string) $totalAtivos); ?></strong>
           </div>
         </article>
 
@@ -351,7 +350,7 @@ try {
 
           <div>
             <span>Em estoque</span>
-            <strong id="availableAssetsMetric"><?php echo e((string)$ativosDisponiveis); ?></strong>
+            <strong id="availableAssetsMetric"><?php echo e((string) $ativosDisponiveis); ?></strong>
           </div>
         </article>
 
@@ -362,12 +361,12 @@ try {
 
           <div>
             <span>Categorias</span>
-            <strong><?php echo e((string)count($categorias)); ?></strong>
+            <strong><?php echo e((string) count($categorias)); ?></strong>
           </div>
         </article>
       </section>
 
-      <?php if ($erroBanco !== "") : ?>
+      <?php if ($erroBanco !== ""): ?>
         <div class="dashboard-status error-status" role="status">
           <?php echo e($erroBanco); ?>
         </div>
@@ -379,7 +378,8 @@ try {
             <div>
               <p class="section-tag">Formul&aacute;rio</p>
               <h3>Cadastrar item</h3>
-              <span class="card-subtitle">Preencha primeiro os dados obrigat&oacute;rios. Os demais campos ajudam na rastreabilidade do estoque.</span>
+              <span class="card-subtitle">Preencha primeiro os dados obrigat&oacute;rios. Os demais campos ajudam na
+                rastreabilidade do estoque.</span>
             </div>
 
             <div class="form-badge" aria-label="Campos obrigatÃ³rios">
@@ -388,7 +388,8 @@ try {
             </div>
           </div>
 
-          <form id="assetForm" class="asset-form enhanced-asset-form" action="Backend/cadastrar-ativo.php" method="post" novalidate>
+          <form id="assetForm" class="asset-form enhanced-asset-form" action="Backend/cadastrar-ativo.php" method="post"
+            novalidate>
             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
 
             <div class="asset-form-grid">
@@ -412,9 +413,9 @@ try {
                   <i class="bi bi-tags"></i>
                   <select name="categoria_id" required>
                     <option value="">Selecione a categoria</option>
-                    <?php foreach ($categorias as $categoria) : ?>
-                      <option value="<?php echo e((string)$categoria["id"]); ?>">
-                        <?php echo e((string)$categoria["nome"]); ?>
+                    <?php foreach ($categorias as $categoria): ?>
+                      <option value="<?php echo e((string) $categoria["id"]); ?>">
+                        <?php echo e((string) $categoria["nome"]); ?>
                       </option>
                     <?php endforeach; ?>
                   </select>
@@ -426,7 +427,7 @@ try {
                 <div class="input-shell select-shell">
                   <i class="bi bi-activity"></i>
                   <select name="status" required>
-                    <?php foreach ($statusOptions as $status) : ?>
+                    <?php foreach ($statusOptions as $status): ?>
                       <option value="<?php echo e($status); ?>" <?php echo $status === $statusPadrao ? "selected" : ""; ?>>
                         <?php echo e($status); ?>
                       </option>
@@ -441,9 +442,9 @@ try {
                   <i class="bi bi-geo-alt"></i>
                   <select name="local_id">
                     <option value="">Sem local definido</option>
-                    <?php foreach ($locais as $local) : ?>
-                      <option value="<?php echo e((string)$local["id"]); ?>">
-                        <?php echo e((string)$local["nome"]); ?>
+                    <?php foreach ($locais as $local): ?>
+                      <option value="<?php echo e((string) $local["id"]); ?>">
+                        <?php echo e((string) $local["nome"]); ?>
                       </option>
                     <?php endforeach; ?>
                   </select>
@@ -456,14 +457,15 @@ try {
                   <i class="bi bi-building"></i>
                   <select name="marca">
                     <option value="">Selecione a marca</option>
-                    <?php foreach ($marcas as $marca) : ?>
-                      <option value="<?php echo e((string)$marca["nome"]); ?>">
-                        <?php echo e((string)$marca["nome"]); ?>
+                    <?php foreach ($marcas as $marca): ?>
+                      <option value="<?php echo e((string) $marca["nome"]); ?>">
+                        <?php echo e((string) $marca["nome"]); ?>
                       </option>
                     <?php endforeach; ?>
                   </select>
                 </div>
-                <small class="field-hint">Cadastre novas marcas na tela de Marcas para evitar diverg&ecirc;ncias.</small>
+                <small class="field-hint">Cadastre novas marcas na tela de Marcas para evitar
+                  diverg&ecirc;ncias.</small>
               </label>
 
               <div class="form-section-title wide-field secondary-section">
@@ -475,7 +477,8 @@ try {
                 <span>Propriedade</span>
                 <div class="input-shell">
                   <i class="bi bi-shield-check"></i>
-                  <input name="propriedade" type="text" list="propertyOptions" placeholder="Ex: TITECHSOLUTIONS" autocomplete="off" />
+                  <input name="propriedade" type="text" list="propertyOptions" placeholder="Ex: TITECHSOLUTIONS"
+                    autocomplete="off" />
                 </div>
                 <datalist id="propertyOptions">
                   <option value="TITECHSOLUTIONS"></option>
@@ -503,7 +506,8 @@ try {
                 <span>Datasheet</span>
                 <div class="input-shell">
                   <i class="bi bi-link-45deg"></i>
-                  <input name="datasheet" type="text" placeholder="URL ou refer&ecirc;ncia do datasheet" autocomplete="off" />
+                  <input name="datasheet" type="text" placeholder="URL ou refer&ecirc;ncia do datasheet"
+                    autocomplete="off" />
                 </div>
               </label>
 
@@ -511,7 +515,8 @@ try {
                 <span>Descri&ccedil;&atilde;o</span>
                 <div class="input-shell textarea-shell">
                   <i class="bi bi-card-text"></i>
-                  <textarea name="descricao" rows="4" placeholder="Observa&ccedil;&otilde;es, condi&ccedil;&atilde;o f&iacute;sica ou detalhes do item"></textarea>
+                  <textarea name="descricao" rows="4"
+                    placeholder="Observa&ccedil;&otilde;es, condi&ccedil;&atilde;o f&iacute;sica ou detalhes do item"></textarea>
                 </div>
               </label>
             </div>
@@ -541,25 +546,25 @@ try {
           </div>
 
           <div class="recent-asset-list" id="recentAssetList">
-            <?php if (!$ultimosAtivos) : ?>
+            <?php if (!$ultimosAtivos): ?>
               <div class="empty-state">
                 <i class="bi bi-info-circle"></i>
                 <span>Nenhum ativo encontrado.</span>
               </div>
             <?php endif; ?>
 
-            <?php foreach ($ultimosAtivos as $ativo) : ?>
+            <?php foreach ($ultimosAtivos as $ativo): ?>
               <div class="recent-asset-item">
                 <div>
-                  <strong><?php echo e((string)($ativo["nome"] ?? "--")); ?></strong>
+                  <strong><?php echo e((string) ($ativo["nome"] ?? "--")); ?></strong>
                   <span>
-                    <?php echo e((string)($ativo["categoria"] ?? "Sem categoria")); ?>
+                    <?php echo e((string) ($ativo["categoria"] ?? "Sem categoria")); ?>
                     &middot;
-                    <?php echo e((string)($ativo["status"] ?? "--")); ?>
+                    <?php echo e((string) ($ativo["status"] ?? "--")); ?>
                   </span>
                 </div>
 
-                <small><?php echo e(formatarData((string)($ativo["criado_em"] ?? ""))); ?></small>
+                <small><?php echo e(formatarData((string) ($ativo["criado_em"] ?? ""))); ?></small>
               </div>
             <?php endforeach; ?>
           </div>
@@ -570,8 +575,3 @@ try {
 </body>
 
 </html>
-
-
-
-
-

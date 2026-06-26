@@ -36,25 +36,25 @@ function formatarDataPropriedade(?string $value): string
 $usuario = $_SESSION["usuario"];
 $nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
 $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
-$sidebarRoleRaw = strtolower(trim((string)($usuario["tipo_usuario"] ?? "")));
+$sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
 $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
 $sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
 $sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
-$sidebarEmail = e((string)($usuario["email"] ?? ""));
-$sidebarDepartment = e((string)($usuario["departamento"] ?? "Sem departamento"));
-$sidebarNameText = (string)($usuario["nome_completo"] ?? "Usuario");
+$sidebarEmail = e((string) ($usuario["email"] ?? ""));
+$sidebarDepartment = e((string) ($usuario["departamento"] ?? "Sem departamento"));
+$sidebarNameText = (string) ($usuario["nome_completo"] ?? "Usuario");
 $sidebarNameParts = preg_split("/\s+/", trim($sidebarNameText)) ?: [];
 $sidebarInitialsText = "";
 foreach ($sidebarNameParts as $sidebarNamePart) {
-    if ($sidebarNamePart === "") {
-        continue;
-    }
+  if ($sidebarNamePart === "") {
+    continue;
+  }
 
-    $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
+  $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
 
-    if (strlen($sidebarInitialsText) >= 2) {
-        break;
-    }
+  if (strlen($sidebarInitialsText) >= 2) {
+    break;
+  }
 }
 $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 $csrfToken = e((string) $_SESSION["csrf_token"]);
@@ -129,7 +129,8 @@ try {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <title>Cadastro de propriedades | TI TECH Solutions</title>
-  <meta name="description" content="Cadastro de propriedades para padronizar o cadastro de ativos da TI TECH Solutions" />
+  <meta name="description"
+    content="Cadastro de propriedades para padronizar o cadastro de ativos da TI TECH Solutions" />
   <link rel="icon" type="image/png" href="assets/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -169,7 +170,10 @@ try {
           <i class="bi bi-speedometer2"></i>
           <span>P&aacute;gina Inicial</span>
         </a>
-
+        <a class="nav-link" href="dashboard.php">
+          <i class="bi bi-graph-up-arrow"></i>
+          <span>Dashboard</span>
+        </a>
         <a class="nav-link" href="funcionarios.php">
           <i class="bi bi-people-fill"></i>
           <span>Funcion&aacute;rios</span>
@@ -189,7 +193,7 @@ try {
           <i class="bi bi-geo-alt-fill"></i>
           <span>Localiza&ccedil;&otilde;es</span>
         </a>
-<div class="nav-group open" data-nav-group>
+        <div class="nav-group open" data-nav-group>
           <button class="nav-link nav-toggle active" type="button" aria-expanded="true"
             aria-controls="registrationSubmenu">
             <i class="bi bi-folder-plus"></i>
@@ -237,7 +241,8 @@ try {
           <div class="sidebar-user-info">
             <strong title="<?php echo $nomeUsuario; ?>"><?php echo $nomeUsuario; ?></strong>
             <span class="sidebar-role <?php echo $sidebarRoleClass; ?>"><?php echo $sidebarRoleLabel; ?></span>
-            <small title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
+            <small
+              title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
             <small title="<?php echo $sidebarDepartment; ?>"><?php echo $sidebarDepartment; ?></small>
           </div>
         </div>
@@ -260,8 +265,7 @@ try {
           <div>
             <p class="eyebrow">Cadastros</p>
             <h1>
-              <span style="--typewriter-min: 18ch">Cadastro de propriedades</span><span 
-                aria-hidden="true"></span>
+              <span style="--typewriter-min: 18ch">Cadastro de propriedades</span><span aria-hidden="true"></span>
             </h1>
           </div>
         </div>
@@ -296,7 +300,7 @@ try {
       <section class="metrics-grid" aria-label="Resumo das propriedades">
         <article class="metric-card">
           <div class="metric-icon">
-          <i class="bi bi-tags-fill"></i>
+            <i class="bi bi-tags-fill"></i>
           </div>
 
           <div>
@@ -345,8 +349,8 @@ try {
             </div>
           </div>
 
-          <form id="brandForm" class="asset-form enhanced-asset-form" action="Backend/cadastrar-propriedade.php" method="post"
-            novalidate>
+          <form id="brandForm" class="asset-form enhanced-asset-form" action="Backend/cadastrar-propriedade.php"
+            method="post" novalidate>
             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
 
             <div class="asset-form-grid brand-form-grid">
@@ -392,7 +396,3 @@ try {
 </body>
 
 </html>
-
-
-
-

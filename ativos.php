@@ -299,6 +299,11 @@ try {
           <span>P&aacute;gina Inicial</span>
         </a>
 
+        <a class="nav-link" href="dashboard.php">
+          <i class="bi bi-graph-up-arrow"></i>
+          <span>Dashboard</span>
+        </a>
+
         <a class="nav-link" href="funcionarios.php">
           <i class="bi bi-people-fill"></i>
           <span>Funcion&aacute;rios</span>

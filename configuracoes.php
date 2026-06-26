@@ -12,8 +12,8 @@ session_start();
 // Se não existir usuário válido na sessão, não deixa acessar a página direto pela URL.
 // Nesse caso, o usuário é mandado de volta para a tela de login.
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
-    header("Location: Pagina-login.html?sessao=expirada");
-    exit;
+  header("Location: Pagina-login.html?sessao=expirada");
+  exit;
 }
 
 // Atalho para escapar textos antes de jogar no HTML.
@@ -21,72 +21,72 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
 // ou abra brecha para injeção de código no navegador.
 function e(string $value): string
 {
-    return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
+  return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
 }
 
 // Busca um campo dentro do perfil e devolve um valor padrão quando ele está vazio.
 // Ajuda a evitar vários ifs espalhados no HTML só para mostrar "--".
 function campoPerfil(array $perfil, string $campo, string $padrao = "--"): string
 {
-    $valor = trim((string)($perfil[$campo] ?? ""));
+  $valor = trim((string) ($perfil[$campo] ?? ""));
 
-    return $valor !== "" ? $valor : $padrao;
+  return $valor !== "" ? $valor : $padrao;
 }
 
 // Formata datas vindas do banco para o padrão brasileiro.
 // Se a data vier inválida, a tela continua funcionando e mostra apenas "--".
 function formatarDataPerfil(?string $value): string
 {
-    if (!$value) {
-        return "--";
-    }
+  if (!$value) {
+    return "--";
+  }
 
-    try {
-        return (new DateTimeImmutable($value))
-            ->setTimezone(new DateTimeZone("America/Sao_Paulo"))
-            ->format("d/m/Y H:i");
-    } catch (Throwable) {
-        return "--";
-    }
+  try {
+    return (new DateTimeImmutable($value))
+      ->setTimezone(new DateTimeZone("America/Sao_Paulo"))
+      ->format("d/m/Y H:i");
+  } catch (Throwable) {
+    return "--";
+  }
 }
 
 // Monta as iniciais do usuário para usar no avatar do crachá digital.
 // Exemplo: "Pietro Pereira" vira "PP".
 function iniciaisUsuario(string $nome): string
 {
-    $partes = preg_split("/\s+/", trim($nome)) ?: [];
-    $iniciais = "";
+  $partes = preg_split("/\s+/", trim($nome)) ?: [];
+  $iniciais = "";
 
-    foreach ($partes as $parte) {
-        if ($parte === "") {
-            continue;
-        }
-
-        $iniciais .= strtoupper(substr($parte, 0, 1));
-
-        if (strlen($iniciais) >= 2) {
-            break;
-        }
+  foreach ($partes as $parte) {
+    if ($parte === "") {
+      continue;
     }
 
-    return $iniciais !== "" ? $iniciais : "TT";
+    $iniciais .= strtoupper(substr($parte, 0, 1));
+
+    if (strlen($iniciais) >= 2) {
+      break;
+    }
+  }
+
+  return $iniciais !== "" ? $iniciais : "TT";
 }
 
 // Converte o status do usuário em uma classe CSS.
 // Assim o PHP decide o estado e o CSS cuida do visual.
 function statusClasseConfiguracao(string $status): string
 {
-    $statusNormalizado = strtolower(trim($status));
+  $statusNormalizado = strtolower(trim($status));
 
-    if ($statusNormalizado === "ativo") {
-        return "status-active";
-    }
+  if ($statusNormalizado === "ativo") {
+    return "status-active";
+  }
 
-    if ($statusNormalizado === "inativo") {
-        return "status-inactive";
-    }
+  if ($statusNormalizado === "inativo") {
+    return "status-inactive";
+  }
 
-    return "status-neutral";
+  return "status-neutral";
 }
 
 // Começamos usando os dados que já estão salvos na sessão.
@@ -96,13 +96,13 @@ $perfil = $usuario;
 $erroBanco = "";
 
 try {
-    // Carrega a conexão com o banco.
-    // O __DIR__ evita problema de caminho quando o arquivo é chamado de lugares diferentes.
-    require __DIR__ . "/Backend/Conexao.php";
+  // Carrega a conexão com o banco.
+  // O __DIR__ evita problema de caminho quando o arquivo é chamado de lugares diferentes.
+  require __DIR__ . "/Backend/Conexao.php";
 
-    // Consulta os dados completos do usuário no Supabase/PostgreSQL.
-    // A busca usa id ou email para funcionar mesmo se algum desses dados estiver ausente na sessão.
-    $stmt = $pdo->prepare("
+  // Consulta os dados completos do usuário no Supabase/PostgreSQL.
+  // A busca usa id ou email para funcionar mesmo se algum desses dados estiver ausente na sessão.
+  $stmt = $pdo->prepare("
         select
             id,
             nome_completo,
@@ -123,23 +123,23 @@ try {
          limit 1
     ");
 
-    // Os valores são enviados separados da SQL para evitar SQL Injection.
-    $stmt->execute([
-        ":id" => (string)($usuario["id"] ?? ""),
-        ":email" => (string)($usuario["email"] ?? ""),
-    ]);
+  // Os valores são enviados separados da SQL para evitar SQL Injection.
+  $stmt->execute([
+    ":id" => (string) ($usuario["id"] ?? ""),
+    ":email" => (string) ($usuario["email"] ?? ""),
+  ]);
 
-    $perfilBanco = $stmt->fetch();
+  $perfilBanco = $stmt->fetch();
 
-    // Se encontrou o usuário no banco, junta os dados da sessão com os dados mais completos.
-    // O banco fica com prioridade quando houver campos repetidos.
-    if (is_array($perfilBanco)) {
-        $perfil = array_merge($usuario, $perfilBanco);
-    }
+  // Se encontrou o usuário no banco, junta os dados da sessão com os dados mais completos.
+  // O banco fica com prioridade quando houver campos repetidos.
+  if (is_array($perfilBanco)) {
+    $perfil = array_merge($usuario, $perfilBanco);
+  }
 } catch (Throwable) {
-    // Não travamos a página se o banco falhar.
-    // A tela ainda abre com os dados da sessão e mostra um aviso discreto ao usuário.
-    $erroBanco = "Nao foi possivel carregar todos os dados do banco. Mostrando informacoes da sessao.";
+  // Não travamos a página se o banco falhar.
+  // A tela ainda abre com os dados da sessão e mostra um aviso discreto ao usuário.
+  $erroBanco = "Nao foi possivel carregar todos os dados do banco. Mostrando informacoes da sessao.";
 }
 
 // A partir daqui, os dados são tratados para exibição.
@@ -153,32 +153,32 @@ $empresaUsuarioTexto = campoPerfil($perfil, "empresa");
 $celularUsuarioTexto = campoPerfil($perfil, "celular");
 $rgUsuarioTexto = campoPerfil($perfil, "rg");
 $cpfUsuarioTexto = campoPerfil($perfil, "cpf");
-$criadoEm = formatarDataPerfil((string)($perfil["criado_em"] ?? ""));
-$atualizadoEm = formatarDataPerfil((string)($perfil["atualizado_em"] ?? ""));
+$criadoEm = formatarDataPerfil((string) ($perfil["criado_em"] ?? ""));
+$atualizadoEm = formatarDataPerfil((string) ($perfil["atualizado_em"] ?? ""));
 $ultimoAcesso = date("d/m/Y H:i");
-$codigoInterno = "TT-USER-" . str_pad(substr(preg_replace("/\D/", "", (string)($perfil["id"] ?? "")), 0, 3) ?: "001", 3, "0", STR_PAD_LEFT);
+$codigoInterno = "TT-USER-" . str_pad(substr(preg_replace("/\D/", "", (string) ($perfil["id"] ?? "")), 0, 3) ?: "001", 3, "0", STR_PAD_LEFT);
 
 $nomeUsuario = e($nomeUsuarioTexto);
 $tipoUsuario = e($tipoUsuarioTexto);
-$sidebarRoleRaw = strtolower(trim((string)($usuario["tipo_usuario"] ?? "")));
+$sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
 $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
 $sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
 $sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
-$sidebarEmail = e((string)($usuario["email"] ?? ""));
-$sidebarDepartment = e((string)($usuario["departamento"] ?? "Sem departamento"));
-$sidebarNameText = (string)($usuario["nome_completo"] ?? "Usuario");
+$sidebarEmail = e((string) ($usuario["email"] ?? ""));
+$sidebarDepartment = e((string) ($usuario["departamento"] ?? "Sem departamento"));
+$sidebarNameText = (string) ($usuario["nome_completo"] ?? "Usuario");
 $sidebarNameParts = preg_split("/\s+/", trim($sidebarNameText)) ?: [];
 $sidebarInitialsText = "";
 foreach ($sidebarNameParts as $sidebarNamePart) {
-    if ($sidebarNamePart === "") {
-        continue;
-    }
+  if ($sidebarNamePart === "") {
+    continue;
+  }
 
-    $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
+  $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
 
-    if (strlen($sidebarInitialsText) >= 2) {
-        break;
-    }
+  if (strlen($sidebarInitialsText) >= 2) {
+    break;
+  }
 }
 $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 $emailUsuario = e($emailUsuarioTexto);
@@ -201,7 +201,8 @@ $codigoInternoEscapado = e($codigoInterno);
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <title>Configura&ccedil;&otilde;es | TI TECH Solutions</title>
-  <meta name="description" content="Painel de configura&ccedil;&otilde;es de conta, seguran&ccedil;a e prefer&ecirc;ncias do portal TI TECH Solutions" />
+  <meta name="description"
+    content="Painel de configura&ccedil;&otilde;es de conta, seguran&ccedil;a e prefer&ecirc;ncias do portal TI TECH Solutions" />
   <!-- Ícone da aba do navegador. -->
   <link rel="icon" type="image/png" href="assets/favicon.png" />
 
@@ -252,7 +253,10 @@ $codigoInternoEscapado = e($codigoInterno);
           <i class="bi bi-speedometer2"></i>
           <span>P&aacute;gina Inicial</span>
         </a>
-
+        <a class="nav-link" href="dashboard.php">
+          <i class="bi bi-graph-up-arrow"></i>
+          <span>Dashboard</span>
+        </a>
         <a class="nav-link" href="funcionarios.php">
           <i class="bi bi-people-fill"></i>
           <span>Funcion&aacute;rios</span>
@@ -272,7 +276,7 @@ $codigoInternoEscapado = e($codigoInterno);
           <i class="bi bi-geo-alt-fill"></i>
           <span>Localiza&ccedil;&otilde;es</span>
         </a>
-<!-- Grupo recolhível para evitar que o menu fique grande demais. -->
+        <!-- Grupo recolhível para evitar que o menu fique grande demais. -->
         <div class="nav-group" data-nav-group>
           <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="registrationSubmenu">
             <i class="bi bi-folder-plus"></i>
@@ -322,7 +326,8 @@ $codigoInternoEscapado = e($codigoInterno);
           <div class="sidebar-user-info">
             <strong title="<?php echo $nomeUsuario; ?>"><?php echo $nomeUsuario; ?></strong>
             <span class="sidebar-role <?php echo $sidebarRoleClass; ?>"><?php echo $sidebarRoleLabel; ?></span>
-            <small title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
+            <small
+              title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
             <small title="<?php echo $sidebarDepartment; ?>"><?php echo $sidebarDepartment; ?></small>
           </div>
         </div>
@@ -348,7 +353,8 @@ $codigoInternoEscapado = e($codigoInterno);
           <div>
             <p class="eyebrow">Painel de controle</p>
             <h1>
-              <span class="typewriter-heading" style="--typewriter-min: 16ch">Configura&ccedil;&otilde;es</span><span aria-hidden="true"></span>
+              <span class="typewriter-heading" style="--typewriter-min: 16ch">Configura&ccedil;&otilde;es</span><span
+                aria-hidden="true"></span>
             </h1>
           </div>
         </div>
@@ -366,12 +372,9 @@ $codigoInternoEscapado = e($codigoInterno);
         <div class="hero-content">
           <p class="section-tag">Central do usu&aacute;rio</p>
           <h2 id="settingsTitle">
-            <span
-              class="typewriter-heading"
-              style="--typewriter-min: 34ch"
-              data-typewriter-loop
-              data-typewriter-phrases="Conta, seguran&ccedil;a e experi&ecirc;ncia.|Seu ambiente, do seu jeito.|Prefer&ecirc;ncias com controle e clareza."
-            >Conta, seguran&ccedil;a e experi&ecirc;ncia.</span><span aria-hidden="true"></span>
+            <span class="typewriter-heading" style="--typewriter-min: 34ch" data-typewriter-loop
+              data-typewriter-phrases="Conta, seguran&ccedil;a e experi&ecirc;ncia.|Seu ambiente, do seu jeito.|Prefer&ecirc;ncias com controle e clareza.">Conta,
+              seguran&ccedil;a e experi&ecirc;ncia.</span><span aria-hidden="true"></span>
           </h2>
           <p>
             Personalize sua interface, revise dados da conta e ajuste a experi&ecirc;ncia do sistema.
@@ -380,7 +383,7 @@ $codigoInternoEscapado = e($codigoInterno);
       </section>
 
       <!-- Aviso exibido somente quando a consulta ao banco falha. -->
-      <?php if ($erroBanco !== "") : ?>
+      <?php if ($erroBanco !== ""): ?>
         <div class="dashboard-status error-status" role="status">
           <?php echo e($erroBanco); ?>
         </div>
@@ -450,7 +453,8 @@ $codigoInternoEscapado = e($codigoInterno);
             <div class="profile-field"><span>Nome</span><strong><?php echo $nomeUsuario; ?></strong></div>
             <div class="profile-field"><span>Email</span><strong><?php echo $emailUsuario; ?></strong></div>
             <div class="profile-field"><span>Cargo</span><strong><?php echo $tipoUsuario; ?></strong></div>
-            <div class="profile-field"><span>Departamento</span><strong><?php echo $departamentoUsuario; ?></strong></div>
+            <div class="profile-field"><span>Departamento</span><strong><?php echo $departamentoUsuario; ?></strong>
+            </div>
             <div class="profile-field"><span>Celular</span><strong><?php echo $celularUsuario; ?></strong></div>
             <div class="profile-field"><span>RG</span><strong><?php echo $rgUsuario; ?></strong></div>
             <div class="profile-field"><span>CPF</span><strong><?php echo $cpfUsuario; ?></strong></div>
@@ -477,10 +481,14 @@ $codigoInternoEscapado = e($codigoInterno);
             <fieldset class="preference-group">
               <legend>Prefer&ecirc;ncia de cor</legend>
               <div class="accent-options" role="radiogroup" aria-label="Prefer&ecirc;ncia de cor">
-                <label class="accent-option accent-teal"><input type="radio" name="accent" value="teal" /><span></span>TI TECH</label>
-                <label class="accent-option accent-green"><input type="radio" name="accent" value="green" /><span></span>Verde positivo</label>
-                <label class="accent-option accent-blue"><input type="radio" name="accent" value="blue" /><span></span>Azul tecnologia</label>
-                <label class="accent-option accent-violet"><input type="radio" name="accent" value="violet" /><span></span>Violeta</label>
+                <label class="accent-option accent-teal"><input type="radio" name="accent"
+                    value="teal" /><span></span>TI TECH</label>
+                <label class="accent-option accent-green"><input type="radio" name="accent"
+                    value="green" /><span></span>Verde positivo</label>
+                <label class="accent-option accent-blue"><input type="radio" name="accent"
+                    value="blue" /><span></span>Azul tecnologia</label>
+                <label class="accent-option accent-violet"><input type="radio" name="accent"
+                    value="violet" /><span></span>Violeta</label>
               </div>
             </fieldset>
 
@@ -488,9 +496,12 @@ $codigoInternoEscapado = e($codigoInterno);
             <fieldset class="preference-group">
               <legend>Modo de tela</legend>
               <div class="segmented-control three-options" role="radiogroup" aria-label="Modo de tela">
-                <label><input type="radio" name="theme" value="dark" /><span><i class="bi bi-moon-stars-fill"></i> Escuro</span></label>
-                <label><input type="radio" name="theme" value="light" /><span><i class="bi bi-sun-fill"></i> Claro</span></label>
-                <label><input type="radio" name="theme" value="auto" /><span><i class="bi bi-circle-half"></i> Auto</span></label>
+                <label><input type="radio" name="theme" value="dark" /><span><i class="bi bi-moon-stars-fill"></i>
+                    Escuro</span></label>
+                <label><input type="radio" name="theme" value="light" /><span><i class="bi bi-sun-fill"></i>
+                    Claro</span></label>
+                <label><input type="radio" name="theme" value="auto" /><span><i class="bi bi-circle-half"></i>
+                    Auto</span></label>
               </div>
             </fieldset>
 
@@ -499,15 +510,18 @@ $codigoInternoEscapado = e($codigoInterno);
               <legend>Ajustes de UX</legend>
               <div class="toggle-list">
                 <label class="toggle-row">
-                  <span><strong>Interface compacta</strong><small>Reduz espa&ccedil;amentos para ver mais informa&ccedil;&otilde;es.</small></span>
+                  <span><strong>Interface compacta</strong><small>Reduz espa&ccedil;amentos para ver mais
+                      informa&ccedil;&otilde;es.</small></span>
                   <input type="checkbox" id="densityToggle" name="density" value="compact" />
                 </label>
                 <label class="toggle-row">
-                  <span><strong>Reduzir anima&ccedil;&otilde;es</strong><small>Deixa transi&ccedil;&otilde;es mais discretas.</small></span>
+                  <span><strong>Reduzir anima&ccedil;&otilde;es</strong><small>Deixa transi&ccedil;&otilde;es mais
+                      discretas.</small></span>
                   <input type="checkbox" id="motionToggle" name="motion" value="reduced" />
                 </label>
                 <label class="toggle-row">
-                  <span><strong>Realce do cursor</strong><small>Aumenta o feedback visual em links, bot&otilde;es e campos.</small></span>
+                  <span><strong>Realce do cursor</strong><small>Aumenta o feedback visual em links, bot&otilde;es e
+                      campos.</small></span>
                   <input type="checkbox" id="cursorToggle" name="cursor" value="enhanced" />
                 </label>
               </div>
@@ -535,15 +549,18 @@ $codigoInternoEscapado = e($codigoInterno);
             <form class="password-form" id="passwordForm">
               <label class="asset-field">
                 <span>Senha atual</span>
-                <span class="input-shell"><i class="bi bi-lock"></i><input id="currentPassword" type="password" autocomplete="current-password" /></span>
+                <span class="input-shell"><i class="bi bi-lock"></i><input id="currentPassword" type="password"
+                    autocomplete="current-password" /></span>
               </label>
               <label class="asset-field">
                 <span>Nova senha</span>
-                <span class="input-shell"><i class="bi bi-key"></i><input id="newPassword" type="password" autocomplete="new-password" /></span>
+                <span class="input-shell"><i class="bi bi-key"></i><input id="newPassword" type="password"
+                    autocomplete="new-password" /></span>
               </label>
               <label class="asset-field">
                 <span>Confirmar nova senha</span>
-                <span class="input-shell"><i class="bi bi-check2-circle"></i><input id="confirmPassword" type="password" autocomplete="new-password" /></span>
+                <span class="input-shell"><i class="bi bi-check2-circle"></i><input id="confirmPassword" type="password"
+                    autocomplete="new-password" /></span>
               </label>
 
               <div class="password-strength" aria-live="polite">

@@ -32,25 +32,25 @@ function formatarDataMarca(?string $value): string
 $usuario = $_SESSION["usuario"];
 $nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
 $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
-$sidebarRoleRaw = strtolower(trim((string)($usuario["tipo_usuario"] ?? "")));
+$sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
 $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
 $sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
 $sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
-$sidebarEmail = e((string)($usuario["email"] ?? ""));
-$sidebarDepartment = e((string)($usuario["departamento"] ?? "Sem departamento"));
-$sidebarNameText = (string)($usuario["nome_completo"] ?? "Usuario");
+$sidebarEmail = e((string) ($usuario["email"] ?? ""));
+$sidebarDepartment = e((string) ($usuario["departamento"] ?? "Sem departamento"));
+$sidebarNameText = (string) ($usuario["nome_completo"] ?? "Usuario");
 $sidebarNameParts = preg_split("/\s+/", trim($sidebarNameText)) ?: [];
 $sidebarInitialsText = "";
 foreach ($sidebarNameParts as $sidebarNamePart) {
-    if ($sidebarNamePart === "") {
-        continue;
-    }
+  if ($sidebarNamePart === "") {
+    continue;
+  }
 
-    $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
+  $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
 
-    if (strlen($sidebarInitialsText) >= 2) {
-        break;
-    }
+  if (strlen($sidebarInitialsText) >= 2) {
+    break;
+  }
 }
 $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 
@@ -146,7 +146,10 @@ try {
           <i class="bi bi-speedometer2"></i>
           <span>P&aacute;gina Inicial</span>
         </a>
-
+        <a class="nav-link" href="dashboard.php">
+          <i class="bi bi-graph-up-arrow"></i>
+          <span>Dashboard</span>
+        </a>
         <a class="nav-link" href="funcionarios.php">
           <i class="bi bi-people-fill"></i>
           <span>Funcion&aacute;rios</span>
@@ -166,9 +169,8 @@ try {
           <i class="bi bi-geo-alt-fill"></i>
           <span>Localiza&ccedil;&otilde;es</span>
         </a>
-<div class="nav-group" data-nav-group>
-          <button class="nav-link nav-toggle" type="button" aria-expanded="false"
-            aria-controls="registrationSubmenu">
+        <div class="nav-group" data-nav-group>
+          <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="registrationSubmenu">
             <i class="bi bi-folder-plus"></i>
             <span>Cadastros</span>
             <i class="bi bi-chevron-down nav-chevron"></i>
@@ -214,7 +216,8 @@ try {
           <div class="sidebar-user-info">
             <strong title="<?php echo $nomeUsuario; ?>"><?php echo $nomeUsuario; ?></strong>
             <span class="sidebar-role <?php echo $sidebarRoleClass; ?>"><?php echo $sidebarRoleLabel; ?></span>
-            <small title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
+            <small
+              title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
             <small title="<?php echo $sidebarDepartment; ?>"><?php echo $sidebarDepartment; ?></small>
           </div>
         </div>
@@ -237,7 +240,8 @@ try {
           <div>
             <p class="eyebrow">Visualiza&ccedil;&atilde;o</p>
             <h1>
-              <span class="typewriter-heading" style="--typewriter-min: 18ch">Marcas cadastradas</span><span aria-hidden="true"></span>
+              <span class="typewriter-heading" style="--typewriter-min: 18ch">Marcas cadastradas</span><span
+                aria-hidden="true"></span>
             </h1>
           </div>
         </div>
@@ -259,7 +263,8 @@ try {
         <div class="hero-content">
           <h2 id="brandsViewTitle">
             <span class="typewriter-heading" style="--typewriter-min: 21ch" data-typewriter-loop
-              data-typewriter-phrases="Consulta de marcas.|Marcas do inventario.|Base padronizada.">Consulta de marcas.</span><span aria-hidden="true"></span>
+              data-typewriter-phrases="Consulta de marcas.|Marcas do inventario.|Base padronizada.">Consulta de
+              marcas.</span><span aria-hidden="true"></span>
           </h2>
           <p>
             Visualize as marcas cadastradas, filtre por status e encontre fabricantes rapidamente
@@ -271,7 +276,7 @@ try {
       <section class="metrics-grid" aria-label="Resumo das marcas">
         <article class="metric-card">
           <div class="metric-icon">
-          <i class="bi bi-tags-fill"></i>
+            <i class="bi bi-tags-fill"></i>
           </div>
 
           <div>
@@ -365,7 +370,8 @@ try {
                       <?php echo e($status); ?>
                     </span>
                   </td>
-                  <td data-label="Criada em"><?php echo e(formatarDataMarca((string) ($marca["criado_em"] ?? ""))); ?></td>
+                  <td data-label="Criada em"><?php echo e(formatarDataMarca((string) ($marca["criado_em"] ?? ""))); ?>
+                  </td>
                 </tr>
               <?php endforeach; ?>
             </tbody>

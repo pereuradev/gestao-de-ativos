@@ -5,59 +5,59 @@ declare(strict_types=1);
 session_start();
 
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
-    header("Location: Pagina-login.html?sessao=expirada");
-    exit;
+  header("Location: Pagina-login.html?sessao=expirada");
+  exit;
 }
 
 if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {
-    $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+  $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
 }
 
 function e(string $value): string
 {
-    return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
+  return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
 }
 
 function formatarDataMarca(?string $value): string
 {
-    if (!$value) {
-        return "--";
-    }
+  if (!$value) {
+    return "--";
+  }
 
-    try {
-        return (new DateTimeImmutable($value))
-            ->setTimezone(new DateTimeZone("America/Sao_Paulo"))
-            ->format("d/m/Y H:i");
-    } catch (Throwable) {
-        return "--";
-    }
+  try {
+    return (new DateTimeImmutable($value))
+      ->setTimezone(new DateTimeZone("America/Sao_Paulo"))
+      ->format("d/m/Y H:i");
+  } catch (Throwable) {
+    return "--";
+  }
 }
 
 $usuario = $_SESSION["usuario"];
-$nomeUsuario = e((string)($usuario["nome_completo"] ?? "Usuario"));
-$tipoUsuario = e((string)($usuario["tipo_usuario"] ?? ""));
-$sidebarRoleRaw = strtolower(trim((string)($usuario["tipo_usuario"] ?? "")));
+$nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
+$tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
+$sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
 $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
 $sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
 $sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
-$sidebarEmail = e((string)($usuario["email"] ?? ""));
-$sidebarDepartment = e((string)($usuario["departamento"] ?? "Sem departamento"));
-$sidebarNameText = (string)($usuario["nome_completo"] ?? "Usuario");
+$sidebarEmail = e((string) ($usuario["email"] ?? ""));
+$sidebarDepartment = e((string) ($usuario["departamento"] ?? "Sem departamento"));
+$sidebarNameText = (string) ($usuario["nome_completo"] ?? "Usuario");
 $sidebarNameParts = preg_split("/\s+/", trim($sidebarNameText)) ?: [];
 $sidebarInitialsText = "";
 foreach ($sidebarNameParts as $sidebarNamePart) {
-    if ($sidebarNamePart === "") {
-        continue;
-    }
+  if ($sidebarNamePart === "") {
+    continue;
+  }
 
-    $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
+  $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
 
-    if (strlen($sidebarInitialsText) >= 2) {
-        break;
-    }
+  if (strlen($sidebarInitialsText) >= 2) {
+    break;
+  }
 }
 $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
-$csrfToken = e((string)$_SESSION["csrf_token"]);
+$csrfToken = e((string) $_SESSION["csrf_token"]);
 
 $marcas = [];
 $totalMarcas = 0;
@@ -66,9 +66,9 @@ $marcasInativas = 0;
 $erroBanco = "";
 
 try {
-    require __DIR__ . "/Backend/Conexao.php";
+  require __DIR__ . "/Backend/Conexao.php";
 
-    $pdo->exec("
+  $pdo->exec("
         create table if not exists public.marcas_ativos (
             id uuid primary key default gen_random_uuid(),
             nome text not null unique,
@@ -79,34 +79,34 @@ try {
         )
     ");
 
-    $pdo->exec("
+  $pdo->exec("
         create unique index if not exists marcas_ativos_nome_lower_unique
             on public.marcas_ativos (lower(nome))
     ");
 
-    $resumoStmt = $pdo->prepare("
+  $resumoStmt = $pdo->prepare("
         select
             count(*)::int as total,
             count(*) filter (where status = 'Ativa')::int as ativas,
             count(*) filter (where status = 'Inativa')::int as inativas
           from public.marcas_ativos
     ");
-    $resumoStmt->execute();
-    $resumo = $resumoStmt->fetch() ?: [];
+  $resumoStmt->execute();
+  $resumo = $resumoStmt->fetch() ?: [];
 
-    $totalMarcas = (int)($resumo["total"] ?? 0);
-    $marcasAtivas = (int)($resumo["ativas"] ?? 0);
-    $marcasInativas = (int)($resumo["inativas"] ?? 0);
+  $totalMarcas = (int) ($resumo["total"] ?? 0);
+  $marcasAtivas = (int) ($resumo["ativas"] ?? 0);
+  $marcasInativas = (int) ($resumo["inativas"] ?? 0);
 
-    $marcasStmt = $pdo->prepare("
+  $marcasStmt = $pdo->prepare("
         select id, nome, status, criado_em, atualizado_em
           from public.marcas_ativos
       order by nome asc
     ");
-    $marcasStmt->execute();
-    $marcas = $marcasStmt->fetchAll();
+  $marcasStmt->execute();
+  $marcas = $marcasStmt->fetchAll();
 } catch (Throwable) {
-    $erroBanco = "Nao foi possivel carregar as marcas do banco agora.";
+  $erroBanco = "Nao foi possivel carregar as marcas do banco agora.";
 }
 ?>
 <!doctype html>
@@ -158,7 +158,10 @@ try {
           <i class="bi bi-speedometer2"></i>
           <span>P&aacute;gina Inicial</span>
         </a>
-
+        <a class="nav-link" href="dashboard.php">
+          <i class="bi bi-graph-up-arrow"></i>
+          <span>Dashboard</span>
+        </a>
         <a class="nav-link" href="funcionarios.php">
           <i class="bi bi-people-fill"></i>
           <span>Funcion&aacute;rios</span>
@@ -178,7 +181,7 @@ try {
           <i class="bi bi-geo-alt-fill"></i>
           <span>Localiza&ccedil;&otilde;es</span>
         </a>
-<div class="nav-group" data-nav-group>
+        <div class="nav-group" data-nav-group>
           <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="registrationSubmenu">
             <i class="bi bi-folder-plus"></i>
             <span>Cadastros</span>
@@ -225,7 +228,8 @@ try {
           <div class="sidebar-user-info">
             <strong title="<?php echo $nomeUsuario; ?>"><?php echo $nomeUsuario; ?></strong>
             <span class="sidebar-role <?php echo $sidebarRoleClass; ?>"><?php echo $sidebarRoleLabel; ?></span>
-            <small title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
+            <small
+              title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
             <small title="<?php echo $sidebarDepartment; ?>"><?php echo $sidebarDepartment; ?></small>
           </div>
         </div>
@@ -248,7 +252,8 @@ try {
           <div>
             <p class="eyebrow">Edi&ccedil;&atilde;o</p>
             <h1>
-              <span class="typewriter-heading" style="--typewriter-min: 18ch">Edi&ccedil;&atilde;o de marcas</span><span aria-hidden="true"></span>
+              <span class="typewriter-heading" style="--typewriter-min: 18ch">Edi&ccedil;&atilde;o de marcas</span><span
+                aria-hidden="true"></span>
             </h1>
           </div>
         </div>
@@ -270,7 +275,8 @@ try {
         <div class="hero-content">
           <h2 id="brandEditTitle">
             <span class="typewriter-heading" style="--typewriter-min: 23ch" data-typewriter-loop
-              data-typewriter-phrases="Tabela de marcas.|Altere dados com seguranca.|Exclua registros duplicados.">Tabela de marcas.</span><span aria-hidden="true"></span>
+              data-typewriter-phrases="Tabela de marcas.|Altere dados com seguranca.|Exclua registros duplicados.">Tabela
+              de marcas.</span><span aria-hidden="true"></span>
           </h2>
           <p>
             Consulte as marcas cadastradas, altere nome ou status e remova registros que n&atilde;o devem aparecer
@@ -287,7 +293,7 @@ try {
 
           <div>
             <span>Total de marcas</span>
-            <strong id="totalBrandsMetric"><?php echo e((string)$totalMarcas); ?></strong>
+            <strong id="totalBrandsMetric"><?php echo e((string) $totalMarcas); ?></strong>
           </div>
         </article>
 
@@ -298,7 +304,7 @@ try {
 
           <div>
             <span>Ativas</span>
-            <strong id="activeBrandsMetric"><?php echo e((string)$marcasAtivas); ?></strong>
+            <strong id="activeBrandsMetric"><?php echo e((string) $marcasAtivas); ?></strong>
           </div>
         </article>
 
@@ -309,7 +315,7 @@ try {
 
           <div>
             <span>Inativas</span>
-            <strong id="inactiveBrandsMetric"><?php echo e((string)$marcasInativas); ?></strong>
+            <strong id="inactiveBrandsMetric"><?php echo e((string) $marcasInativas); ?></strong>
           </div>
         </article>
       </section>
@@ -328,7 +334,7 @@ try {
           </div>
 
           <div class="records-actions">
-            <span id="brandResultCount"><?php echo e((string)count($marcas)); ?> registros</span>
+            <span id="brandResultCount"><?php echo e((string) count($marcas)); ?> registros</span>
             <select id="brandStatusFilter" aria-label="Filtrar marcas por status">
               <option value="todos">Todos</option>
               <option value="ativa">Ativas</option>
@@ -361,26 +367,29 @@ try {
             <tbody id="brandTableBody">
               <?php foreach ($marcas as $marca): ?>
                 <?php
-                $id = (string)($marca["id"] ?? "");
-                $nome = (string)($marca["nome"] ?? "");
-                $status = (string)($marca["status"] ?? "");
+                $id = (string) ($marca["id"] ?? "");
+                $nome = (string) ($marca["nome"] ?? "");
+                $status = (string) ($marca["status"] ?? "");
                 ?>
-                <tr class="registration-row brand-row"
-                  data-id="<?php echo e($id); ?>"
-                  data-name="<?php echo e($nome); ?>"
-                  data-status="<?php echo e(strtolower($status)); ?>"
-                  data-status-raw="<?php echo e($status); ?>"
+                <tr class="registration-row brand-row" data-id="<?php echo e($id); ?>" data-name="<?php echo e($nome); ?>"
+                  data-status="<?php echo e(strtolower($status)); ?>" data-status-raw="<?php echo e($status); ?>"
                   data-search="<?php echo e(strtolower($nome)); ?>">
                   <td data-label="Marca">
                     <strong data-brand-name><?php echo e($nome); ?></strong>
                   </td>
                   <td data-label="Status">
-                    <span data-brand-status class="status-badge <?php echo $status === "Ativa" ? "status-active" : "status-inactive"; ?>">
+                    <span data-brand-status
+                      class="status-badge <?php echo $status === "Ativa" ? "status-active" : "status-inactive"; ?>">
                       <?php echo e($status); ?>
                     </span>
                   </td>
-                  <td data-label="Criada em"><?php echo e(formatarDataMarca((string)($marca["criado_em"] ?? ""))); ?></td>
-                  <td data-label="Atualizada em" data-brand-updated><?php echo e(formatarDataMarca((string)($marca["atualizado_em"] ?? ""))); ?></td>
+                  <td data-label="Criada em"><?php echo e(formatarDataMarca((string) ($marca["criado_em"] ?? ""))); ?>
+                  </td>
+                  <td data-label="Atualizada em" data-brand-updated>
+
+
+                    <?php echo e(formatarDataMarca((string) ($marca["atualizado_em"] ?? ""))); ?>
+                  </td>
                   <td data-label="A&ccedil;&otilde;es" class="brand-actions-cell">
                     <div class="row-actions">
                       <button class="table-action edit-brand-button" type="button" data-brand-action="edit">
@@ -420,7 +429,8 @@ try {
         </button>
       </div>
 
-      <form id="brandEditForm" class="asset-form enhanced-asset-form" action="Backend/atualizar-marca.php" method="post" novalidate>
+      <form id="brandEditForm" class="asset-form enhanced-asset-form" action="Backend/atualizar-marca.php" method="post"
+        novalidate>
         <input id="editBrandId" type="hidden" name="id" />
         <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
 
@@ -464,7 +474,3 @@ try {
 </body>
 
 </html>
-
-
-
-

@@ -55,25 +55,25 @@ function garantirTabelaLocais(PDO $pdo): void
 $usuario = $_SESSION["usuario"];
 $nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
 $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
-$sidebarRoleRaw = strtolower(trim((string)($usuario["tipo_usuario"] ?? "")));
+$sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
 $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
 $sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
 $sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
-$sidebarEmail = e((string)($usuario["email"] ?? ""));
-$sidebarDepartment = e((string)($usuario["departamento"] ?? "Sem departamento"));
-$sidebarNameText = (string)($usuario["nome_completo"] ?? "Usuario");
+$sidebarEmail = e((string) ($usuario["email"] ?? ""));
+$sidebarDepartment = e((string) ($usuario["departamento"] ?? "Sem departamento"));
+$sidebarNameText = (string) ($usuario["nome_completo"] ?? "Usuario");
 $sidebarNameParts = preg_split("/\s+/", trim($sidebarNameText)) ?: [];
 $sidebarInitialsText = "";
 foreach ($sidebarNameParts as $sidebarNamePart) {
-    if ($sidebarNamePart === "") {
-        continue;
-    }
+  if ($sidebarNamePart === "") {
+    continue;
+  }
 
-    $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
+  $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
 
-    if (strlen($sidebarInitialsText) >= 2) {
-        break;
-    }
+  if (strlen($sidebarInitialsText) >= 2) {
+    break;
+  }
 }
 $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 $csrfToken = e((string) $_SESSION["csrf_token"]);
@@ -164,6 +164,10 @@ try {
           <i class="bi bi-speedometer2"></i>
           <span>P&aacute;gina Inicial</span>
         </a>
+        <a class="nav-link" href="dashboard.php">
+          <i class="bi bi-graph-up-arrow"></i>
+          <span>Dashboard</span>
+        </a>
 
         <a class="nav-link" href="funcionarios.php">
           <i class="bi bi-people-fill"></i>
@@ -184,7 +188,7 @@ try {
           <i class="bi bi-geo-alt-fill"></i>
           <span>Localiza&ccedil;&otilde;es</span>
         </a>
-<div class="nav-group" data-nav-group>
+        <div class="nav-group" data-nav-group>
           <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="registrationSubmenu">
             <i class="bi bi-folder-plus"></i>
             <span>Cadastros</span>
@@ -231,7 +235,8 @@ try {
           <div class="sidebar-user-info">
             <strong title="<?php echo $nomeUsuario; ?>"><?php echo $nomeUsuario; ?></strong>
             <span class="sidebar-role <?php echo $sidebarRoleClass; ?>"><?php echo $sidebarRoleLabel; ?></span>
-            <small title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
+            <small
+              title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
             <small title="<?php echo $sidebarDepartment; ?>"><?php echo $sidebarDepartment; ?></small>
           </div>
         </div>
@@ -254,7 +259,8 @@ try {
           <div>
             <p class="eyebrow">Edi&ccedil;&atilde;o</p>
             <h1>
-              <span class="typewriter-heading" style="--typewriter-min: 26ch">Edi&ccedil;&atilde;o de localiza&ccedil;&otilde;es</span><span aria-hidden="true"></span>
+              <span class="typewriter-heading" style="--typewriter-min: 26ch">Edi&ccedil;&atilde;o de
+                localiza&ccedil;&otilde;es</span><span aria-hidden="true"></span>
             </h1>
           </div>
         </div>
@@ -276,7 +282,8 @@ try {
         <div class="hero-content">
           <h2 id="locationEditTitle">
             <span class="typewriter-heading" style="--typewriter-min: 26ch" data-typewriter-loop
-              data-typewriter-phrases="Tabela de localiza&ccedil;&otilde;es.|Altere endere&ccedil;os com seguran&ccedil;a.|Organize setores e unidades.">Tabela de localiza&ccedil;&otilde;es.</span><span aria-hidden="true"></span>
+              data-typewriter-phrases="Tabela de localiza&ccedil;&otilde;es.|Altere endere&ccedil;os com seguran&ccedil;a.|Organize setores e unidades.">Tabela
+              de localiza&ccedil;&otilde;es.</span><span aria-hidden="true"></span>
           </h2>
           <p>
             Consulte as localiza&ccedil;&otilde;es cadastradas, altere nome, refer&ecirc;ncia ou status
@@ -373,12 +380,9 @@ try {
                 $status = (string) ($local["status"] ?? "Ativo");
                 $search = strtolower(trim($nome . " " . $endereco));
                 ?>
-                <tr class="registration-row location-row"
-                  data-id="<?php echo e($id); ?>"
-                  data-name="<?php echo e($nome); ?>"
-                  data-address="<?php echo e($endereco); ?>"
-                  data-status="<?php echo e(strtolower($status)); ?>"
-                  data-status-raw="<?php echo e($status); ?>"
+                <tr class="registration-row location-row" data-id="<?php echo e($id); ?>"
+                  data-name="<?php echo e($nome); ?>" data-address="<?php echo e($endereco); ?>"
+                  data-status="<?php echo e(strtolower($status)); ?>" data-status-raw="<?php echo e($status); ?>"
                   data-search="<?php echo e($search); ?>">
                   <td data-label="Local">
                     <strong data-location-name><?php echo e($nome); ?></strong>
@@ -387,12 +391,15 @@ try {
                     </span>
                   </td>
                   <td data-label="Status">
-                    <span data-location-status class="status-badge <?php echo $status === "Ativo" ? "status-active" : "status-inactive"; ?>">
+                    <span data-location-status
+                      class="status-badge <?php echo $status === "Ativo" ? "status-active" : "status-inactive"; ?>">
                       <?php echo e($status); ?>
                     </span>
                   </td>
-                  <td data-label="Criado em"><?php echo e(formatarDataLocal((string) ($local["criado_em"] ?? ""))); ?></td>
-                  <td data-label="Atualizado em" data-location-updated><?php echo e(formatarDataLocal((string) ($local["atualizado_em"] ?? ""))); ?></td>
+                  <td data-label="Criado em"><?php echo e(formatarDataLocal((string) ($local["criado_em"] ?? ""))); ?>
+                  </td>
+                  <td data-label="Atualizado em" data-location-updated>
+                    <?php echo e(formatarDataLocal((string) ($local["atualizado_em"] ?? ""))); ?></td>
                   <td data-label="A&ccedil;&otilde;es" class="location-actions-cell">
                     <div class="row-actions">
                       <button class="table-action edit-location-button" type="button" data-location-action="edit">
@@ -432,7 +439,8 @@ try {
         </button>
       </div>
 
-      <form id="locationEditForm" class="asset-form enhanced-asset-form" action="Backend/atualizar-local.php" method="post" novalidate>
+      <form id="locationEditForm" class="asset-form enhanced-asset-form" action="Backend/atualizar-local.php"
+        method="post" novalidate>
         <input id="editLocationId" type="hidden" name="id" />
         <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
 

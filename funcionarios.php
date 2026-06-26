@@ -5,67 +5,67 @@ declare(strict_types=1);
 session_start();
 
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
-    header("Location: Pagina-login.html?sessao=expirada");
-    exit;
+  header("Location: Pagina-login.html?sessao=expirada");
+  exit;
 }
 
 function e(string $value): string
 {
-    return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
+  return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
 }
 
 function formatarData(?string $value): string
 {
-    if (!$value) {
-        return "--";
-    }
+  if (!$value) {
+    return "--";
+  }
 
-    try {
-        return (new DateTimeImmutable($value))
-            ->setTimezone(new DateTimeZone("America/Sao_Paulo"))
-            ->format("d/m/Y H:i");
-    } catch (Throwable) {
-        return "--";
-    }
+  try {
+    return (new DateTimeImmutable($value))
+      ->setTimezone(new DateTimeZone("America/Sao_Paulo"))
+      ->format("d/m/Y H:i");
+  } catch (Throwable) {
+    return "--";
+  }
 }
 
 function statusClasse(string $status): string
 {
-    $statusNormalizado = strtolower(trim($status));
+  $statusNormalizado = strtolower(trim($status));
 
-    if ($statusNormalizado === "ativo") {
-        return "status-active";
-    }
+  if ($statusNormalizado === "ativo") {
+    return "status-active";
+  }
 
-    if ($statusNormalizado === "inativo") {
-        return "status-inactive";
-    }
+  if ($statusNormalizado === "inativo") {
+    return "status-inactive";
+  }
 
-    return "status-neutral";
+  return "status-neutral";
 }
 
 $usuario = $_SESSION["usuario"];
-$nomeUsuario = e((string)($usuario["nome_completo"] ?? "Usuario"));
-$tipoUsuario = e((string)($usuario["tipo_usuario"] ?? ""));
-$sidebarRoleRaw = strtolower(trim((string)($usuario["tipo_usuario"] ?? "")));
+$nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
+$tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
+$sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
 $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
 $sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
 $sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
-$sidebarEmail = e((string)($usuario["email"] ?? ""));
-$sidebarDepartment = e((string)($usuario["departamento"] ?? "Sem departamento"));
-$sidebarNameText = (string)($usuario["nome_completo"] ?? "Usuario");
+$sidebarEmail = e((string) ($usuario["email"] ?? ""));
+$sidebarDepartment = e((string) ($usuario["departamento"] ?? "Sem departamento"));
+$sidebarNameText = (string) ($usuario["nome_completo"] ?? "Usuario");
 $sidebarNameParts = preg_split("/\s+/", trim($sidebarNameText)) ?: [];
 $sidebarInitialsText = "";
 foreach ($sidebarNameParts as $sidebarNamePart) {
-    if ($sidebarNamePart === "") {
-        continue;
-    }
+  if ($sidebarNamePart === "") {
+    continue;
+  }
 
-    $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
+  $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
 
-    if (strlen($sidebarInitialsText) >= 2) {
-        break;
-    }
+  if (strlen($sidebarInitialsText) >= 2) {
+    break;
+  }
 }
 $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 
@@ -77,9 +77,9 @@ $ultimoMovimento = "--";
 $erroBanco = "";
 
 try {
-    require __DIR__ . "/Backend/Conexao.php";
+  require __DIR__ . "/Backend/Conexao.php";
 
-    $resumoStmt = $pdo->prepare("
+  $resumoStmt = $pdo->prepare("
         select
             count(*)::int as total,
             count(*) filter (where lower(status) = 'ativo')::int as ativos,
@@ -87,15 +87,15 @@ try {
             max(greatest(criado_em, atualizado_em)) as ultimo_movimento
           from public.perfis_usuarios
     ");
-    $resumoStmt->execute();
-    $resumo = $resumoStmt->fetch() ?: [];
+  $resumoStmt->execute();
+  $resumo = $resumoStmt->fetch() ?: [];
 
-    $totalFuncionarios = (int)($resumo["total"] ?? 0);
-    $funcionariosAtivos = (int)($resumo["ativos"] ?? 0);
-    $funcionariosInativos = (int)($resumo["inativos"] ?? 0);
-    $ultimoMovimento = formatarData((string)($resumo["ultimo_movimento"] ?? ""));
+  $totalFuncionarios = (int) ($resumo["total"] ?? 0);
+  $funcionariosAtivos = (int) ($resumo["ativos"] ?? 0);
+  $funcionariosInativos = (int) ($resumo["inativos"] ?? 0);
+  $ultimoMovimento = formatarData((string) ($resumo["ultimo_movimento"] ?? ""));
 
-    $funcionariosStmt = $pdo->prepare("
+  $funcionariosStmt = $pdo->prepare("
         select
             id,
             nome_completo,
@@ -113,10 +113,10 @@ try {
             greatest(criado_em, atualizado_em) desc,
             nome_completo asc
     ");
-    $funcionariosStmt->execute();
-    $funcionarios = $funcionariosStmt->fetchAll();
+  $funcionariosStmt->execute();
+  $funcionarios = $funcionariosStmt->fetchAll();
 } catch (Throwable) {
-    $erroBanco = "Nao foi possivel carregar os funcionarios agora.";
+  $erroBanco = "Nao foi possivel carregar os funcionarios agora.";
 }
 ?>
 <!doctype html>
@@ -167,6 +167,11 @@ try {
           <span>P&aacute;gina Inicial</span>
         </a>
 
+        <a class="nav-link" href="dashboard.php">
+          <i class="bi bi-graph-up-arrow"></i>
+          <span>Dashboard</span>
+        </a>
+
         <a class="nav-link active" href="funcionarios.php">
           <i class="bi bi-people-fill"></i>
           <span>Funcion&aacute;rios</span>
@@ -186,7 +191,7 @@ try {
           <i class="bi bi-geo-alt-fill"></i>
           <span>Localiza&ccedil;&otilde;es</span>
         </a>
-<div class="nav-group" data-nav-group>
+        <div class="nav-group" data-nav-group>
           <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="registrationSubmenu">
             <i class="bi bi-folder-plus"></i>
             <span>Cadastros</span>
@@ -233,7 +238,8 @@ try {
           <div class="sidebar-user-info">
             <strong title="<?php echo $nomeUsuario; ?>"><?php echo $nomeUsuario; ?></strong>
             <span class="sidebar-role <?php echo $sidebarRoleClass; ?>"><?php echo $sidebarRoleLabel; ?></span>
-            <small title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
+            <small
+              title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
             <small title="<?php echo $sidebarDepartment; ?>"><?php echo $sidebarDepartment; ?></small>
           </div>
         </div>
@@ -256,11 +262,8 @@ try {
           <div>
             <p class="eyebrow">Equipe</p>
             <h1>
-              <span
-                class="typewriter-heading"
-                style="--typewriter-min: 17ch"
-               
-              >Funcion&aacute;rios</span><span  aria-hidden="true"></span>
+              <span class="typewriter-heading" style="--typewriter-min: 17ch">Funcion&aacute;rios</span><span
+                aria-hidden="true"></span>
             </h1>
           </div>
         </div>
@@ -282,12 +285,9 @@ try {
       <section class="hero-panel compact-hero employees-hero" aria-labelledby="employeesTitle">
         <div class="hero-content">
           <h2 id="employeesTitle">
-            <span
-              class="typewriter-heading"
-              style="--typewriter-min: 31ch"
-              data-typewriter-loop
-              data-typewriter-phrases="Vis&atilde;o geral dos funcion&aacute;rios.|Dados principais da equipe.|Busca simples e objetiva."
-            >Vis&atilde;o geral dos funcion&aacute;rios.</span><span  aria-hidden="true"></span>
+            <span class="typewriter-heading" style="--typewriter-min: 31ch" data-typewriter-loop
+              data-typewriter-phrases="Vis&atilde;o geral dos funcion&aacute;rios.|Dados principais da equipe.|Busca simples e objetiva.">Vis&atilde;o
+              geral dos funcion&aacute;rios.</span><span aria-hidden="true"></span>
           </h2>
           <p>
             Consulte dados principais da equipe, identifique rapidamente quem est&aacute; ativo ou inativo
@@ -304,7 +304,7 @@ try {
 
           <div>
             <span>Total</span>
-            <strong><?php echo e((string)$totalFuncionarios); ?></strong>
+            <strong><?php echo e((string) $totalFuncionarios); ?></strong>
             <p>Funcion&aacute;rios cadastrados</p>
           </div>
         </article>
@@ -316,7 +316,7 @@ try {
 
           <div>
             <span>Ativos</span>
-            <strong><?php echo e((string)$funcionariosAtivos); ?></strong>
+            <strong><?php echo e((string) $funcionariosAtivos); ?></strong>
             <p>Usu&aacute;rios liberados para acesso</p>
           </div>
         </article>
@@ -328,7 +328,7 @@ try {
 
           <div>
             <span>Inativos</span>
-            <strong><?php echo e((string)$funcionariosInativos); ?></strong>
+            <strong><?php echo e((string) $funcionariosInativos); ?></strong>
             <p>Acesso bloqueado pelo status</p>
           </div>
         </article>
@@ -346,7 +346,7 @@ try {
         </article>
       </section>
 
-      <?php if ($erroBanco !== "") : ?>
+      <?php if ($erroBanco !== ""): ?>
         <div class="dashboard-status error-status" role="status">
           <?php echo e($erroBanco); ?>
         </div>
@@ -360,7 +360,7 @@ try {
           </div>
 
           <div class="records-actions">
-            <span id="employeeResultCount"><?php echo e((string)count($funcionarios)); ?> registros</span>
+            <span id="employeeResultCount"><?php echo e((string) count($funcionarios)); ?> registros</span>
             <select id="employeeStatusFilter" aria-label="Filtrar por status">
               <option value="todos">Todos os status</option>
               <option value="ativo">Ativos</option>
@@ -383,7 +383,7 @@ try {
               </tr>
             </thead>
             <tbody id="employeeTableBody">
-              <?php if (!$funcionarios) : ?>
+              <?php if (!$funcionarios): ?>
                 <tr class="employee-empty-row">
                   <td colspan="7">
                     <div class="empty-state records-empty">
@@ -394,36 +394,36 @@ try {
                 </tr>
               <?php endif; ?>
 
-              <?php foreach ($funcionarios as $funcionario) : ?>
+              <?php foreach ($funcionarios as $funcionario): ?>
                 <?php
-                $status = (string)($funcionario["status"] ?? "--");
+                $status = (string) ($funcionario["status"] ?? "--");
                 $searchText = implode(" ", [
-                    (string)($funcionario["nome_completo"] ?? ""),
-                    (string)($funcionario["email"] ?? ""),
-                    (string)($funcionario["tipo_usuario"] ?? ""),
-                    (string)($funcionario["departamento"] ?? ""),
-                    (string)($funcionario["empresa"] ?? ""),
-                    (string)($funcionario["celular"] ?? ""),
-                    $status,
+                  (string) ($funcionario["nome_completo"] ?? ""),
+                  (string) ($funcionario["email"] ?? ""),
+                  (string) ($funcionario["tipo_usuario"] ?? ""),
+                  (string) ($funcionario["departamento"] ?? ""),
+                  (string) ($funcionario["empresa"] ?? ""),
+                  (string) ($funcionario["celular"] ?? ""),
+                  $status,
                 ]);
                 ?>
-                <tr class="registration-row employee-row"
-                  data-status="<?php echo e(strtolower($status)); ?>"
+                <tr class="registration-row employee-row" data-status="<?php echo e(strtolower($status)); ?>"
                   data-search="<?php echo e($searchText); ?>">
                   <td data-label="Funcion&aacute;rio">
-                    <strong><?php echo e((string)($funcionario["nome_completo"] ?? "--")); ?></strong>
-                    <span class="employee-email"><?php echo e((string)($funcionario["email"] ?? "--")); ?></span>
+                    <strong><?php echo e((string) ($funcionario["nome_completo"] ?? "--")); ?></strong>
+                    <span class="employee-email"><?php echo e((string) ($funcionario["email"] ?? "--")); ?></span>
                   </td>
-                  <td data-label="Tipo"><?php echo e((string)($funcionario["tipo_usuario"] ?? "--")); ?></td>
-                  <td data-label="Departamento"><?php echo e((string)($funcionario["departamento"] ?? "--")); ?></td>
-                  <td data-label="Empresa"><?php echo e((string)($funcionario["empresa"] ?? "--")); ?></td>
-                  <td data-label="Celular"><?php echo e((string)($funcionario["celular"] ?? "--")); ?></td>
+                  <td data-label="Tipo"><?php echo e((string) ($funcionario["tipo_usuario"] ?? "--")); ?></td>
+                  <td data-label="Departamento"><?php echo e((string) ($funcionario["departamento"] ?? "--")); ?></td>
+                  <td data-label="Empresa"><?php echo e((string) ($funcionario["empresa"] ?? "--")); ?></td>
+                  <td data-label="Celular"><?php echo e((string) ($funcionario["celular"] ?? "--")); ?></td>
                   <td data-label="Status">
                     <span class="status-badge <?php echo e(statusClasse($status)); ?>">
                       <?php echo e($status); ?>
                     </span>
                   </td>
-                  <td data-label="Cadastro"><?php echo e(formatarData((string)($funcionario["criado_em"] ?? ""))); ?></td>
+                  <td data-label="Cadastro"><?php echo e(formatarData((string) ($funcionario["criado_em"] ?? ""))); ?>
+                  </td>
                 </tr>
               <?php endforeach; ?>
             </tbody>
@@ -440,7 +440,3 @@ try {
 </body>
 
 </html>
-
-
-
-

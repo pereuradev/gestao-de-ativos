@@ -5,60 +5,60 @@ declare(strict_types=1);
 session_start();
 
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
-    header("Location: Pagina-login.html?sessao=expirada");
-    exit;
+  header("Location: Pagina-login.html?sessao=expirada");
+  exit;
 }
 
 if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {
-    $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+  $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
 }
 
 function e(string $value): string
 {
-    return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
+  return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
 }
 
 function formatarDataAtivo(?string $value): string
 {
-    if (!$value) {
-        return "--";
-    }
+  if (!$value) {
+    return "--";
+  }
 
-    try {
-        return (new DateTimeImmutable($value))
-            ->setTimezone(new DateTimeZone("America/Sao_Paulo"))
-            ->format("d/m/Y H:i");
-    } catch (Throwable) {
-        return "--";
-    }
+  try {
+    return (new DateTimeImmutable($value))
+      ->setTimezone(new DateTimeZone("America/Sao_Paulo"))
+      ->format("d/m/Y H:i");
+  } catch (Throwable) {
+    return "--";
+  }
 }
 
 $usuario = $_SESSION["usuario"];
-$nomeUsuario = e((string)($usuario["nome_completo"] ?? "Usuario"));
-$tipoUsuario = e((string)($usuario["tipo_usuario"] ?? ""));
-$sidebarRoleRaw = strtolower(trim((string)($usuario["tipo_usuario"] ?? "")));
+$nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
+$tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
+$sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
 $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
 $sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
 $sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
-$sidebarEmail = e((string)($usuario["email"] ?? ""));
-$sidebarDepartment = e((string)($usuario["departamento"] ?? "Sem departamento"));
-$sidebarNameText = (string)($usuario["nome_completo"] ?? "Usuario");
+$sidebarEmail = e((string) ($usuario["email"] ?? ""));
+$sidebarDepartment = e((string) ($usuario["departamento"] ?? "Sem departamento"));
+$sidebarNameText = (string) ($usuario["nome_completo"] ?? "Usuario");
 $sidebarNameParts = preg_split("/\s+/", trim($sidebarNameText)) ?: [];
 $sidebarInitialsText = "";
 foreach ($sidebarNameParts as $sidebarNamePart) {
-    if ($sidebarNamePart === "") {
-        continue;
-    }
+  if ($sidebarNamePart === "") {
+    continue;
+  }
 
-    $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
+  $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
 
-    if (strlen($sidebarInitialsText) >= 2) {
-        break;
-    }
+  if (strlen($sidebarInitialsText) >= 2) {
+    break;
+  }
 }
 $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
-$csrfToken = e((string)$_SESSION["csrf_token"]);
-$categoriaFiltro = trim((string)($_GET["categoria"] ?? ""));
+$csrfToken = e((string) $_SESSION["csrf_token"]);
+$categoriaFiltro = trim((string) ($_GET["categoria"] ?? ""));
 
 $ativos = [];
 $categorias = [];
@@ -69,46 +69,46 @@ $ativosDisponiveis = 0;
 $erroBanco = "";
 
 $statusOptions = [
-    "DisponÃ­vel",
-    "Em uso",
-    "ManutenÃ§Ã£o",
-    "FormataÃ§Ã£o",
-    "HomologaÃ§Ã£o",
-    "Baixado",
-    "Perdido",
+  "DisponÃ­vel",
+  "Em uso",
+  "ManutenÃ§Ã£o",
+  "FormataÃ§Ã£o",
+  "HomologaÃ§Ã£o",
+  "Baixado",
+  "Perdido",
 ];
 $statusOptions = [
-    "DisponÃ­vel",
-    "Em uso",
-    "HomologaÃ§Ã£o",
-    "ManutenÃ§Ã£o",
+  "DisponÃ­vel",
+  "Em uso",
+  "HomologaÃ§Ã£o",
+  "ManutenÃ§Ã£o",
 ];
 $statusPadrao = "DisponÃ­vel";
 
 try {
-    require __DIR__ . "/Backend/Conexao.php";
-    require __DIR__ . "/Backend/status-ativos.php";
+  require __DIR__ . "/Backend/Conexao.php";
+  require __DIR__ . "/Backend/status-ativos.php";
 
-    $statusOptions = nomesStatusAtivos($pdo);
-    $statusPadrao = statusAtivoPadrao();
+  $statusOptions = nomesStatusAtivos($pdo);
+  $statusPadrao = statusAtivoPadrao();
 
-    $categoriasStmt = $pdo->prepare("
+  $categoriasStmt = $pdo->prepare("
         select id, nome
           from public.categorias_ativos
       order by nome asc
     ");
-    $categoriasStmt->execute();
-    $categorias = $categoriasStmt->fetchAll();
+  $categoriasStmt->execute();
+  $categorias = $categoriasStmt->fetchAll();
 
-    $locaisStmt = $pdo->prepare("
+  $locaisStmt = $pdo->prepare("
         select id, nome
           from public.locais
       order by nome asc
     ");
-    $locaisStmt->execute();
-    $locais = $locaisStmt->fetchAll();
+  $locaisStmt->execute();
+  $locais = $locaisStmt->fetchAll();
 
-    $pdo->exec("
+  $pdo->exec("
         create table if not exists public.marcas_ativos (
             id uuid primary key default gen_random_uuid(),
             nome text not null unique,
@@ -119,36 +119,36 @@ try {
         )
     ");
 
-    $marcasStmt = $pdo->prepare("
+  $marcasStmt = $pdo->prepare("
         select nome
           from public.marcas_ativos
          where status = :status
       order by nome asc
     ");
-    $marcasStmt->execute([":status" => "Ativa"]);
-    $marcas = $marcasStmt->fetchAll();
+  $marcasStmt->execute([":status" => "Ativa"]);
+  $marcas = $marcasStmt->fetchAll();
 
-    $totalStmt = $pdo->prepare("select count(*)::int from public.ativos");
-    $totalStmt->execute();
-    $totalAtivos = (int)$totalStmt->fetchColumn();
+  $totalStmt = $pdo->prepare("select count(*)::int from public.ativos");
+  $totalStmt->execute();
+  $totalAtivos = (int) $totalStmt->fetchColumn();
 
-    $disponiveisStmt = $pdo->prepare("
+  $disponiveisStmt = $pdo->prepare("
         select count(*)::int
           from public.ativos
          where lower(status) in ('disponivel', 'disponÃ­vel', 'estoque', 'em estoque')
     ");
-    $disponiveisStmt->execute();
-    $ativosDisponiveis = (int)$disponiveisStmt->fetchColumn();
+  $disponiveisStmt->execute();
+  $ativosDisponiveis = (int) $disponiveisStmt->fetchColumn();
 
-    $disponiveisStmt = $pdo->prepare("
+  $disponiveisStmt = $pdo->prepare("
         select count(*)::int
           from public.ativos
          where status = :status
     ");
-    $disponiveisStmt->execute([":status" => $statusPadrao]);
-    $ativosDisponiveis = (int)$disponiveisStmt->fetchColumn();
+  $disponiveisStmt->execute([":status" => $statusPadrao]);
+  $ativosDisponiveis = (int) $disponiveisStmt->fetchColumn();
 
-    $ativosStmt = $pdo->prepare("
+  $ativosStmt = $pdo->prepare("
         select
             a.id,
             a.nome,
@@ -169,10 +169,10 @@ try {
      left join public.locais l on l.id = a.local_id
       order by a.criado_em desc
     ");
-    $ativosStmt->execute();
-    $ativos = $ativosStmt->fetchAll();
+  $ativosStmt->execute();
+  $ativos = $ativosStmt->fetchAll();
 } catch (Throwable) {
-    $erroBanco = "Nao foi possivel carregar os ativos do banco agora.";
+  $erroBanco = "Nao foi possivel carregar os ativos do banco agora.";
 }
 ?>
 <!doctype html>
@@ -224,7 +224,10 @@ try {
           <i class="bi bi-speedometer2"></i>
           <span>P&aacute;gina Inicial</span>
         </a>
-
+        <a class="nav-link" href="dashboard.php">
+          <i class="bi bi-graph-up-arrow"></i>
+          <span>Dashboard</span>
+        </a>
         <a class="nav-link" href="funcionarios.php">
           <i class="bi bi-people-fill"></i>
           <span>Funcion&aacute;rios</span>
@@ -244,7 +247,7 @@ try {
           <i class="bi bi-geo-alt-fill"></i>
           <span>Localiza&ccedil;&otilde;es</span>
         </a>
-<div class="nav-group" data-nav-group>
+        <div class="nav-group" data-nav-group>
           <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="registrationSubmenu">
             <i class="bi bi-folder-plus"></i>
             <span>Cadastros</span>
@@ -291,7 +294,8 @@ try {
           <div class="sidebar-user-info">
             <strong title="<?php echo $nomeUsuario; ?>"><?php echo $nomeUsuario; ?></strong>
             <span class="sidebar-role <?php echo $sidebarRoleClass; ?>"><?php echo $sidebarRoleLabel; ?></span>
-            <small title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
+            <small
+              title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
             <small title="<?php echo $sidebarDepartment; ?>"><?php echo $sidebarDepartment; ?></small>
           </div>
         </div>
@@ -314,7 +318,8 @@ try {
           <div>
             <p class="eyebrow">Edi&ccedil;&atilde;o</p>
             <h1>
-              <span class="typewriter-heading" style="--typewriter-min: 18ch">Edi&ccedil;&atilde;o de ativos</span><span aria-hidden="true"></span>
+              <span class="typewriter-heading" style="--typewriter-min: 18ch">Edi&ccedil;&atilde;o de ativos</span><span
+                aria-hidden="true"></span>
             </h1>
           </div>
         </div>
@@ -336,11 +341,13 @@ try {
         <div class="hero-content">
           <h2 id="assetEditTitle">
             <span class="typewriter-heading" style="--typewriter-min: 21ch" data-typewriter-loop
-              data-typewriter-phrases="Ativos cadastrados.|Inventario para consulta.|Dados recentes do estoque.">Ativos cadastrados.</span><span aria-hidden="true"></span>
+              data-typewriter-phrases="Ativos cadastrados.|Inventario para consulta.|Dados recentes do estoque.">Ativos
+              cadastrados.</span><span aria-hidden="true"></span>
           </h2>
           <p>
             Veja os ativos cadastrados no banco para apoiar a manuten&ccedil;&atilde;o do invent&aacute;rio.
-            Use filtros para encontrar itens rapidamente e a coluna de a&ccedil;&otilde;es para alterar ou excluir registros.
+            Use filtros para encontrar itens rapidamente e a coluna de a&ccedil;&otilde;es para alterar ou excluir
+            registros.
           </p>
         </div>
       </section>
@@ -353,7 +360,8 @@ try {
 
           <div>
             <span>Total de ativos</span>
-            <strong id="totalAssetsMetric" data-total-assets="<?php echo e((string)$totalAtivos); ?>"><?php echo e((string)$totalAtivos); ?></strong>
+            <strong id="totalAssetsMetric"
+              data-total-assets="<?php echo e((string) $totalAtivos); ?>"><?php echo e((string) $totalAtivos); ?></strong>
           </div>
         </article>
 
@@ -364,7 +372,7 @@ try {
 
           <div>
             <span>Em estoque</span>
-            <strong><?php echo e((string)$ativosDisponiveis); ?></strong>
+            <strong><?php echo e((string) $ativosDisponiveis); ?></strong>
           </div>
         </article>
 
@@ -375,7 +383,7 @@ try {
 
           <div>
             <span>Exibidos</span>
-            <strong id="displayedAssetsMetric"><?php echo e((string)count($ativos)); ?></strong>
+            <strong id="displayedAssetsMetric"><?php echo e((string) count($ativos)); ?></strong>
           </div>
         </article>
       </section>
@@ -394,7 +402,7 @@ try {
           </div>
 
           <div class="records-actions">
-            <span id="assetResultCount"><?php echo e((string)count($ativos)); ?> registros</span>
+            <span id="assetResultCount"><?php echo e((string) count($ativos)); ?> registros</span>
           </div>
         </div>
 
@@ -417,7 +425,7 @@ try {
           <select id="assetCategoryFilter" aria-label="Filtrar por categoria">
             <option value="todos">Todas as categorias</option>
             <?php foreach ($categorias as $categoria): ?>
-              <?php $categoriaNome = (string)($categoria["nome"] ?? ""); ?>
+              <?php $categoriaNome = (string) ($categoria["nome"] ?? ""); ?>
               <option value="<?php echo e($categoriaNome); ?>" <?php echo strcasecmp($categoriaFiltro, $categoriaNome) === 0 ? "selected" : ""; ?>>
                 <?php echo e($categoriaNome); ?>
               </option>
@@ -427,7 +435,7 @@ try {
           <select id="assetBrandFilter" aria-label="Filtrar por marca">
             <option value="todos">Todas as marcas</option>
             <?php foreach ($marcas as $marca): ?>
-              <?php $marcaNome = (string)($marca["nome"] ?? ""); ?>
+              <?php $marcaNome = (string) ($marca["nome"] ?? ""); ?>
               <option value="<?php echo e($marcaNome); ?>"><?php echo e($marcaNome); ?></option>
             <?php endforeach; ?>
           </select>
@@ -455,40 +463,31 @@ try {
             <tbody id="assetTableBody">
               <?php foreach ($ativos as $ativo): ?>
                 <?php
-                $id = (string)($ativo["id"] ?? "");
-                $nome = (string)($ativo["nome"] ?? "");
-                $descricao = (string)($ativo["descricao"] ?? "");
-                $numeroSerie = (string)($ativo["numero_serie"] ?? "");
-                $status = (string)($ativo["status"] ?? "--");
-                $marca = (string)($ativo["marca"] ?? "");
-                $propriedade = (string)($ativo["propriedade"] ?? "");
-                $imei = (string)($ativo["imei"] ?? "");
-                $datasheet = (string)($ativo["datasheet"] ?? "");
-                $categoriaId = (string)($ativo["categoria_id"] ?? "");
-                $localId = (string)($ativo["local_id"] ?? "");
-                $categoria = (string)($ativo["categoria"] ?? "Sem categoria");
-                $local = (string)($ativo["local"] ?? "");
+                $id = (string) ($ativo["id"] ?? "");
+                $nome = (string) ($ativo["nome"] ?? "");
+                $descricao = (string) ($ativo["descricao"] ?? "");
+                $numeroSerie = (string) ($ativo["numero_serie"] ?? "");
+                $status = (string) ($ativo["status"] ?? "--");
+                $marca = (string) ($ativo["marca"] ?? "");
+                $propriedade = (string) ($ativo["propriedade"] ?? "");
+                $imei = (string) ($ativo["imei"] ?? "");
+                $datasheet = (string) ($ativo["datasheet"] ?? "");
+                $categoriaId = (string) ($ativo["categoria_id"] ?? "");
+                $localId = (string) ($ativo["local_id"] ?? "");
+                $categoria = (string) ($ativo["categoria"] ?? "Sem categoria");
+                $local = (string) ($ativo["local"] ?? "");
                 $searchData = strtolower(trim($nome . " " . $numeroSerie . " " . $status . " " . $marca . " " . $propriedade . " " . $categoria . " " . $local));
                 ?>
-                <tr class="registration-row asset-row"
-                  data-id="<?php echo e($id); ?>"
-                  data-name="<?php echo e($nome); ?>"
-                  data-description="<?php echo e($descricao); ?>"
-                  data-serial="<?php echo e($numeroSerie); ?>"
-                  data-status="<?php echo e(strtolower($status)); ?>"
-                  data-status-raw="<?php echo e($status); ?>"
-                  data-brand="<?php echo e(strtolower($marca)); ?>"
-                  data-brand-raw="<?php echo e($marca); ?>"
-                  data-property="<?php echo e($propriedade); ?>"
-                  data-imei="<?php echo e($imei); ?>"
-                  data-datasheet="<?php echo e($datasheet); ?>"
-                  data-category="<?php echo e(strtolower($categoria)); ?>"
-                  data-category-raw="<?php echo e($categoria); ?>"
-                  data-category-id="<?php echo e($categoriaId); ?>"
-                  data-location="<?php echo e(strtolower($local)); ?>"
-                  data-location-raw="<?php echo e($local); ?>"
+                <tr class="registration-row asset-row" data-id="<?php echo e($id); ?>" data-name="<?php echo e($nome); ?>"
+                  data-description="<?php echo e($descricao); ?>" data-serial="<?php echo e($numeroSerie); ?>"
+                  data-status="<?php echo e(strtolower($status)); ?>" data-status-raw="<?php echo e($status); ?>"
+                  data-brand="<?php echo e(strtolower($marca)); ?>" data-brand-raw="<?php echo e($marca); ?>"
+                  data-property="<?php echo e($propriedade); ?>" data-imei="<?php echo e($imei); ?>"
+                  data-datasheet="<?php echo e($datasheet); ?>" data-category="<?php echo e(strtolower($categoria)); ?>"
+                  data-category-raw="<?php echo e($categoria); ?>" data-category-id="<?php echo e($categoriaId); ?>"
+                  data-location="<?php echo e(strtolower($local)); ?>" data-location-raw="<?php echo e($local); ?>"
                   data-location-id="<?php echo e($localId); ?>"
-                  data-created="<?php echo e(formatarDataAtivo((string)($ativo["criado_em"] ?? ""))); ?>"
+                  data-created="<?php echo e(formatarDataAtivo((string) ($ativo["criado_em"] ?? ""))); ?>"
                   data-search="<?php echo e($searchData); ?>">
                   <td data-label="Ativo">
                     <strong data-asset-name><?php echo e($nome ?: "--"); ?></strong>
@@ -496,12 +495,15 @@ try {
                   </td>
                   <td data-label="Categoria" data-asset-category><?php echo e($categoria); ?></td>
                   <td data-label="Marca" data-asset-brand><?php echo e($marca !== "" ? $marca : "--"); ?></td>
-                  <td data-label="N&ordm; de s&eacute;rie" data-asset-serial><?php echo e($numeroSerie !== "" ? $numeroSerie : "--"); ?></td>
+                  <td data-label="N&ordm; de s&eacute;rie" data-asset-serial>
+                    <?php echo e($numeroSerie !== "" ? $numeroSerie : "--"); ?></td>
                   <td data-label="Status">
-                    <span class="<?php echo e(classeStatusAtivo($status)); ?>" data-asset-status><?php echo e($status); ?></span>
+                    <span class="<?php echo e(classeStatusAtivo($status)); ?>"
+                      data-asset-status><?php echo e($status); ?></span>
                   </td>
                   <td data-label="Local" data-asset-location><?php echo e($local !== "" ? $local : "--"); ?></td>
-                  <td data-label="Criado em" data-asset-created><?php echo e(formatarDataAtivo((string)($ativo["criado_em"] ?? ""))); ?></td>
+                  <td data-label="Criado em" data-asset-created>
+                    <?php echo e(formatarDataAtivo((string) ($ativo["criado_em"] ?? ""))); ?></td>
                   <td data-label="A&ccedil;&otilde;es" class="asset-actions-cell">
                     <div class="row-actions">
                       <button class="table-action edit-asset-button" type="button" data-asset-action="edit">
@@ -529,7 +531,8 @@ try {
   </div>
 
   <div class="edit-modal-backdrop" id="assetEditModal" hidden>
-    <section class="edit-modal-card asset-modal-card" role="dialog" aria-modal="true" aria-labelledby="assetEditModalTitle">
+    <section class="edit-modal-card asset-modal-card" role="dialog" aria-modal="true"
+      aria-labelledby="assetEditModalTitle">
       <div class="edit-modal-header">
         <div>
           <p class="section-tag">Alterar ativo</p>
@@ -541,7 +544,8 @@ try {
         </button>
       </div>
 
-      <form id="assetEditForm" class="asset-form enhanced-asset-form" action="Backend/atualizar-ativo.php" method="post" novalidate>
+      <form id="assetEditForm" class="asset-form enhanced-asset-form" action="Backend/atualizar-ativo.php" method="post"
+        novalidate>
         <input id="editAssetId" type="hidden" name="id" />
         <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
 
@@ -561,8 +565,8 @@ try {
               <select id="editAssetCategory" name="categoria_id" required>
                 <option value="">Selecione a categoria</option>
                 <?php foreach ($categorias as $categoria): ?>
-                  <option value="<?php echo e((string)($categoria["id"] ?? "")); ?>">
-                    <?php echo e((string)($categoria["nome"] ?? "")); ?>
+                  <option value="<?php echo e((string) ($categoria["id"] ?? "")); ?>">
+                    <?php echo e((string) ($categoria["nome"] ?? "")); ?>
                   </option>
                 <?php endforeach; ?>
               </select>
@@ -588,8 +592,8 @@ try {
               <select id="editAssetBrand" name="marca">
                 <option value="">Sem marca</option>
                 <?php foreach ($marcas as $marca): ?>
-                  <option value="<?php echo e((string)($marca["nome"] ?? "")); ?>">
-                    <?php echo e((string)($marca["nome"] ?? "")); ?>
+                  <option value="<?php echo e((string) ($marca["nome"] ?? "")); ?>">
+                    <?php echo e((string) ($marca["nome"] ?? "")); ?>
                   </option>
                 <?php endforeach; ?>
               </select>
@@ -603,8 +607,8 @@ try {
               <select id="editAssetLocation" name="local_id">
                 <option value="">Sem local definido</option>
                 <?php foreach ($locais as $local): ?>
-                  <option value="<?php echo e((string)($local["id"] ?? "")); ?>">
-                    <?php echo e((string)($local["nome"] ?? "")); ?>
+                  <option value="<?php echo e((string) ($local["id"] ?? "")); ?>">
+                    <?php echo e((string) ($local["nome"] ?? "")); ?>
                   </option>
                 <?php endforeach; ?>
               </select>
@@ -671,8 +675,3 @@ try {
 </body>
 
 </html>
-
-
-
-
-
