@@ -1,5 +1,31 @@
 (function () {
 const THEME_TRANSITION_MS = 660;
+const ACCENT_THEMES = {
+  teal: {
+    cyan: "#4aa3c7",
+    teal: "#4fc7b1",
+    mint: "#66d5c2",
+    accent: "#66d5c2",
+  },
+  green: {
+    cyan: "#22c55e",
+    teal: "#16a34a",
+    mint: "#86efac",
+    accent: "#22c55e",
+  },
+  blue: {
+    cyan: "#38bdf8",
+    teal: "#2563eb",
+    mint: "#7dd3fc",
+    accent: "#38bdf8",
+  },
+  violet: {
+    cyan: "#a78bfa",
+    teal: "#7c3aed",
+    mint: "#c4b5fd",
+    accent: "#a78bfa",
+  },
+};
 
 let themeTimer = null;
 let systemThemeListenerAttached = false;
@@ -118,10 +144,18 @@ function loadInterfacePreferences() {
 }
 
 function applyAccent(accent) {
-  const allowedAccents = ["teal", "green", "blue", "violet"];
-  const nextAccent = allowedAccents.includes(accent) ? accent : "teal";
+  const nextAccent = Object.hasOwn(ACCENT_THEMES, accent) ? accent : "teal";
+  const palette = ACCENT_THEMES[nextAccent];
 
   document.body.dataset.accent = nextAccent;
+  document.body.style.setProperty("--cyan", palette.cyan);
+  document.body.style.setProperty("--teal", palette.teal);
+  document.body.style.setProperty("--mint", palette.mint);
+  document.body.style.setProperty("--accent", palette.accent);
+
+  window.dispatchEvent(new CustomEvent("titech:accent-change", {
+    detail: { accent: nextAccent, palette },
+  }));
 }
 
 function applyDensity(density) {

@@ -157,12 +157,30 @@ $criadoEm = formatarDataPerfil((string)($perfil["criado_em"] ?? ""));
 $atualizadoEm = formatarDataPerfil((string)($perfil["atualizado_em"] ?? ""));
 $ultimoAcesso = date("d/m/Y H:i");
 $codigoInterno = "TT-USER-" . str_pad(substr(preg_replace("/\D/", "", (string)($perfil["id"] ?? "")), 0, 3) ?: "001", 3, "0", STR_PAD_LEFT);
-$isAdministrador = strtolower($tipoUsuarioTexto) === "administrador";
 
-// Todos os valores que vão aparecer na página são escapados antes de entrar no HTML.
-// É uma camada simples, mas importante, de segurança na renderização.
 $nomeUsuario = e($nomeUsuarioTexto);
 $tipoUsuario = e($tipoUsuarioTexto);
+$sidebarRoleRaw = strtolower(trim((string)($usuario["tipo_usuario"] ?? "")));
+$sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
+$sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
+$sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
+$sidebarEmail = e((string)($usuario["email"] ?? ""));
+$sidebarDepartment = e((string)($usuario["departamento"] ?? "Sem departamento"));
+$sidebarNameText = (string)($usuario["nome_completo"] ?? "Usuario");
+$sidebarNameParts = preg_split("/\s+/", trim($sidebarNameText)) ?: [];
+$sidebarInitialsText = "";
+foreach ($sidebarNameParts as $sidebarNamePart) {
+    if ($sidebarNamePart === "") {
+        continue;
+    }
+
+    $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
+
+    if (strlen($sidebarInitialsText) >= 2) {
+        break;
+    }
+}
+$sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 $emailUsuario = e($emailUsuarioTexto);
 $statusUsuario = e($statusUsuarioTexto);
 $departamentoUsuario = e($departamentoUsuarioTexto);
@@ -173,25 +191,6 @@ $cpfUsuario = e($cpfUsuarioTexto);
 $iniciais = e(iniciaisUsuario($nomeUsuarioTexto));
 $statusClasse = e(statusClasseConfiguracao($statusUsuarioTexto));
 $codigoInternoEscapado = e($codigoInterno);
-
-// Lista de permissões exibida na tela.
-// Algumas ações dependem do perfil administrador, outras ficam disponíveis para qualquer usuário logado.
-$permissoes = [
-    ["label" => "Cadastrar funcionários", "allowed" => $isAdministrador],
-    ["label" => "Editar ativos", "allowed" => true],
-    ["label" => "Excluir registros", "allowed" => $isAdministrador],
-    ["label" => "Gerar relatórios", "allowed" => $isAdministrador],
-    ["label" => "Gerenciar usuários", "allowed" => $isAdministrador],
-];
-
-// Histórico usado na linha do tempo da página.
-// Alguns itens ainda são exemplos visuais até existir uma tabela real de auditoria/eventos.
-$atividades = [
-    ["icon" => "bi-box-arrow-in-right", "title" => "Login realizado", "text" => "Acesso validado no portal interno.", "time" => $ultimoAcesso],
-    ["icon" => "bi-sliders", "title" => "Preferências alteradas", "text" => "Configurações visuais salvas neste navegador.", "time" => "Hoje"],
-    ["icon" => "bi-person-check", "title" => "Perfil consultado", "text" => "Dados principais carregados da sessão e do banco.", "time" => "Hoje"],
-    ["icon" => "bi-hdd-network", "title" => "Ativo cadastrado", "text" => "Exemplo de evento pronto para histórico real.", "time" => "Mock"],
-];
 ?>
 <!doctype html>
 <html lang="pt-BR">
@@ -214,17 +213,17 @@ $atividades = [
 
 
   <!-- CSS separado por responsabilidade: base do sistema, efeitos gerais e ajustes específicos desta página. -->
-  <link rel="stylesheet" href="css/pagina-base.css?v=20260624-settings-panel" />
+  <link rel="stylesheet" href="css/pagina-base.css?v=20260626-user-card" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260624-focus-fix" />
+  <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
   <link rel="stylesheet" href="css/configuracoes.css?v=20260624-settings-panel" />
 
 
   <!-- Scripts carregados com defer para não bloquear a montagem do HTML. -->
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
   <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
-  <script src="js/app-base.js?v=20260624-settings-panel" defer></script>
-  <script src="js/configuracoes.js?v=20260624-settings-panel" defer></script>
+  <script src="js/app-base.js?v=20260626-accent-fix" defer></script>
+  <script src="js/configuracoes.js?v=20260626-accent-fix" defer></script>
 </head>
 
 <body class="theme-dark page-loading">
@@ -308,11 +307,15 @@ $atividades = [
 
       <!-- Rodapé do menu com resumo do usuário logado e botão de logout. -->
       <div class="sidebar-footer">
-        <div class="sidebar-summary">
-          <span><?php echo $tipoUsuario; ?></span>
-          <strong title="<?php echo $nomeUsuario; ?>"><?php echo $nomeUsuario; ?></strong>
+        <div class="sidebar-summary user-summary-card">
+          <div class="sidebar-avatar" aria-hidden="true"><?php echo $sidebarInitials; ?></div>
+          <div class="sidebar-user-info">
+            <strong title="<?php echo $nomeUsuario; ?>"><?php echo $nomeUsuario; ?></strong>
+            <span class="sidebar-role <?php echo $sidebarRoleClass; ?>"><?php echo $sidebarRoleLabel; ?></span>
+            <small title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
+            <small title="<?php echo $sidebarDepartment; ?>"><?php echo $sidebarDepartment; ?></small>
+          </div>
         </div>
-
         <a href="Backend/logout.php" class="logout-button">
           <i class="bi bi-box-arrow-left"></i>
           <span>Sair do sistema</span>
@@ -361,8 +364,7 @@ $atividades = [
             >Conta, seguran&ccedil;a e experi&ecirc;ncia.</span><span aria-hidden="true"></span>
           </h2>
           <p>
-            Personalize sua interface, acompanhe permiss&otilde;es, revise dados da conta
-            e prepare integra&ccedil;&otilde;es futuras com PHP e Supabase.
+            Personalize sua interface, revise dados da conta e ajuste a experi&ecirc;ncia do sistema.
           </p>
         </div>
       </section>
@@ -418,8 +420,6 @@ $atividades = [
             <a href="#conta"><i class="bi bi-person-badge"></i> Conta</a>
             <a href="#interface"><i class="bi bi-palette"></i> Interface</a>
             <a href="#seguranca"><i class="bi bi-shield-lock"></i> Seguran&ccedil;a</a>
-            <a href="#notificacoes"><i class="bi bi-bell"></i> Notifica&ccedil;&otilde;es</a>
-            <a href="#permissoes"><i class="bi bi-key"></i> Permiss&otilde;es</a>
             <a href="#sistema"><i class="bi bi-cpu"></i> Sistema</a>
           </nav>
         </aside>
@@ -518,10 +518,6 @@ $atividades = [
               <p class="section-tag">Seguran&ccedil;a</p>
               <h3 id="securityTitle">Prote&ccedil;&atilde;o da conta</h3>
             </div>
-            <div class="security-score" aria-label="Score de seguran&ccedil;a">
-              <span id="securityScoreValue">42</span>
-              <small>/100</small>
-            </div>
           </div>
 
           <div class="security-layout">
@@ -559,133 +555,7 @@ $atividades = [
               </button>
             </form>
 
-            <!-- Ações de segurança que funcionam como atalhos visuais para recursos futuros. -->
-            <div class="security-actions">
-              <article class="action-tile">
-                <i class="bi bi-phone-lock"></i>
-                <div><strong>Verifica&ccedil;&atilde;o em duas etapas</strong><span>Interface pronta para integrar com Supabase Auth.</span></div>
-                <button class="mini-action" data-feature-button type="button">Configurar</button>
-              </article>
-              <article class="action-tile">
-                <i class="bi bi-display"></i>
-                <div><strong>Sess&otilde;es ativas</strong><span>Preparado para listar dispositivos conectados.</span></div>
-                <button class="mini-action" data-feature-button type="button">Revisar</button>
-              </article>
-              <article class="action-tile danger-tile">
-                <i class="bi bi-box-arrow-right"></i>
-                <div><strong>Sair de todos os dispositivos</strong><span>A&ccedil;&atilde;o cr&iacute;tica aguardando backend.</span></div>
-                <button class="mini-action danger-action" id="logoutAllDevices" type="button">Solicitar</button>
-              </article>
-            </div>
           </div>
-        </article>
-
-        <!-- Preferências de alertas. Os data-setting facilitam salvar cada opção no localStorage ou no banco depois. -->
-        <article class="content-card notifications-card" id="notificacoes" aria-labelledby="notificationsTitle">
-          <div class="card-header">
-            <div>
-              <p class="section-tag">Notifica&ccedil;&otilde;es</p>
-              <h3 id="notificationsTitle">Alertas inteligentes</h3>
-            </div>
-          </div>
-          <div class="toggle-list settings-toggle-list">
-            <label class="toggle-row"><span><strong>Novo ativo cadastrado</strong><small>Avisar quando novos equipamentos entrarem no invent&aacute;rio.</small></span><input type="checkbox" data-setting="notify-new-asset" /></label>
-            <label class="toggle-row"><span><strong>Altera&ccedil;&otilde;es em funcion&aacute;rios</strong><small>Acompanhar mudan&ccedil;as de status, cargo ou departamento.</small></span><input type="checkbox" data-setting="notify-employees" /></label>
-            <label class="toggle-row"><span><strong>Login suspeito</strong><small>Prioridade alta para comportamento incomum.</small></span><input type="checkbox" data-setting="notify-suspicious-login" /></label>
-            <label class="toggle-row"><span><strong>Relat&oacute;rios dispon&iacute;veis</strong><small>Receber aviso quando novos dados estiverem prontos.</small></span><input type="checkbox" data-setting="notify-reports" /></label>
-            <label class="toggle-row"><span><strong>Pend&ecirc;ncias administrativas</strong><small>Alertar sobre cadastros incompletos ou inconsistentes.</small></span><input type="checkbox" data-setting="notify-admin-pending" /></label>
-            <label class="toggle-row smart-rule"><span><strong>Ativo sem patrim&ocirc;nio</strong><small>Regra inteligente para cadastro incompleto.</small></span><input type="checkbox" data-setting="notify-asset-without-property" /></label>
-            <label class="toggle-row smart-rule"><span><strong>Funcion&aacute;rio sem departamento</strong><small>Ajuda a manter a base de colaboradores organizada.</small></span><input type="checkbox" data-setting="notify-employee-without-department" /></label>
-          </div>
-        </article>
-
-        <!-- Preferências de navegação para ajustar o dashboard ao fluxo de trabalho do usuário. -->
-        <article class="content-card dashboard-card" aria-labelledby="dashboardPrefsTitle">
-          <div class="card-header">
-            <div>
-              <p class="section-tag">Dashboard</p>
-              <h3 id="dashboardPrefsTitle">Prefer&ecirc;ncias de navega&ccedil;&atilde;o</h3>
-            </div>
-          </div>
-          <div class="preference-select-grid">
-            <label class="select-field">
-              <span>P&aacute;gina inicial padr&atilde;o</span>
-              <select data-setting="home-page">
-                <option value="dashboard">Dashboard</option>
-                <option value="funcionarios">Funcion&aacute;rios</option>
-                <option value="ativos">Ativos</option>
-                <option value="relatorios">Relat&oacute;rios</option>
-                <option value="cadastro">Cadastro</option>
-              </select>
-            </label>
-            <label class="select-field">
-              <span>Visualiza&ccedil;&atilde;o preferida</span>
-              <select data-setting="dashboard-view">
-                <option value="cards">Cards</option>
-                <option value="tabela">Tabela</option>
-                <option value="grafico">Gr&aacute;fico</option>
-              </select>
-            </label>
-            <label class="toggle-row full-toggle"><span><strong>Manter filtros salvos</strong><small>Restaurar filtros usados em consultas anteriores.</small></span><input type="checkbox" data-setting="saved-filters" /></label>
-          </div>
-        </article>
-
-        <!-- Modo de trabalho: muda a experiência mental do usuário sem precisar trocar de página. -->
-        <article class="content-card work-mode-card wide-card" aria-labelledby="workModeTitle">
-          <div class="card-header">
-            <div>
-              <p class="section-tag">Modo de trabalho</p>
-              <h3 id="workModeTitle">Foco operacional</h3>
-            </div>
-          </div>
-          <div class="work-mode-grid" role="radiogroup" aria-label="Modo de trabalho">
-            <label><input type="radio" name="workMode" value="admin" data-work-mode /><span><i class="bi bi-command"></i><strong>Administrador</strong><small>Controle de usu&aacute;rios, permiss&otilde;es e decis&otilde;es.</small></span></label>
-            <label><input type="radio" name="workMode" value="support" data-work-mode /><span><i class="bi bi-tools"></i><strong>Suporte</strong><small>Foco em ativos, manuten&ccedil;&atilde;o, hist&oacute;rico e diagn&oacute;stico.</small></span></label>
-            <label><input type="radio" name="workMode" value="register" data-work-mode /><span><i class="bi bi-folder-plus"></i><strong>Cadastro</strong><small>Agilidade para inserir ativos, marcas e localiza&ccedil;&otilde;es.</small></span></label>
-            <label><input type="radio" name="workMode" value="view" data-work-mode /><span><i class="bi bi-eye"></i><strong>Visualiza&ccedil;&atilde;o</strong><small>Consulta segura, leitura e acompanhamento de indicadores.</small></span></label>
-          </div>
-        </article>
-
-        <!-- Lista de permissões calculada no PHP a partir do tipo de usuário. -->
-        <article class="content-card permissions-card" id="permissoes" aria-labelledby="permissionsTitle">
-          <div class="card-header">
-            <div>
-              <p class="section-tag">Permiss&otilde;es</p>
-              <h3 id="permissionsTitle">N&iacute;vel de acesso</h3>
-            </div>
-          </div>
-          <div class="permission-list">
-            <!-- Cada permissão ganha classe visual diferente: permitido ou bloqueado. -->
-            <?php foreach ($permissoes as $permissao) : ?>
-              <div class="permission-item <?php echo $permissao["allowed"] ? "allowed" : "blocked"; ?>">
-                <span><i class="bi <?php echo $permissao["allowed"] ? "bi-check-circle-fill" : "bi-lock-fill"; ?>"></i><?php echo e($permissao["label"]); ?></span>
-                <strong><?php echo $permissao["allowed"] ? "Permitido" : "Bloqueado"; ?></strong>
-              </div>
-            <?php endforeach; ?>
-          </div>
-        </article>
-
-        <!-- Linha do tempo do usuário. Hoje mistura eventos reais da sessão com itens mockados para layout. -->
-        <article class="content-card activity-card" aria-labelledby="activityTitle">
-          <div class="card-header">
-            <div>
-              <p class="section-tag">Hist&oacute;rico</p>
-              <h3 id="activityTitle">Linha do tempo</h3>
-            </div>
-          </div>
-          <ol class="activity-timeline">
-            <!-- Renderiza os eventos da linha do tempo definidos no array $atividades. -->
-            <?php foreach ($atividades as $atividade) : ?>
-              <li>
-                <i class="bi <?php echo e($atividade["icon"]); ?>"></i>
-                <div>
-                  <strong><?php echo e($atividade["title"]); ?></strong>
-                  <span><?php echo e($atividade["text"]); ?></span>
-                  <small><?php echo e($atividade["time"]); ?></small>
-                </div>
-              </li>
-            <?php endforeach; ?>
-          </ol>
         </article>
 
         <!-- Diagnóstico do ambiente do usuário. Os dados com id são preenchidos pelo JavaScript no navegador. -->

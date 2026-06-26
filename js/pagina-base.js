@@ -4,6 +4,32 @@ const DASHBOARD_ENDPOINT = "Backend/dashboard-metricas.php";
 
 // Tempo, em milissegundos, usado para controlar a animação de troca de tema.
 const THEME_TRANSITION_MS = 660;
+const ACCENT_THEMES = {
+  teal: {
+    cyan: "#4aa3c7",
+    teal: "#4fc7b1",
+    mint: "#66d5c2",
+    accent: "#66d5c2",
+  },
+  green: {
+    cyan: "#22c55e",
+    teal: "#16a34a",
+    mint: "#86efac",
+    accent: "#22c55e",
+  },
+  blue: {
+    cyan: "#38bdf8",
+    teal: "#2563eb",
+    mint: "#7dd3fc",
+    accent: "#38bdf8",
+  },
+  violet: {
+    cyan: "#a78bfa",
+    teal: "#7c3aed",
+    mint: "#c4b5fd",
+    accent: "#a78bfa",
+  },
+};
 
 // Dados padrão usados caso o backend falhe ou não retorne informaçÃµes válidas.
 // Isso evita que a tela quebre caso o banco de dados esteja indisponível.
@@ -117,11 +143,22 @@ function startPageAnimation() {
 function loadSavedTheme() {
   const savedTheme = getSavedItem("titech-theme") || "dark";
   applyTheme(savedTheme);
+  applyAccent(getSavedItem("titech-accent") || "teal");
 }
 
 /**
  * Configura o botão de alternÃ¢ncia entre tema claro e escuro.
  */
+function applyAccent(accent) {
+  const nextAccent = Object.hasOwn(ACCENT_THEMES, accent) ? accent : "teal";
+  const palette = ACCENT_THEMES[nextAccent];
+
+  document.body.dataset.accent = nextAccent;
+  document.body.style.setProperty("--cyan", palette.cyan);
+  document.body.style.setProperty("--teal", palette.teal);
+  document.body.style.setProperty("--mint", palette.mint);
+  document.body.style.setProperty("--accent", palette.accent);
+}
 function setupThemeToggle() {
   const themeToggle = document.getElementById("themeToggle");
 

@@ -464,6 +464,7 @@ body.ux-enhanced [id$="SubmitButton"]:hover {
 
 body.ux-enhanced .danger-button,
 body.ux-enhanced .logout-button,
+body.ux-enhanced .filter-clear-button,
 body.ux-enhanced .delete-asset-button,
 body.ux-enhanced .delete-brand-button,
 body.ux-enhanced [data-asset-action="delete"],
@@ -476,6 +477,7 @@ body.ux-enhanced [data-brand-action="delete"] {
 
 body.ux-enhanced .danger-button:hover,
 body.ux-enhanced .logout-button:hover,
+body.ux-enhanced .filter-clear-button:hover,
 body.ux-enhanced .delete-asset-button:hover,
 body.ux-enhanced .delete-brand-button:hover,
 body.ux-enhanced [data-asset-action="delete"]:hover,
@@ -625,9 +627,22 @@ body.ux-enhanced .modal-close-button {
 }
 
 body.ux-enhanced .sidebar-summary {
-  border-color: var(--ux-border);
-  border-radius: var(--ux-radius-lg);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(102, 213, 194, 0.24);
+  border-radius: 20px;
+  background:
+    linear-gradient(145deg, rgba(79, 199, 177, 0.16), transparent 42%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.045));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 16px 36px rgba(0, 0, 0, 0.14);
+}
+
+body.ux-enhanced.theme-light .sidebar-summary {
+  border-color: rgba(11, 31, 48, 0.12);
+  background:
+    linear-gradient(145deg, rgba(79, 199, 177, 0.2), transparent 44%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(235, 246, 250, 0.8));
+  box-shadow: 0 14px 34px rgba(9, 31, 48, 0.12);
 }
 
 body.ux-enhanced .logout-button {

@@ -34,6 +34,27 @@ $nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
 
 // Tipo de usuário exibido na interface, como Administrador ou Colaborador.
 $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
+$sidebarRoleRaw = strtolower(trim((string)($usuario["tipo_usuario"] ?? "")));
+$sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
+$sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
+$sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
+$sidebarEmail = e((string)($usuario["email"] ?? ""));
+$sidebarDepartment = e((string)($usuario["departamento"] ?? "Sem departamento"));
+$sidebarNameText = (string)($usuario["nome_completo"] ?? "Usuario");
+$sidebarNameParts = preg_split("/\s+/", trim($sidebarNameText)) ?: [];
+$sidebarInitialsText = "";
+foreach ($sidebarNameParts as $sidebarNamePart) {
+    if ($sidebarNamePart === "") {
+        continue;
+    }
+
+    $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
+
+    if (strlen($sidebarInitialsText) >= 2) {
+        break;
+    }
+}
+$sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 ?>
 <!doctype html>
 <html lang="pt-BR">
@@ -62,9 +83,9 @@ $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <!-- Arquivos CSS da página -->
-  <link rel="stylesheet" href="css/pagina-base.css?v=20260624-focus-fix" />
+  <link rel="stylesheet" href="css/pagina-base.css?v=20260626-user-card" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260624-focus-fix" />
+  <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
 
   <!-- Chart.js usado para renderizar gráficos no dashboard -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
@@ -72,8 +93,8 @@ $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
   <!-- Scripts da página. O defer evita bloquear o carregamento do HTML. -->
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
   <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
-  <script src="js/app-base.js?v=20260624-common-ui" defer></script>
-  <script src="js/pagina-base.js?v=20260624-dashboard-render-fix" defer></script>
+  <script src="js/app-base.js?v=20260626-accent-fix" defer></script>
+  <script src="js/pagina-base.js?v=20260626-accent-fix" defer></script>
 </head>
 
 <body class="theme-dark page-loading">
@@ -163,12 +184,14 @@ $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
 
       <!-- Rodapé do menu com usuário logado e saída do sistema -->
       <div class="sidebar-footer">
-        <div class="sidebar-summary">
-          <!-- Tipo do usuário vindo da sessão PHP -->
-          <span><?php echo $tipoUsuario; ?></span>
-
-          <!-- O title mostra o nome completo caso ele fique cortado no layout -->
-          <strong title="<?php echo $nomeUsuario; ?>"><?php echo $nomeUsuario; ?></strong>
+        <div class="sidebar-summary user-summary-card">
+          <div class="sidebar-avatar" aria-hidden="true"><?php echo $sidebarInitials; ?></div>
+          <div class="sidebar-user-info">
+            <strong title="<?php echo $nomeUsuario; ?>"><?php echo $nomeUsuario; ?></strong>
+            <span class="sidebar-role <?php echo $sidebarRoleClass; ?>"><?php echo $sidebarRoleLabel; ?></span>
+            <small title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
+            <small title="<?php echo $sidebarDepartment; ?>"><?php echo $sidebarDepartment; ?></small>
+          </div>
         </div>
 
         <!-- Logout: encerra a sessão no backend e tira o usuário do sistema -->

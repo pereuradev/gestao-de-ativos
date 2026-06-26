@@ -32,6 +32,27 @@ function formatarDataMarca(?string $value): string
 $usuario = $_SESSION["usuario"];
 $nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
 $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
+$sidebarRoleRaw = strtolower(trim((string)($usuario["tipo_usuario"] ?? "")));
+$sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
+$sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
+$sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
+$sidebarEmail = e((string)($usuario["email"] ?? ""));
+$sidebarDepartment = e((string)($usuario["departamento"] ?? "Sem departamento"));
+$sidebarNameText = (string)($usuario["nome_completo"] ?? "Usuario");
+$sidebarNameParts = preg_split("/\s+/", trim($sidebarNameText)) ?: [];
+$sidebarInitialsText = "";
+foreach ($sidebarNameParts as $sidebarNamePart) {
+    if ($sidebarNamePart === "") {
+        continue;
+    }
+
+    $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
+
+    if (strlen($sidebarInitialsText) >= 2) {
+        break;
+    }
+}
+$sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 
 $marcas = [];
 $totalMarcas = 0;
@@ -93,13 +114,13 @@ try {
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
-  <link rel="stylesheet" href="css/pagina-base.css?v=20260625-brand-hero" />
-  <link rel="stylesheet" href="css/marcas.css?v=20260625-view-page" />
+  <link rel="stylesheet" href="css/pagina-base.css?v=20260626-user-card" />
+  <link rel="stylesheet" href="css/marcas.css?v=20260626-clear-button" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260624-focus-fix" />
+  <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
   <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
-  <script src="js/app-base.js?v=20260624-common-ui" defer></script>
+  <script src="js/app-base.js?v=20260626-accent-fix" defer></script>
   <script src="js/marcas.js?v=20260625-view-only" defer></script>
 </head>
 
@@ -178,11 +199,15 @@ try {
       </nav>
 
       <div class="sidebar-footer">
-        <div class="sidebar-summary">
-          <span><?php echo $tipoUsuario; ?></span>
-          <strong title="<?php echo $nomeUsuario; ?>"><?php echo $nomeUsuario; ?></strong>
+        <div class="sidebar-summary user-summary-card">
+          <div class="sidebar-avatar" aria-hidden="true"><?php echo $sidebarInitials; ?></div>
+          <div class="sidebar-user-info">
+            <strong title="<?php echo $nomeUsuario; ?>"><?php echo $nomeUsuario; ?></strong>
+            <span class="sidebar-role <?php echo $sidebarRoleClass; ?>"><?php echo $sidebarRoleLabel; ?></span>
+            <small title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
+            <small title="<?php echo $sidebarDepartment; ?>"><?php echo $sidebarDepartment; ?></small>
+          </div>
         </div>
-
         <a href="Backend/logout.php" class="logout-button">
           <i class="bi bi-box-arrow-left"></i>
           <span>Sair do sistema</span>
