@@ -1,5 +1,7 @@
 document.addEventListener("DOMContentLoaded", initPage);
 
+let assetSearchTimer = null;
+
 function initPage() {
   startPageAnimation();
   loadSavedTheme();
@@ -10,75 +12,49 @@ function initPage() {
 }
 
 function setupAssetFilters() {
-  document.getElementById("assetSearch")?.addEventListener("input", filterAssets);
-  document.getElementById("assetStatusFilter")?.addEventListener("change", filterAssets);
-  document.getElementById("assetCategoryFilter")?.addEventListener("change", () => {
-    syncCategoryUrl();
-    filterAssets();
-  });
-  document.getElementById("assetBrandFilter")?.addEventListener("change", filterAssets);
+  const form = document.getElementById("assetFiltersForm");
 
-  document.getElementById("clearAssetFilters")?.addEventListener("click", () => {
-    setInputValue("assetSearch", "");
-    setInputValue("assetStatusFilter", "todos");
-    setInputValue("assetCategoryFilter", "todos");
-    setInputValue("assetBrandFilter", "todos");
-    syncCategoryUrl();
-    filterAssets();
-  });
-
-  filterAssets();
-}
-
-function syncCategoryUrl() {
-  const category = document.getElementById("assetCategoryFilter")?.value || "todos";
-  const url = new URL(window.location.href);
-
-  if (category === "todos") {
-    url.searchParams.delete("categoria");
-  } else {
-    url.searchParams.set("categoria", category);
+  if (!form) {
+    return;
   }
 
-  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
-}
+  document.getElementById("assetSearch")?.addEventListener("input", () => {
+    window.clearTimeout(assetSearchTimer);
 
-function filterAssets() {
-  const rows = Array.from(document.querySelectorAll(".asset-row"));
-  const search = normalizeText(document.getElementById("assetSearch")?.value || "");
-  const status = normalizeText(document.getElementById("assetStatusFilter")?.value || "todos");
-  const category = normalizeText(document.getElementById("assetCategoryFilter")?.value || "todos");
-  const brand = normalizeText(document.getElementById("assetBrandFilter")?.value || "todos");
-  let visibleCount = 0;
-
-  rows.forEach((row) => {
-    const rowStatus = normalizeText(row.dataset.statusRaw || row.dataset.status || "");
-    const rowCategory = normalizeText(row.dataset.categoryRaw || row.dataset.category || "");
-    const rowBrand = normalizeText(row.dataset.brandRaw || row.dataset.brand || "");
-    const rowSearch = normalizeText(row.dataset.search || "");
-    const matchesStatus = status === "todos" || rowStatus === status;
-    const matchesCategory = category === "todos" || rowCategory === category;
-    const matchesBrand = brand === "todos" || rowBrand === brand;
-    const matchesSearch = !search || rowSearch.includes(search);
-    const isVisible = matchesStatus && matchesCategory && matchesBrand && matchesSearch;
-
-    row.hidden = !isVisible;
-
-    if (isVisible) {
-      visibleCount += 1;
-    }
+    assetSearchTimer = window.setTimeout(() => {
+      resetAssetPageAndSubmit(form);
+    }, 450);
   });
 
-  updateText("assetResultCount", `${visibleCount.toLocaleString("pt-BR")} ${visibleCount === 1 ? "registro" : "registros"}`);
-  updateText("displayedAssetsMetric", String(visibleCount));
-  updateEmptyState(rows.length === 0 || visibleCount === 0);
+  [
+    "assetStatusFilter",
+    "assetCategoryFilter",
+    "assetBrandFilter",
+    "assetPerPage",
+  ].forEach((fieldId) => {
+    document.getElementById(fieldId)?.addEventListener("change", () => {
+      resetAssetPageAndSubmit(form);
+    });
+  });
+
+  document
+    .getElementById("clearAssetFilters")
+    ?.addEventListener("click", () => {
+      window.location.href = "ativos.php";
+    });
 }
 
-function updateEmptyState(show) {
-  const emptyState = document.getElementById("assetEmptyState");
+function resetAssetPageAndSubmit(form) {
+  const pageInput = form.querySelector('input[name="pagina"]');
 
-  if (emptyState) {
-    emptyState.hidden = !show;
+  if (pageInput) {
+    pageInput.value = "1";
   }
-}
 
+  if (typeof form.requestSubmit === "function") {
+    form.requestSubmit();
+    return;
+  }
+
+  form.submit();
+}
