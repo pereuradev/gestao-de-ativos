@@ -344,7 +344,6 @@ SUPABASE_URL=https://SEUIDDOPROJETO.supabase.co
 SUPABASE_ANON_KEY=SUA_CHAVE_PUBLICAVEL_DO_SUPABASE
 ```
 
-Nunca envie o arquivo `.env` real para o GitHub.
 
 ---
 
