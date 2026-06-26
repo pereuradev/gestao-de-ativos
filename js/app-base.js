@@ -207,14 +207,25 @@ function closeSidebar() {
 }
 
 function setupNavGroups() {
-  document.querySelectorAll("[data-nav-group]").forEach((group) => {
+  const groups = Array.from(document.querySelectorAll("[data-nav-group]"));
+
+  groups.forEach((group) => {
     const button = group.querySelector(".nav-toggle");
 
     if (!button) return;
 
     button.addEventListener("click", () => {
-      const isOpen = group.classList.toggle("open");
-      button.setAttribute("aria-expanded", String(isOpen));
+      const shouldOpen = !group.classList.contains("open");
+
+      groups.forEach((otherGroup) => {
+        if (otherGroup === group) return;
+
+        otherGroup.classList.remove("open");
+        otherGroup.querySelector(".nav-toggle")?.setAttribute("aria-expanded", "false");
+      });
+
+      group.classList.toggle("open", shouldOpen);
+      button.setAttribute("aria-expanded", String(shouldOpen));
     });
   });
 }

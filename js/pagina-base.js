@@ -283,7 +283,9 @@ function closeSidebar() {
  * - Ativos
  */
 function setupAssetMenu() {
-  document.querySelectorAll("[data-nav-group]").forEach((group) => {
+  const groups = Array.from(document.querySelectorAll("[data-nav-group]"));
+
+  groups.forEach((group) => {
     const button = group.querySelector(".nav-toggle");
     const submenu = group.querySelector(".nav-submenu");
 
@@ -291,11 +293,17 @@ function setupAssetMenu() {
     if (!button || !submenu) return;
 
     button.addEventListener("click", () => {
-      // Alterna a classe "open" no grupo.
-      const isOpen = group.classList.toggle("open");
+      const shouldOpen = !group.classList.contains("open");
 
-      // Atualiza o atributo de acessibilidade para leitores de tela.
-      button.setAttribute("aria-expanded", String(isOpen));
+      groups.forEach((otherGroup) => {
+        if (otherGroup === group) return;
+
+        otherGroup.classList.remove("open");
+        otherGroup.querySelector(".nav-toggle")?.setAttribute("aria-expanded", "false");
+      });
+
+      group.classList.toggle("open", shouldOpen);
+      button.setAttribute("aria-expanded", String(shouldOpen));
     });
   });
 }

@@ -220,10 +220,14 @@ $codigoInternoEscapado = e($codigoInterno);
 
 
   <!-- Scripts carregados com defer para não bloquear a montagem do HTML. -->
+  <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
   <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
-  <script src="js/app-base.js?v=20260626-accent-fix" defer></script>
+  <script src="js/app-base.js?v=20260626-properties-sidebar" defer></script>
   <script src="js/configuracoes.js?v=20260626-accent-fix" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
+  <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
 </head>
 
 <body class="theme-dark page-loading">
@@ -259,12 +263,16 @@ $codigoInternoEscapado = e($codigoInterno);
           <span>Marcas</span>
         </a>
 
+        <a class="nav-link" href="propriedades-visualizacao.php">
+          <i class="bi bi-building-check"></i>
+          <span>Propriedades</span>
+        </a>
+
         <a class="nav-link" href="locais-visualizacao.php">
           <i class="bi bi-geo-alt-fill"></i>
           <span>Localiza&ccedil;&otilde;es</span>
         </a>
-
-        <!-- Grupo recolhível para evitar que o menu fique grande demais. -->
+<!-- Grupo recolhível para evitar que o menu fique grande demais. -->
         <div class="nav-group" data-nav-group>
           <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="registrationSubmenu">
             <i class="bi bi-folder-plus"></i>
@@ -275,6 +283,7 @@ $codigoInternoEscapado = e($codigoInterno);
           <div class="nav-submenu" id="registrationSubmenu">
             <a href="cadastro-ativos.php">Ativos</a>
             <a href="marcas.php">Marcas</a>
+            <a href="propriedades.php">Propriedades</a>
             <a href="locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>
@@ -290,6 +299,7 @@ $codigoInternoEscapado = e($codigoInterno);
           <div class="nav-submenu" id="editingSubmenu">
             <a href="edicao-ativos.php">Ativos</a>
             <a href="edicao-marcas.php">Marcas</a>
+            <a href="edicao-propriedades.php">Propriedades</a>
             <a href="edicao-locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>

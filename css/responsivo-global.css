@@ -1,0 +1,287 @@
+/* Camada global de responsividade aplicada sobre as telas legadas PHP/HTML. */
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-width: 0;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
+.app-shell,
+.main-area,
+.content-grid,
+.records-card,
+.content-card,
+.metric-card,
+.hero-panel,
+.topbar,
+.records-table-wrap,
+.asset-view-card,
+.asset-edit-card,
+.brand-view-card,
+.location-view-card {
+  min-width: 0;
+}
+
+.records-table-wrap,
+.asset-table-wrap,
+.brand-table-wrap,
+.location-table-wrap,
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.records-table,
+.asset-view-table,
+.asset-edit-table,
+.brand-table,
+.location-table {
+  width: 100%;
+}
+
+.react-mobile-dock {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  left: 14px;
+  z-index: 90;
+  display: none;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(102, 213, 194, 0.22);
+  border-radius: 18px;
+  background:
+    linear-gradient(145deg, rgba(79, 199, 177, 0.16), transparent 42%),
+    rgba(5, 20, 34, 0.92);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(16px);
+}
+
+.theme-light .react-mobile-dock {
+  border-color: rgba(11, 31, 48, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 44px rgba(9, 31, 48, 0.14);
+}
+
+.react-mobile-dock button {
+  min-width: 0;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.14));
+  border-radius: 14px;
+  color: var(--text, #f6fbff);
+  background: var(--soft, rgba(255, 255, 255, 0.08));
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.react-mobile-dock button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--mint, #66d5c2) 54%, transparent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1180px) {
+  .content-grid,
+  .metrics-grid,
+  .asset-registration-layout,
+  .settings-layout,
+  .settings-grid,
+  .brands-layout,
+  .locations-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .hero-panel {
+    min-height: 260px;
+  }
+}
+
+@media (max-width: 920px) {
+  body {
+    padding-bottom: 78px;
+  }
+
+  .react-mobile-dock {
+    display: grid;
+  }
+
+  .main-area {
+    margin-left: 0 !important;
+    padding: 16px !important;
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    align-items: stretch !important;
+    gap: 12px;
+  }
+
+  .topbar-left,
+  .topbar-actions {
+    width: 100%;
+  }
+
+  .topbar-actions {
+    justify-content: stretch !important;
+  }
+
+  .topbar-actions > * {
+    min-width: 0;
+  }
+
+  .search-box,
+  .asset-view-search,
+  .asset-edit-search,
+  .brand-search,
+  .location-search {
+    width: 100%;
+  }
+
+  .records-table,
+  .asset-view-table,
+  .asset-edit-table,
+  .brand-table,
+  .location-table {
+    min-width: 760px;
+  }
+}
+
+@media (max-width: 760px) {
+  .main-area {
+    padding: 12px !important;
+  }
+
+  .topbar {
+    padding: 12px !important;
+    border-radius: 18px !important;
+  }
+
+  .topbar-actions,
+  .records-header,
+  .records-actions,
+  .hero-actions,
+  .asset-form-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    align-items: stretch !important;
+  }
+
+  .theme-toggle,
+  .primary-button,
+  .secondary-button,
+  .danger-button,
+  .filter-clear-button {
+    width: 100%;
+  }
+
+  .hero-panel,
+  .dashboard-hero,
+  .asset-inventory-hero,
+  .brand-partners-hero,
+  .locations-hero,
+  .settings-hero {
+    min-height: 220px !important;
+    padding: 22px !important;
+    border-radius: 20px !important;
+  }
+
+  .hero-content h2,
+  .settings-hero .hero-content h2 {
+    font-size: clamp(2rem, 12vw, 3.05rem) !important;
+    line-height: 0.98 !important;
+  }
+
+  .metrics-grid,
+  .profile-details,
+  .badge-grid,
+  .diagnostics-grid,
+  .asset-form-grid,
+  .brand-form-grid,
+  .location-form-grid,
+  .preference-select-grid,
+  .accent-options,
+  .segmented-control,
+  .three-options,
+  .asset-filter-bar,
+  .brand-filter-bar,
+  .location-filter-bar {
+    grid-template-columns: 1fr !important;
+  }
+
+  .content-card,
+  .metric-card {
+    padding: 16px !important;
+    border-radius: 18px !important;
+  }
+
+  .sidebar {
+    width: min(88vw, 312px) !important;
+  }
+
+  .sidebar-summary {
+    grid-template-columns: 44px minmax(0, 1fr) !important;
+    padding: 12px !important;
+  }
+
+  .sidebar-avatar {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .chart-shell {
+    height: 250px !important;
+  }
+}
+
+@media (max-width: 540px) {
+  .react-mobile-dock {
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .react-mobile-dock button span {
+    display: none;
+  }
+
+  .main-area {
+    padding: 10px !important;
+  }
+
+  .topbar h1 {
+    font-size: 1rem !important;
+  }
+
+  .records-table,
+  .asset-view-table,
+  .asset-edit-table,
+  .brand-table,
+  .location-table {
+    min-width: 680px;
+  }
+}

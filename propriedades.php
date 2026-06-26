@@ -18,7 +18,7 @@ function e(string $value): string
   return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
 }
 
-function formatarDataLocal(?string $value): string
+function formatarDataPropriedade(?string $value): string
 {
   if (!$value) {
     return "--";
@@ -31,25 +31,6 @@ function formatarDataLocal(?string $value): string
   } catch (Throwable) {
     return "--";
   }
-}
-
-function garantirTabelaLocais(PDO $pdo): void
-{
-  $pdo->exec("
-        create table if not exists public.locais (
-            id uuid primary key default gen_random_uuid(),
-            nome text not null,
-            endereco text,
-            status text not null default 'Ativo',
-            criado_em timestamptz not null default now(),
-            atualizado_em timestamptz not null default now()
-        )
-    ");
-
-  $pdo->exec("alter table public.locais add column if not exists endereco text");
-  $pdo->exec("alter table public.locais add column if not exists status text not null default 'Ativo'");
-  $pdo->exec("alter table public.locais add column if not exists criado_em timestamptz not null default now()");
-  $pdo->exec("alter table public.locais add column if not exists atualizado_em timestamptz not null default now()");
 }
 
 $usuario = $_SESSION["usuario"];
@@ -78,46 +59,66 @@ foreach ($sidebarNameParts as $sidebarNamePart) {
 $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 $csrfToken = e((string) $_SESSION["csrf_token"]);
 
-$locais = [];
-$totalLocais = 0;
-$locaisAtivos = 0;
-$locaisInativos = 0;
+$propriedades = [];
+$totalPropriedades = 0;
+$propriedadesAtivas = 0;
+$propriedadesInativas = 0;
 $erroBanco = "";
 
 try {
   require __DIR__ . "/Backend/Conexao.php";
 
-  garantirTabelaLocais($pdo);
+  $pdo->exec("
+        create table if not exists public.propriedade_ativos (
+            id uuid primary key default gen_random_uuid(),
+            nome text not null unique,
+            status text not null default 'Ativa'
+                check (status in ('Ativa', 'Inativa')),
+            criado_em timestamptz not null default now(),
+            atualizado_em timestamptz not null default now()
+        )
+    ");
 
-  $totalStmt = $pdo->prepare("select count(*)::int from public.locais");
+  $pdo->exec("
+        create unique index if not exists propriedade_ativos_nome_lower_unique
+            on public.propriedade_ativos (lower(nome))
+    ");
+
+  $pdo->exec("
+        insert into public.propriedade_ativos (nome, status)
+        values ('TITECHSOLUTIONS', 'Ativa'), ('TSC', 'Ativa')
+        on conflict do nothing
+    ");
+
+  $totalStmt = $pdo->prepare("select count(*)::int from public.propriedade_ativos");
   $totalStmt->execute();
-  $totalLocais = (int) $totalStmt->fetchColumn();
+  $totalPropriedades = (int) $totalStmt->fetchColumn();
 
-  $ativosStmt = $pdo->prepare("
+  $ativasStmt = $pdo->prepare("
         select count(*)::int
-          from public.locais
+          from public.propriedade_ativos
          where status = :status
     ");
-  $ativosStmt->execute([":status" => "Ativo"]);
-  $locaisAtivos = (int) $ativosStmt->fetchColumn();
+  $ativasStmt->execute([":status" => "Ativa"]);
+  $propriedadesAtivas = (int) $ativasStmt->fetchColumn();
 
-  $inativosStmt = $pdo->prepare("
+  $inativasStmt = $pdo->prepare("
         select count(*)::int
-          from public.locais
+          from public.propriedade_ativos
          where status = :status
     ");
-  $inativosStmt->execute([":status" => "Inativo"]);
-  $locaisInativos = (int) $inativosStmt->fetchColumn();
+  $inativasStmt->execute([":status" => "Inativa"]);
+  $propriedadesInativas = (int) $inativasStmt->fetchColumn();
 
-  $locaisStmt = $pdo->prepare("
-        select id, nome, endereco, status, criado_em
-          from public.locais
-      order by criado_em desc, nome asc
+  $propriedadesStmt = $pdo->prepare("
+        select id, nome, status, criado_em, atualizado_em
+          from public.propriedade_ativos
+      order by nome asc
     ");
-  $locaisStmt->execute();
-  $locais = $locaisStmt->fetchAll();
+  $propriedadesStmt->execute();
+  $propriedades = $propriedadesStmt->fetchAll();
 } catch (Throwable) {
-  $erroBanco = "Nao foi possivel carregar os locais do banco agora.";
+  $erroBanco = "Nao foi possivel carregar as propriedades do banco agora.";
 }
 ?>
 <!doctype html>
@@ -127,8 +128,8 @@ try {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <title>Cadastro de localiza&ccedil;&otilde;es | TI TECH Solutions</title>
-  <meta name="description" content="Cadastro de localiza&ccedil;&otilde;es para organizar os ativos da TI TECH Solutions" />
+  <title>Cadastro de propriedades | TI TECH Solutions</title>
+  <meta name="description" content="Cadastro de propriedades para padronizar o cadastro de ativos da TI TECH Solutions" />
   <link rel="icon" type="image/png" href="assets/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -137,14 +138,14 @@ try {
 
   <link rel="stylesheet" href="css/pagina-base.css?v=20260626-user-card" />
   <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260619-select-options" />
-  <link rel="stylesheet" href="css/locais.css?v=20260626-clear-button" />
+  <link rel="stylesheet" href="css/propriedades.css?v=20260626-clear-button" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
   <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
   <script src="js/app-base.js?v=20260626-properties-sidebar" defer></script>
-  <script src="js/locais.js?v=20260624-common-ui" defer></script>
+  <script src="js/propriedades.js?v=20260626-properties" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
@@ -199,8 +200,8 @@ try {
           <div class="nav-submenu" id="registrationSubmenu">
             <a href="cadastro-ativos.php">Ativos</a>
             <a href="marcas.php">Marcas</a>
-            <a href="propriedades.php">Propriedades</a>
-            <a class="active-submenu" href="locais.php">Localiza&ccedil;&otilde;es</a>
+            <a class="active-submenu" href="propriedades.php">Propriedades</a>
+            <a href="locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>
 
@@ -259,16 +260,16 @@ try {
           <div>
             <p class="eyebrow">Cadastros</p>
             <h1>
-              <span style="--typewriter-min: 27ch">Cadastro de localiza&ccedil;&otilde;es</span><span
+              <span style="--typewriter-min: 18ch">Cadastro de propriedades</span><span 
                 aria-hidden="true"></span>
             </h1>
           </div>
         </div>
 
         <div class="topbar-actions">
-          <a class="secondary-button compact-button" href="locais-visualizacao.php">
+          <a class="secondary-button compact-button" href="propriedades-visualizacao.php">
             <i class="bi bi-table"></i>
-            Visualizar localiza&ccedil;&otilde;es
+            Visualizar propriedades
           </a>
 
           <button class="theme-toggle" id="themeToggle" type="button">
@@ -278,29 +279,29 @@ try {
         </div>
       </header>
 
-      <section class="hero-panel compact-hero locations-hero" aria-labelledby="locationsRegistrationTitle">
+      <section class="hero-panel compact-hero brand-partners-hero" aria-labelledby="brandsRegistrationTitle">
         <div class="hero-content">
-          <h2 id="locationsRegistrationTitle">
-            <span class="typewriter-heading" style="--typewriter-min: 25ch" data-typewriter-loop
-              data-typewriter-phrases="Localiza&ccedil;&otilde;es organizadas.|Endere&ccedil;os f&aacute;ceis de encontrar.|Controle por setor e unidade.">Localiza&ccedil;&otilde;es
-              organizadas.</span><span aria-hidden="true"></span>
+          <h2 id="brandsRegistrationTitle">
+            <span class="typewriter-heading" style="--typewriter-min: 22ch" data-typewriter-loop
+              data-typewriter-phrases="Propriedades padronizadas.|Menos erro no cadastro.|Sele&ccedil;&atilde;o direta nos ativos.">Propriedades
+              padronizadas.</span><span aria-hidden="true"></span>
           </h2>
           <p>
-            Registre unidades, setores, salas e pontos de armazenamento para vincular cada ativo
-            ao local correto no sistema.
+            Cadastre propriedades de ativos uma vez para selecionar depois no cadastro de ativos,
+            mantendo os nomes consistentes no banco.
           </p>
         </div>
       </section>
 
-      <section class="metrics-grid" aria-label="Resumo das localizacoes">
+      <section class="metrics-grid" aria-label="Resumo das propriedades">
         <article class="metric-card">
           <div class="metric-icon">
-            <i class="bi bi-geo-alt-fill"></i>
+          <i class="bi bi-tags-fill"></i>
           </div>
 
           <div>
-            <span>Total de locais</span>
-            <strong id="totalLocationsMetric"><?php echo e((string) $totalLocais); ?></strong>
+            <span>Total de propriedades</span>
+            <strong id="totalBrandsMetric"><?php echo e((string) $totalPropriedades); ?></strong>
           </div>
         </article>
 
@@ -310,8 +311,8 @@ try {
           </div>
 
           <div>
-            <span>Ativos</span>
-            <strong id="activeLocationsMetric"><?php echo e((string) $locaisAtivos); ?></strong>
+            <span>Ativas</span>
+            <strong id="activeBrandsMetric"><?php echo e((string) $propriedadesAtivas); ?></strong>
           </div>
         </article>
 
@@ -321,8 +322,8 @@ try {
           </div>
 
           <div>
-            <span>Inativos</span>
-            <strong id="inactiveLocationsMetric"><?php echo e((string) $locaisInativos); ?></strong>
+            <span>Inativas</span>
+            <strong id="inactiveBrandsMetric"><?php echo e((string) $propriedadesInativas); ?></strong>
           </div>
         </article>
       </section>
@@ -333,32 +334,27 @@ try {
         </div>
       <?php endif; ?>
 
-      <section class="locations-layout" aria-label="Cadastro de localizacoes">
-        <article class="content-card asset-form-card asset-form-card-enhanced location-form-card">
+      <section class="brands-layout" aria-label="Cadastro de propriedades">
+        <article class="content-card asset-form-card asset-form-card-enhanced brand-form-card">
           <div class="card-header asset-card-header">
             <div>
               <p class="section-tag">Formul&aacute;rio</p>
-              <h3>Cadastrar localiza&ccedil;&atilde;o</h3>
-              <span class="card-subtitle">Use nomes claros como unidade, setor, sala ou arm&aacute;rio. O cadastro
-                bloqueia duplicidades por nome.</span>
-            </div>
-
-            <div class="form-badge" aria-label="Padronizacao">
-              <i class="bi bi-shield-check"></i>
-              Padronizado
+              <h3>Cadastrar propriedade</h3>
+              <span class="card-subtitle">Use o nome oficial ou mais conhecido da propriedade. O cadastro bloqueia
+                duplicidades por nome.</span>
             </div>
           </div>
 
-          <form id="locationForm" class="asset-form enhanced-asset-form" action="Backend/cadastrar-local.php"
-            method="post" novalidate>
+          <form id="brandForm" class="asset-form enhanced-asset-form" action="Backend/cadastrar-propriedade.php" method="post"
+            novalidate>
             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
 
-            <div class="asset-form-grid location-form-grid">
+            <div class="asset-form-grid brand-form-grid">
               <label class="asset-field priority-field">
-                <span>Nome do local <strong>*</strong></span>
+                <span>Nome da propriedade <strong>*</strong></span>
                 <div class="input-shell">
-                  <i class="bi bi-geo-alt"></i>
-                  <input name="nome" type="text" placeholder="Ex: Matriz - Estoque TI" maxlength="100"
+                  <i class="bi bi-building"></i>
+                  <input name="nome" type="text" placeholder="Ex: Zebra, Honeywell, Samsung" maxlength="80"
                     autocomplete="off" required />
                 </div>
               </label>
@@ -368,23 +364,14 @@ try {
                 <div class="input-shell select-shell">
                   <i class="bi bi-toggle-on"></i>
                   <select name="status" required>
-                    <option value="Ativo" selected>Ativo</option>
-                    <option value="Inativo">Inativo</option>
+                    <option value="Ativa" selected>Ativa</option>
+                    <option value="Inativa">Inativa</option>
                   </select>
-                </div>
-              </label>
-
-              <label class="asset-field wide-field">
-                <span>Endere&ccedil;o ou refer&ecirc;ncia</span>
-                <div class="input-shell">
-                  <i class="bi bi-signpost-split"></i>
-                  <input name="endereco" type="text" placeholder="Ex: 2&ordm; andar, sala 204, rack A"
-                    maxlength="160" autocomplete="off" />
                 </div>
               </label>
             </div>
 
-            <div id="locationFormMessage" class="form-message" role="status" aria-live="polite"></div>
+            <div id="brandFormMessage" class="form-message" role="status" aria-live="polite"></div>
 
             <div class="asset-form-actions enhanced-form-actions">
               <button class="form-action-button danger-button" type="reset">
@@ -392,9 +379,9 @@ try {
                 <span>Limpar campos</span>
               </button>
 
-              <button id="locationSubmitButton" class="form-action-button success-button" type="submit">
+              <button id="brandSubmitButton" class="form-action-button success-button" type="submit">
                 <i class="bi bi-plus-circle"></i>
-                <span>Cadastrar local</span>
+                <span>Cadastrar propriedade</span>
               </button>
             </div>
           </form>

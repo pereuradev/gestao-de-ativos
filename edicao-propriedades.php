@@ -18,7 +18,7 @@ function e(string $value): string
     return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
 }
 
-function formatarDataMarca(?string $value): string
+function formatarDataPropriedade(?string $value): string
 {
     if (!$value) {
         return "--";
@@ -59,17 +59,17 @@ foreach ($sidebarNameParts as $sidebarNamePart) {
 $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 $csrfToken = e((string)$_SESSION["csrf_token"]);
 
-$marcas = [];
-$totalMarcas = 0;
-$marcasAtivas = 0;
-$marcasInativas = 0;
+$propriedades = [];
+$totalPropriedades = 0;
+$propriedadesAtivas = 0;
+$propriedadesInativas = 0;
 $erroBanco = "";
 
 try {
     require __DIR__ . "/Backend/Conexao.php";
 
     $pdo->exec("
-        create table if not exists public.marcas_ativos (
+        create table if not exists public.propriedade_ativos (
             id uuid primary key default gen_random_uuid(),
             nome text not null unique,
             status text not null default 'Ativa'
@@ -80,8 +80,14 @@ try {
     ");
 
     $pdo->exec("
-        create unique index if not exists marcas_ativos_nome_lower_unique
-            on public.marcas_ativos (lower(nome))
+        create unique index if not exists propriedade_ativos_nome_lower_unique
+            on public.propriedade_ativos (lower(nome))
+    ");
+
+    $pdo->exec("
+        insert into public.propriedade_ativos (nome, status)
+        values ('TITECHSOLUTIONS', 'Ativa'), ('TSC', 'Ativa')
+        on conflict do nothing
     ");
 
     $resumoStmt = $pdo->prepare("
@@ -89,24 +95,24 @@ try {
             count(*)::int as total,
             count(*) filter (where status = 'Ativa')::int as ativas,
             count(*) filter (where status = 'Inativa')::int as inativas
-          from public.marcas_ativos
+          from public.propriedade_ativos
     ");
     $resumoStmt->execute();
     $resumo = $resumoStmt->fetch() ?: [];
 
-    $totalMarcas = (int)($resumo["total"] ?? 0);
-    $marcasAtivas = (int)($resumo["ativas"] ?? 0);
-    $marcasInativas = (int)($resumo["inativas"] ?? 0);
+    $totalPropriedades = (int)($resumo["total"] ?? 0);
+    $propriedadesAtivas = (int)($resumo["ativas"] ?? 0);
+    $propriedadesInativas = (int)($resumo["inativas"] ?? 0);
 
-    $marcasStmt = $pdo->prepare("
+    $propriedadesStmt = $pdo->prepare("
         select id, nome, status, criado_em, atualizado_em
-          from public.marcas_ativos
+          from public.propriedade_ativos
       order by nome asc
     ");
-    $marcasStmt->execute();
-    $marcas = $marcasStmt->fetchAll();
+    $propriedadesStmt->execute();
+    $propriedades = $propriedadesStmt->fetchAll();
 } catch (Throwable) {
-    $erroBanco = "Nao foi possivel carregar as marcas do banco agora.";
+    $erroBanco = "Nao foi possivel carregar as propriedades do banco agora.";
 }
 ?>
 <!doctype html>
@@ -117,8 +123,8 @@ try {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="csrf-token" content="<?php echo $csrfToken; ?>" />
 
-  <title>Edi&ccedil;&atilde;o de marcas | TI TECH Solutions</title>
-  <meta name="description" content="Tabela para alterar ou excluir marcas de ativos da TI TECH Solutions" />
+  <title>Edi&ccedil;&atilde;o de propriedades | TI TECH Solutions</title>
+  <meta name="description" content="Tabela para alterar ou excluir propriedades de ativos da TI TECH Solutions" />
   <link rel="icon" type="image/png" href="assets/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -127,14 +133,14 @@ try {
 
   <link rel="stylesheet" href="css/pagina-base.css?v=20260626-user-card" />
   <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260619-select-options" />
-  <link rel="stylesheet" href="css/edicao-marcas.css?v=20260619-brand-status-actions" />
+  <link rel="stylesheet" href="css/edicao-propriedades.css?v=20260619-brand-status-actions" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
   <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
   <script src="js/app-base.js?v=20260626-properties-sidebar" defer></script>
-  <script src="js/edicao-marcas.js?v=20260624-common-ui" defer></script>
+  <script src="js/edicao-propriedades.js?v=20260626-properties" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
@@ -202,8 +208,8 @@ try {
 
           <div class="nav-submenu" id="editingSubmenu">
             <a href="edicao-ativos.php">Ativos</a>
-            <a class="active-submenu" href="edicao-marcas.php">Marcas</a>
-            <a href="edicao-propriedades.php">Propriedades</a>
+            <a href="edicao-marcas.php">Marcas</a>
+            <a class="active-submenu" href="edicao-propriedades.php">Propriedades</a>
             <a href="edicao-locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>
@@ -248,15 +254,15 @@ try {
           <div>
             <p class="eyebrow">Edi&ccedil;&atilde;o</p>
             <h1>
-              <span class="typewriter-heading" style="--typewriter-min: 18ch">Edi&ccedil;&atilde;o de marcas</span><span aria-hidden="true"></span>
+              <span class="typewriter-heading" style="--typewriter-min: 18ch">Edi&ccedil;&atilde;o de propriedades</span><span aria-hidden="true"></span>
             </h1>
           </div>
         </div>
 
         <div class="topbar-actions">
-          <a class="secondary-button compact-button" href="marcas.php">
+          <a class="secondary-button compact-button" href="propriedades.php">
             <i class="bi bi-plus-circle"></i>
-            Nova marca
+            Nova propriedade
           </a>
 
           <button class="theme-toggle" id="themeToggle" type="button">
@@ -270,24 +276,24 @@ try {
         <div class="hero-content">
           <h2 id="brandEditTitle">
             <span class="typewriter-heading" style="--typewriter-min: 23ch" data-typewriter-loop
-              data-typewriter-phrases="Tabela de marcas.|Altere dados com seguranca.|Exclua registros duplicados.">Tabela de marcas.</span><span aria-hidden="true"></span>
+              data-typewriter-phrases="Tabela de propriedades.|Altere dados com seguranca.|Exclua registros duplicados.">Tabela de propriedades.</span><span aria-hidden="true"></span>
           </h2>
           <p>
-            Consulte as marcas cadastradas, altere nome ou status e remova registros que n&atilde;o devem aparecer
+            Consulte as propriedades cadastradas, altere nome ou status e remova registros que n&atilde;o devem aparecer
             no cadastro de ativos.
           </p>
         </div>
       </section>
 
-      <section class="metrics-grid" aria-label="Resumo das marcas">
+      <section class="metrics-grid" aria-label="Resumo das propriedades">
         <article class="metric-card">
           <div class="metric-icon">
             <i class="bi bi-building-fill"></i>
           </div>
 
           <div>
-            <span>Total de marcas</span>
-            <strong id="totalBrandsMetric"><?php echo e((string)$totalMarcas); ?></strong>
+            <span>Total de propriedades</span>
+            <strong id="totalBrandsMetric"><?php echo e((string)$totalPropriedades); ?></strong>
           </div>
         </article>
 
@@ -298,7 +304,7 @@ try {
 
           <div>
             <span>Ativas</span>
-            <strong id="activeBrandsMetric"><?php echo e((string)$marcasAtivas); ?></strong>
+            <strong id="activeBrandsMetric"><?php echo e((string)$propriedadesAtivas); ?></strong>
           </div>
         </article>
 
@@ -309,7 +315,7 @@ try {
 
           <div>
             <span>Inativas</span>
-            <strong id="inactiveBrandsMetric"><?php echo e((string)$marcasInativas); ?></strong>
+            <strong id="inactiveBrandsMetric"><?php echo e((string)$propriedadesInativas); ?></strong>
           </div>
         </article>
       </section>
@@ -320,16 +326,16 @@ try {
         </div>
       <?php endif; ?>
 
-      <section class="content-card records-card brand-edit-card" aria-label="Tabela de edicao de marcas">
+      <section class="content-card records-card brand-edit-card" aria-label="Tabela de edicao de propriedades">
         <div class="card-header records-header">
           <div>
             <p class="section-tag">Banco de dados</p>
-            <h3>Marcas cadastradas</h3>
+            <h3>Propriedades cadastradas</h3>
           </div>
 
           <div class="records-actions">
-            <span id="brandResultCount"><?php echo e((string)count($marcas)); ?> registros</span>
-            <select id="brandStatusFilter" aria-label="Filtrar marcas por status">
+            <span id="brandResultCount"><?php echo e((string)count($propriedades)); ?> registros</span>
+            <select id="brandStatusFilter" aria-label="Filtrar propriedades por status">
               <option value="todos">Todos</option>
               <option value="ativa">Ativas</option>
               <option value="inativa">Inativas</option>
@@ -342,7 +348,7 @@ try {
         <div class="brand-edit-toolbar">
           <div class="search-box brand-edit-search">
             <i class="bi bi-search"></i>
-            <input id="brandSearch" type="search" placeholder="Buscar marca" aria-label="Buscar marca"
+            <input id="brandSearch" type="search" placeholder="Buscar propriedade" aria-label="Buscar propriedade"
               autocomplete="off" />
           </div>
         </div>
@@ -351,7 +357,7 @@ try {
           <table class="records-table brand-edit-table">
             <thead>
               <tr>
-                <th>Marca</th>
+                <th>Propriedade</th>
                 <th>Status</th>
                 <th>Criada em</th>
                 <th>Atualizada em</th>
@@ -359,11 +365,11 @@ try {
               </tr>
             </thead>
             <tbody id="brandTableBody">
-              <?php foreach ($marcas as $marca): ?>
+              <?php foreach ($propriedades as $propriedade): ?>
                 <?php
-                $id = (string)($marca["id"] ?? "");
-                $nome = (string)($marca["nome"] ?? "");
-                $status = (string)($marca["status"] ?? "");
+                $id = (string)($propriedade["id"] ?? "");
+                $nome = (string)($propriedade["nome"] ?? "");
+                $status = (string)($propriedade["status"] ?? "");
                 ?>
                 <tr class="registration-row brand-row"
                   data-id="<?php echo e($id); ?>"
@@ -371,7 +377,7 @@ try {
                   data-status="<?php echo e(strtolower($status)); ?>"
                   data-status-raw="<?php echo e($status); ?>"
                   data-search="<?php echo e(strtolower($nome)); ?>">
-                  <td data-label="Marca">
+                  <td data-label="Propriedade">
                     <strong data-brand-name><?php echo e($nome); ?></strong>
                   </td>
                   <td data-label="Status">
@@ -379,8 +385,8 @@ try {
                       <?php echo e($status); ?>
                     </span>
                   </td>
-                  <td data-label="Criada em"><?php echo e(formatarDataMarca((string)($marca["criado_em"] ?? ""))); ?></td>
-                  <td data-label="Atualizada em" data-brand-updated><?php echo e(formatarDataMarca((string)($marca["atualizado_em"] ?? ""))); ?></td>
+                  <td data-label="Criada em"><?php echo e(formatarDataPropriedade((string)($propriedade["criado_em"] ?? ""))); ?></td>
+                  <td data-label="Atualizada em" data-brand-updated><?php echo e(formatarDataPropriedade((string)($propriedade["atualizado_em"] ?? ""))); ?></td>
                   <td data-label="A&ccedil;&otilde;es" class="brand-actions-cell">
                     <div class="row-actions">
                       <button class="table-action edit-brand-button" type="button" data-brand-action="edit">
@@ -399,9 +405,9 @@ try {
           </table>
         </div>
 
-        <div id="brandEmptyState" class="empty-state records-empty" <?php echo $marcas ? "hidden" : ""; ?>>
+        <div id="brandEmptyState" class="empty-state records-empty" <?php echo $propriedades ? "hidden" : ""; ?>>
           <i class="bi bi-info-circle"></i>
-          <span>Nenhuma marca encontrada.</span>
+          <span>Nenhuma propriedade encontrada.</span>
         </div>
       </section>
     </main>
@@ -411,8 +417,8 @@ try {
     <section class="edit-modal-card" role="dialog" aria-modal="true" aria-labelledby="brandEditModalTitle">
       <div class="edit-modal-header">
         <div>
-          <p class="section-tag">Alterar marca</p>
-          <h3 id="brandEditModalTitle">Dados da marca</h3>
+          <p class="section-tag">Alterar propriedade</p>
+          <h3 id="brandEditModalTitle">Dados da propriedade</h3>
         </div>
 
         <button class="icon-button modal-close-button" type="button" aria-label="Fechar edicao" data-close-edit-modal>
@@ -420,13 +426,13 @@ try {
         </button>
       </div>
 
-      <form id="brandEditForm" class="asset-form enhanced-asset-form" action="Backend/atualizar-marca.php" method="post" novalidate>
+      <form id="brandEditForm" class="asset-form enhanced-asset-form" action="Backend/atualizar-propriedade.php" method="post" novalidate>
         <input id="editBrandId" type="hidden" name="id" />
         <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
 
         <div class="asset-form-grid brand-form-grid">
           <label class="asset-field priority-field">
-            <span>Nome da marca <strong>*</strong></span>
+            <span>Nome da propriedade <strong>*</strong></span>
             <div class="input-shell">
               <i class="bi bi-building"></i>
               <input id="editBrandName" name="nome" type="text" maxlength="80" autocomplete="off" required />
