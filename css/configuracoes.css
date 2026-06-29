@@ -7,8 +7,18 @@
   min-height: 260px;
   background-color: #061829;
   background-image:
-    linear-gradient(90deg, rgba(3, 16, 29, 0.98) 0%, rgba(6, 24, 41, 0.94) 38%, rgba(10, 37, 60, 0.64) 68%, rgba(3, 16, 29, 0.7) 100%),
-    radial-gradient(circle at 80% 28%, color-mix(in srgb, var(--mint) 26%, transparent), transparent 28%),
+    linear-gradient(
+      90deg,
+      rgba(3, 16, 29, 0.98) 0%,
+      rgba(6, 24, 41, 0.94) 38%,
+      rgba(10, 37, 60, 0.64) 68%,
+      rgba(3, 16, 29, 0.7) 100%
+    ),
+    radial-gradient(
+      circle at 80% 28%,
+      color-mix(in srgb, var(--mint) 26%, transparent),
+      transparent 28%
+    ),
     linear-gradient(135deg, #03101d 0%, #08233a 100%);
   border: 0;
   box-shadow:
@@ -24,8 +34,16 @@
   display: block;
   pointer-events: none;
   background:
-    repeating-linear-gradient(90deg, rgba(102, 213, 194, 0.08) 0 1px, transparent 1px 64px),
-    repeating-linear-gradient(180deg, rgba(74, 163, 199, 0.07) 0 1px, transparent 1px 64px);
+    repeating-linear-gradient(
+      90deg,
+      rgba(102, 213, 194, 0.08) 0 1px,
+      transparent 1px 64px
+    ),
+    repeating-linear-gradient(
+      180deg,
+      rgba(74, 163, 199, 0.07) 0 1px,
+      transparent 1px 64px
+    );
   mask-image: linear-gradient(90deg, transparent 0%, #000 34%, #000 100%);
 }
 
@@ -40,8 +58,18 @@
 
 .theme-light .settings-page .settings-hero {
   background-image:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 250, 252, 0.9) 38%, rgba(235, 246, 249, 0.56) 70%, rgba(10, 37, 60, 0.16) 100%),
-    radial-gradient(circle at 82% 26%, color-mix(in srgb, var(--mint) 22%, transparent), transparent 28%),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.98) 0%,
+      rgba(244, 250, 252, 0.9) 38%,
+      rgba(235, 246, 249, 0.56) 70%,
+      rgba(10, 37, 60, 0.16) 100%
+    ),
+    radial-gradient(
+      circle at 82% 26%,
+      color-mix(in srgb, var(--mint) 22%, transparent),
+      transparent 28%
+    ),
     linear-gradient(135deg, #f7fbfd 0%, #e5f1f5 100%);
   box-shadow:
     0 22px 70px rgba(9, 31, 48, 0.11),
@@ -144,7 +172,11 @@
   border-radius: 24px;
   color: #ffffff;
   background:
-    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.34), transparent 34%),
+    radial-gradient(
+      circle at 30% 22%,
+      rgba(255, 255, 255, 0.34),
+      transparent 34%
+    ),
     linear-gradient(135deg, var(--cyan), var(--teal));
   box-shadow: 0 18px 36px rgba(79, 199, 177, 0.22);
   font-size: 1.35rem;
@@ -397,6 +429,8 @@
 
 .three-options {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding-top: 4px;
+  margin-top: 4px;
 }
 
 .segmented-control label {
@@ -857,7 +891,8 @@ button:disabled {
   opacity: 0.72;
 }
 
-body[data-cursor="enhanced"] :where(a, button, input, select, textarea, label):hover {
+body[data-cursor="enhanced"]
+  :where(a, button, input, select, textarea, label):hover {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--mint) 13%, transparent);
 }
 
