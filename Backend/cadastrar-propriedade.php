@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Endpoint de cadastro de propriedades dos ativos.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -11,6 +12,7 @@ header("Cache-Control: no-store");
 
 function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
 {
+    // Responde sempre em JSON para manter o comportamento das telas de cadastro.
     http_response_code($statusCode);
     echo json_encode(
         array_merge(["ok" => $ok, "message" => $message], $extra),
@@ -21,21 +23,25 @@ function responder(bool $ok, string $message, int $statusCode = 200, array $extr
 
 function campo(string $nome): string
 {
+    // Busca o valor no POST e limpa espacos externos.
     return trim((string)($_POST[$nome] ?? ""));
 }
 
 function normalizarEspacos(string $valor): string
 {
+    // Evita nomes visualmente diferentes apenas por excesso de espacos.
     return preg_replace("/\s+/u", " ", $valor) ?? $valor;
 }
 
 function tamanhoTexto(string $valor): int
 {
+    // Conta caracteres com suporte a UTF-8 quando a extensao mbstring existe.
     return function_exists("mb_strlen") ? mb_strlen($valor, "UTF-8") : strlen($valor);
 }
 
 function csrfValido(): bool
 {
+    // Compara token da sessao com token enviado pelo formulario.
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
     $tokenPost = campo("csrf_token");
 
@@ -56,6 +62,7 @@ if (!csrfValido()) {
     responder(false, "Token de seguranca invalido. Atualize a pagina e tente novamente.", 403);
 }
 
+// Dados enviados para criar a propriedade.
 $nome = normalizarEspacos(campo("nome"));
 $status = campo("status") ?: "Ativa";
 
@@ -84,6 +91,7 @@ if (!in_array($status, ["Ativa", "Inativa"], true)) {
 try {
     require __DIR__ . "/Conexao.php";
 
+    // Cria a tabela caso o banco ainda nao tenha sido preparado.
     $pdo->exec("
         create table if not exists public.propriedade_ativos (
             id uuid primary key default gen_random_uuid(),
@@ -99,7 +107,8 @@ try {
         create unique index if not exists propriedade_ativos_nome_lower_unique
             on public.propriedade_ativos (lower(nome))
     ");
-  $pdo->exec("
+    // Garante registros padrao usados pelo inventario.
+    $pdo->exec("
         insert into public.propriedade_ativos (nome, status, atualizado_em)
         select seed.nome, 'Ativa', now()
           from (values ('TITECHSOLUTIONS'), ('TSC')) as seed(nome)
@@ -110,6 +119,7 @@ try {
          )
     ");
 
+    // Insere e retorna a propriedade pronta para o frontend.
     $stmt = $pdo->prepare("
         insert into public.propriedade_ativos (
             nome,

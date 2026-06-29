@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Endpoint de exclusao de ativos.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -11,6 +12,7 @@ header("Cache-Control: no-store");
 
 function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
 {
+    // Padroniza a resposta consumida pelo JavaScript.
     http_response_code($statusCode);
     echo json_encode(
         array_merge(["ok" => $ok, "message" => $message], $extra),
@@ -21,11 +23,13 @@ function responder(bool $ok, string $message, int $statusCode = 200, array $extr
 
 function campo(string $nome): string
 {
+    // Le o identificador enviado pelo formulario/modal.
     return trim((string)($_POST[$nome] ?? ""));
 }
 
 function csrfValido(): bool
 {
+    // Garante que a exclusao foi solicitada a partir da sessao atual.
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
     $tokenPost = campo("csrf_token");
 
@@ -36,6 +40,7 @@ function csrfValido(): bool
 
 function uuidValido(string $valor): bool
 {
+    // Ativos usam UUID como identificador.
     return (bool)preg_match(
         "/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i",
         $valor
@@ -63,6 +68,7 @@ if (!uuidValido($id)) {
 try {
     require __DIR__ . "/Conexao.php";
 
+    // O returning permite confirmar o que foi removido e avisar a tela.
     $stmt = $pdo->prepare("
         delete from public.ativos
          where id = :id

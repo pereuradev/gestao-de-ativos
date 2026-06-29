@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Endpoint de edicao de ativos. A estrutura e parecida com o cadastro, mas exige ID.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -11,6 +12,7 @@ header("Cache-Control: no-store");
 
 function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
 {
+    // Resposta unica para o frontend tratar sucesso, validacao e erro do mesmo jeito.
     http_response_code($statusCode);
     echo json_encode(
         array_merge(["ok" => $ok, "message" => $message], $extra),
@@ -21,11 +23,13 @@ function responder(bool $ok, string $message, int $statusCode = 200, array $extr
 
 function campo(string $nome): string
 {
+    // Le campos POST sem deixar espacos perdidos no inicio ou fim.
     return trim((string)($_POST[$nome] ?? ""));
 }
 
 function campoNulo(string $nome): ?string
 {
+    // Campos opcionais vazios sao enviados como null para o banco.
     $valor = campo($nome);
 
     return $valor !== "" ? $valor : null;
@@ -33,6 +37,7 @@ function campoNulo(string $nome): ?string
 
 function csrfValido(): bool
 {
+    // Protege a alteracao contra envio fora da pagina autenticada.
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
     $tokenPost = campo("csrf_token");
 
@@ -43,6 +48,7 @@ function csrfValido(): bool
 
 function uuidValido(?string $valor): bool
 {
+    // IDs do ativo, categoria e local precisam seguir o formato UUID.
     if ($valor === null || $valor === "") {
         return true;
     }
@@ -55,6 +61,7 @@ function uuidValido(?string $valor): bool
 
 function statusPermitido(string $status): bool
 {
+    // Lista historica de status; a validacao oficial acontece via status-ativos.php.
     return in_array($status, [
         "Disponível",
         "Em uso",
@@ -78,6 +85,7 @@ if (!csrfValido()) {
     responder(false, "Token de seguranca invalido. Atualize a pagina e tente novamente.", 403);
 }
 
+// Dados enviados pelo formulario de edicao.
 $id = campo("id");
 $nome = campo("nome");
 $descricao = campoNulo("descricao");
@@ -114,6 +122,7 @@ try {
     require __DIR__ . "/Conexao.php";
     require __DIR__ . "/status-ativos.php";
 
+    // Normaliza o texto do status para o valor oficial usado no banco.
     $statusNormalizado = obterStatusAtivo($pdo, $status);
 
     if ($statusNormalizado === null) {
@@ -123,6 +132,7 @@ try {
     $status = $statusNormalizado;
 
     if ($marca !== null) {
+        // A marca precisa existir e estar ativa para nao salvar texto solto.
         $marcaStmt = $pdo->prepare("
             select nome
               from public.marcas_ativos
@@ -144,6 +154,7 @@ try {
         $marca = (string)$marcaAtiva;
     }
 
+    // Atualiza o ativo e junta categoria/local para devolver a linha pronta ao frontend.
     $stmt = $pdo->prepare("
         with ativo_atualizado as (
             update public.ativos

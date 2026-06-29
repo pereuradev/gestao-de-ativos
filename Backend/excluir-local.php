@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Endpoint de exclusao de locais.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -11,6 +12,7 @@ header("Cache-Control: no-store");
 
 function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
 {
+    // Retorno padrao para o JavaScript.
     http_response_code($statusCode);
     echo json_encode(
         array_merge(["ok" => $ok, "message" => $message], $extra),
@@ -21,11 +23,13 @@ function responder(bool $ok, string $message, int $statusCode = 200, array $extr
 
 function campo(string $nome): string
 {
+    // Busca o identificador enviado pela tela.
     return trim((string)($_POST[$nome] ?? ""));
 }
 
 function csrfValido(): bool
 {
+    // Evita exclusoes disparadas sem o token da sessao.
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
     $tokenPost = campo("csrf_token");
 
@@ -55,6 +59,7 @@ if ($id === "") {
 try {
     require __DIR__ . "/Conexao.php";
 
+    // Remove o local e retorna os dados basicos do registro removido.
     $stmt = $pdo->prepare("
         delete from public.locais
          where id::text = :id
@@ -72,6 +77,7 @@ try {
         "local" => $local,
     ]);
 } catch (PDOException $exception) {
+    // Se o local esta em uso por ativos, o banco bloqueia a exclusao.
     if ($exception->getCode() === "23503") {
         responder(false, "Nao e possivel excluir este local porque ele esta vinculado a ativos.", 409);
     }

@@ -2,15 +2,18 @@
 
 declare(strict_types=1);
 
+// Cadastro de usuarios. Cria a conta no Supabase Auth e salva o perfil local.
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . "/config.php";
 
+// Chaves usadas para chamar o endpoint de signup do Supabase.
 $supabaseUrl = configObrigatoria("SUPABASE_URL");
 $supabaseAnonKey = configObrigatoria("SUPABASE_ANON_KEY");
 
 function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
 {
+    // Mantem o mesmo formato de resposta para erro e sucesso.
     http_response_code($statusCode);
     echo json_encode(
         array_merge(["ok" => $ok, "message" => $message], $extra),
@@ -21,26 +24,31 @@ function responder(bool $ok, string $message, int $statusCode = 200, array $extr
 
 function campo(string $nome, string $padrao = ""): string
 {
+    // Le campo de formulario e remove espacos extras nas pontas.
     return trim((string)($_POST[$nome] ?? $padrao));
 }
 
 function apenasNumeros(string $valor): string
 {
+    // Usado para validar RG, CPF e celular sem mascara.
     return preg_replace("/\D+/", "", $valor) ?? "";
 }
 
 function validarCampoPermitido(string $valor, array $permitidos, string $padrao): string
 {
+    // Evita valores fora das listas esperadas quando o HTML e manipulado.
     return in_array($valor, $permitidos, true) ? $valor : $padrao;
 }
 
 function emailCorporativoValido(string $email): bool
 {
+    // Restringe cadastro ao dominio corporativo.
     return str_ends_with(strtolower($email), "@titechsolutions.com.br");
 }
 
 function gerarHashSenha(string $senha): string
 {
+    // Salva um hash local seguro para facilitar validacoes futuras.
     $hash = password_hash($senha, PASSWORD_ARGON2ID, [
         "memory_cost" => 65536,
         "time_cost" => 4,
@@ -56,6 +64,7 @@ function gerarHashSenha(string $senha): string
 
 function criarUsuarioSupabase(string $url, string $anonKey, array $payload): array
 {
+    // O Supabase Auth fica responsavel pela identidade principal do usuario.
     $ch = curl_init();
 
     curl_setopt_array($ch, [
@@ -100,6 +109,7 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     responder(false, "Metodo nao permitido.", 405);
 }
 
+// Coleta e normaliza todos os campos enviados pelo formulario de cadastro.
 $nomeCompleto = campo("nome_completo");
 $email = campo("email");
 $senha = (string)($_POST["senha"] ?? "");
@@ -120,6 +130,7 @@ $celular = campo("celular");
 $dataNascimento = campo("data_nascimento");
 
 if (
+    // O cadastro exige dados completos porque eles aparecem no perfil e na sidebar.
     $nomeCompleto === "" ||
     $email === "" ||
     $senha === "" ||
@@ -172,6 +183,7 @@ $senhaHash = gerarHashSenha($senha);
 try {
     require_once __DIR__ . "/Conexao.php";
 
+    // Antes de chamar o Auth, verificamos duplicidade nos dados locais principais.
     $stmt = $pdo->prepare("
         select email, cpf, rg
         from public.perfis_usuarios
@@ -206,6 +218,7 @@ try {
 }
 
 $metadata = [
+    // Esses dados acompanham o usuario no Supabase e ajudam a reconstruir o perfil.
     "nome_completo" => $nomeCompleto,
     "tipo_usuario" => $tipoUsuario,
     "departamento" => $departamento,
@@ -217,6 +230,7 @@ $metadata = [
 ];
 
 $authData = criarUsuarioSupabase($supabaseUrl, $supabaseAnonKey, [
+    // Cadastro no Auth: e-mail e senha ficam no provedor de autenticacao.
     "email" => $email,
     "password" => $senha,
     "data" => $metadata,
@@ -229,6 +243,7 @@ if (!$userId) {
 }
 
 try {
+    // Depois do Auth, gravamos ou atualizamos o perfil na tabela local.
     $sql = "
         insert into public.perfis_usuarios (
             id,

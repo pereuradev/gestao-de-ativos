@@ -1,5 +1,9 @@
 (function () {
+// Script base carregado nas paginas internas. Ele concentra tema, sidebar,
+// preferencias visuais e pequenos helpers usados por varios modulos.
 const THEME_TRANSITION_MS = 660;
+
+// Paletas que podem ser escolhidas nas configuracoes do usuario.
 const ACCENT_THEMES = {
   teal: {
     cyan: "#4aa3c7",
@@ -31,6 +35,7 @@ let themeTimer = null;
 let systemThemeListenerAttached = false;
 
 function getSavedItem(key) {
+  // localStorage pode falhar em navegador restrito, entao sempre acessamos com try/catch.
   try {
     return localStorage.getItem(key);
   } catch {
@@ -39,6 +44,7 @@ function getSavedItem(key) {
 }
 
 function setSavedItem(key, value) {
+  // Salva preferencias de interface sem quebrar a pagina caso o navegador bloqueie.
   try {
     localStorage.setItem(key, value);
   } catch {
@@ -47,24 +53,28 @@ function setSavedItem(key, value) {
 }
 
 function updateBrandLogo(isDark) {
+  // Troca o logo para manter contraste correto no modo claro e escuro.
   document.querySelectorAll(".brand-logo").forEach((logo) => {
     logo.src = isDark ? "assets/logo-branca.png" : "assets/Logo.png";
   });
 }
 
 function startPageAnimation() {
+  // Remove a classe inicial depois do primeiro frame para liberar a animacao de entrada.
   requestAnimationFrame(() => {
     document.body.classList.remove("page-loading");
   });
 }
 
 function loadSavedTheme() {
+  // Restaura tema e preferencias antes de configurar os controles da pagina.
   applyTheme(getSavedItem("titech-theme") || "dark");
   loadInterfacePreferences();
   setupSystemThemeListener();
 }
 
 function setupThemeToggle() {
+  // Liga o botao de tema, quando ele existe na pagina atual.
   const themeToggle = document.getElementById("themeToggle");
 
   if (!themeToggle) return;
@@ -89,6 +99,7 @@ function setupThemeToggle() {
 }
 
 function applyTheme(theme) {
+  // Aceita dark, light ou auto. Qualquer outro valor volta para dark.
   const themeToggle = document.getElementById("themeToggle");
   const nextTheme = ["dark", "light", "auto"].includes(theme) ? theme : "dark";
   const isDark = resolveThemeMode(nextTheme) === "dark";
@@ -115,6 +126,7 @@ function applyTheme(theme) {
 }
 
 function resolveThemeMode(theme) {
+  // No modo auto, o navegador informa se o sistema prefere tema claro.
   if (theme !== "auto") {
     return theme === "light" ? "light" : "dark";
   }
@@ -123,6 +135,7 @@ function resolveThemeMode(theme) {
 }
 
 function setupSystemThemeListener() {
+  // Quando o usuario escolhe auto, reagimos se o tema do sistema mudar.
   if (systemThemeListenerAttached || !window.matchMedia) return;
 
   const mediaQuery = window.matchMedia("(prefers-color-scheme: light)");
@@ -137,6 +150,7 @@ function setupSystemThemeListener() {
 }
 
 function loadInterfacePreferences() {
+  // Preferencias salvas deixam as paginas com a mesma aparencia escolhida pelo usuario.
   applyAccent(getSavedItem("titech-accent") || "teal");
   applyDensity(getSavedItem("titech-density") || "comfortable");
   applyMotionPreference(getSavedItem("titech-motion") || "normal");
@@ -144,6 +158,7 @@ function loadInterfacePreferences() {
 }
 
 function applyAccent(accent) {
+  // Atualiza variaveis CSS globais para botoes, graficos e detalhes visuais.
   const nextAccent = Object.hasOwn(ACCENT_THEMES, accent) ? accent : "teal";
   const palette = ACCENT_THEMES[nextAccent];
 
@@ -159,18 +174,22 @@ function applyAccent(accent) {
 }
 
 function applyDensity(density) {
+  // Densidade compacta reduz espacamentos sem criar outro CSS completo.
   document.body.dataset.density = density === "compact" ? "compact" : "comfortable";
 }
 
 function applyMotionPreference(motion) {
+  // Preferencia de movimento reduz animacoes para quem precisa de menos movimento.
   document.body.dataset.motion = motion === "reduced" ? "reduced" : "normal";
 }
 
 function applyCursorPreference(cursor) {
+  // Algumas telas podem usar cursor destacado quando a preferencia estiver ativa.
   document.body.dataset.cursor = cursor === "enhanced" ? "enhanced" : "normal";
 }
 
 function setupSidebar() {
+  // Controla abertura no mobile, fechamento por fundo escuro e Escape.
   const openButton = document.getElementById("openSidebar");
   const closeButton = document.getElementById("closeSidebar");
   const backdrop = document.getElementById("sidebarBackdrop");
@@ -199,14 +218,17 @@ function setupSidebar() {
 }
 
 function openSidebar() {
+  // A classe no body permite que CSS mova a sidebar e mostre o backdrop.
   document.body.classList.add("sidebar-open");
 }
 
 function closeSidebar() {
+  // Fecha a sidebar removendo o estado global.
   document.body.classList.remove("sidebar-open");
 }
 
 function setupNavGroups() {
+  // Menus agrupados da sidebar abrem um por vez para evitar lista muito longa.
   const groups = Array.from(document.querySelectorAll("[data-nav-group]"));
 
   groups.forEach((group) => {
@@ -231,6 +253,7 @@ function setupNavGroups() {
 }
 
 function setInputValue(id, value) {
+  // Helper pequeno para preencher inputs por id sem repetir verificacao de null.
   const element = document.getElementById(id);
 
   if (element) {
@@ -239,16 +262,19 @@ function setInputValue(id, value) {
 }
 
 function setText(element, text) {
+  // Atualiza texto quando o elemento existe.
   if (element) {
     element.textContent = text;
   }
 }
 
 function updateText(id, text) {
+  // Versao por id do setText, usada em paginas que atualizam contadores.
   setText(document.getElementById(id), text);
 }
 
 function normalizeText(value) {
+  // Remove acentos e padroniza caixa para buscas locais.
   return String(value || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -257,6 +283,7 @@ function normalizeText(value) {
 }
 
 Object.assign(window, {
+  // Expomos os helpers no window porque as paginas antigas ainda chamam essas funcoes.
   getSavedItem,
   setSavedItem,
   updateBrandLogo,

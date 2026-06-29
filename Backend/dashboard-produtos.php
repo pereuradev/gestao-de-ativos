@@ -1,11 +1,15 @@
 <?php
 declare(strict_types=1);
 
+// Endpoint JSON usado pelo dashboard.php. Ele concentra todas as consultas do painel
+// para a tela nao precisar fazer varias chamadas pequenas ao banco.
 session_start();
 
+// O navegador precisa receber JSON e nao deve guardar cache desses numeros.
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 
+// Se a sessao expirou, o JavaScript redireciona o usuario para o login.
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     http_response_code(401);
     echo json_encode([
@@ -17,6 +21,7 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
 
 function responderJson(array $payload, int $statusCode = 200): void
 {
+    // Centraliza o formato da resposta para sucesso e erro sairem iguais.
     http_response_code($statusCode);
     echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
@@ -24,6 +29,7 @@ function responderJson(array $payload, int $statusCode = 200): void
 
 function consultarValor(PDO $pdo, string $sql, array $params = []): int
 {
+    // Usado para consultas de contagem, onde esperamos apenas um numero.
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
 
@@ -32,6 +38,7 @@ function consultarValor(PDO $pdo, string $sql, array $params = []): int
 
 function consultarLinhas(PDO $pdo, string $sql, array $params = []): array
 {
+    // Usado para rankings e series do grafico, retornando varias linhas.
     $stmt = $pdo->prepare($sql);
 
     foreach ($params as $key => $value) {
@@ -45,6 +52,7 @@ function consultarLinhas(PDO $pdo, string $sql, array $params = []): array
 
 function normalizarPeriodo(mixed $periodo): int
 {
+    // Aceitamos apenas periodos conhecidos para evitar consultas inesperadas.
     $periodo = (int)$periodo;
     $periodosPermitidos = [7, 30, 90];
 
@@ -53,6 +61,8 @@ function normalizarPeriodo(mixed $periodo): int
 
 function montarFiltroCategoria(string $categoriaId): array
 {
+    // Retorna o trecho WHERE e os parametros correspondentes.
+    // Isso deixa todas as consultas usando o mesmo filtro de categoria.
     $categoriaId = trim($categoriaId);
 
     if ($categoriaId === "" || $categoriaId === "todos") {
@@ -68,6 +78,7 @@ function montarFiltroCategoria(string $categoriaId): array
 
 function calcularPercentual(int $valor, int $total): float
 {
+    // Evita divisao por zero quando o filtro nao encontra dados.
     if ($total <= 0) {
         return 0.0;
     }
@@ -77,6 +88,8 @@ function calcularPercentual(int $valor, int $total): float
 
 function agruparLinhasPorCategoria(array $linhas, array $totaisPorCategoria): array
 {
+    // Monta mapas como marcas_por_categoria e status_por_categoria.
+    // O frontend usa esses mapas para trocar o filtro sem esperar nova requisicao.
     $grupos = [];
 
     foreach ($linhas as $linha) {
@@ -95,6 +108,7 @@ function agruparLinhasPorCategoria(array $linhas, array $totaisPorCategoria): ar
 }
 
 try {
+    // Abre a conexao ja configurada em Backend/Conexao.php.
     require __DIR__ . "/Conexao.php";
 
     if (!isset($pdo) || !$pdo instanceof PDO) {
@@ -106,9 +120,11 @@ try {
 
     [$whereCategoria, $paramsCategoria] = montarFiltroCategoria($categoriaId);
 
+    // Numeros gerais que alimentam os cards principais do dashboard.
     $totalAtivos = consultarValor($pdo, "select count(*) from public.ativos");
     $totalTipos = consultarValor($pdo, "select count(*) from public.categorias_ativos");
 
+    // Lista todos os tipos de produto, incluindo ativos sem categoria.
     $categorias = consultarLinhas($pdo, "
         select id, nome, total
         from (
@@ -135,6 +151,7 @@ try {
 
     $totaisPorCategoria = [];
 
+    // Acrescenta percentual em cada categoria e cria um indice para calculos posteriores.
     foreach ($categorias as &$categoria) {
         $categoria["total"] = (int)$categoria["total"];
         $categoria["percentual"] = calcularPercentual((int)$categoria["total"], $totalAtivos);
@@ -144,6 +161,7 @@ try {
 
     $totalSelecionado = consultarValor($pdo, "select count(*) from public.ativos a {$whereCategoria}", $paramsCategoria);
 
+    // Por padrao a tela esta em "Todos"; se vier um tipo especifico, substituimos abaixo.
     $categoriaSelecionada = [
         "id" => "todos",
         "nome" => "Todos os tipos",
@@ -167,6 +185,7 @@ try {
 
     $maiorCategoria = $categorias[0] ?? null;
 
+    // Agrupamento por status respeitando o filtro atual.
     $status = consultarLinhas($pdo, "
         select
             coalesce(nullif(trim(a.status), ''), 'Sem status') as nome,
@@ -177,6 +196,7 @@ try {
         order by total desc, nome asc
     ", $paramsCategoria);
 
+    // Mesmo agrupamento, mas separado por categoria para troca instantanea no frontend.
     $statusPorCategoria = consultarLinhas($pdo, "
         select
             coalesce(a.categoria_id::text, 'sem-categoria') as categoria_id,
@@ -189,6 +209,7 @@ try {
         order by categoria_id asc, total desc, nome asc
     ");
 
+    // Ranking de marcas do filtro atual, limitado para manter a leitura simples.
     $marcas = consultarLinhas($pdo, "
         select
             coalesce(nullif(trim(a.marca), ''), 'Sem marca') as nome,
@@ -200,6 +221,7 @@ try {
         limit 12
     ", $paramsCategoria);
 
+    // Ranking de marcas pre-carregado por categoria.
     $marcasPorCategoria = consultarLinhas($pdo, "
         with marcas as (
             select
@@ -228,6 +250,7 @@ try {
         order by categoria_id asc, posicao asc
     ");
 
+    // Ranking de locais do filtro atual.
     $locais = consultarLinhas($pdo, "
         select
             coalesce(nullif(trim(l.nome), ''), 'Sem localização') as nome,
@@ -240,6 +263,7 @@ try {
         limit 12
     ", $paramsCategoria);
 
+    // Ranking de locais pre-carregado por categoria.
     $locaisPorCategoria = consultarLinhas($pdo, "
         with locais as (
             select
@@ -272,6 +296,7 @@ try {
     $evolucaoParams = $paramsCategoria;
     $evolucaoParams[":periodo"] = $periodo;
 
+    // A evolucao precisa manter todos os dias do periodo, mesmo quando o total do dia e zero.
     $joinEvolucao = "a.criado_em::date = d.dia";
 
     if ($categoriaId === "sem-categoria") {
@@ -298,6 +323,7 @@ try {
     ", $evolucaoParams);
 
     $normalizarLista = static function (array $lista, int $baseTotal): array {
+        // Padroniza nome, total e percentual antes de enviar para o JavaScript.
         return array_map(static function (array $item) use ($baseTotal): array {
             $total = (int)($item["total"] ?? 0);
 
@@ -309,6 +335,7 @@ try {
         }, $lista);
     };
 
+    // Resposta unica que alimenta cards, filtros, grafico, ranking e tabela.
     responderJson([
         "ok" => true,
         "gerado_em" => date("c"),

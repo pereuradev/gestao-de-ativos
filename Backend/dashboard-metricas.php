@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
+// Endpoint usado pela pagina inicial para montar os indicadores resumidos.
 session_start();
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
+// Sem sessao valida, a tela deve pedir login novamente.
 if (empty($_SESSION['usuario']) || !is_array($_SESSION['usuario'])) {
     http_response_code(401);
     echo json_encode(
@@ -21,6 +23,7 @@ if (empty($_SESSION['usuario']) || !is_array($_SESSION['usuario'])) {
 
 function consultarValorInteiro(PDO $pdo, string $sql, array $parametros = []): int
 {
+    // Atalho para contagens simples exibidas nos cards.
     $stmt = $pdo->prepare($sql);
     $stmt->execute($parametros);
 
@@ -29,6 +32,7 @@ function consultarValorInteiro(PDO $pdo, string $sql, array $parametros = []): i
 
 function consultarLinhas(PDO $pdo, string $sql, array $parametros = []): array
 {
+    // Atalho para consultas que alimentam listas e graficos.
     $stmt = $pdo->prepare($sql);
     $stmt->execute($parametros);
 
@@ -37,6 +41,7 @@ function consultarLinhas(PDO $pdo, string $sql, array $parametros = []): array
 
 function consultarEvolucaoAtivos(PDO $pdo, string $periodo): array
 {
+    // Cada periodo muda inicio, fim e passo da serie temporal.
     $configuracoes = [
         'hoje' => [
             'inicio' => "date_trunc('day', now())",
@@ -102,8 +107,10 @@ function consultarEvolucaoAtivos(PDO $pdo, string $periodo): array
 }
 
 try {
+    // A conexao vem pronta de Conexao.php e todas as consultas abaixo usam PDO.
     require __DIR__ . '/Conexao.php';
 
+    // Indicadores principais da pagina inicial.
     $totalAtivos = consultarValorInteiro($pdo, 'select count(*) from public.ativos');
 
     $totalFuncionarios = consultarValorInteiro($pdo, 'select count(*) from public.perfis_usuarios');
@@ -131,6 +138,7 @@ try {
        order by total desc, status asc"
     );
 
+    // Evolucao de ativos por varios periodos para a tela trocar sem nova chamada.
     $ativosEvolucao = [
         'hoje' => consultarEvolucaoAtivos($pdo, 'hoje'),
         'semana' => consultarEvolucaoAtivos($pdo, 'semana'),
@@ -138,6 +146,7 @@ try {
         'ano' => consultarEvolucaoAtivos($pdo, 'ano'),
     ];
 
+    // Evolucao dos usuarios cadastrados nos ultimos dias.
     $cadastrosEvolucao = consultarLinhas(
         $pdo,
         "with dias as (
@@ -158,6 +167,7 @@ try {
       order by d.dia"
     );
 
+    // Resposta unica para o frontend renderizar cards, graficos e listas.
     echo json_encode(
         [
             'total_ativos' => $totalAtivos,

@@ -1,4 +1,6 @@
 const TYPEWRITER_SELECTOR = "[data-typewriter-loop]";
+
+// Frases usadas quando o HTML nao informa uma lista propria.
 const TYPEWRITER_DEFAULT_PHRASES = [
   "Gestao de ativos com clareza.",
   "Dados confiaveis para a operacao.",
@@ -8,6 +10,7 @@ const TYPEWRITER_DEFAULT_PHRASES = [
 document.addEventListener("DOMContentLoaded", initTypewriterLoops);
 
 function initTypewriterLoops() {
+  // Procura todos os elementos marcados para animacao de escrita.
   const elements = [...document.querySelectorAll(TYPEWRITER_SELECTOR)];
 
   if (!elements.length) return;
@@ -17,6 +20,7 @@ function initTypewriterLoops() {
   ).matches;
 
   elements.forEach((element) => {
+    // Cada elemento pode ter suas proprias frases em data-typewriter-phrases.
     const phrases = getTypewriterPhrases(element);
 
     if (!phrases.length) return;
@@ -24,6 +28,7 @@ function initTypewriterLoops() {
     stabilizeTypewriterElement(element, phrases);
 
     if (prefersReducedMotion || phrases.length === 1) {
+      // Respeita usuarios que preferem menos movimento.
       element.textContent = phrases[0];
       return;
     }
@@ -33,6 +38,7 @@ function initTypewriterLoops() {
 }
 
 function getTypewriterPhrases(element) {
+  // As frases no HTML sao separadas por pipe: "frase 1|frase 2".
   const rawPhrases = element.dataset.typewriterPhrases || "";
   const phrases = rawPhrases
     .split("|")
@@ -49,6 +55,7 @@ function getTypewriterPhrases(element) {
 }
 
 function stabilizeTypewriterElement(element, phrases) {
+  // Mede a maior frase antes da animacao para evitar pulo de layout.
   const originalText = element.textContent;
   const longestPhrase = phrases.reduce((longest, phrase) => (
     phrase.length > longest.length ? phrase : longest
@@ -63,6 +70,7 @@ function stabilizeTypewriterElement(element, phrases) {
   );
 
   phrases.forEach((phrase) => {
+    // Testa cada frase no proprio elemento para descobrir a altura maxima real.
     element.textContent = phrase;
     heights.push(element.getBoundingClientRect().height);
   });
@@ -78,6 +86,7 @@ function stabilizeTypewriterElement(element, phrases) {
 }
 
 function runTypewriter(element, phrases) {
+  // Controla qual frase e qual letra estao sendo exibidas neste momento.
   let phraseIndex = 0;
   let letterIndex = 0;
   let isDeleting = false;
@@ -88,6 +97,7 @@ function runTypewriter(element, phrases) {
   const nextDelay = Number(element.dataset.typewriterNextDelay) || 620;
 
   const write = () => {
+    // Escreve, espera, apaga e passa para a proxima frase em loop.
     const phrase = phrases[phraseIndex];
     element.textContent = phrase.slice(0, letterIndex);
 

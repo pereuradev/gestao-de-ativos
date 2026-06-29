@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Endpoint de cadastro de locais onde os ativos podem ficar.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -11,6 +12,7 @@ header("Cache-Control: no-store");
 
 function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
 {
+    // Todas as respostas seguem o mesmo envelope JSON.
     http_response_code($statusCode);
     echo json_encode(
         array_merge(["ok" => $ok, "message" => $message], $extra),
@@ -21,11 +23,13 @@ function responder(bool $ok, string $message, int $statusCode = 200, array $extr
 
 function campo(string $nome): string
 {
+    // Retorna o texto enviado no POST ja sem espacos laterais.
     return trim((string)($_POST[$nome] ?? ""));
 }
 
 function campoNulo(string $nome): ?string
 {
+    // Endereco e opcional; vazio vira null para nao gravar string vazia.
     $valor = campo($nome);
 
     return $valor !== "" ? $valor : null;
@@ -33,16 +37,19 @@ function campoNulo(string $nome): ?string
 
 function normalizarEspacos(string $valor): string
 {
+    // Padroniza espacos internos do nome do local.
     return preg_replace("/\s+/u", " ", $valor) ?? $valor;
 }
 
 function tamanhoTexto(string $valor): int
 {
+    // Conta caracteres de forma segura para textos com acentos.
     return function_exists("mb_strlen") ? mb_strlen($valor, "UTF-8") : strlen($valor);
 }
 
 function csrfValido(): bool
 {
+    // Protege o cadastro contra envio sem o token da sessao.
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
     $tokenPost = campo("csrf_token");
 
@@ -53,6 +60,7 @@ function csrfValido(): bool
 
 function garantirTabelaLocais(PDO $pdo): void
 {
+    // Mantem a tabela e as colunas esperadas mesmo em bancos antigos.
     $pdo->exec("
         create table if not exists public.locais (
             id uuid primary key default gen_random_uuid(),
@@ -82,6 +90,7 @@ if (!csrfValido()) {
     responder(false, "Token de seguranca invalido. Atualize a pagina e tente novamente.", 403);
 }
 
+// Dados principais do local.
 $nome = normalizarEspacos(campo("nome"));
 $endereco = campoNulo("endereco");
 $status = campo("status") ?: "Ativo";
@@ -117,6 +126,7 @@ try {
 
     garantirTabelaLocais($pdo);
 
+    // Bloqueia duplicidade por nome antes de inserir.
     $duplicadoStmt = $pdo->prepare("
         select 1
           from public.locais
@@ -129,6 +139,7 @@ try {
         responder(false, "Este local ja esta cadastrado.", 409);
     }
 
+    // Insere e retorna o local criado.
     $stmt = $pdo->prepare("
         insert into public.locais (
             nome,

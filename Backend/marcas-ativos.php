@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+// Mantem a tabela de marcas alinhada com os textos ja existentes em ativos.marca.
 function garantirMarcasAtivos(PDO $pdo): void
 {
+    // Cria a tabela oficial de marcas caso ela ainda nao exista.
     $pdo->exec("
         create table if not exists public.marcas_ativos (
             id uuid primary key default gen_random_uuid(),
@@ -15,11 +17,13 @@ function garantirMarcasAtivos(PDO $pdo): void
         )
     ");
 
+    // Evita duplicidade quando a diferenca e apenas maiuscula/minuscula.
     $pdo->exec("
         create unique index if not exists marcas_ativos_nome_lower_unique
             on public.marcas_ativos (lower(nome))
     ");
 
+    // Limpa marcas vazias gravadas como string para o banco tratar como ausencia.
     $pdo->exec("
         update public.ativos
            set marca = null
@@ -27,6 +31,7 @@ function garantirMarcasAtivos(PDO $pdo): void
            and btrim(marca) = ''
     ");
 
+    // Remove espacos sobrando no inicio/fim das marcas ja gravadas.
     $pdo->exec("
         update public.ativos
            set marca = btrim(marca)
@@ -34,6 +39,7 @@ function garantirMarcasAtivos(PDO $pdo): void
            and marca <> btrim(marca)
     ");
 
+    // Transforma marcas ja digitadas nos ativos em registros oficiais ativos.
     $pdo->exec("
         insert into public.marcas_ativos (nome, status)
         select distinct btrim(a.marca), 'Ativa'
@@ -45,6 +51,7 @@ function garantirMarcasAtivos(PDO $pdo): void
         on conflict do nothing
     ");
 
+    // Ajusta o texto dos ativos para bater exatamente com o nome oficial.
     $pdo->exec("
         update public.ativos a
            set marca = m.nome
@@ -54,6 +61,7 @@ function garantirMarcasAtivos(PDO $pdo): void
            and a.marca <> m.nome
     ");
 
+    // Garante unicidade por nome para permitir a chave estrangeira por texto.
     $pdo->exec("
         do $$
         begin
@@ -69,6 +77,7 @@ function garantirMarcasAtivos(PDO $pdo): void
         end $$;
     ");
 
+    // Depois da limpeza, protege ativos.marca contra nomes que nao existem na tabela.
     $pdo->exec("
         do $$
         begin

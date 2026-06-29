@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Endpoint de criacao de ativos. Recebe o formulario, valida tudo e grava no banco.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -11,6 +12,7 @@ header("Cache-Control: no-store");
 
 function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
 {
+    // Saida padrao em JSON para o JavaScript exibir mensagens sem recarregar a pagina.
     http_response_code($statusCode);
     echo json_encode(
         array_merge(["ok" => $ok, "message" => $message], $extra),
@@ -21,11 +23,13 @@ function responder(bool $ok, string $message, int $statusCode = 200, array $extr
 
 function campo(string $nome): string
 {
+    // Busca um campo enviado via POST e remove espacos nas extremidades.
     return trim((string)($_POST[$nome] ?? ""));
 }
 
 function campoNulo(string $nome): ?string
 {
+    // Campos opcionais viram null quando chegam vazios, combinando com o banco.
     $valor = campo($nome);
 
     return $valor !== "" ? $valor : null;
@@ -33,6 +37,7 @@ function campoNulo(string $nome): ?string
 
 function csrfValido(): bool
 {
+    // Confere se o formulario veio da pagina atual e nao de uma requisicao externa.
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
     $tokenPost = campo("csrf_token");
 
@@ -43,6 +48,7 @@ function csrfValido(): bool
 
 function uuidValido(?string $valor): bool
 {
+    // Categoria e local sao UUIDs; valores vazios sao permitidos quando o campo e opcional.
     if ($valor === null || $valor === "") {
         return true;
     }
@@ -55,6 +61,7 @@ function uuidValido(?string $valor): bool
 
 function statusPermitido(string $status): bool
 {
+    // Mantido como apoio para a regra de status, embora o nome oficial venha de status-ativos.php.
     return in_array($status, [
         "Disponível",
         "Em uso",
@@ -78,6 +85,7 @@ if (!csrfValido()) {
     responder(false, "Token de seguranca invalido. Atualize a pagina e tente novamente.", 403);
 }
 
+// Campos principais do ativo enviados pelo formulario.
 $nome = campo("nome");
 $descricao = campoNulo("descricao");
 $numeroSerie = campoNulo("numero_serie");
@@ -109,6 +117,7 @@ try {
     require __DIR__ . "/Conexao.php";
     require __DIR__ . "/status-ativos.php";
 
+    // Converte o status recebido para o nome oficial cadastrado no banco.
     $statusNormalizado = obterStatusAtivo($pdo, $status);
 
     if ($statusNormalizado === null) {
@@ -117,6 +126,7 @@ try {
 
     $status = $statusNormalizado;
 
+    // Garante a existencia da tabela de marcas antes de validar a marca escolhida.
     $pdo->exec("
         create table if not exists public.marcas_ativos (
             id uuid primary key default gen_random_uuid(),
@@ -134,6 +144,7 @@ try {
     ");
 
     if ($marca !== null) {
+        // So permitimos cadastrar ativo com marca ativa ja cadastrada.
         $marcaStmt = $pdo->prepare("
             select nome
               from public.marcas_ativos
@@ -155,6 +166,7 @@ try {
         $marca = (string)$marcaAtiva;
     }
 
+    // Insere o ativo e devolve os campos basicos para o frontend atualizar a tela.
     $stmt = $pdo->prepare("
         insert into public.ativos (
             nome,

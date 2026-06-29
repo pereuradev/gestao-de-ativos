@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Endpoint de edicao de locais.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -11,6 +12,7 @@ header("Cache-Control: no-store");
 
 function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
 {
+    // Resposta JSON unica para sucesso, validacao e erro.
     http_response_code($statusCode);
     echo json_encode(
         array_merge(["ok" => $ok, "message" => $message], $extra),
@@ -21,11 +23,13 @@ function responder(bool $ok, string $message, int $statusCode = 200, array $extr
 
 function campo(string $nome): string
 {
+    // Busca o valor no POST e remove espacos laterais.
     return trim((string)($_POST[$nome] ?? ""));
 }
 
 function campoNulo(string $nome): ?string
 {
+    // Campos opcionais vazios viram null.
     $valor = campo($nome);
 
     return $valor !== "" ? $valor : null;
@@ -33,16 +37,19 @@ function campoNulo(string $nome): ?string
 
 function normalizarEspacos(string $valor): string
 {
+    // Deixa o nome do local sem espacos duplicados.
     return preg_replace("/\s+/u", " ", $valor) ?? $valor;
 }
 
 function tamanhoTexto(string $valor): int
 {
+    // Mantem a contagem correta para texto UTF-8.
     return function_exists("mb_strlen") ? mb_strlen($valor, "UTF-8") : strlen($valor);
 }
 
 function csrfValido(): bool
 {
+    // Protege a alteracao contra envio fora da sessao.
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
     $tokenPost = campo("csrf_token");
 
@@ -53,6 +60,7 @@ function csrfValido(): bool
 
 function garantirTabelaLocais(PDO $pdo): void
 {
+    // Garante compatibilidade com bancos onde a tabela ainda nao tem todas as colunas.
     $pdo->exec("
         create table if not exists public.locais (
             id uuid primary key default gen_random_uuid(),
@@ -82,6 +90,7 @@ if (!csrfValido()) {
     responder(false, "Token de seguranca invalido. Atualize a pagina e tente novamente.", 403);
 }
 
+// Campos enviados pela tela de edicao.
 $id = campo("id");
 $nome = normalizarEspacos(campo("nome"));
 $endereco = campoNulo("endereco");
@@ -122,6 +131,7 @@ try {
 
     garantirTabelaLocais($pdo);
 
+    // Impede renomear para um nome que ja pertence a outro local.
     $duplicadoStmt = $pdo->prepare("
         select 1
           from public.locais
@@ -138,6 +148,7 @@ try {
         responder(false, "Ja existe um local cadastrado com este nome.", 409);
     }
 
+    // Atualiza e retorna o registro final.
     $stmt = $pdo->prepare("
         update public.locais
            set nome = :nome,

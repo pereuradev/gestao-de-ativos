@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+// Carrega variaveis de ambiente locais uma unica vez. Em producao, essas
+// mesmas chaves podem vir direto do servidor.
 function carregarEnvLocal(): void
 {
     static $carregado = false;
@@ -24,6 +26,7 @@ function carregarEnvLocal(): void
     }
 
     foreach ($linhas as $linha) {
+        // Ignora comentarios e linhas sem chave=valor para evitar configuracao quebrada.
         $linha = trim($linha);
 
         if ($linha === "" || str_starts_with($linha, "#") || !str_contains($linha, "=")) {
@@ -44,6 +47,7 @@ function carregarEnvLocal(): void
 
 function configValor(string $chave, ?string $padrao = null): ?string
 {
+    // Primeiro garante que o .env local foi lido, depois consulta o ambiente.
     carregarEnvLocal();
 
     $valor = getenv($chave);
@@ -57,6 +61,7 @@ function configValor(string $chave, ?string $padrao = null): ?string
 
 function configObrigatoria(string $chave): string
 {
+    // Usado para credenciais sem as quais a aplicacao nao pode funcionar.
     $valor = configValor($chave);
 
     if ($valor === null || $valor === "") {

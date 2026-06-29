@@ -1,18 +1,24 @@
 <?php
 declare(strict_types=1);
 
+// Esta pagina monta a tela do dashboard. Os dados dos graficos chegam por AJAX,
+// mas a seguranca da sessao e a estrutura visual principal ficam neste arquivo.
 session_start();
 
+// Sem usuario na sessao, a pagina nao deve carregar direto pela URL.
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     header("Location: Pagina-login.html?sessao=expirada");
     exit;
 }
 
+// Escapa qualquer texto vindo da sessao antes de mostrar no HTML.
 function e(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
 }
 
+// Dados usados no rodape da sidebar. Mantemos valores padrao para a tela nao quebrar
+// quando algum campo ainda nao foi preenchido no cadastro do usuario.
 $usuario = $_SESSION["usuario"];
 $nomeUsuario = e((string) ($usuario["nome_completo"] ?? $usuario["nome"] ?? "Usuario TI TECH"));
 $sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
@@ -22,6 +28,7 @@ $sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
 $sidebarEmail = e((string) ($usuario["email"] ?? ""));
 $sidebarDepartment = e((string) ($usuario["departamento"] ?? "Sem departamento"));
 
+// Gera as iniciais exibidas no avatar da sidebar usando as duas primeiras partes do nome.
 $partesNome = preg_split("/\s+/", trim((string) ($usuario["nome_completo"] ?? $usuario["nome"] ?? ""))) ?: [];
 $sidebarInitialsText = "";
 
@@ -76,6 +83,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 
 <body class="theme-dark page-loading dashboard-products-page" data-accent="teal">
     <div class="app-shell">
+        <!-- Sidebar padrao do sistema. Os links seguem a mesma ordem das outras paginas. -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <a href="https://www.titechsolutions.com.br/" class="brand-area"
@@ -186,6 +194,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
         <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
         <main class="main-area app-main">
+            <!-- Topbar fixa com titulo da pagina e botao de tema controlado pelo app-base.js. -->
             <header class="topbar dashboard-topbar">
                 <div class="topbar-left">
                     <button class="icon-button menu-button" id="openSidebar" type="button" aria-label="Abrir menu">
@@ -206,6 +215,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                 </div>
             </header>
 
+            <!-- Hero do dashboard. O texto principal usa typewriter para alternar as frases. -->
             <section class="dashboard-hero" aria-labelledby="dashboardTitle">
                 <div>
                     <span class="eyebrow">Análise visual do inventário</span>
@@ -223,10 +233,12 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 
             </section>
 
+            <!-- Texto de status para leitores de tela; visualmente fica escondido no CSS. -->
             <p id="dashboardStatusText" class="dashboard-status-text" role="status" aria-live="polite">
                 Carregando dados do banco.
             </p>
 
+            <!-- Cards preenchidos pelo JavaScript depois que o endpoint retorna os dados. -->
             <section class="dashboard-summary-grid" aria-label="Resumo do inventário">
                 <article class="summary-card">
                     <span>Total de ativos</span>
@@ -253,6 +265,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                 </article>
             </section>
 
+            <!-- Filtros que controlam qual agrupamento aparece no grafico principal. -->
             <section class="dashboard-panel chart-control-panel" aria-label="Controles do dashboard">
                 <div class="dashboard-control-group">
                     <label for="categoryFilter">Tipo de produto</label>
@@ -298,6 +311,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                 </button>
             </section>
 
+            <!-- Area principal: grafico grande de um lado e leitura rapida do outro. -->
             <section class="dashboard-grid-main">
                 <article class="dashboard-panel main-chart-card">
                     <div class="panel-heading">
@@ -333,6 +347,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                 </aside>
             </section>
 
+            <!-- Tabela de apoio para quem prefere ler os numeros em formato tabular. -->
             <section class="dashboard-panel table-panel" aria-label="Tabela de apoio do dashboard">
                 <div class="panel-heading">
                     <div>

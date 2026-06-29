@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Login em JSON. A tela envia e-mail, senha e tipo de usuario e recebe o destino.
 session_start();
 
 header("Content-Type: application/json; charset=utf-8");
@@ -9,11 +10,13 @@ header("Cache-Control: no-store");
 
 require_once __DIR__ . "/config.php";
 
+// Credenciais publicas do Supabase Auth usadas para validar a senha do usuario.
 $supabaseUrl = configObrigatoria("SUPABASE_URL");
 $supabaseAnonKey = configObrigatoria("SUPABASE_ANON_KEY");
 
 function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
 {
+    // Todas as saidas passam por aqui para o frontend tratar sempre o mesmo formato.
     http_response_code($statusCode);
     echo json_encode(
         array_merge(["ok" => $ok, "message" => $message], $extra),
@@ -24,21 +27,25 @@ function responder(bool $ok, string $message, int $statusCode = 200, array $extr
 
 function campo(string $nome): string
 {
+    // Normaliza campos de formulario removendo espacos nas pontas.
     return trim((string)($_POST[$nome] ?? ""));
 }
 
 function tipoUsuarioValido(string $tipoUsuario): bool
 {
+    // Evita que o usuario force outro papel pelo HTML.
     return in_array($tipoUsuario, ["Colaborador", "Administrador"], true);
 }
 
 function emailCorporativoValido(string $email): bool
 {
+    // O sistema aceita apenas contas do dominio corporativo.
     return str_ends_with(strtolower($email), "@titechsolutions.com.br");
 }
 
 function caminhoAplicacao(string $arquivo): string
 {
+    // Monta o redirect respeitando a pasta onde o XAMPP serviu o projeto.
     $scriptPath = str_replace("\\", "/", (string)($_SERVER["SCRIPT_NAME"] ?? ""));
     $backendPath = dirname($scriptPath);
     $appPath = preg_replace("#/Backend$#", "", $backendPath) ?: "";
@@ -48,6 +55,7 @@ function caminhoAplicacao(string $arquivo): string
 
 function gerarHashSenha(string $senha): string
 {
+    // Guarda a senha local com Argon2ID para permitir login rapido nas proximas vezes.
     $hash = password_hash($senha, PASSWORD_ARGON2ID, [
         "memory_cost" => 65536,
         "time_cost" => 4,
@@ -63,6 +71,7 @@ function gerarHashSenha(string $senha): string
 
 function autenticarSupabase(string $url, string $anonKey, string $email, string $senha): array
 {
+    // Quando a senha local nao confere, validamos direto no Supabase Auth.
     $payload = [
         "email" => $email,
         "password" => $senha,
@@ -104,6 +113,7 @@ function autenticarSupabase(string $url, string $anonKey, string $email, string 
 
 function buscarPerfilPorEmail(PDO $pdo, string $email): ?array
 {
+    // Primeiro tentamos achar o perfil pelo e-mail informado no formulario.
     $stmt = $pdo->prepare("
         select *
           from public.perfis_usuarios
@@ -119,6 +129,7 @@ function buscarPerfilPorEmail(PDO $pdo, string $email): ?array
 
 function buscarPerfil(PDO $pdo, string $userId, string $email): ?array
 {
+    // Depois da autenticacao no Supabase, buscamos por id ou e-mail retornado.
     $stmt = $pdo->prepare("
         select *
           from public.perfis_usuarios
@@ -138,6 +149,7 @@ function buscarPerfil(PDO $pdo, string $userId, string $email): ?array
 
 function atualizarSenhaPerfil(PDO $pdo, string $perfilId, string $senhaHash): void
 {
+    // Sincroniza o hash local quando o login foi validado pelo Supabase.
     if ($perfilId === "") {
         return;
     }
@@ -156,6 +168,7 @@ function atualizarSenhaPerfil(PDO $pdo, string $perfilId, string $senhaHash): vo
 
 function criarPerfilMinimo(PDO $pdo, array $authUser): array
 {
+    // Se o Auth possui o usuario mas a tabela local ainda nao, criamos um perfil basico.
     $metadata = is_array($authUser["user_metadata"] ?? null) ? $authUser["user_metadata"] : [];
     $userId = (string)($authUser["id"] ?? "");
     $email = (string)($authUser["email"] ?? "");
@@ -225,6 +238,7 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     responder(false, "Metodo nao permitido.", 405);
 }
 
+// Dados enviados pelo formulario de login.
 $email = campo("email");
 $senha = (string)($_POST["senha"] ?? "");
 $tipoUsuario = campo("tipo_usuario");
@@ -248,6 +262,7 @@ if (!tipoUsuarioValido($tipoUsuario)) {
 try {
     require_once __DIR__ . "/Conexao.php";
 
+    // Comecamos pelo perfil local; se ele nao resolver a senha, caimos para Supabase.
     $authData = null;
     $perfil = buscarPerfilPorEmail($pdo, $email);
     $authEmail = (string)($perfil["email"] ?? $email);
@@ -255,12 +270,14 @@ try {
     $senhaHashAtual = (string)($perfil["senha"] ?? "");
 
     if ($perfil && $senhaHashAtual !== "" && password_verify($senha, $senhaHashAtual)) {
+        // Senha local valida: so verificamos se o hash precisa ser atualizado.
         $senhaPrecisaAtualizar = password_needs_rehash($senhaHashAtual, PASSWORD_ARGON2ID, [
             "memory_cost" => 65536,
             "time_cost" => 4,
             "threads" => 2,
         ]);
     } else {
+        // Senha local ausente ou invalida: Supabase decide se o login e verdadeiro.
         $authData = autenticarSupabase($supabaseUrl, $supabaseAnonKey, $email, $senha);
         $authUser = is_array($authData["user"] ?? null) ? $authData["user"] : [];
         $userId = (string)($authUser["id"] ?? "");
@@ -285,6 +302,7 @@ try {
         responder(false, "Usuario inativo. Entre em contato com o administrador.", 403);
     }
 
+    // Confere se o tipo escolhido no login bate com o perfil cadastrado.
     if ((string)($perfil["tipo_usuario"] ?? "") !== $tipoUsuario) {
         responder(false, "Tipo de acesso nao autorizado para este usuario.", 403);
     }
@@ -293,8 +311,10 @@ try {
         atualizarSenhaPerfil($pdo, (string)($perfil["id"] ?? ""), gerarHashSenha($senha));
     }
 
+    // Regenera a sessao para reduzir risco de fixacao de sessao apos login.
     session_regenerate_id(true);
 
+    // Dados minimos usados pelas paginas protegidas e pela sidebar.
     $_SESSION["usuario"] = [
         "id" => (string)$perfil["id"],
         "nome_completo" => (string)($perfil["nome_completo"] ?? ""),
@@ -304,6 +324,7 @@ try {
     ];
 
     if (is_array($authData)) {
+        // Guardamos tokens quando a autenticacao veio do Supabase.
         $_SESSION["supabase"] = [
             "access_token" => (string)($authData["access_token"] ?? ""),
             "refresh_token" => (string)($authData["refresh_token"] ?? ""),

@@ -1,9 +1,13 @@
 (function () {
+// Mantemos o dashboard dentro de uma funcao anonima para nao misturar variaveis
+// desta tela com os scripts globais usados nas outras paginas.
 const DASHBOARD_PRODUCTS_ENDPOINT = "Backend/dashboard-produtos.php";
 const THEME_STORAGE_KEY = "titech-theme";
 const ACCENT_STORAGE_KEY = "titech-accent";
 const THEME_TRANSITION_MS = 660;
 
+// Paletas aceitas pela tela de configuracoes. O dashboard usa as mesmas variaveis
+// para graficos, botoes e estados visuais.
 const ACCENT_THEMES = {
   teal: {
     cyan: "#4aa3c7",
@@ -31,6 +35,7 @@ const ACCENT_THEMES = {
   },
 };
 
+// Estrutura vazia usada antes do banco responder ou quando ocorre algum erro.
 const DEFAULT_DASHBOARD_DATA = {
   ok: false,
   resumo: {
@@ -55,6 +60,8 @@ const DEFAULT_DASHBOARD_DATA = {
   evolucao: [],
 };
 
+// Cada opcao do select "Dados do grafico" aponta para uma lista diferente do JSON.
+// Assim a renderizacao reaproveita o mesmo codigo para tipo, status, marca, local e evolucao.
 const METRIC_CONFIG = {
   categorias: {
     title: "Quantidade por tipo",
@@ -101,6 +108,7 @@ let dashboardRequestController = null;
 let dashboardRequestId = 0;
 const dashboardCache = new Map();
 
+// Estado atual dos filtros da tela. Toda renderizacao le esses valores.
 const state = {
   categoriaId: "todos",
   metrica: "categorias",
@@ -111,6 +119,7 @@ const state = {
 document.addEventListener("DOMContentLoaded", initDashboardProductsPage);
 
 function initDashboardProductsPage() {
+  // O tema e a sidebar seguem o app-base.js; aqui so reagimos para redesenhar o grafico.
   window.onThemeChanged = () => renderCurrentChart();
   (window.startPageAnimation || startPageAnimation)();
   (window.loadSavedTheme || loadSavedTheme)();
@@ -128,6 +137,7 @@ function startPageAnimation() {
 }
 
 function getSavedItem(key) {
+  // LocalStorage pode falhar em alguns modos privados; por isso o acesso fica protegido.
   try {
     return localStorage.getItem(key);
   } catch {
@@ -144,6 +154,7 @@ function setSavedItem(key, value) {
 }
 
 function loadSavedTheme() {
+  // Fallback local caso o app-base.js nao esteja disponivel por algum motivo.
   applyAccent(getSavedItem(ACCENT_STORAGE_KEY) || "teal");
   applyTheme(getSavedItem(THEME_STORAGE_KEY) || "dark");
   window.applyDensity?.(getSavedItem("titech-density") || "comfortable");
@@ -285,6 +296,8 @@ function setupDashboardControls() {
     state.categoriaId = categoryFilter.value || "todos";
     setDashboardMetric(state.categoriaId === "todos" ? "categorias" : "marcas");
 
+    // Quando os dados da categoria ja vieram no primeiro carregamento, filtramos na tela.
+    // Isso evita a sensacao de demora ao trocar o tipo de produto.
     if (!applyLocalCategorySelection()) {
       loadDashboardProducts();
     }
@@ -293,6 +306,7 @@ function setupDashboardControls() {
   metricFilter?.addEventListener("change", () => {
     setDashboardMetric(metricFilter.value || "categorias");
 
+    // Evolucao depende do periodo selecionado; por isso recarrega quando essa metrica entra.
     if (state.metrica === "evolucao") {
       loadDashboardProducts();
       return;
@@ -309,6 +323,7 @@ function setupDashboardControls() {
   periodFilter?.addEventListener("change", () => {
     state.periodo = periodFilter.value || "30";
 
+    // O periodo so muda dados quando a metrica atual e evolucao.
     if (state.metrica === "evolucao") {
       loadDashboardProducts();
       return;
@@ -323,6 +338,7 @@ function setupDashboardControls() {
 }
 
 function setDashboardMetric(metric) {
+  // Garante que o estado interno e o select continuem sincronizados.
   const nextMetric = Object.hasOwn(METRIC_CONFIG, metric)
     ? metric
     : "categorias";
@@ -336,11 +352,13 @@ function setDashboardMetric(metric) {
 }
 
 function applyLocalCategorySelection() {
+  // Se ainda nao temos a carga completa, deixamos o backend buscar os dados.
   if (!dashboardBaseData.ok) {
     return false;
   }
 
   if (state.categoriaId === "todos") {
+    // Voltar para "Todos" e instantaneo porque guardamos a resposta completa.
     dashboardData = dashboardBaseData;
     renderSummaryCards();
     renderCurrentChart();
@@ -364,6 +382,7 @@ function applyLocalCategorySelection() {
     dashboardBaseData.locais_por_categoria?.[state.categoriaId] || [];
 
   dashboardData = {
+    // Preserva os dados gerais, mas troca as listas que dependem do tipo selecionado.
     ...dashboardBaseData,
     resumo: {
       ...dashboardBaseData.resumo,
@@ -388,6 +407,7 @@ function applyLocalCategorySelection() {
 }
 
 async function loadDashboardProducts(showLoading = true, options = {}) {
+  // Cache por categoria e periodo: evita buscar novamente dados que acabaram de ser carregados.
   const cacheKey = `${state.categoriaId}|${state.periodo}`;
   const forceRefresh = Boolean(options.forceRefresh);
 
@@ -404,6 +424,7 @@ async function loadDashboardProducts(showLoading = true, options = {}) {
   dashboardRequestController?.abort();
   dashboardRequestController = new AbortController();
 
+  // ID incremental evita que uma resposta antiga sobrescreva uma selecao mais recente.
   const requestId = ++dashboardRequestId;
 
   if (showLoading) {
@@ -431,6 +452,7 @@ async function loadDashboardProducts(showLoading = true, options = {}) {
     }
 
     if (response.status === 401) {
+      // Sessao expirada: manda o usuario para o login com mensagem adequada.
       window.location.href = "Pagina-login.html?sessao=expirada";
       return;
     }
@@ -476,9 +498,11 @@ async function loadDashboardProducts(showLoading = true, options = {}) {
 }
 
 function applyDashboardPayload(payload) {
+  // Normaliza o JSON antes de qualquer componente tentar usar os dados.
   dashboardData = normalizeDashboardPayload(payload);
 
   if (dashboardData.categoria_selecionada.id === "todos") {
+    // A resposta geral vira a base para filtros instantaneos por categoria.
     dashboardBaseData = dashboardData;
   }
 
@@ -488,6 +512,7 @@ function applyDashboardPayload(payload) {
 }
 
 function normalizeDashboardPayload(payload) {
+  // Nunca confiamos totalmente no formato vindo da rede; cada campo recebe fallback.
   const data =
     payload && typeof payload === "object" ? payload : DEFAULT_DASHBOARD_DATA;
   const resumo =
@@ -527,6 +552,7 @@ function normalizeDashboardPayload(payload) {
 }
 
 function normalizeRowsByCategory(groups) {
+  // Transforma objetos de grupos em listas normalizadas, mantendo o id da categoria como chave.
   if (!groups || typeof groups !== "object" || Array.isArray(groups)) {
     return {};
   }
@@ -538,6 +564,7 @@ function normalizeRowsByCategory(groups) {
 }
 
 function normalizeDataRows(rows, keepId = false) {
+  // Padroniza cada linha usada por graficos, ranking e tabela.
   if (!Array.isArray(rows)) {
     return [];
   }
@@ -572,6 +599,7 @@ function normalizePercent(value) {
 }
 
 function populateCategoryFilter(categories) {
+  // Recria o select de tipos mantendo a escolha atual sempre que ela ainda existe.
   const categoryFilter = document.getElementById("categoryFilter");
 
   if (!categoryFilter) {
@@ -609,6 +637,7 @@ function createOption(value, label) {
 }
 
 function renderSummaryCards() {
+  // Atualiza os quatro cards superiores a partir do resumo atual.
   const resumo = dashboardData.resumo || DEFAULT_DASHBOARD_DATA.resumo;
   const selected =
     dashboardData.categoria_selecionada ||
@@ -642,6 +671,7 @@ function renderSummaryCards() {
 }
 
 function renderCurrentChart() {
+  // Um unico fluxo renderiza grafico, ranking e tabela para todas as metricas.
   const config = METRIC_CONFIG[state.metrica] || METRIC_CONFIG.categorias;
   const rows = getCurrentRows(config);
   const total = calculateRowsTotal(rows);
@@ -658,6 +688,7 @@ function renderCurrentChart() {
 }
 
 function getCurrentRows(config) {
+  // Evolucao conserva dias zerados no grafico; as demais metricas escondem zeros.
   const rows = Array.isArray(dashboardData[config.dataKey])
     ? dashboardData[config.dataKey]
     : [];
@@ -686,10 +717,12 @@ function calculateRowsTotal(rows) {
 }
 
 function getVisibleRows(rows) {
+  // Ranking e tabela devem mostrar apenas itens/datas com dados reais.
   return rows.filter((row) => normalizeNumber(row.total) > 0);
 }
 
 function renderChart(rows, config) {
+  // Chart.js redesenha do zero para evitar sobras visuais ao trocar filtros ou tipo.
   const canvas = document.getElementById("productsChart");
 
   if (!canvas || !window.Chart) {
@@ -835,6 +868,7 @@ function renderChart(rows, config) {
 }
 
 function getSafeChartType(chartType, metric) {
+  // Protege contra valores inesperados vindos do DOM ou de alteracoes manuais.
   if (["bar", "pie", "doughnut", "line", "polarArea"].includes(chartType)) {
     return chartType;
   }
@@ -866,6 +900,7 @@ function buildChartPalette(size) {
 }
 
 function renderRanking(rows, total) {
+  // Leitura rapida lateral: mostra os principais itens ja filtrados.
   const container = document.getElementById("dashboardRanking");
 
   if (!container) {
@@ -901,6 +936,7 @@ function renderRanking(rows, total) {
 }
 
 function renderTable(rows, total) {
+  // Tabela completa de apoio, usando os mesmos dados da leitura rapida.
   const tableBody = document.getElementById("dashboardTableBody");
 
   if (!tableBody) {

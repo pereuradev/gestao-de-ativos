@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Endpoint de edicao de marcas.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -11,6 +12,7 @@ header("Cache-Control: no-store");
 
 function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
 {
+    // Mantem o contrato JSON esperado pelo JavaScript.
     http_response_code($statusCode);
     echo json_encode(
         array_merge(["ok" => $ok, "message" => $message], $extra),
@@ -21,21 +23,25 @@ function responder(bool $ok, string $message, int $statusCode = 200, array $extr
 
 function campo(string $nome): string
 {
+    // Le o POST e remove espacos das bordas.
     return trim((string)($_POST[$nome] ?? ""));
 }
 
 function normalizarEspacos(string $valor): string
 {
+    // Deixa o nome da marca com espacos consistentes.
     return preg_replace("/\s+/u", " ", $valor) ?? $valor;
 }
 
 function tamanhoTexto(string $valor): int
 {
+    // Conta texto com suporte a UTF-8 quando possivel.
     return function_exists("mb_strlen") ? mb_strlen($valor, "UTF-8") : strlen($valor);
 }
 
 function csrfValido(): bool
 {
+    // Evita alteracoes disparadas fora da sessao autenticada.
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
     $tokenPost = campo("csrf_token");
 
@@ -46,6 +52,7 @@ function csrfValido(): bool
 
 function uuidValido(string $valor): bool
 {
+    // O ID precisa ser UUID porque vem da chave primaria do banco.
     return (bool)preg_match(
         "/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i",
         $valor
@@ -64,6 +71,7 @@ if (!csrfValido()) {
     responder(false, "Token de seguranca invalido. Atualize a pagina e tente novamente.", 403);
 }
 
+// Dados recebidos da tela de edicao.
 $id = campo("id");
 $nome = normalizarEspacos(campo("nome"));
 $status = campo("status") ?: "Ativa";
@@ -97,6 +105,7 @@ if (!in_array($status, ["Ativa", "Inativa"], true)) {
 try {
     require __DIR__ . "/Conexao.php";
 
+    // Atualiza e retorna o registro alterado.
     $stmt = $pdo->prepare("
         update public.marcas_ativos
            set nome = :nome,

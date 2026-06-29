@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Endpoint de cadastro de marcas usadas pelos ativos.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -11,6 +12,7 @@ header("Cache-Control: no-store");
 
 function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
 {
+    // Padroniza a resposta para o JavaScript saber se deve mostrar sucesso ou erro.
     http_response_code($statusCode);
     echo json_encode(
         array_merge(["ok" => $ok, "message" => $message], $extra),
@@ -21,21 +23,25 @@ function responder(bool $ok, string $message, int $statusCode = 200, array $extr
 
 function campo(string $nome): string
 {
+    // Remove espacos simples antes de validar o valor recebido.
     return trim((string)($_POST[$nome] ?? ""));
 }
 
 function normalizarEspacos(string $valor): string
 {
+    // Troca sequencias grandes de espaco por um unico espaco.
     return preg_replace("/\s+/u", " ", $valor) ?? $valor;
 }
 
 function tamanhoTexto(string $valor): int
 {
+    // Usa mb_strlen quando disponivel para contar acentos corretamente.
     return function_exists("mb_strlen") ? mb_strlen($valor, "UTF-8") : strlen($valor);
 }
 
 function csrfValido(): bool
 {
+    // Confirma que a requisicao veio do formulario gerado na sessao atual.
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
     $tokenPost = campo("csrf_token");
 
@@ -56,6 +62,7 @@ if (!csrfValido()) {
     responder(false, "Token de seguranca invalido. Atualize a pagina e tente novamente.", 403);
 }
 
+// Campos que definem a marca.
 $nome = normalizarEspacos(campo("nome"));
 $status = campo("status") ?: "Ativa";
 
@@ -84,6 +91,7 @@ if (!in_array($status, ["Ativa", "Inativa"], true)) {
 try {
     require __DIR__ . "/Conexao.php";
 
+    // Garante a tabela antes de inserir, util em ambientes recem-configurados.
     $pdo->exec("
         create table if not exists public.marcas_ativos (
             id uuid primary key default gen_random_uuid(),
@@ -100,6 +108,7 @@ try {
             on public.marcas_ativos (lower(nome))
     ");
 
+    // Insere e devolve a marca cadastrada para a tela atualizar a listagem.
     $stmt = $pdo->prepare("
         insert into public.marcas_ativos (
             nome,

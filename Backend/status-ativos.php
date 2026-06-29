@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+// Centraliza os status aceitos para ativos. Assim cadastro, edicao e listagem
+// usam os mesmos nomes e evitam valores duplicados no banco.
 function garantirStatusAtivos(PDO $pdo): void
 {
+    // Cria a tabela de apoio se ela ainda nao existir.
     $pdo->exec("
         create table if not exists public.status_ativos (
             id uuid primary key default gen_random_uuid(),
@@ -21,6 +24,7 @@ function garantirStatusAtivos(PDO $pdo): void
             on public.status_ativos (lower(nome))
     ");
 
+    // Lista oficial exibida nas telas. Valores antigos sao normalizados mais abaixo.
     $status = [
         ["slug" => "disponivel", "nome" => "Disponível", "ordem" => 1],
         ["slug" => "em-uso", "nome" => "Em uso", "ordem" => 2],
@@ -28,6 +32,7 @@ function garantirStatusAtivos(PDO $pdo): void
         ["slug" => "manutencao", "nome" => "Manutenção", "ordem" => 4],
     ];
 
+    // Insere ou atualiza os status padrao sem duplicar registros.
     $stmt = $pdo->prepare("
         insert into public.status_ativos (slug, nome, ordem, ativo)
         values (:slug, :nome, :ordem, true)
@@ -46,6 +51,7 @@ function garantirStatusAtivos(PDO $pdo): void
         ]);
     }
 
+    // Status fora da lista atual ficam inativos, mas permanecem no historico.
     $pdo->exec("
         update public.status_ativos
            set ativo = false,
@@ -53,6 +59,7 @@ function garantirStatusAtivos(PDO $pdo): void
          where slug not in ('disponivel', 'em-uso', 'homologacao', 'manutencao')
     ");
 
+    // Corrige dados antigos para os nomes oficiais antes de aplicar a chave estrangeira.
     $pdo->exec("
         update public.ativos
            set status = case
@@ -73,6 +80,7 @@ function garantirStatusAtivos(PDO $pdo): void
             or lower(status) like 'formata%'
     ");
 
+    // Garante unicidade por nome para a relacao com ativos.status.
     $pdo->exec("
         do $$
         begin
@@ -88,6 +96,7 @@ function garantirStatusAtivos(PDO $pdo): void
         end $$;
     ");
 
+    // Impede que novos ativos recebam um status inexistente na tabela oficial.
     $pdo->exec("
         do $$
         begin
@@ -110,6 +119,7 @@ function garantirStatusAtivos(PDO $pdo): void
 
 function nomesStatusAtivos(PDO $pdo): array
 {
+    // Sempre garante a tabela antes de consultar, pois algumas telas chamam isso direto.
     garantirStatusAtivos($pdo);
 
     $stmt = $pdo->prepare("
@@ -128,11 +138,13 @@ function nomesStatusAtivos(PDO $pdo): array
 
 function statusAtivoPadrao(): string
 {
+    // Valor usado quando o formulario nao envia status.
     return "Disponível";
 }
 
 function obterStatusAtivo(PDO $pdo, string $status): ?string
 {
+    // Recebe textos antigos ou digitados de formas diferentes e devolve o nome oficial.
     garantirStatusAtivos($pdo);
 
     $valor = strtolower(trim($status));
@@ -179,6 +191,7 @@ function obterStatusAtivo(PDO $pdo, string $status): ?string
 
 function classeStatusAtivo(string $status): string
 {
+    // Traduz o status em uma classe visual reutilizada nas tabelas.
     $valor = strtolower(trim($status));
 
     if (strpos($valor, "dispon") === 0) {
