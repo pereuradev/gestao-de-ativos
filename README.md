@@ -470,39 +470,6 @@ A interface segue uma linha visual corporativa e tecnológica, com:
 - Animações sutis.
 - Preferências visuais salvas localmente.
 
-A intenção é manter o sistema com cara de ferramenta interna profissional, sem perder clareza operacional.
-
----
-
-## Melhorias recomendadas
-
-Próximos passos técnicos sugeridos:
-
-- Criar pasta `database/` com `schema.sql` e `seed.sql`.
-- Documentar o modelo relacional do banco.
-- Centralizar permissões de administrador/colaborador.
-- Criar middleware PHP para proteger páginas internas.
-- Padronizar nomes de tabelas e entidades.
-- Adicionar página administrativa de categorias.
-- Salvar preferências do usuário no Supabase.
-- Criar exportação de relatórios em CSV/PDF.
-- Criar histórico de movimentações dos ativos.
-- Adicionar busca avançada por número de série.
-- Implementar testes básicos para endpoints críticos.
-- Criar tela de recuperação de senha.
-- Melhorar mensagens de erro para o usuário final.
-- Criar documentação de deploy.
-
----
-
-## Sugestão de commits úteis
-
-```bash
-git add README.md
-git commit -m "Atualiza documentacao do projeto"
-git push origin main
-```
-
 ---
 
 ## Autor
