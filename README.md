@@ -347,20 +347,6 @@ SUPABASE_ANON_KEY=SUA_CHAVE_PUBLICAVEL_DO_SUPABASE
 
 ---
 
-## Arquivos ignorados pelo Git
-
-O `.gitignore` protege arquivos locais e sensíveis:
-
-```gitignore
-Backend/.env
-.env
-*.local.php
-*.log
-*.tmp
-```
-
----
-
 ## Como rodar o projeto localmente
 
 ### 1. Clonar o repositório
@@ -431,9 +417,6 @@ Se a pasta local estiver com outro nome, ajuste a URL de acordo com o nome da pa
 ---
 
 ## Segurança
-
-Cuidados já aplicados ou previstos no projeto:
-
 - Uso de `.env` para credenciais.
 - `.gitignore` bloqueando arquivos sensíveis.
 - Conexão PDO com tratamento de exceções.
@@ -444,16 +427,6 @@ Cuidados já aplicados ou previstos no projeto:
 - Respostas JSON padronizadas.
 - Mensagens de erro mais genéricas para evitar exposição de detalhes internos.
 - Escape de dados antes da exibição em HTML.
-
-Pontos importantes para evolução:
-
-- Implementar recuperação de senha.
-- Revisar regras de permissão por tipo de usuário.
-- Criar política mais rígida para rotas administrativas.
-- Versionar scripts SQL do banco.
-- Implementar logs internos sem expor dados sensíveis.
-- Adicionar testes automatizados.
-- Avaliar autenticação em duas etapas para administradores.
 
 ---
 
