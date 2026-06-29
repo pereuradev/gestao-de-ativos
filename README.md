@@ -347,20 +347,6 @@ SUPABASE_ANON_KEY=SUA_CHAVE_PUBLICAVEL_DO_SUPABASE
 
 ---
 
-## Arquivos ignorados pelo Git
-
-O `.gitignore` protege arquivos locais e sensíveis:
-
-```gitignore
-Backend/.env
-.env
-*.local.php
-*.log
-*.tmp
-```
-
----
-
 ## Como rodar o projeto localmente
 
 ### 1. Clonar o repositório
@@ -431,9 +417,6 @@ Se a pasta local estiver com outro nome, ajuste a URL de acordo com o nome da pa
 ---
 
 ## Segurança
-
-Cuidados já aplicados ou previstos no projeto:
-
 - Uso de `.env` para credenciais.
 - `.gitignore` bloqueando arquivos sensíveis.
 - Conexão PDO com tratamento de exceções.
@@ -444,16 +427,6 @@ Cuidados já aplicados ou previstos no projeto:
 - Respostas JSON padronizadas.
 - Mensagens de erro mais genéricas para evitar exposição de detalhes internos.
 - Escape de dados antes da exibição em HTML.
-
-Pontos importantes para evolução:
-
-- Implementar recuperação de senha.
-- Revisar regras de permissão por tipo de usuário.
-- Criar política mais rígida para rotas administrativas.
-- Versionar scripts SQL do banco.
-- Implementar logs internos sem expor dados sensíveis.
-- Adicionar testes automatizados.
-- Avaliar autenticação em duas etapas para administradores.
 
 ---
 
@@ -469,39 +442,6 @@ A interface segue uma linha visual corporativa e tecnológica, com:
 - Gráficos para leitura rápida do inventário.
 - Animações sutis.
 - Preferências visuais salvas localmente.
-
-A intenção é manter o sistema com cara de ferramenta interna profissional, sem perder clareza operacional.
-
----
-
-## Melhorias recomendadas
-
-Próximos passos técnicos sugeridos:
-
-- Criar pasta `database/` com `schema.sql` e `seed.sql`.
-- Documentar o modelo relacional do banco.
-- Centralizar permissões de administrador/colaborador.
-- Criar middleware PHP para proteger páginas internas.
-- Padronizar nomes de tabelas e entidades.
-- Adicionar página administrativa de categorias.
-- Salvar preferências do usuário no Supabase.
-- Criar exportação de relatórios em CSV/PDF.
-- Criar histórico de movimentações dos ativos.
-- Adicionar busca avançada por número de série.
-- Implementar testes básicos para endpoints críticos.
-- Criar tela de recuperação de senha.
-- Melhorar mensagens de erro para o usuário final.
-- Criar documentação de deploy.
-
----
-
-## Sugestão de commits úteis
-
-```bash
-git add README.md
-git commit -m "Atualiza documentacao do projeto"
-git push origin main
-```
 
 ---
 
