@@ -526,11 +526,6 @@ $codigoInternoEscapado = e($codigoInterno);
                 </label>
               </div>
             </fieldset>
-
-            <div class="preference-preview" aria-live="polite">
-              <div><span>Preview</span><strong>Indicador positivo</strong></div>
-              <span class="status-badge status-active">Ativo</span>
-            </div>
           </form>
           <div class="form-message success" id="preferencesMessage" role="status"></div>
         </article>
