@@ -1,4 +1,7 @@
 const MESSAGE_HIDE_DELAY_MS = 2800;
+const PAGE_MESSAGE_STORAGE_KEY = "titech-edicao-ativos-message";
+
+let assetSearchTimer = null;
 
 document.addEventListener("DOMContentLoaded", initPage);
 
@@ -11,40 +14,72 @@ function initPage() {
   setupAssetFilters();
   setupAssetActions();
   setupEditModal();
+  restorePendingPageMessage();
 }
 
 function setupAssetFilters() {
-  document.getElementById("assetSearch")?.addEventListener("input", filterAssets);
-  document.getElementById("assetStatusFilter")?.addEventListener("change", filterAssets);
-  document.getElementById("assetCategoryFilter")?.addEventListener("change", () => {
-    syncCategoryUrl();
-    filterAssets();
-  });
-  document.getElementById("assetBrandFilter")?.addEventListener("change", filterAssets);
+  const form = document.getElementById("assetFiltersForm");
+  const searchInput = document.getElementById("assetSearch");
+  const searchValue = document.getElementById("assetSearchValue");
 
-  document.getElementById("clearAssetFilters")?.addEventListener("click", () => {
-    setInputValue("assetSearch", "");
-    setInputValue("assetStatusFilter", "todos");
-    setInputValue("assetCategoryFilter", "todos");
-    setInputValue("assetBrandFilter", "todos");
-    syncCategoryUrl();
-    filterAssets();
-  });
-
-  filterAssets();
-}
-
-function syncCategoryUrl() {
-  const category = document.getElementById("assetCategoryFilter")?.value || "todos";
-  const url = new URL(window.location.href);
-
-  if (category === "todos") {
-    url.searchParams.delete("categoria");
-  } else {
-    url.searchParams.set("categoria", category);
+  if (!form) {
+    return;
   }
 
-  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  if (searchInput && searchValue) {
+    searchInput.value = searchValue.value || "";
+  }
+
+  searchInput?.addEventListener("input", () => {
+    window.clearTimeout(assetSearchTimer);
+
+    assetSearchTimer = window.setTimeout(() => {
+      syncSearchValue();
+      resetAssetPageAndSubmit(form);
+    }, 450);
+  });
+
+  [
+    "assetStatusFilter",
+    "assetCategoryFilter",
+    "assetBrandFilter",
+    "assetPerPage",
+  ].forEach((fieldId) => {
+    document.getElementById(fieldId)?.addEventListener("change", () => {
+      syncSearchValue();
+      resetAssetPageAndSubmit(form);
+    });
+  });
+
+  form.addEventListener("submit", syncSearchValue);
+
+  document.getElementById("clearAssetFilters")?.addEventListener("click", () => {
+    window.location.href = "edicao-ativos.php";
+  });
+}
+
+function syncSearchValue() {
+  const searchInput = document.getElementById("assetSearch");
+  const searchValue = document.getElementById("assetSearchValue");
+
+  if (searchInput && searchValue) {
+    searchValue.value = searchInput.value;
+  }
+}
+
+function resetAssetPageAndSubmit(form) {
+  const pageInput = form.querySelector('input[name="pagina"]');
+
+  if (pageInput) {
+    pageInput.value = "1";
+  }
+
+  if (typeof form.requestSubmit === "function") {
+    form.requestSubmit();
+    return;
+  }
+
+  form.submit();
 }
 
 function setupAssetActions() {
@@ -146,10 +181,7 @@ async function submitEditForm(event) {
       throw new Error(result.message || "Nao foi possivel alterar o ativo.");
     }
 
-    updateAssetRow(result.ativo);
-    closeEditModal();
-    setPageMessage(result.message || "Ativo alterado com sucesso.", "success");
-    filterAssets();
+    reloadAssetPageWithMessage(result.message || "Ativo alterado com sucesso.", "success");
   } catch (error) {
     setEditMessage(error.message || "Nao foi possivel alterar o ativo.", "error");
   } finally {
@@ -209,10 +241,7 @@ async function deleteAsset(row, button) {
       throw new Error(result.message || "Nao foi possivel excluir o ativo.");
     }
 
-    row.remove();
-    adjustTotalAssetsMetric(-1);
-    setPageMessage(result.message || "Ativo excluido com sucesso.", "success");
-    filterAssets();
+    reloadAssetPageWithMessage(result.message || "Ativo excluido com sucesso.", "success");
   } catch (error) {
     setPageMessage(error.message || "Nao foi possivel excluir o ativo.", "error");
   } finally {
@@ -220,129 +249,29 @@ async function deleteAsset(row, button) {
   }
 }
 
-function updateAssetRow(asset) {
-  if (!asset?.id) return;
-
-  const row = document.querySelector(`.asset-row[data-id="${cssEscape(String(asset.id))}"]`);
-
-  if (!row) return;
-
-  const name = String(asset.nome || "");
-  const description = String(asset.descricao || "");
-  const serial = String(asset.numero_serie || "");
-  const status = String(asset.status || "");
-  const brand = String(asset.marca || "");
-  const property = String(asset.propriedade || "");
-  const imei = String(asset.imei || "");
-  const datasheet = String(asset.datasheet || "");
-  const category = String(asset.categoria || "Sem categoria");
-  const categoryId = String(asset.categoria_id || "");
-  const location = String(asset.local || "");
-  const locationId = String(asset.local_id || "");
-  const created = formatDate(asset.criado_em) || row.dataset.created || "--";
-
-  row.dataset.name = name;
-  row.dataset.description = description;
-  row.dataset.serial = serial;
-  row.dataset.status = normalizeText(status);
-  row.dataset.statusRaw = status;
-  row.dataset.brand = normalizeText(brand);
-  row.dataset.brandRaw = brand;
-  row.dataset.property = property;
-  row.dataset.imei = imei;
-  row.dataset.datasheet = datasheet;
-  row.dataset.category = normalizeText(category);
-  row.dataset.categoryRaw = category;
-  row.dataset.categoryId = categoryId;
-  row.dataset.location = normalizeText(location);
-  row.dataset.locationRaw = location;
-  row.dataset.locationId = locationId;
-  row.dataset.created = created;
-  row.dataset.search = normalizeText(`${name} ${serial} ${status} ${brand} ${property} ${category} ${location}`);
-
-  setText(row.querySelector("[data-asset-name]"), name || "--");
-  setText(row.querySelector("[data-asset-property]"), property);
-  setText(row.querySelector("[data-asset-category]"), category || "Sem categoria");
-  setText(row.querySelector("[data-asset-brand]"), brand || "--");
-  setText(row.querySelector("[data-asset-serial]"), serial || "--");
-  const statusBadge = row.querySelector("[data-asset-status]");
-  setText(statusBadge, status || "--");
-  setStatusBadgeClass(statusBadge, status);
-  setText(row.querySelector("[data-asset-location]"), location || "--");
-  setText(row.querySelector("[data-asset-created]"), created);
-}
-
-function filterAssets() {
-  const rows = Array.from(document.querySelectorAll(".asset-row"));
-  const search = normalizeText(document.getElementById("assetSearch")?.value || "");
-  const status = normalizeText(document.getElementById("assetStatusFilter")?.value || "todos");
-  const category = normalizeText(document.getElementById("assetCategoryFilter")?.value || "todos");
-  const brand = normalizeText(document.getElementById("assetBrandFilter")?.value || "todos");
-  let visibleCount = 0;
-
-  rows.forEach((row) => {
-    const rowStatus = normalizeText(row.dataset.statusRaw || row.dataset.status || "");
-    const rowCategory = normalizeText(row.dataset.categoryRaw || row.dataset.category || "");
-    const rowBrand = normalizeText(row.dataset.brandRaw || row.dataset.brand || "");
-    const rowSearch = normalizeText(row.dataset.search || "");
-    const matchesStatus = status === "todos" || rowStatus === status;
-    const matchesCategory = category === "todos" || rowCategory === category;
-    const matchesBrand = brand === "todos" || rowBrand === brand;
-    const matchesSearch = !search || rowSearch.includes(search);
-    const isVisible = matchesStatus && matchesCategory && matchesBrand && matchesSearch;
-
-    row.hidden = !isVisible;
-
-    if (isVisible) {
-      visibleCount += 1;
-    }
-  });
-
-  updateText("assetResultCount", `${visibleCount.toLocaleString("pt-BR")} ${visibleCount === 1 ? "registro" : "registros"}`);
-  updateText("displayedAssetsMetric", String(visibleCount));
-  updateEmptyState(rows.length === 0 || visibleCount === 0);
-}
-
-function adjustTotalAssetsMetric(delta) {
-  const metric = document.getElementById("totalAssetsMetric");
-
-  if (!metric) return;
-
-  const current = Number(metric.dataset.totalAssets || metric.textContent || "0");
-
-  if (!Number.isFinite(current)) return;
-
-  const next = Math.max(0, current + delta);
-
-  metric.dataset.totalAssets = String(next);
-  metric.textContent = next.toLocaleString("pt-BR");
-}
-
-function updateEmptyState(show) {
-  const emptyState = document.getElementById("assetEmptyState");
-
-  if (emptyState) {
-    emptyState.hidden = !show;
-  }
-}
-
-function setStatusBadgeClass(element, status) {
-  if (!element) return;
-
-  const normalized = normalizeText(status);
-  let modifier = "status-neutral";
-
-  if (normalized.startsWith("dispon")) {
-    modifier = "status-available";
-  } else if (normalized === "em uso") {
-    modifier = "status-in-use";
-  } else if (normalized.startsWith("homologa")) {
-    modifier = "status-homologation";
-  } else if (normalized.startsWith("manuten")) {
-    modifier = "status-maintenance";
+function reloadAssetPageWithMessage(message, type) {
+  try {
+    sessionStorage.setItem(PAGE_MESSAGE_STORAGE_KEY, JSON.stringify({ message, type }));
+  } catch {
+    return window.location.reload();
   }
 
-  element.className = `status-badge ${modifier}`;
+  window.location.reload();
+}
+
+function restorePendingPageMessage() {
+  let payload = null;
+
+  try {
+    payload = JSON.parse(sessionStorage.getItem(PAGE_MESSAGE_STORAGE_KEY) || "null");
+    sessionStorage.removeItem(PAGE_MESSAGE_STORAGE_KEY);
+  } catch {
+    payload = null;
+  }
+
+  if (payload?.message) {
+    setPageMessage(payload.message, payload.type || "success");
+  }
 }
 
 function setPageMessage(message, type) {
@@ -410,27 +339,4 @@ function setSelectValue(id, value) {
 
 function getCsrfToken() {
   return document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
-}
-
-function formatDate(value) {
-  if (!value) return "";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
-}
-
-function cssEscape(value) {
-  if (window.CSS?.escape) {
-    return window.CSS.escape(value);
-  }
-
-  return value.replace(/["\\]/g, "\\$&");
 }

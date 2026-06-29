@@ -5,7 +5,13 @@
 .asset-filter-bar {
   margin-bottom: 16px;
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) minmax(170px, auto) minmax(190px, auto) minmax(170px, auto) auto;
+  grid-template-columns:
+    minmax(260px, 1fr)
+    minmax(150px, auto)
+    minmax(190px, auto)
+    minmax(160px, auto)
+    minmax(140px, auto)
+    auto;
   gap: 10px;
   align-items: center;
 }
@@ -70,6 +76,82 @@
 
 .asset-edit-table td strong {
   min-width: 210px;
+}
+
+.asset-pagination {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.asset-pagination-info {
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.asset-pagination-info strong {
+  color: var(--text);
+}
+
+.asset-pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pagination-button {
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--text);
+  background: var(--soft);
+  font-size: 0.9rem;
+  font-weight: 850;
+  text-decoration: none;
+  transition:
+    transform var(--transition),
+    border-color var(--transition),
+    background var(--transition);
+}
+
+.pagination-button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(79, 199, 177, 0.5);
+}
+
+.pagination-button.compact {
+  min-width: 38px;
+  padding: 0 10px;
+}
+
+.pagination-button.active {
+  color: #ffffff;
+  border-color: rgba(79, 199, 177, 0.6);
+  background: linear-gradient(135deg, var(--teal), var(--cyan));
+}
+
+.pagination-button.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.pagination-ellipsis {
+  color: var(--muted);
+  font-weight: 900;
+  padding: 0 4px;
 }
 
 .asset-actions-cell {
@@ -212,6 +294,18 @@
   .asset-filter-bar,
   .asset-modal-grid {
     grid-template-columns: 1fr;
+  }
+
+  .asset-pagination {
+    align-items: stretch;
+  }
+
+  .asset-pagination-controls {
+    justify-content: flex-start;
+  }
+
+  .pagination-button {
+    flex: 1 1 auto;
   }
 
   .asset-actions-cell {

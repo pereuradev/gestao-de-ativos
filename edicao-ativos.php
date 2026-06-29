@@ -33,6 +33,24 @@ function formatarDataAtivo(?string $value): string
   }
 }
 
+function urlEdicaoAtivosPaginada(int $pagina, array $overrides = []): string
+{
+  $params = array_merge($_GET, $overrides, ["pagina" => $pagina]);
+
+  foreach ($params as $key => $value) {
+    if ($value === null || $value === "" || $value === "todos") {
+      unset($params[$key]);
+      continue;
+    }
+
+    if ($key === "pagina" && (int) $value <= 1) {
+      unset($params[$key]);
+    }
+  }
+
+  return "edicao-ativos.php" . ($params ? "?" . http_build_query($params) : "");
+}
+
 $usuario = $_SESSION["usuario"];
 $nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
 $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
@@ -59,12 +77,28 @@ foreach ($sidebarNameParts as $sidebarNamePart) {
 $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 $csrfToken = e((string) $_SESSION["csrf_token"]);
 $categoriaFiltro = trim((string) ($_GET["categoria"] ?? ""));
+$buscaFiltro = trim((string) ($_GET["busca"] ?? ""));
+$statusFiltro = trim((string) ($_GET["status"] ?? "todos"));
+$marcaFiltro = trim((string) ($_GET["marca"] ?? "todos"));
+
+$porPaginaOpcoes = [10, 25, 50, 100];
+$porPagina = (int) ($_GET["por_pagina"] ?? 10);
+
+if (!in_array($porPagina, $porPaginaOpcoes, true)) {
+  $porPagina = 10;
+}
+
+$paginaAtual = max(1, (int) ($_GET["pagina"] ?? 1));
 
 $ativos = [];
 $categorias = [];
 $locais = [];
 $marcas = [];
 $totalAtivos = 0;
+$totalFiltradoAtivos = 0;
+$totalPaginas = 1;
+$inicioRegistro = 0;
+$fimRegistro = 0;
 $ativosDisponiveis = 0;
 $erroBanco = "";
 
@@ -148,6 +182,65 @@ try {
   $disponiveisStmt->execute([":status" => $statusPadrao]);
   $ativosDisponiveis = (int) $disponiveisStmt->fetchColumn();
 
+  $where = [];
+  $params = [];
+
+  if ($buscaFiltro !== "") {
+    $where[] = "(
+            lower(coalesce(a.nome, '')) like lower(:busca)
+            or lower(coalesce(a.descricao, '')) like lower(:busca)
+            or lower(coalesce(a.numero_serie, '')) like lower(:busca)
+            or lower(coalesce(a.status, '')) like lower(:busca)
+            or lower(coalesce(a.marca, '')) like lower(:busca)
+            or lower(coalesce(a.propriedade, '')) like lower(:busca)
+            or lower(coalesce(a.imei, '')) like lower(:busca)
+            or lower(coalesce(a.datasheet, '')) like lower(:busca)
+            or lower(coalesce(c.nome, '')) like lower(:busca)
+            or lower(coalesce(l.nome, '')) like lower(:busca)
+        )";
+    $params[":busca"] = "%" . $buscaFiltro . "%";
+  }
+
+  if ($statusFiltro !== "" && $statusFiltro !== "todos") {
+    $where[] = "a.status = :statusFiltro";
+    $params[":statusFiltro"] = $statusFiltro;
+  }
+
+  if ($categoriaFiltro !== "" && $categoriaFiltro !== "todos") {
+    $where[] = "c.nome = :categoriaFiltro";
+    $params[":categoriaFiltro"] = $categoriaFiltro;
+  }
+
+  if ($marcaFiltro !== "" && $marcaFiltro !== "todos") {
+    $where[] = "a.marca = :marcaFiltro";
+    $params[":marcaFiltro"] = $marcaFiltro;
+  }
+
+  $whereSql = $where ? " where " . implode(" and ", $where) : "";
+
+  $totalFiltradoStmt = $pdo->prepare("
+        select count(*)::int
+          from public.ativos a
+     left join public.categorias_ativos c on c.id = a.categoria_id
+     left join public.locais l on l.id = a.local_id
+        {$whereSql}
+    ");
+
+  foreach ($params as $name => $value) {
+    $totalFiltradoStmt->bindValue($name, $value);
+  }
+
+  $totalFiltradoStmt->execute();
+  $totalFiltradoAtivos = (int) $totalFiltradoStmt->fetchColumn();
+
+  $totalPaginas = max(1, (int) ceil($totalFiltradoAtivos / $porPagina));
+
+  if ($paginaAtual > $totalPaginas) {
+    $paginaAtual = $totalPaginas;
+  }
+
+  $offset = ($paginaAtual - 1) * $porPagina;
+
   $ativosStmt = $pdo->prepare("
         select
             a.id,
@@ -167,10 +260,23 @@ try {
           from public.ativos a
      left join public.categorias_ativos c on c.id = a.categoria_id
      left join public.locais l on l.id = a.local_id
+        {$whereSql}
       order by a.criado_em desc
+         limit :limite offset :offset
     ");
+
+  foreach ($params as $name => $value) {
+    $ativosStmt->bindValue($name, $value);
+  }
+
+  $ativosStmt->bindValue(":limite", $porPagina, PDO::PARAM_INT);
+  $ativosStmt->bindValue(":offset", $offset, PDO::PARAM_INT);
+
   $ativosStmt->execute();
   $ativos = $ativosStmt->fetchAll();
+
+  $inicioRegistro = $totalFiltradoAtivos > 0 ? $offset + 1 : 0;
+  $fimRegistro = min($offset + count($ativos), $totalFiltradoAtivos);
 } catch (Throwable) {
   $erroBanco = "Nao foi possivel carregar os ativos do banco agora.";
 }
@@ -193,14 +299,14 @@ try {
 
   <link rel="stylesheet" href="css/pagina-base.css?v=20260626-user-card" />
   <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260619-select-options" />
-  <link rel="stylesheet" href="css/edicao-ativos.css?v=20260626-clear-button" />
+  <link rel="stylesheet" href="css/edicao-ativos.css?v=20260629-pagination" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
   <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
   <script src="js/app-base.js?v=20260626-properties-sidebar" defer></script>
-  <script src="js/edicao-ativos.js?v=20260624-common-ui" defer></script>
+  <script src="js/edicao-ativos.js?v=20260629-pagination" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
@@ -402,27 +508,35 @@ try {
           </div>
 
           <div class="records-actions">
-            <span id="assetResultCount"><?php echo e((string) count($ativos)); ?> registros</span>
+            <span id="assetResultCount" data-total-filtered="<?php echo e((string) $totalFiltradoAtivos); ?>">
+              <?php echo e((string) $totalFiltradoAtivos); ?>
+              <?php echo $totalFiltradoAtivos === 1 ? "registro encontrado" : "registros encontrados"; ?>
+            </span>
           </div>
         </div>
 
         <div id="assetPageMessage" class="asset-page-message" role="status" aria-live="polite"></div>
 
-        <div class="asset-filter-bar" aria-label="Filtros dos ativos">
+        <form id="assetFiltersForm" class="asset-filter-bar" method="get" action="edicao-ativos.php"
+          aria-label="Filtros dos ativos">
+          <input type="hidden" name="pagina" value="1" />
+          <input id="assetSearchValue" type="hidden" name="busca" value="<?php echo e($buscaFiltro); ?>" />
           <div class="search-box asset-edit-search">
             <i class="bi bi-search"></i>
-            <input id="assetSearch" type="search" placeholder="Buscar ativo, sÃ©rie, marca ou local"
-              aria-label="Buscar ativo, sÃ©rie, marca ou local" autocomplete="off" />
+            <input id="assetSearch" type="search" placeholder="Buscar ativo, s&eacute;rie, marca ou local"
+              aria-label="Buscar ativo, s&eacute;rie, marca ou local" autocomplete="off" />
           </div>
 
-          <select id="assetStatusFilter" aria-label="Filtrar por status">
+          <select id="assetStatusFilter" name="status" aria-label="Filtrar por status">
             <option value="todos">Todos os status</option>
             <?php foreach ($statusOptions as $statusOpcao): ?>
-              <option value="<?php echo e($statusOpcao); ?>"><?php echo e($statusOpcao); ?></option>
+              <option value="<?php echo e($statusOpcao); ?>" <?php echo strcasecmp($statusFiltro, $statusOpcao) === 0 ? "selected" : ""; ?>>
+                <?php echo e($statusOpcao); ?>
+              </option>
             <?php endforeach; ?>
           </select>
 
-          <select id="assetCategoryFilter" aria-label="Filtrar por categoria">
+          <select id="assetCategoryFilter" name="categoria" aria-label="Filtrar por categoria">
             <option value="todos">Todas as categorias</option>
             <?php foreach ($categorias as $categoria): ?>
               <?php $categoriaNome = (string) ($categoria["nome"] ?? ""); ?>
@@ -432,11 +546,21 @@ try {
             <?php endforeach; ?>
           </select>
 
-          <select id="assetBrandFilter" aria-label="Filtrar por marca">
+          <select id="assetBrandFilter" name="marca" aria-label="Filtrar por marca">
             <option value="todos">Todas as marcas</option>
             <?php foreach ($marcas as $marca): ?>
               <?php $marcaNome = (string) ($marca["nome"] ?? ""); ?>
-              <option value="<?php echo e($marcaNome); ?>"><?php echo e($marcaNome); ?></option>
+              <option value="<?php echo e($marcaNome); ?>" <?php echo strcasecmp($marcaFiltro, $marcaNome) === 0 ? "selected" : ""; ?>>
+                <?php echo e($marcaNome); ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+
+          <select id="assetPerPage" name="por_pagina" aria-label="Registros por p&aacute;gina">
+            <?php foreach ($porPaginaOpcoes as $opcaoPorPagina): ?>
+              <option value="<?php echo e((string) $opcaoPorPagina); ?>" <?php echo $porPagina === $opcaoPorPagina ? "selected" : ""; ?>>
+                <?php echo e((string) $opcaoPorPagina); ?> por p&aacute;gina
+              </option>
             <?php endforeach; ?>
           </select>
 
@@ -444,7 +568,7 @@ try {
             <i class="bi bi-x-circle"></i>
             <span>Limpar</span>
           </button>
-        </div>
+        </form>
 
         <div class="records-table-wrap">
           <table class="records-table asset-edit-table">
@@ -526,6 +650,81 @@ try {
           <i class="bi bi-info-circle"></i>
           <span>Nenhum ativo encontrado.</span>
         </div>
+
+        <?php if ($totalFiltradoAtivos > 0): ?>
+          <nav class="asset-pagination" aria-label="Pagina&ccedil;&atilde;o de ativos">
+            <div class="asset-pagination-info">
+              Mostrando
+              <strong><?php echo e((string) $inicioRegistro); ?>-<?php echo e((string) $fimRegistro); ?></strong>
+              de
+              <strong><?php echo e((string) $totalFiltradoAtivos); ?></strong>
+              registros
+            </div>
+
+            <?php if ($totalPaginas > 1): ?>
+              <div class="asset-pagination-controls">
+                <?php if ($paginaAtual > 1): ?>
+                  <a class="pagination-button" href="<?php echo e(urlEdicaoAtivosPaginada($paginaAtual - 1)); ?>">
+                    <i class="bi bi-chevron-left"></i>
+                    Anterior
+                  </a>
+                <?php else: ?>
+                  <span class="pagination-button disabled" aria-disabled="true">
+                    <i class="bi bi-chevron-left"></i>
+                    Anterior
+                  </span>
+                <?php endif; ?>
+
+                <?php
+                $inicioPagina = max(1, $paginaAtual - 2);
+                $fimPagina = min($totalPaginas, $paginaAtual + 2);
+                ?>
+
+                <?php if ($inicioPagina > 1): ?>
+                  <a class="pagination-button compact" href="<?php echo e(urlEdicaoAtivosPaginada(1)); ?>">1</a>
+
+                  <?php if ($inicioPagina > 2): ?>
+                    <span class="pagination-ellipsis">...</span>
+                  <?php endif; ?>
+                <?php endif; ?>
+
+                <?php for ($pagina = $inicioPagina; $pagina <= $fimPagina; $pagina++): ?>
+                  <?php if ($pagina === $paginaAtual): ?>
+                    <span class="pagination-button compact active" aria-current="page">
+                      <?php echo e((string) $pagina); ?>
+                    </span>
+                  <?php else: ?>
+                    <a class="pagination-button compact" href="<?php echo e(urlEdicaoAtivosPaginada($pagina)); ?>">
+                      <?php echo e((string) $pagina); ?>
+                    </a>
+                  <?php endif; ?>
+                <?php endfor; ?>
+
+                <?php if ($fimPagina < $totalPaginas): ?>
+                  <?php if ($fimPagina < $totalPaginas - 1): ?>
+                    <span class="pagination-ellipsis">...</span>
+                  <?php endif; ?>
+
+                  <a class="pagination-button compact" href="<?php echo e(urlEdicaoAtivosPaginada($totalPaginas)); ?>">
+                    <?php echo e((string) $totalPaginas); ?>
+                  </a>
+                <?php endif; ?>
+
+                <?php if ($paginaAtual < $totalPaginas): ?>
+                  <a class="pagination-button" href="<?php echo e(urlEdicaoAtivosPaginada($paginaAtual + 1)); ?>">
+                    Pr&oacute;xima
+                    <i class="bi bi-chevron-right"></i>
+                  </a>
+                <?php else: ?>
+                  <span class="pagination-button disabled" aria-disabled="true">
+                    Pr&oacute;xima
+                    <i class="bi bi-chevron-right"></i>
+                  </span>
+                <?php endif; ?>
+              </div>
+            <?php endif; ?>
+          </nav>
+        <?php endif; ?>
       </section>
     </main>
   </div>
