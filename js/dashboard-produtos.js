@@ -645,6 +645,7 @@ function renderCurrentChart() {
   const config = METRIC_CONFIG[state.metrica] || METRIC_CONFIG.categorias;
   const rows = getCurrentRows(config);
   const total = calculateRowsTotal(rows);
+  const visibleRows = getVisibleRows(rows);
 
   setText("mainChartTitle", config.title);
   setText("mainChartDescription", buildChartDescription(config));
@@ -652,8 +653,8 @@ function renderCurrentChart() {
   setText("chartTotalMetric", formatNumber(total));
 
   renderChart(rows, config);
-  renderRanking(rows, total);
-  renderTable(rows, total);
+  renderRanking(visibleRows, total);
+  renderTable(visibleRows, total);
 }
 
 function getCurrentRows(config) {
@@ -682,6 +683,10 @@ function buildChartDescription(config) {
 
 function calculateRowsTotal(rows) {
   return rows.reduce((sum, row) => sum + normalizeNumber(row.total), 0);
+}
+
+function getVisibleRows(rows) {
+  return rows.filter((row) => normalizeNumber(row.total) > 0);
 }
 
 function renderChart(rows, config) {
@@ -830,13 +835,6 @@ function renderChart(rows, config) {
 }
 
 function getSafeChartType(chartType, metric) {
-  if (
-    metric === "evolucao" &&
-    ["pie", "doughnut", "polarArea"].includes(chartType)
-  ) {
-    return "line";
-  }
-
   if (["bar", "pie", "doughnut", "line", "polarArea"].includes(chartType)) {
     return chartType;
   }
