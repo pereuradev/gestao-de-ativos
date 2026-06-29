@@ -213,7 +213,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                         <span class="typewriter-heading" data-typewriter-loop
                             data-typewriter-phrases="Veja seus produtos por tipo, status, marca, local e evolução.|Filtre um tipo e veja as marcas.|Acompanhe o inventário por grupo.">Veja
                             seus produtos por tipo, status, marca, local e evolução.</span><span
-                            class="typewriter-heading-cursor" aria-hidden="true"></span>
+                            aria-hidden="true"></span>
                     </h2>
                     <p>
                         Escolha o tipo de gráfico, filtre uma categoria específica e acompanhe quantos ativos existem em
