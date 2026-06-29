@@ -125,11 +125,11 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 
         <!-- Link da página atual. A classe active destaca o item no menu. -->
         <a class="nav-link active" href="pagina-inicial.php">
-          <i class="bi bi-speedometer2"></i>
+          <i class="bi bi-house-door-fill"></i>
           <span>P&aacute;gina Inicial</span>
         </a>
         <a class="nav-link" href="dashboard.php">
-          <i class="bi bi-graph-up-arrow"></i>
+          <i class="bi bi-bar-chart-fill"></i>
           <span>Dashboard</span>
         </a>
 

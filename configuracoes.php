@@ -250,11 +250,11 @@ $codigoInternoEscapado = e($codigoInterno);
       <!-- Links principais do sistema. O aria-label ajuda leitores de tela a entenderem a navegação. -->
       <nav class="sidebar-nav" aria-label="Menu principal">
         <a class="nav-link" href="pagina-inicial.php">
-          <i class="bi bi-speedometer2"></i>
+          <i class="bi bi-house-door-fill"></i>
           <span>P&aacute;gina Inicial</span>
         </a>
         <a class="nav-link" href="dashboard.php">
-          <i class="bi bi-graph-up-arrow"></i>
+          <i class="bi bi-bar-chart-fill"></i>
           <span>Dashboard</span>
         </a>
         <a class="nav-link" href="funcionarios.php">

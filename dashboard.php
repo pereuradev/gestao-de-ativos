@@ -1,7 +1,9 @@
 <?php
+declare(strict_types=1);
+
 session_start();
 
-if (empty($_SESSION["usuario"])) {
+if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     header("Location: Pagina-login.html?sessao=expirada");
     exit;
 }
@@ -11,15 +13,16 @@ function e(string $value): string
     return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
 }
 
-$usuario = $_SESSION["usuario"] ?? [];
-$nomeUsuario = e((string) ($usuario["nome_completo"] ?? $usuario["nome"] ?? "Usuário TI TECH"));
-$tipoUsuario = (string) ($usuario["tipo_usuario"] ?? "Colaborador");
-$sidebarRoleLabel = e($tipoUsuario !== "" ? $tipoUsuario : "Colaborador");
-$sidebarRoleClass = strcasecmp($tipoUsuario, "Administrador") === 0 ? "is-admin" : "is-collaborator";
+$usuario = $_SESSION["usuario"];
+$nomeUsuario = e((string) ($usuario["nome_completo"] ?? $usuario["nome"] ?? "Usuario TI TECH"));
+$sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
+$sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
+$sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
+$sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
 $sidebarEmail = e((string) ($usuario["email"] ?? ""));
-$sidebarDepartment = e((string) ($usuario["departamento"] ?? "Suporte Técnico"));
+$sidebarDepartment = e((string) ($usuario["departamento"] ?? "Sem departamento"));
 
-$partesNome = preg_split('/\s+/', trim((string) ($usuario["nome_completo"] ?? $usuario["nome"] ?? ""))) ?: [];
+$partesNome = preg_split("/\s+/", trim((string) ($usuario["nome_completo"] ?? $usuario["nome"] ?? ""))) ?: [];
 $sidebarInitialsText = "";
 
 foreach ($partesNome as $parte) {
@@ -27,28 +30,48 @@ foreach ($partesNome as $parte) {
         continue;
     }
 
-    $sidebarInitialsText .= mb_strtoupper(mb_substr($parte, 0, 1, "UTF-8"), "UTF-8");
+    $sidebarInitialsText .= strtoupper(substr($parte, 0, 1));
 
-    if (mb_strlen($sidebarInitialsText, "UTF-8") >= 2) {
+    if (strlen($sidebarInitialsText) >= 2) {
         break;
     }
 }
 
 $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 ?>
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard de Produtos | TI TECH Solutions</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard | TI TECH Solutions</title>
+    <meta name="description"
+        content="Dashboard operacional de ativos, categorias, status, marcas, localizacoes e evolucao do inventario da TI TECH Solutions" />
 
     <link rel="icon" type="image/png" href="assets/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-    <link rel="stylesheet" href="css/pagina-base.css?v=20260626-dashboard-fix" />
-    <link rel="stylesheet" href="css/dashboard-produtos.css?v=20260626-dashboard-fix" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+
+    <link rel="stylesheet" href="css/pagina-base.css?v=20260626-user-card" />
+    <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
+    <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
+    <link rel="stylesheet" href="css/dashboard-produtos.css?v=20260629-dashboard-theme-fix" />
+    <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+    <script src="js/typewriter.js?v=20260619-stable" defer></script>
+    <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
+    <script src="js/app-base.js?v=20260626-properties-sidebar" defer></script>
+    <script src="js/dashboard-produtos.js?v=20260629-dashboard-theme-fix" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
+    <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
 </head>
 
 <body class="theme-dark page-loading dashboard-products-page" data-accent="teal">
@@ -67,12 +90,12 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 
             <nav class="sidebar-nav" aria-label="Menu principal">
                 <a class="nav-link" href="pagina-inicial.php">
-                    <i class="bi bi-speedometer2"></i>
+                    <i class="bi bi-house-door-fill"></i>
                     <span>Página Inicial</span>
                 </a>
 
                 <a class="nav-link active" href="dashboard.php" aria-current="page">
-                    <i class="bi bi-graph-up-arrow"></i>
+                    <i class="bi bi-bar-chart-fill"></i>
                     <span>Dashboard</span>
                 </a>
 
@@ -186,21 +209,23 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
             <section class="dashboard-hero" aria-labelledby="dashboardTitle">
                 <div>
                     <span class="eyebrow">Análise visual do inventário</span>
-                    <h2 id="dashboardTitle">Veja seus produtos por tipo, status, marca, local e evolução.</h2>
+                    <h2 id="dashboardTitle">
+                        <span class="typewriter-heading" data-typewriter-loop
+                            data-typewriter-phrases="Veja seus produtos por tipo, status, marca, local e evolução.|Filtre um tipo e veja as marcas.|Acompanhe o inventário por grupo.">Veja
+                            seus produtos por tipo, status, marca, local e evolução.</span><span
+                            class="typewriter-heading-cursor" aria-hidden="true"></span>
+                    </h2>
                     <p>
                         Escolha o tipo de gráfico, filtre uma categoria específica e acompanhe quantos ativos existem em
                         cada grupo.
                     </p>
                 </div>
 
-                <div class="hero-status-card" aria-live="polite">
-                    <i class="bi bi-activity"></i>
-                    <div>
-                        <strong id="dashboardConnectionStatus">Carregando dados...</strong>
-                        <span id="dashboardLastUpdate">Aguardando conexão com o banco.</span>
-                    </div>
-                </div>
             </section>
+
+            <p id="dashboardStatusText" class="dashboard-status-text" role="status" aria-live="polite">
+                Carregando dados do banco.
+            </p>
 
             <section class="dashboard-summary-grid" aria-label="Resumo do inventário">
                 <article class="summary-card">
@@ -335,11 +360,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                 </div>
             </section>
         </main>
-        </main>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-    <script src="js/dashboard-produtos.js?v=20260626-dashboard-fix"></script>
 </body>
 
 </html>

@@ -1,3 +1,4 @@
+(function () {
 const DASHBOARD_PRODUCTS_ENDPOINT = "Backend/dashboard-produtos.php";
 const THEME_STORAGE_KEY = "titech-theme";
 const ACCENT_STORAGE_KEY = "titech-accent";
@@ -46,8 +47,11 @@ const DEFAULT_DASHBOARD_DATA = {
   },
   categorias: [],
   status: [],
+  status_por_categoria: {},
   marcas: [],
+  marcas_por_categoria: {},
   locais: [],
+  locais_por_categoria: {},
   evolucao: [],
 };
 
@@ -69,7 +73,7 @@ const METRIC_CONFIG = {
   marcas: {
     title: "Quantidade por marca",
     description:
-      "Ranking das marcas com mais ativos cadastrados no inventário.",
+      "Mostra quantos ativos existem por marca no filtro atual.",
     totalLabel: "Ativos analisados",
     dataKey: "marcas",
   },
@@ -90,9 +94,12 @@ const METRIC_CONFIG = {
 };
 
 let dashboardData = DEFAULT_DASHBOARD_DATA;
+let dashboardBaseData = DEFAULT_DASHBOARD_DATA;
 let productsChart = null;
 let themeTimer = null;
-let loading = false;
+let dashboardRequestController = null;
+let dashboardRequestId = 0;
+const dashboardCache = new Map();
 
 const state = {
   categoriaId: "todos",
@@ -104,11 +111,12 @@ const state = {
 document.addEventListener("DOMContentLoaded", initDashboardProductsPage);
 
 function initDashboardProductsPage() {
-  startPageAnimation();
-  loadSavedTheme();
-  setupThemeToggle();
-  setupSidebar();
-  setupNavGroups();
+  window.onThemeChanged = () => renderCurrentChart();
+  (window.startPageAnimation || startPageAnimation)();
+  (window.loadSavedTheme || loadSavedTheme)();
+  (window.setupThemeToggle || setupThemeToggle)();
+  (window.setupSidebar || setupSidebar)();
+  (window.setupNavGroups || setupNavGroups)();
   setupDashboardControls();
   loadDashboardProducts();
 }
@@ -138,6 +146,9 @@ function setSavedItem(key, value) {
 function loadSavedTheme() {
   applyAccent(getSavedItem(ACCENT_STORAGE_KEY) || "teal");
   applyTheme(getSavedItem(THEME_STORAGE_KEY) || "dark");
+  window.applyDensity?.(getSavedItem("titech-density") || "comfortable");
+  window.applyMotionPreference?.(getSavedItem("titech-motion") || "normal");
+  window.applyCursorPreference?.(getSavedItem("titech-cursor") || "normal");
 }
 
 function applyAccent(accent) {
@@ -272,11 +283,21 @@ function setupDashboardControls() {
 
   categoryFilter?.addEventListener("change", () => {
     state.categoriaId = categoryFilter.value || "todos";
-    loadDashboardProducts();
+    setDashboardMetric(state.categoriaId === "todos" ? "categorias" : "marcas");
+
+    if (!applyLocalCategorySelection()) {
+      loadDashboardProducts();
+    }
   });
 
   metricFilter?.addEventListener("change", () => {
-    state.metrica = metricFilter.value || "categorias";
+    setDashboardMetric(metricFilter.value || "categorias");
+
+    if (state.metrica === "evolucao") {
+      loadDashboardProducts();
+      return;
+    }
+
     renderCurrentChart();
   });
 
@@ -293,20 +314,97 @@ function setupDashboardControls() {
       return;
     }
 
-    loadDashboardProducts(false);
+    setStatus("Periodo atualizado.", "A evolucao usara esse filtro.");
   });
 
   refreshButton?.addEventListener("click", () => {
-    loadDashboardProducts();
+    loadDashboardProducts(true, { forceRefresh: true });
   });
 }
 
-async function loadDashboardProducts(showLoading = true) {
-  if (loading) {
+function setDashboardMetric(metric) {
+  const nextMetric = Object.hasOwn(METRIC_CONFIG, metric)
+    ? metric
+    : "categorias";
+  const metricFilter = document.getElementById("metricFilter");
+
+  state.metrica = nextMetric;
+
+  if (metricFilter && metricFilter.value !== nextMetric) {
+    metricFilter.value = nextMetric;
+  }
+}
+
+function applyLocalCategorySelection() {
+  if (!dashboardBaseData.ok) {
+    return false;
+  }
+
+  if (state.categoriaId === "todos") {
+    dashboardData = dashboardBaseData;
+    renderSummaryCards();
+    renderCurrentChart();
+    setStatus("Dados exibidos.", "Filtro removido na tela.");
+    return true;
+  }
+
+  const selectedCategory = dashboardBaseData.categorias.find(
+    (category) => category.id === state.categoriaId,
+  );
+
+  if (!selectedCategory) {
+    return false;
+  }
+
+  const categoryBrands =
+    dashboardBaseData.marcas_por_categoria?.[state.categoriaId] || [];
+  const categoryStatuses =
+    dashboardBaseData.status_por_categoria?.[state.categoriaId] || [];
+  const categoryLocations =
+    dashboardBaseData.locais_por_categoria?.[state.categoriaId] || [];
+
+  dashboardData = {
+    ...dashboardBaseData,
+    resumo: {
+      ...dashboardBaseData.resumo,
+      total_filtrado: selectedCategory.total,
+    },
+    categoria_selecionada: {
+      id: selectedCategory.id,
+      nome: selectedCategory.nome,
+      total: selectedCategory.total,
+      percentual: selectedCategory.percentual,
+    },
+    status: categoryStatuses,
+    marcas: categoryBrands,
+    locais: categoryLocations,
+  };
+
+  renderSummaryCards();
+  renderCurrentChart();
+  setStatus("Dados exibidos.", "Filtro aplicado na tela.");
+
+  return true;
+}
+
+async function loadDashboardProducts(showLoading = true, options = {}) {
+  const cacheKey = `${state.categoriaId}|${state.periodo}`;
+  const forceRefresh = Boolean(options.forceRefresh);
+
+  if (forceRefresh) {
+    dashboardCache.delete(cacheKey);
+  }
+
+  if (!forceRefresh && dashboardCache.has(cacheKey)) {
+    applyDashboardPayload(dashboardCache.get(cacheKey));
+    setStatus("Dados exibidos.", "Usando dados ja carregados.");
     return;
   }
 
-  loading = true;
+  dashboardRequestController?.abort();
+  dashboardRequestController = new AbortController();
+
+  const requestId = ++dashboardRequestId;
 
   if (showLoading) {
     setStatus("Carregando dados...", "Buscando informações no banco.");
@@ -324,8 +422,13 @@ async function loadDashboardProducts(showLoading = true) {
         headers: {
           Accept: "application/json",
         },
+        signal: dashboardRequestController.signal,
       },
     );
+
+    if (requestId !== dashboardRequestId) {
+      return;
+    }
 
     if (response.status === 401) {
       window.location.href = "Pagina-login.html?sessao=expirada";
@@ -337,16 +440,26 @@ async function loadDashboardProducts(showLoading = true) {
     }
 
     const payload = await response.json();
-    dashboardData = normalizeDashboardPayload(payload);
 
-    populateCategoryFilter(dashboardData.categorias);
-    renderSummaryCards();
-    renderCurrentChart();
+    if (requestId !== dashboardRequestId) {
+      return;
+    }
+
+    dashboardCache.set(cacheKey, payload);
+    applyDashboardPayload(payload);
     setStatus(
       "Dados sincronizados.",
       formatLastUpdate(dashboardData.gerado_em),
     );
   } catch (error) {
+    if (error.name === "AbortError") {
+      return;
+    }
+
+    if (requestId !== dashboardRequestId) {
+      return;
+    }
+
     console.error(error);
     dashboardData = DEFAULT_DASHBOARD_DATA;
     renderSummaryCards();
@@ -356,8 +469,22 @@ async function loadDashboardProducts(showLoading = true) {
       "Confira a conexão com o banco e tente novamente.",
     );
   } finally {
-    loading = false;
+    if (requestId === dashboardRequestId) {
+      dashboardRequestController = null;
+    }
   }
+}
+
+function applyDashboardPayload(payload) {
+  dashboardData = normalizeDashboardPayload(payload);
+
+  if (dashboardData.categoria_selecionada.id === "todos") {
+    dashboardBaseData = dashboardData;
+  }
+
+  populateCategoryFilter(dashboardData.categorias);
+  renderSummaryCards();
+  renderCurrentChart();
 }
 
 function normalizeDashboardPayload(payload) {
@@ -390,10 +517,24 @@ function normalizeDashboardPayload(payload) {
     },
     categorias: normalizeDataRows(data.categorias, true),
     status: normalizeDataRows(data.status),
+    status_por_categoria: normalizeRowsByCategory(data.status_por_categoria),
     marcas: normalizeDataRows(data.marcas),
+    marcas_por_categoria: normalizeRowsByCategory(data.marcas_por_categoria),
     locais: normalizeDataRows(data.locais),
+    locais_por_categoria: normalizeRowsByCategory(data.locais_por_categoria),
     evolucao: normalizeDataRows(data.evolucao),
   };
+}
+
+function normalizeRowsByCategory(groups) {
+  if (!groups || typeof groups !== "object" || Array.isArray(groups)) {
+    return {};
+  }
+
+  return Object.entries(groups).reduce((normalized, [categoryId, rows]) => {
+    normalized[String(categoryId)] = normalizeDataRows(rows);
+    return normalized;
+  }, {});
 }
 
 function normalizeDataRows(rows, keepId = false) {
@@ -446,7 +587,7 @@ function populateCategoryFilter(categories) {
     categoryFilter.appendChild(
       createOption(
         category.id,
-        `${category.nome} (${formatNumber(category.total)})`,
+        `${formatCategoryLabel(category.nome)} (${formatNumber(category.total)})`,
       ),
     );
   });
@@ -478,7 +619,7 @@ function renderSummaryCards() {
   setText("totalTypesMetric", formatNumber(resumo.total_tipos));
   setText(
     "selectedTypeMetric",
-    selected.id === "todos" ? "Todos" : selected.nome,
+    selected.id === "todos" ? "Todos" : formatCategoryLabel(selected.nome),
   );
 
   const selectedDetail =
@@ -489,7 +630,7 @@ function renderSummaryCards() {
   setText("selectedTypeDetail", selectedDetail);
 
   if (largest) {
-    setText("largestTypeMetric", largest.nome || "--");
+    setText("largestTypeMetric", formatCategoryLabel(largest.nome || "--"));
     setText(
       "largestTypeDetail",
       `${formatNumber(largest.total)} ativos, ${formatPercent(largest.percentual)} do total.`,
@@ -568,7 +709,7 @@ function renderChart(rows, config) {
   productsChart = new Chart(canvas, {
     type: chartType,
     data: {
-      labels: chartRows.map((row) => row.nome),
+      labels: chartRows.map((row) => formatRowLabel(row.nome)),
       datasets: [
         {
           label: config.title,
@@ -591,7 +732,7 @@ function renderChart(rows, config) {
       responsive: true,
       maintainAspectRatio: false,
       animation: {
-        duration: 800,
+        duration: 240,
         easing: "easeOutQuart",
       },
       indexAxis: chartType === "bar" && chartRows.length >= 7 ? "y" : "x",
@@ -610,52 +751,48 @@ function renderChart(rows, config) {
             },
           },
         },
-        plugins: {
-          legend: {
-            display: chartType !== "bar" && chartType !== "line",
-            labels: {
-              color: "#d7f7ff",
-              font: {
-                weight: "700",
-              },
-            },
-          },
+        tooltip: {
+          backgroundColor: "rgba(3, 16, 29, 0.92)",
+          borderColor: "rgba(79, 199, 177, 0.28)",
+          borderWidth: 1,
+          titleColor: "#f8feff",
+          bodyColor: "#d9fbf6",
+          displayColors: false,
+          padding: 14,
+          cornerRadius: 14,
+          callbacks: {
+            label(context) {
+              const chart = context.chart;
+              const indexAxis = chart?.options?.indexAxis;
 
-          tooltip: {
-            callbacks: {
-              label(context) {
-                const chart = context.chart;
-                const indexAxis = chart?.options?.indexAxis;
+              let value = 0;
 
-                let value = 0;
+              if (typeof context.raw === "number") {
+                value = context.raw;
+              } else if (indexAxis === "y") {
+                value = Number(context.parsed?.x ?? 0);
+              } else {
+                value = Number(context.parsed?.y ?? context.parsed ?? 0);
+              }
 
-                if (typeof context.raw === "number") {
-                  value = context.raw;
-                } else if (indexAxis === "y") {
-                  value = Number(context.parsed?.x ?? 0);
-                } else {
-                  value = Number(context.parsed?.y ?? 0);
+              const dataset = context.dataset;
+              const data = Array.isArray(dataset.data) ? dataset.data : [];
+
+              const total = data.reduce((sum, item) => {
+                if (typeof item === "number") {
+                  return sum + item;
                 }
 
-                const dataset = context.dataset;
-                const data = Array.isArray(dataset.data) ? dataset.data : [];
+                return (
+                  sum +
+                  Number(item?.value ?? item?.total ?? item?.quantidade ?? 0)
+                );
+              }, 0);
 
-                const total = data.reduce((sum, item) => {
-                  if (typeof item === "number") {
-                    return sum + item;
-                  }
+              const percent =
+                total > 0 ? ((value / total) * 100).toFixed(1) : "0.0";
 
-                  return (
-                    sum +
-                    Number(item?.value ?? item?.total ?? item?.quantidade ?? 0)
-                  );
-                }, 0);
-
-                const percent =
-                  total > 0 ? ((value / total) * 100).toFixed(1) : "0.0";
-
-                return `${value} ativos - ${percent}%`;
-              },
+              return `${formatNumber(value)} ativos - ${percent}%`;
             },
           },
         },
@@ -752,7 +889,7 @@ function renderRanking(rows, total) {
 
     item.innerHTML = `
             <div class="ranking-item-head">
-                <span>${index + 1}. ${escapeHtml(row.nome)}</span>
+                <span>${index + 1}. ${escapeHtml(formatRowLabel(row.nome))}</span>
                 <strong>${formatNumber(row.total)}</strong>
             </div>
             <div class="ranking-progress" aria-hidden="true">
@@ -785,7 +922,7 @@ function renderTable(rows, total) {
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
-            <td>${escapeHtml(row.nome)}</td>
+            <td>${escapeHtml(formatRowLabel(row.nome))}</td>
             <td>${formatNumber(row.total)}</td>
             <td>${formatPercent(percent)}</td>
         `;
@@ -795,8 +932,7 @@ function renderTable(rows, total) {
 }
 
 function setStatus(title, detail) {
-  setText("dashboardConnectionStatus", title);
-  setText("dashboardLastUpdate", detail);
+  setText("dashboardStatusText", `${title} ${detail}`.trim());
 }
 
 function setText(id, value) {
@@ -805,6 +941,26 @@ function setText(id, value) {
   if (element) {
     element.textContent = value;
   }
+}
+
+function formatRowLabel(value) {
+  if (state.metrica === "categorias") {
+    return formatCategoryLabel(value);
+  }
+
+  return String(value || "--");
+}
+
+function formatCategoryLabel(value) {
+  const text = String(value || "").trim();
+
+  if (text === "" || text === "--") {
+    return "--";
+  }
+
+  const lowerText = text.toLocaleLowerCase("pt-BR");
+
+  return lowerText.charAt(0).toLocaleUpperCase("pt-BR") + lowerText.slice(1);
 }
 
 function formatNumber(value) {
@@ -846,3 +1002,4 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+})();

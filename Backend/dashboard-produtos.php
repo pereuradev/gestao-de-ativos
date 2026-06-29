@@ -1,10 +1,12 @@
 <?php
+declare(strict_types=1);
+
 session_start();
 
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 
-if (empty($_SESSION["usuario"])) {
+if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     http_response_code(401);
     echo json_encode([
         "ok" => false,
@@ -73,6 +75,25 @@ function calcularPercentual(int $valor, int $total): float
     return round(($valor / $total) * 100, 1);
 }
 
+function agruparLinhasPorCategoria(array $linhas, array $totaisPorCategoria): array
+{
+    $grupos = [];
+
+    foreach ($linhas as $linha) {
+        $categoriaId = (string)($linha["categoria_id"] ?? "sem-categoria");
+        $total = (int)($linha["total"] ?? 0);
+        $baseTotal = (int)($totaisPorCategoria[$categoriaId] ?? 0);
+
+        $grupos[$categoriaId][] = [
+            "nome" => (string)($linha["nome"] ?? "Sem nome"),
+            "total" => $total,
+            "percentual" => calcularPercentual($total, $baseTotal),
+        ];
+    }
+
+    return $grupos;
+}
+
 try {
     require __DIR__ . "/Conexao.php";
 
@@ -112,9 +133,12 @@ try {
         order by total desc, nome asc
     ");
 
+    $totaisPorCategoria = [];
+
     foreach ($categorias as &$categoria) {
         $categoria["total"] = (int)$categoria["total"];
         $categoria["percentual"] = calcularPercentual((int)$categoria["total"], $totalAtivos);
+        $totaisPorCategoria[(string)$categoria["id"]] = (int)$categoria["total"];
     }
     unset($categoria);
 
@@ -153,6 +177,18 @@ try {
         order by total desc, nome asc
     ", $paramsCategoria);
 
+    $statusPorCategoria = consultarLinhas($pdo, "
+        select
+            coalesce(a.categoria_id::text, 'sem-categoria') as categoria_id,
+            coalesce(nullif(trim(a.status), ''), 'Sem status') as nome,
+            count(*)::int as total
+        from public.ativos a
+        group by
+            coalesce(a.categoria_id::text, 'sem-categoria'),
+            coalesce(nullif(trim(a.status), ''), 'Sem status')
+        order by categoria_id asc, total desc, nome asc
+    ");
+
     $marcas = consultarLinhas($pdo, "
         select
             coalesce(nullif(trim(a.marca), ''), 'Sem marca') as nome,
@@ -163,6 +199,34 @@ try {
         order by total desc, nome asc
         limit 12
     ", $paramsCategoria);
+
+    $marcasPorCategoria = consultarLinhas($pdo, "
+        with marcas as (
+            select
+                coalesce(a.categoria_id::text, 'sem-categoria') as categoria_id,
+                coalesce(nullif(trim(a.marca), ''), 'Sem marca') as nome,
+                count(*)::int as total
+            from public.ativos a
+            group by
+                coalesce(a.categoria_id::text, 'sem-categoria'),
+                coalesce(nullif(trim(a.marca), ''), 'Sem marca')
+        ),
+        ordenadas as (
+            select
+                categoria_id,
+                nome,
+                total,
+                row_number() over (
+                    partition by categoria_id
+                    order by total desc, nome asc
+                ) as posicao
+            from marcas
+        )
+        select categoria_id, nome, total
+        from ordenadas
+        where posicao <= 12
+        order by categoria_id asc, posicao asc
+    ");
 
     $locais = consultarLinhas($pdo, "
         select
@@ -176,15 +240,44 @@ try {
         limit 12
     ", $paramsCategoria);
 
+    $locaisPorCategoria = consultarLinhas($pdo, "
+        with locais as (
+            select
+                coalesce(a.categoria_id::text, 'sem-categoria') as categoria_id,
+                coalesce(nullif(trim(l.nome), ''), 'Sem localizacao') as nome,
+                count(a.id)::int as total
+            from public.ativos a
+            left join public.locais l on l.id = a.local_id
+            group by
+                coalesce(a.categoria_id::text, 'sem-categoria'),
+                coalesce(nullif(trim(l.nome), ''), 'Sem localizacao')
+        ),
+        ordenados as (
+            select
+                categoria_id,
+                nome,
+                total,
+                row_number() over (
+                    partition by categoria_id
+                    order by total desc, nome asc
+                ) as posicao
+            from locais
+        )
+        select categoria_id, nome, total
+        from ordenados
+        where posicao <= 12
+        order by categoria_id asc, posicao asc
+    ");
+
     $evolucaoParams = $paramsCategoria;
     $evolucaoParams[":periodo"] = $periodo;
 
-    $filtroEvolucao = $whereCategoria;
+    $joinEvolucao = "a.criado_em::date = d.dia";
 
-    if ($filtroEvolucao === "") {
-        $filtroEvolucao = " where a.criado_em::date = d.dia ";
-    } else {
-        $filtroEvolucao .= " and a.criado_em::date = d.dia ";
+    if ($categoriaId === "sem-categoria") {
+        $joinEvolucao .= " and a.categoria_id is null";
+    } elseif ($categoriaId !== "" && $categoriaId !== "todos") {
+        $joinEvolucao .= " and a.categoria_id::text = :categoria_id";
     }
 
     $evolucao = consultarLinhas($pdo, "
@@ -199,8 +292,7 @@ try {
             to_char(d.dia, 'DD/MM') as nome,
             count(a.id)::int as total
         from dias d
-        left join public.ativos a on true
-        {$filtroEvolucao}
+        left join public.ativos a on {$joinEvolucao}
         group by d.dia
         order by d.dia
     ", $evolucaoParams);
@@ -236,8 +328,11 @@ try {
         "categoria_selecionada" => $categoriaSelecionada,
         "categorias" => $categorias,
         "status" => $normalizarLista($status, $totalSelecionado),
+        "status_por_categoria" => agruparLinhasPorCategoria($statusPorCategoria, $totaisPorCategoria),
         "marcas" => $normalizarLista($marcas, $totalSelecionado),
+        "marcas_por_categoria" => agruparLinhasPorCategoria($marcasPorCategoria, $totaisPorCategoria),
         "locais" => $normalizarLista($locais, $totalSelecionado),
+        "locais_por_categoria" => agruparLinhasPorCategoria($locaisPorCategoria, $totaisPorCategoria),
         "evolucao" => $normalizarLista($evolucao, max(1, array_sum(array_map(static fn ($item) => (int)$item["total"], $evolucao)))),
     ]);
 } catch (Throwable $erro) {

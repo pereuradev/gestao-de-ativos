@@ -5,11 +5,14 @@
 
 body.dashboard-products-page {
     min-height: 100vh;
-    background:
-        radial-gradient(circle at top left, rgba(79, 199, 177, 0.17), transparent 32rem),
-        radial-gradient(circle at top right, rgba(74, 163, 199, 0.13), transparent 28rem),
-        var(--bg, #071319);
+    background: var(--page-bg);
     color: var(--text, #f6fbff);
+    font-family: "Inter", var(--font-main, system-ui), sans-serif;
+}
+
+body.theme-light.dashboard-products-page {
+    --dashboard-shadow: 0 18px 48px rgba(9, 31, 48, 0.11);
+    background: var(--page-bg);
 }
 
 .dashboard-products-page .app-main {
@@ -20,38 +23,73 @@ body.dashboard-products-page {
     align-items: center;
 }
 
+.dashboard-products-page h1,
+.dashboard-products-page h2,
+.dashboard-products-page h3,
+.dashboard-products-page .summary-card strong,
+.dashboard-products-page .chart-total-pill strong,
+.dashboard-products-page .ranking-item-head,
+.dashboard-products-page button,
+.dashboard-products-page select {
+    font-family: "Sora", "Inter", system-ui, sans-serif;
+}
+
+.dashboard-topbar h1 {
+    line-height: 1.15;
+}
+
+.refresh-dashboard-button {
+    min-height: 46px;
+    border: 1px solid color-mix(in srgb, var(--cyan, #4aa3c7) 42%, var(--line, rgba(255, 255, 255, 0.13)));
+    border-radius: 14px;
+    font-size: 0.84rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease,
+        color 0.2s ease;
+}
+
+.refresh-dashboard-button:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--cyan, #4aa3c7) 72%, var(--line, rgba(255, 255, 255, 0.13)));
+    box-shadow: 0 16px 34px color-mix(in srgb, var(--cyan, #4aa3c7) 22%, transparent);
+}
+
+.refresh-dashboard-button i {
+    font-size: 0.94rem;
+}
+
+.dashboard-hero .typewriter-heading {
+    min-width: min(var(--typewriter-min, 38ch), 100%);
+}
+
+.dashboard-hero .typewriter-heading-cursor {
+    height: 0.86em;
+    margin-left: 0.12em;
+}
+
 .dashboard-hero {
     margin-top: 18px;
     padding: 28px;
     border: 1px solid var(--line, rgba(255, 255, 255, 0.13));
     border-radius: 30px;
     background:
-        linear-gradient(135deg, rgba(12, 33, 43, 0.92), rgba(9, 23, 31, 0.74)),
-        radial-gradient(circle at right, rgba(79, 199, 177, 0.24), transparent 26rem);
-    box-shadow: var(--dashboard-shadow);
-    display: flex;
-    justify-content: space-between;
-    gap: 24px;
+        linear-gradient(135deg, color-mix(in srgb, var(--mint, #66d5c2) 10%, transparent), transparent 32%),
+        var(--surface, rgba(8, 27, 45, 0.78));
+    box-shadow: var(--shadow, var(--dashboard-shadow));
+    backdrop-filter: blur(18px);
     overflow: hidden;
     position: relative;
 }
 
 .theme-light .dashboard-hero {
     background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(238, 247, 250, 0.88)),
-        radial-gradient(circle at right, rgba(79, 199, 177, 0.18), transparent 26rem);
-}
-
-.dashboard-hero::after {
-    content: "";
-    position: absolute;
-    inset: auto -80px -120px auto;
-    width: 290px;
-    height: 290px;
-    border-radius: 999px;
-    background: rgba(79, 199, 177, 0.13);
-    filter: blur(5px);
-    pointer-events: none;
+        linear-gradient(135deg, color-mix(in srgb, var(--mint, #66d5c2) 8%, transparent), transparent 34%),
+        var(--surface, rgba(255, 255, 255, 0.82));
 }
 
 .dashboard-hero > * {
@@ -72,7 +110,7 @@ body.dashboard-products-page {
     margin: 12px 0 10px;
     font-size: clamp(1.8rem, 4vw, 3.15rem);
     line-height: 1.03;
-    letter-spacing: -0.055em;
+    letter-spacing: 0;
 }
 
 .dashboard-hero p {
@@ -84,48 +122,16 @@ body.dashboard-products-page {
     font-weight: 650;
 }
 
-.hero-status-card {
-    width: min(100%, 330px);
-    align-self: center;
-    padding: 18px;
-    border: 1px solid var(--line, rgba(255, 255, 255, 0.13));
-    border-radius: 22px;
-    background: rgba(255, 255, 255, 0.06);
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    backdrop-filter: blur(16px);
-}
-
-.theme-light .hero-status-card {
-    background: rgba(255, 255, 255, 0.76);
-}
-
-.hero-status-card i {
-    width: 48px;
-    height: 48px;
-    border-radius: 16px;
-    display: grid;
-    place-items: center;
-    color: #061117;
-    background: linear-gradient(135deg, var(--mint, #66d5c2), var(--cyan, #4aa3c7));
-    font-size: 1.28rem;
-}
-
-.hero-status-card strong,
-.hero-status-card span {
-    display: block;
-}
-
-.hero-status-card strong {
-    font-size: 0.98rem;
-}
-
-.hero-status-card span {
-    margin-top: 4px;
-    color: var(--muted, #9cb8c9);
-    font-size: 0.84rem;
-    line-height: 1.45;
+.dashboard-status-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
 }
 
 .dashboard-summary-grid {
@@ -138,8 +144,11 @@ body.dashboard-products-page {
 .summary-card,
 .dashboard-panel {
     border: 1px solid var(--line, rgba(255, 255, 255, 0.13));
-    background: var(--card, rgba(10, 27, 36, 0.82));
-    box-shadow: var(--dashboard-shadow);
+    background:
+        linear-gradient(135deg, color-mix(in srgb, var(--mint, #66d5c2) 7%, transparent), transparent 30%),
+        var(--surface, rgba(8, 27, 45, 0.78));
+    box-shadow: var(--shadow, var(--dashboard-shadow));
+    backdrop-filter: blur(18px);
 }
 
 .summary-card {
@@ -148,16 +157,6 @@ body.dashboard-products-page {
     min-height: 148px;
     position: relative;
     overflow: hidden;
-}
-
-.summary-card::after {
-    content: "";
-    position: absolute;
-    inset: auto -38px -48px auto;
-    width: 125px;
-    height: 125px;
-    border-radius: 50%;
-    background: rgba(79, 199, 177, 0.09);
 }
 
 .summary-card span,
@@ -180,7 +179,7 @@ body.dashboard-products-page {
     margin-top: 12px;
     font-size: clamp(1.7rem, 3vw, 2.4rem);
     line-height: 1;
-    letter-spacing: -0.045em;
+    letter-spacing: 0;
 }
 
 .summary-card small {
@@ -230,8 +229,8 @@ body.dashboard-products-page {
 }
 
 .dashboard-control-group select:focus {
-    border-color: rgba(79, 199, 177, 0.6);
-    box-shadow: 0 0 0 4px rgba(79, 199, 177, 0.12);
+    border-color: color-mix(in srgb, var(--cyan, #4aa3c7) 68%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--cyan, #4aa3c7) 15%, transparent);
 }
 
 .dashboard-control-group select option {
@@ -240,23 +239,23 @@ body.dashboard-products-page {
 
 .refresh-dashboard-button {
     min-height: 48px;
-    border: 0;
-    border-radius: 16px;
     padding: 0 18px;
-    color: #061117;
+    border-radius: 16px;
+    color: #03101d;
     background: linear-gradient(135deg, var(--mint, #66d5c2), var(--cyan, #4aa3c7));
-    font-weight: 950;
+    box-shadow: 0 16px 32px color-mix(in srgb, var(--cyan, #4aa3c7) 28%, transparent);
+    text-shadow: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 9px;
     cursor: pointer;
-    transition: transform 0.2s ease, filter 0.2s ease;
 }
 
 .refresh-dashboard-button:hover {
-    transform: translateY(-2px);
-    filter: brightness(1.04);
+    color: #03101d;
+    background: linear-gradient(135deg, var(--cyan, #4aa3c7), var(--mint, #66d5c2));
+    box-shadow: 0 20px 42px color-mix(in srgb, var(--cyan, #4aa3c7) 38%, transparent);
 }
 
 .dashboard-grid-main {
@@ -281,7 +280,7 @@ body.dashboard-products-page {
 .panel-heading h3 {
     margin: 6px 0 7px;
     font-size: 1.25rem;
-    letter-spacing: -0.035em;
+    letter-spacing: 0;
 }
 
 .panel-heading p {
@@ -315,7 +314,7 @@ body.dashboard-products-page {
 .chart-total-pill strong {
     margin-top: 5px;
     font-size: 1.55rem;
-    letter-spacing: -0.04em;
+    letter-spacing: 0;
 }
 
 .chart-wrapper {
@@ -417,11 +416,36 @@ body.dashboard-products-page {
 
 .theme-light .summary-card,
 .theme-light .dashboard-panel {
-    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(11, 31, 48, 0.12);
+    background:
+        linear-gradient(135deg, color-mix(in srgb, var(--mint, #66d5c2) 6%, transparent), transparent 34%),
+        var(--surface, rgba(255, 255, 255, 0.82));
+    box-shadow: var(--shadow, var(--dashboard-shadow));
 }
 
 .theme-light .dashboard-control-group select {
-    background: rgba(255, 255, 255, 0.76);
+    color: var(--text, #0b1f30);
+    background: rgba(255, 255, 255, 0.86);
+}
+
+.theme-light .refresh-dashboard-button {
+    color: #03101d;
+    border-color: color-mix(in srgb, var(--cyan, #4aa3c7) 58%, rgba(11, 31, 48, 0.1));
+    box-shadow: 0 14px 30px color-mix(in srgb, var(--cyan, #4aa3c7) 24%, transparent);
+}
+
+.theme-light .chart-total-pill,
+.theme-light .ranking-item {
+    background: rgba(11, 31, 48, 0.045);
+}
+
+.theme-light .dashboard-table th,
+.theme-light .dashboard-table td {
+    border-bottom-color: rgba(11, 31, 48, 0.1);
+}
+
+.theme-light .dashboard-table td {
+    color: var(--text, #0b1f30);
 }
 
 @media (max-width: 1240px) {
@@ -444,12 +468,7 @@ body.dashboard-products-page {
 
 @media (max-width: 780px) {
     .dashboard-hero {
-        flex-direction: column;
         padding: 22px;
-    }
-
-    .hero-status-card {
-        width: 100%;
     }
 
     .dashboard-summary-grid,
