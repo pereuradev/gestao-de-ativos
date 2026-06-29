@@ -94,8 +94,8 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
   <!-- Scripts da página. O defer evita bloquear o carregamento do HTML. -->
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
   <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
-  <script src="js/app-base.js?v=20260626-properties-sidebar" defer></script>
-  <script src="js/pagina-base.js?v=20260626-properties-sidebar" defer></script>
+  <script src="js/app-base.js?v=20260629-theme-action-label" defer></script>
+  <script src="js/pagina-base.js?v=20260629-theme-action-label" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
@@ -255,8 +255,8 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 
           <!-- Alterna o tema visual da página. A lógica fica no JavaScript. -->
           <button class="theme-toggle" id="themeToggle" type="button">
-            <i class="bi bi-moon-stars-fill"></i>
-            <span>Modo escuro</span>
+            <i class="bi bi-sun-fill"></i>
+            <span>Modo claro</span>
           </button>
         </div>
       </header>

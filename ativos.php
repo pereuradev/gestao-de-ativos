@@ -169,6 +169,7 @@ try {
             or lower(coalesce(a.status, '')) like lower(:busca)
             or lower(coalesce(a.marca, '')) like lower(:busca)
             or lower(coalesce(a.propriedade, '')) like lower(:busca)
+            or lower(coalesce(a.datasheet, '')) like lower(:busca)
             or lower(coalesce(c.nome, '')) like lower(:busca)
             or lower(coalesce(l.nome, '')) like lower(:busca)
         )";
@@ -223,6 +224,7 @@ try {
             a.status,
             a.marca,
             a.propriedade,
+            a.datasheet,
             a.criado_em,
             c.nome as categoria,
             l.nome as local
@@ -266,14 +268,14 @@ try {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <link rel="stylesheet" href="css/pagina-base.css?v=20260626-user-card" />
-  <link rel="stylesheet" href="css/ativos.css?v=20260626-pagination" />
+  <link rel="stylesheet" href="css/ativos.css?v=20260629-datasheet-column" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
 
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
   <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
-  <script src="js/app-base.js?v=20260626-properties-sidebar" defer></script>
+  <script src="js/app-base.js?v=20260629-theme-action-label" defer></script>
   <script src="js/ativos.js?v=20260626-pagination" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
@@ -405,8 +407,8 @@ try {
 
         <div class="topbar-actions">
           <button class="theme-toggle" id="themeToggle" type="button">
-            <i class="bi bi-moon-stars-fill"></i>
-            <span>Modo escuro</span>
+            <i class="bi bi-sun-fill"></i>
+            <span>Modo claro</span>
           </button>
         </div>
       </header>
@@ -551,6 +553,7 @@ try {
                 <th>N&ordm; de s&eacute;rie</th>
                 <th>Status</th>
                 <th>Local</th>
+                <th>Datasheet</th>
                 <th>Criado em</th>
               </tr>
             </thead>
@@ -563,10 +566,13 @@ try {
                 $status = (string) ($ativo["status"] ?? "--");
                 $marca = (string) ($ativo["marca"] ?? "");
                 $propriedade = (string) ($ativo["propriedade"] ?? "");
+                $datasheet = trim((string) ($ativo["datasheet"] ?? ""));
+                $datasheetEhUrl = filter_var($datasheet, FILTER_VALIDATE_URL)
+                  && preg_match("#^https?://#i", $datasheet);
                 $categoria = (string) ($ativo["categoria"] ?? "Sem categoria");
                 $local = (string) ($ativo["local"] ?? "");
                 $criadoEm = formatarDataAtivo((string) ($ativo["criado_em"] ?? ""));
-                $searchData = strtolower(trim($nome . " " . $numeroSerie . " " . $status . " " . $marca . " " . $propriedade . " " . $categoria . " " . $local));
+                $searchData = strtolower(trim($nome . " " . $numeroSerie . " " . $status . " " . $marca . " " . $propriedade . " " . $datasheet . " " . $categoria . " " . $local));
                 ?>
 
                 <tr class="registration-row asset-row" data-status="<?php echo e(strtolower($status)); ?>"
@@ -589,6 +595,23 @@ try {
                   </td>
 
                   <td data-label="Local"><?php echo e($local !== "" ? $local : "--"); ?></td>
+
+                  <td data-label="Datasheet">
+                    <?php if ($datasheet === ""): ?>
+                      --
+                    <?php elseif ($datasheetEhUrl): ?>
+                      <a class="asset-datasheet-link" href="<?php echo e($datasheet); ?>" target="_blank"
+                        rel="noopener noreferrer">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                        <span>Abrir</span>
+                      </a>
+                    <?php else: ?>
+                      <span class="asset-datasheet-text" title="<?php echo e($datasheet); ?>">
+                        <?php echo e($datasheet); ?>
+                      </span>
+                    <?php endif; ?>
+                  </td>
+
                   <td data-label="Criado em"><?php echo e($criadoEm); ?></td>
                 </tr>
               <?php endforeach; ?>

@@ -216,11 +216,11 @@ function applyTheme(theme) {
   const label = themeToggle.querySelector("span");
 
   if (icon) {
-    icon.className = isDark ? "bi bi-moon-stars-fill" : "bi bi-sun-fill";
+    icon.className = isDark ? "bi bi-sun-fill" : "bi bi-moon-stars-fill";
   }
 
   if (label) {
-    label.textContent = isDark ? "Modo escuro" : "Modo claro";
+    label.textContent = isDark ? "Modo claro" : "Modo escuro";
   }
 }
 
