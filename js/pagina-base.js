@@ -259,6 +259,8 @@ function setupSidebar() {
       }
     });
   });
+
+  window.setupSidebarResize?.();
 }
 
 /**

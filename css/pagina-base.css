@@ -109,6 +109,21 @@ body.theme-dark {
     linear-gradient(135deg, #03101d 0%, #061829 44%, #08233a 100%);
 }
 
+body.sidebar-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+body.sidebar-resizing .sidebar,
+body.sidebar-resizing .main-area {
+  transition: none !important;
+}
+
+body.sidebar-resizing iframe,
+body.sidebar-resizing canvas {
+  pointer-events: none;
+}
+
 body.theme-light {
   /* Variaveis do modo claro com contraste mais leve. */
   --text: #0b1f30;
@@ -250,12 +265,65 @@ button {
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: var(--shadow);
   backdrop-filter: blur(24px);
-  transition: transform var(--transition);
+  transition:
+    width var(--theme-transition),
+    transform var(--transition),
+    background var(--theme-transition),
+    border-color var(--theme-transition),
+    box-shadow var(--theme-transition);
 }
 
 .theme-light .sidebar {
   background: rgba(255, 255, 255, 0.88);
   border-right-color: rgba(11, 31, 48, 0.1);
+}
+
+.sidebar-resize-handle {
+  position: absolute;
+  top: 0;
+  right: calc(var(--sidebar-resize-width) / -2);
+  bottom: 0;
+  z-index: 3;
+  width: var(--sidebar-resize-width);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.sidebar-resize-handle::before {
+  content: "";
+  width: 3px;
+  height: 54px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cyan) 35%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--mint) 18%, transparent),
+    0 14px 32px rgba(3, 16, 29, 0.26);
+  opacity: 0;
+  transform: scaleY(0.72);
+  transition:
+    opacity var(--transition),
+    transform var(--transition),
+    background var(--transition);
+}
+
+.sidebar:hover .sidebar-resize-handle::before,
+.sidebar-resize-handle:focus-visible::before,
+body.sidebar-resizing .sidebar-resize-handle::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.sidebar-resize-handle:hover::before,
+.sidebar-resize-handle:focus-visible::before,
+body.sidebar-resizing .sidebar-resize-handle::before {
+  background: linear-gradient(180deg, var(--mint), var(--cyan));
+}
+
+.sidebar-resize-handle:focus-visible {
+  outline: 0;
 }
 
 .sidebar-header {
@@ -578,6 +646,9 @@ body.theme-light .sidebar-user-info small {
   min-width: 0;
   margin-left: var(--sidebar-width);
   padding: 24px;
+  transition:
+    margin-left var(--theme-transition),
+    padding var(--transition);
 }
 
 .topbar {
@@ -2145,6 +2216,10 @@ body.theme-dark .records-actions select option:checked {
 @media (max-width: 920px) {
   .sidebar {
     transform: translateX(-105%);
+  }
+
+  .sidebar-resize-handle {
+    display: none;
   }
 
   body.sidebar-open .sidebar {

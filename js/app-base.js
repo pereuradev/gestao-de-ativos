@@ -454,6 +454,7 @@ Object.assign(window, {
   openSidebar,
   closeSidebar,
   applySidebarWidth,
+  setupSidebarResize,
   setupNavGroups,
   setInputValue,
   setText,

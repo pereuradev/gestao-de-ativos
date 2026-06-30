@@ -214,7 +214,7 @@ $codigoInternoEscapado = e($codigoInterno);
 
 
   <!-- CSS separado por responsabilidade: base do sistema, efeitos gerais e ajustes específicos desta página. -->
-  <link rel="stylesheet" href="css/pagina-base.css?v=20260626-user-card" />
+  <link rel="stylesheet" href="css/pagina-base.css?v=20260630-sidebar-resize" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
   <link rel="stylesheet" href="css/configuracoes.css?v=20260624-settings-panel" />
@@ -224,7 +224,7 @@ $codigoInternoEscapado = e($codigoInterno);
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
   <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
-  <script src="js/app-base.js?v=20260629-theme-action-label" defer></script>
+  <script src="js/app-base.js?v=20260630-sidebar-resize" defer></script>
   <script src="js/configuracoes.js?v=20260626-accent-fix" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>

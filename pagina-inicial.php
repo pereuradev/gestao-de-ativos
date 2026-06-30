@@ -83,7 +83,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <!-- Arquivos CSS da página -->
-  <link rel="stylesheet" href="css/pagina-base.css?v=20260626-user-card" />
+  <link rel="stylesheet" href="css/pagina-base.css?v=20260630-sidebar-resize" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
 
@@ -94,8 +94,8 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
   <!-- Scripts da página. O defer evita bloquear o carregamento do HTML. -->
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
   <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
-  <script src="js/app-base.js?v=20260629-theme-action-label" defer></script>
-  <script src="js/pagina-base.js?v=20260629-theme-action-label" defer></script>
+  <script src="js/app-base.js?v=20260630-sidebar-resize" defer></script>
+  <script src="js/pagina-base.js?v=20260630-sidebar-resize" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
