@@ -604,10 +604,7 @@ $codigoInternoEscapado = e($codigoInterno);
             <div><span>Navegador</span><strong id="diagBrowser">--</strong></div>
             <div><span>Sistema operacional</span><strong id="diagOs">--</strong></div>
             <div><span>Largura da tela</span><strong id="diagWidth">--</strong></div>
-            <div><span>Status</span><strong id="diagOnline">--</strong></div>
-            <div><span>Idioma</span><strong id="diagLanguage">--</strong></div>
             <div><span>Data/hora local</span><strong id="diagTime">--</strong></div>
-            <div><span>Vers&atilde;o</span><strong>TI TECH Assets v1.4.0</strong></div>
           </div>
         </article>
       </section>
