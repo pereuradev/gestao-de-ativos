@@ -1,29 +1,29 @@
 :root {
-    /* Tokens proprios do dashboard. O restante vem do pagina-base.css. */
-    --dashboard-card-radius: 24px;
-    --dashboard-shadow: 0 22px 65px rgba(0, 0, 0, 0.24);
+  /* Tokens proprios do dashboard. O restante vem do pagina-base.css. */
+  --dashboard-card-radius: 24px;
+  --dashboard-shadow: 0 22px 65px rgba(0, 0, 0, 0.24);
 }
 
 /* A pagina usa o mesmo fundo e as mesmas cores globais das outras telas. */
 body.dashboard-products-page {
-    min-height: 100vh;
-    background: var(--page-bg);
-    color: var(--text, #f6fbff);
-    font-family: "Inter", var(--font-main, system-ui), sans-serif;
+  min-height: 100vh;
+  background: var(--page-bg);
+  color: var(--text, #f6fbff);
+  font-family: "Inter", var(--font-main, system-ui), sans-serif;
 }
 
 /* No modo claro, a sombra fica mais leve para nao pesar sobre o fundo claro. */
 body.theme-light.dashboard-products-page {
-    --dashboard-shadow: 0 18px 48px rgba(9, 31, 48, 0.11);
-    background: var(--page-bg);
+  --dashboard-shadow: 0 18px 48px rgba(9, 31, 48, 0.11);
+  background: var(--page-bg);
 }
 
 .dashboard-products-page .app-main {
-    padding-bottom: 42px;
+  padding-bottom: 42px;
 }
 
 .dashboard-topbar {
-    align-items: center;
+  align-items: center;
 }
 
 /* Titulos e controles do dashboard usam Sora para destacar a area analitica. */
@@ -35,497 +35,574 @@ body.theme-light.dashboard-products-page {
 .dashboard-products-page .ranking-item-head,
 .dashboard-products-page button,
 .dashboard-products-page select {
-    font-family: "Sora", "Inter", system-ui, sans-serif;
+  font-family: "Sora", "Inter", system-ui, sans-serif;
 }
 
 .dashboard-topbar h1 {
-    line-height: 1.15;
+  line-height: 1.15;
 }
 
 /* Botao manual de atualizacao. A cor vem da preferencia de destaque do usuario. */
 .refresh-dashboard-button {
-    min-height: 46px;
-    border: 1px solid color-mix(in srgb, var(--cyan, #4aa3c7) 42%, var(--line, rgba(255, 255, 255, 0.13)));
-    border-radius: 14px;
-    font-size: 0.84rem;
-    font-weight: 800;
-    letter-spacing: 0;
-    transition:
-        transform 0.2s ease,
-        border-color 0.2s ease,
-        box-shadow 0.2s ease,
-        background 0.2s ease,
-        color 0.2s ease;
+  min-height: 46px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--cyan, #4aa3c7) 42%,
+      var(--line, rgba(255, 255, 255, 0.13))
+    );
+  border-radius: 14px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .refresh-dashboard-button:hover {
-    transform: translateY(-2px);
-    border-color: color-mix(in srgb, var(--cyan, #4aa3c7) 72%, var(--line, rgba(255, 255, 255, 0.13)));
-    box-shadow: 0 16px 34px color-mix(in srgb, var(--cyan, #4aa3c7) 22%, transparent);
+  transform: translateY(-2px);
+  border-color: color-mix(
+    in srgb,
+    var(--cyan, #4aa3c7) 72%,
+    var(--line, rgba(255, 255, 255, 0.13))
+  );
+  box-shadow: 0 16px 34px
+    color-mix(in srgb, var(--cyan, #4aa3c7) 22%, transparent);
 }
 
 .refresh-dashboard-button i {
-    font-size: 0.94rem;
+  font-size: 0.94rem;
 }
 
 /* Typewriter precisa de largura minima para reduzir o pulo visual durante a digitacao. */
 .dashboard-hero .typewriter-heading {
-    min-width: min(var(--typewriter-min, 38ch), 100%);
+  min-width: min(var(--typewriter-min, 38ch), 100%);
 }
 
-.dashboard-hero .typewriter-heading-cursor {
-    height: 0.86em;
-    margin-left: 0.12em;
-}
-
-/* Hero principal: segue o padrao dos cards do sistema, com um toque sutil de cor. */
+/* Hero principal: banner visual do dashboard com imagem propria e overlay para leitura. */
 .dashboard-hero {
-    margin-top: 18px;
-    padding: 28px;
-    border: 1px solid var(--line, rgba(255, 255, 255, 0.13));
-    border-radius: 30px;
-    background:
-        linear-gradient(135deg, color-mix(in srgb, var(--mint, #66d5c2) 10%, transparent), transparent 32%),
-        var(--surface, rgba(8, 27, 45, 0.78));
-    box-shadow: var(--shadow, var(--dashboard-shadow));
-    backdrop-filter: blur(18px);
-    overflow: hidden;
-    position: relative;
+  margin-top: 18px;
+  min-height: 300px;
+  padding: 28px;
+  border: 0;
+  border-radius: 30px;
+  background-image: url("../assets/fundo-dashboard.png");
+  background-position: center;
+  background-attachment: scroll;
+  background-repeat: no-repeat;
+  background-size: cover;
+  overflow: hidden;
+  position: relative;
+  isolation: isolate;
 }
 
-/* Mantem o hero claro com superficie limpa, sem perder a cor de destaque. */
+.dashboard-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  pointer-events: none;
+}
+
+/* Mantem o hero claro com leitura forte, sem apagar totalmente a arte de dados. */
 .theme-light .dashboard-hero {
-    background:
-        linear-gradient(135deg, color-mix(in srgb, var(--mint, #66d5c2) 8%, transparent), transparent 34%),
-        var(--surface, rgba(255, 255, 255, 0.82));
+  border: 0;
+  box-shadow:
+    0 22px 70px rgba(9, 31, 48, 0.11),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.62);
+}
+
+.theme-light .dashboard-hero::before {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(244, 249, 251, 0.98) 0%,
+      rgba(234, 243, 247, 0.9) 38%,
+      rgba(221, 235, 241, 0.58) 68%,
+      rgba(6, 24, 41, 0.34) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(244, 249, 251, 0.82) 0%,
+      rgba(244, 249, 251, 0.12) 34%,
+      rgba(244, 249, 251, 0.16) 66%,
+      rgba(244, 249, 251, 0.84) 100%
+    );
 }
 
 .dashboard-hero > * {
-    position: relative;
-    z-index: 1;
+  position: relative;
+  z-index: 1;
 }
 
 .eyebrow {
-    color: var(--mint, #66d5c2);
-    font-size: 0.78rem;
-    font-weight: 900;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+  color: var(--mint, #66d5c2);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .dashboard-hero h2 {
-    max-width: 760px;
-    margin: 12px 0 10px;
-    font-size: clamp(1.8rem, 4vw, 3.15rem);
-    line-height: 1.03;
-    letter-spacing: 0;
+  max-width: 760px;
+  margin: 12px 0 10px;
+  color: #f6fbff;
+  font-size: clamp(1.8rem, 4vw, 3.15rem);
+  line-height: 1.03;
+  letter-spacing: 0;
+  text-shadow: 0 10px 28px rgba(3, 16, 29, 0.52);
 }
 
 .dashboard-hero p {
-    max-width: 680px;
-    margin: 0;
-    color: var(--muted, #9cb8c9);
-    font-size: 1.02rem;
-    line-height: 1.65;
-    font-weight: 650;
+  max-width: 680px;
+  margin: 0;
+  color: rgba(246, 251, 255, 0.84);
+  font-size: 1.02rem;
+  line-height: 1.65;
+  font-weight: 650;
+  text-shadow: 0 8px 22px rgba(3, 16, 29, 0.42);
+}
+
+.theme-light .dashboard-hero h2 {
+  color: #0b1f30;
+  text-shadow: 0 10px 28px rgba(255, 255, 255, 0.5);
+}
+
+.theme-light .dashboard-hero p {
+  color: #315369;
+  text-shadow: 0 8px 22px rgba(255, 255, 255, 0.55);
 }
 
 /* Texto usado por leitores de tela; fica invisivel sem sair da arvore de acessibilidade. */
 .dashboard-status-text {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    border: 0;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 /* Cards superiores: quatro indicadores rapidos antes dos filtros. */
 .dashboard-summary-grid {
-    margin-top: 22px;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
 }
 
 /* Superficies principais do dashboard, compartilhadas por cards e paineis. */
 .summary-card,
 .dashboard-panel {
-    border: 1px solid var(--line, rgba(255, 255, 255, 0.13));
-    background:
-        linear-gradient(135deg, color-mix(in srgb, var(--mint, #66d5c2) 7%, transparent), transparent 30%),
-        var(--surface, rgba(8, 27, 45, 0.78));
-    box-shadow: var(--shadow, var(--dashboard-shadow));
-    backdrop-filter: blur(18px);
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.13));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--mint, #66d5c2) 7%, transparent),
+    transparent 30%
+  );
 }
 
 .summary-card {
-    padding: 20px;
-    border-radius: 22px;
-    min-height: 148px;
-    position: relative;
-    overflow: hidden;
+  padding: 20px;
+  border-radius: 22px;
+  min-height: 148px;
+  position: relative;
+  overflow: hidden;
 }
 
 .summary-card span,
 .summary-card strong,
 .summary-card small {
-    position: relative;
-    z-index: 1;
-    display: block;
+  position: relative;
+  z-index: 1;
+  display: block;
 }
 
 .summary-card span {
-    color: var(--muted, #9cb8c9);
-    font-size: 0.8rem;
-    font-weight: 900;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+  color: var(--muted, #9cb8c9);
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .summary-card strong {
-    margin-top: 12px;
-    font-size: clamp(1.7rem, 3vw, 2.4rem);
-    line-height: 1;
-    letter-spacing: 0;
+  margin-top: 12px;
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+  line-height: 1;
+  letter-spacing: 0;
 }
 
 .summary-card small {
-    margin-top: 11px;
-    color: var(--muted, #9cb8c9);
-    line-height: 1.45;
-    font-weight: 650;
+  margin-top: 11px;
+  color: var(--muted, #9cb8c9);
+  line-height: 1.45;
+  font-weight: 650;
 }
 
 .dashboard-panel {
-    border-radius: var(--dashboard-card-radius);
-    padding: 22px;
+  border-radius: var(--dashboard-card-radius);
+  padding: 22px;
 }
 
 /* Painel de filtros. A grade mantem os selects alinhados em desktop. */
 .chart-control-panel {
-    margin-top: 22px;
-    display: grid;
-    grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) minmax(180px, 0.7fr) minmax(180px, 0.7fr) auto;
-    align-items: end;
-    gap: 14px;
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 1fr) minmax(220px, 1fr) minmax(180px, 0.7fr)
+    minmax(180px, 0.7fr) auto;
+  align-items: end;
+  gap: 14px;
 }
 
 .dashboard-control-group {
-    display: grid;
-    gap: 8px;
+  display: grid;
+  gap: 8px;
 }
 
 .dashboard-control-group label {
-    color: var(--muted, #9cb8c9);
-    font-size: 0.78rem;
-    font-weight: 900;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+  color: var(--muted, #9cb8c9);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 /* Selects seguem o tema atual e recebem destaque apenas no foco. */
 .dashboard-control-group select {
-    width: 100%;
-    min-height: 48px;
-    border: 1px solid var(--line, rgba(255, 255, 255, 0.13));
-    border-radius: 16px;
-    padding: 0 14px;
-    color: var(--text, #f6fbff);
-    background: var(--soft, rgba(255, 255, 255, 0.06));
-    font-weight: 800;
-    outline: none;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.13));
+  border-radius: 16px;
+  padding: 0 14px;
+  color: var(--text, #f6fbff);
+  background: var(--soft, rgba(255, 255, 255, 0.06));
+  font-weight: 800;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .dashboard-control-group select:focus {
-    border-color: color-mix(in srgb, var(--cyan, #4aa3c7) 68%, transparent);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--cyan, #4aa3c7) 15%, transparent);
+  border-color: color-mix(in srgb, var(--cyan, #4aa3c7) 68%, transparent);
+  box-shadow: 0 0 0 4px
+    color-mix(in srgb, var(--cyan, #4aa3c7) 15%, transparent);
 }
 
 .dashboard-control-group select option {
-    color: #0b1720;
+  color: #0b1720;
 }
 
 .refresh-dashboard-button {
-    min-height: 48px;
-    padding: 0 18px;
-    border-radius: 16px;
-    color: #03101d;
-    background: linear-gradient(135deg, var(--mint, #66d5c2), var(--cyan, #4aa3c7));
-    box-shadow: 0 16px 32px color-mix(in srgb, var(--cyan, #4aa3c7) 28%, transparent);
-    text-shadow: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 9px;
-    cursor: pointer;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 16px;
+  color: #03101d;
+  background: linear-gradient(
+    135deg,
+    var(--mint, #66d5c2),
+    var(--cyan, #4aa3c7)
+  );
+  box-shadow: 0 16px 32px
+    color-mix(in srgb, var(--cyan, #4aa3c7) 28%, transparent);
+  text-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  cursor: pointer;
 }
 
 .refresh-dashboard-button:hover {
-    color: #03101d;
-    background: linear-gradient(135deg, var(--cyan, #4aa3c7), var(--mint, #66d5c2));
-    box-shadow: 0 20px 42px color-mix(in srgb, var(--cyan, #4aa3c7) 38%, transparent);
+  color: #03101d;
+  background: linear-gradient(
+    135deg,
+    var(--cyan, #4aa3c7),
+    var(--mint, #66d5c2)
+  );
+  box-shadow: 0 20px 42px
+    color-mix(in srgb, var(--cyan, #4aa3c7) 38%, transparent);
 }
 
 /* Layout principal: grafico maior e leitura rapida lateral. */
 .dashboard-grid-main {
-    margin-top: 22px;
-    display: grid;
-    grid-template-columns: minmax(0, 1.7fr) minmax(310px, 0.8fr);
-    gap: 22px;
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(310px, 0.8fr);
+  gap: 22px;
 }
 
 /* Cabecalho interno dos paineis, com titulo e metricas auxiliares. */
 .panel-heading {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 18px;
-    margin-bottom: 18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
 }
 
 .panel-heading.compact {
-    margin-bottom: 14px;
+  margin-bottom: 14px;
 }
 
 .panel-heading h3 {
-    margin: 6px 0 7px;
-    font-size: 1.25rem;
-    letter-spacing: 0;
+  margin: 6px 0 7px;
+  font-size: 1.25rem;
+  letter-spacing: 0;
 }
 
 .panel-heading p {
-    margin: 0;
-    color: var(--muted, #9cb8c9);
-    line-height: 1.5;
-    font-weight: 650;
+  margin: 0;
+  color: var(--muted, #9cb8c9);
+  line-height: 1.5;
+  font-weight: 650;
 }
 
 /* Selo numerico no canto do grafico, usado para total analisado. */
 .chart-total-pill {
-    min-width: 155px;
-    padding: 13px 15px;
-    border: 1px solid var(--line, rgba(255, 255, 255, 0.13));
-    border-radius: 18px;
-    background: var(--soft, rgba(255, 255, 255, 0.06));
-    text-align: right;
+  min-width: 155px;
+  padding: 13px 15px;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.13));
+  border-radius: 18px;
+  background: var(--soft, rgba(255, 255, 255, 0.06));
+  text-align: right;
 }
 
 .chart-total-pill span,
 .chart-total-pill strong {
-    display: block;
+  display: block;
 }
 
 .chart-total-pill span {
-    color: var(--muted, #9cb8c9);
-    font-size: 0.75rem;
-    font-weight: 900;
-    text-transform: uppercase;
+  color: var(--muted, #9cb8c9);
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .chart-total-pill strong {
-    margin-top: 5px;
-    font-size: 1.55rem;
-    letter-spacing: 0;
+  margin-top: 5px;
+  font-size: 1.55rem;
+  letter-spacing: 0;
 }
 
 /* Altura fixa evita que o grafico encolha ou cresca ao trocar o tipo. */
 .chart-wrapper {
-    width: 100%;
-    height: 430px;
-    position: relative;
+  width: 100%;
+  height: 430px;
+  position: relative;
 }
 
 /* Lista lateral com ranking dos dados visiveis no grafico. */
 .ranking-list {
-    display: grid;
-    gap: 13px;
+  display: grid;
+  gap: 13px;
 }
 
 .ranking-item {
-    padding: 14px;
-    border: 1px solid var(--line, rgba(255, 255, 255, 0.13));
-    border-radius: 18px;
-    background: var(--soft, rgba(255, 255, 255, 0.06));
+  padding: 14px;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.13));
+  border-radius: 18px;
+  background: var(--soft, rgba(255, 255, 255, 0.06));
 }
 
 .ranking-item-head {
-    display: flex;
-    justify-content: space-between;
-    gap: 14px;
-    color: var(--text, #f6fbff);
-    font-weight: 850;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  color: var(--text, #f6fbff);
+  font-weight: 850;
 }
 
 .ranking-item-head span {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ranking-item-head strong {
-    color: var(--mint, #66d5c2);
+  color: var(--mint, #66d5c2);
 }
 
 /* Barra de progresso simples para comparar participacao entre itens. */
 .ranking-progress {
-    height: 8px;
-    margin: 10px 0 8px;
-    border-radius: 999px;
-    background: rgba(148, 163, 184, 0.18);
-    overflow: hidden;
+  height: 8px;
+  margin: 10px 0 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.18);
+  overflow: hidden;
 }
 
 .ranking-progress span {
-    display: block;
-    height: 100%;
-    border-radius: inherit;
-    background: linear-gradient(90deg, var(--mint, #66d5c2), var(--cyan, #4aa3c7));
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    var(--mint, #66d5c2),
+    var(--cyan, #4aa3c7)
+  );
 }
 
 .ranking-item small,
 .ranking-empty {
-    color: var(--muted, #9cb8c9);
-    font-weight: 650;
+  color: var(--muted, #9cb8c9);
+  font-weight: 650;
 }
 
 /* Tabela de apoio para leitura detalhada dos mesmos dados do ranking. */
 .table-panel {
-    margin-top: 22px;
+  margin-top: 22px;
 }
 
 .dashboard-table-wrap {
-    width: 100%;
-    overflow-x: auto;
+  width: 100%;
+  overflow-x: auto;
 }
 
 .dashboard-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 620px;
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 620px;
 }
 
 .dashboard-table th,
 .dashboard-table td {
-    padding: 15px 14px;
-    border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.13));
-    text-align: left;
+  padding: 15px 14px;
+  border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.13));
+  text-align: left;
 }
 
 .dashboard-table th {
-    color: var(--muted, #9cb8c9);
-    font-size: 0.76rem;
-    font-weight: 950;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+  color: var(--muted, #9cb8c9);
+  font-size: 0.76rem;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .dashboard-table td {
-    color: var(--text, #f6fbff);
-    font-weight: 750;
+  color: var(--text, #f6fbff);
+  font-weight: 750;
 }
 
 .dashboard-table tr:last-child td {
-    border-bottom: 0;
+  border-bottom: 0;
 }
 
 /* Ajustes especificos do tema claro para manter contraste e leveza. */
 .theme-light .summary-card,
 .theme-light .dashboard-panel {
-    border-color: rgba(11, 31, 48, 0.12);
-    background:
-        linear-gradient(135deg, color-mix(in srgb, var(--mint, #66d5c2) 6%, transparent), transparent 34%),
-        var(--surface, rgba(255, 255, 255, 0.82));
-    box-shadow: var(--shadow, var(--dashboard-shadow));
+  border-color: rgba(11, 31, 48, 0.12);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--mint, #66d5c2) 6%, transparent),
+      transparent 34%
+    ),
+    var(--surface, rgba(255, 255, 255, 0.82));
+  box-shadow: var(--shadow, var(--dashboard-shadow));
 }
 
 .theme-light .dashboard-control-group select {
-    color: var(--text, #0b1f30);
-    background: rgba(255, 255, 255, 0.86);
+  color: var(--text, #0b1f30);
+  background: rgba(255, 255, 255, 0.86);
 }
 
 .theme-light .refresh-dashboard-button {
-    color: #03101d;
-    border-color: color-mix(in srgb, var(--cyan, #4aa3c7) 58%, rgba(11, 31, 48, 0.1));
-    box-shadow: 0 14px 30px color-mix(in srgb, var(--cyan, #4aa3c7) 24%, transparent);
+  color: #03101d;
+  border-color: color-mix(
+    in srgb,
+    var(--cyan, #4aa3c7) 58%,
+    rgba(11, 31, 48, 0.1)
+  );
+  box-shadow: 0 14px 30px
+    color-mix(in srgb, var(--cyan, #4aa3c7) 24%, transparent);
 }
 
 .theme-light .chart-total-pill,
 .theme-light .ranking-item {
-    background: rgba(11, 31, 48, 0.045);
+  background: rgba(11, 31, 48, 0.045);
 }
 
 .theme-light .dashboard-table th,
 .theme-light .dashboard-table td {
-    border-bottom-color: rgba(11, 31, 48, 0.1);
+  border-bottom-color: rgba(11, 31, 48, 0.1);
 }
 
 .theme-light .dashboard-table td {
-    color: var(--text, #0b1f30);
+  color: var(--text, #0b1f30);
 }
 
 /* Em telas medias, o dashboard deixa de tentar manter quatro colunas. */
 @media (max-width: 1240px) {
-    .dashboard-summary-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+  .dashboard-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
-    .chart-control-panel {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+  .chart-control-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
-    .refresh-dashboard-button {
-        width: 100%;
-    }
+  .refresh-dashboard-button {
+    width: 100%;
+  }
 
-    .dashboard-grid-main {
-        grid-template-columns: 1fr;
-    }
+  .dashboard-grid-main {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Mobile: filtros e cards empilham para evitar textos espremidos. */
 @media (max-width: 780px) {
-    .dashboard-hero {
-        padding: 22px;
-    }
+  .dashboard-hero {
+    padding: 22px;
+  }
 
-    .dashboard-summary-grid,
-    .chart-control-panel {
-        grid-template-columns: 1fr;
-    }
+  .dashboard-summary-grid,
+  .chart-control-panel {
+    grid-template-columns: 1fr;
+  }
 
-    .panel-heading {
-        flex-direction: column;
-    }
+  .panel-heading {
+    flex-direction: column;
+  }
 
-    .chart-total-pill {
-        width: 100%;
-        text-align: left;
-    }
+  .chart-total-pill {
+    width: 100%;
+    text-align: left;
+  }
 
-    .chart-wrapper {
-        height: 340px;
-    }
+  .chart-wrapper {
+    height: 340px;
+  }
 }
 
 /* Ajustes finais para celulares pequenos. */
 @media (max-width: 520px) {
-    .dashboard-panel,
-    .summary-card,
-    .dashboard-hero {
-        border-radius: 20px;
-    }
+  .dashboard-panel,
+  .summary-card,
+  .dashboard-hero {
+    border-radius: 20px;
+  }
 
-    .dashboard-hero h2 {
-        font-size: 1.85rem;
-    }
+  .dashboard-hero h2 {
+    font-size: 1.85rem;
+  }
 
-    .chart-wrapper {
-        height: 300px;
-    }
+  .chart-wrapper {
+    height: 300px;
+  }
 }
