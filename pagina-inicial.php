@@ -70,7 +70,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
     content="P&aacute;gina inicial do portal interno de gest&atilde;o de ativos da TI TECH Solutions" />
 
   <!-- Ícone exibido na aba do navegador -->
-  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260630-ti-favicon" />
 
   <!-- Otimiza a conexão com o Google Fonts antes de carregar a fonte -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />

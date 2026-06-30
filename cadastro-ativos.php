@@ -165,14 +165,14 @@ try {
 
   <title>Cadastro de ativos | TI TECH Solutions</title>
   <meta name="description" content="Cadastro de novos ativos em estoque conectado ao banco da TI TECH Solutions" />
-  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260630-ti-favicon" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-system-cursor" />
-  <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260619-select-options" />
+  <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260630-clean-form-card" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />

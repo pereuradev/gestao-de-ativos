@@ -64,14 +64,7 @@ body.theme-light {
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 28%),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0,
-      transparent 62px,
-      rgba(82, 214, 229, 0.045) 63px,
-      transparent 64px
-    );
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 28%);
   opacity: 0.82;
 }
 

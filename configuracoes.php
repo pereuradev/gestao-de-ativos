@@ -204,7 +204,7 @@ $codigoInternoEscapado = e($codigoInterno);
   <meta name="description"
     content="Painel de configura&ccedil;&otilde;es de conta, seguran&ccedil;a e prefer&ecirc;ncias do portal TI TECH Solutions" />
   <!-- Ícone da aba do navegador. -->
-  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260630-ti-favicon" />
 
   <!-- Pré-conexão e fonte principal usada na interface. -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -217,7 +217,7 @@ $codigoInternoEscapado = e($codigoInterno);
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-system-cursor" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
-  <link rel="stylesheet" href="css/configuracoes.css?v=20260630-profile-card-clean" />
+  <link rel="stylesheet" href="css/configuracoes.css?v=20260630-clean-hero" />
 
 
   <!-- Scripts carregados com defer para não bloquear a montagem do HTML. -->

@@ -130,14 +130,14 @@ try {
   <title>Cadastro de localiza&ccedil;&otilde;es | TI TECH Solutions</title>
   <meta name="description"
     content="Cadastro de localiza&ccedil;&otilde;es para organizar os ativos da TI TECH Solutions" />
-  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260630-ti-favicon" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-system-cursor" />
-  <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260619-select-options" />
+  <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260630-clean-form-card" />
   <link rel="stylesheet" href="css/locais.css?v=20260626-clear-button" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
@@ -348,10 +348,6 @@ try {
                 bloqueia duplicidades por nome.</span>
             </div>
 
-            <div class="form-badge" aria-label="Padronizacao">
-              <i class="bi bi-shield-check"></i>
-              Padronizado
-            </div>
           </div>
 
           <form id="locationForm" class="asset-form enhanced-asset-form" action="Backend/cadastrar-local.php"

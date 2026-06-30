@@ -128,7 +128,7 @@ try {
 
   <title>Funcion&aacute;rios | TI TECH Solutions</title>
   <meta name="description" content="Lista de funcion&aacute;rios cadastrados no portal interno da TI TECH Solutions" />
-  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260630-ti-favicon" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
