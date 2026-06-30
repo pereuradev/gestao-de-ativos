@@ -6,8 +6,10 @@ const TYPEWRITER_DEFAULT_PHRASES = [
   "Dados confiaveis para a operacao.",
   "Controle simples, rapido e seguro.",
 ];
+const typewriterTimers = new WeakMap();
 
 document.addEventListener("DOMContentLoaded", initTypewriterLoops);
+window.addEventListener("titech:motion-change", initTypewriterLoops);
 
 function initTypewriterLoops() {
   // Procura todos os elementos marcados para animacao de escrita.
@@ -15,9 +17,7 @@ function initTypewriterLoops() {
 
   if (!elements.length) return;
 
-  const prefersReducedMotion = window.matchMedia(
-    "(prefers-reduced-motion: reduce)",
-  ).matches;
+  const shouldReduceMotion = isReducedMotionActive();
 
   elements.forEach((element) => {
     // Cada elemento pode ter suas proprias frases em data-typewriter-phrases.
@@ -25,11 +25,11 @@ function initTypewriterLoops() {
 
     if (!phrases.length) return;
 
+    stopTypewriter(element);
     stabilizeTypewriterElement(element, phrases);
 
-    if (prefersReducedMotion || phrases.length === 1) {
-      // Respeita usuarios que preferem menos movimento.
-      element.textContent = phrases[0];
+    if (shouldReduceMotion || phrases.length === 1) {
+      setStaticTypewriterText(element, phrases);
       return;
     }
 
@@ -103,26 +103,66 @@ function runTypewriter(element, phrases) {
 
     if (!isDeleting && letterIndex < phrase.length) {
       letterIndex += 1;
-      setTimeout(write, typeDelay);
+      scheduleTypewriterStep(element, write, typeDelay);
       return;
     }
 
     if (!isDeleting) {
       isDeleting = true;
-      setTimeout(write, readDelay);
+      scheduleTypewriterStep(element, write, readDelay);
       return;
     }
 
     if (letterIndex > 0) {
       letterIndex -= 1;
-      setTimeout(write, deleteDelay);
+      scheduleTypewriterStep(element, write, deleteDelay);
       return;
     }
 
     isDeleting = false;
     phraseIndex = (phraseIndex + 1) % phrases.length;
-    setTimeout(write, nextDelay);
+    scheduleTypewriterStep(element, write, nextDelay);
   };
 
   write();
+}
+
+function setStaticTypewriterText(element, phrases) {
+  // Com menos movimento, o titulo fica legivel e nao simula digitacao.
+  element.textContent = phrases[0];
+}
+
+function stopTypewriter(element) {
+  const timer = typewriterTimers.get(element);
+
+  if (timer) {
+    clearTimeout(timer);
+    typewriterTimers.delete(element);
+  }
+}
+
+function scheduleTypewriterStep(element, callback, delay) {
+  const timer = setTimeout(callback, delay);
+
+  typewriterTimers.set(element, timer);
+}
+
+function isReducedMotionActive() {
+  if (document.body?.dataset.motion === "reduced") {
+    return true;
+  }
+
+  if (getSavedMotionPreference() === "reduced") {
+    return true;
+  }
+
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+}
+
+function getSavedMotionPreference() {
+  try {
+    return localStorage.getItem("titech-motion");
+  } catch {
+    return null;
+  }
 }

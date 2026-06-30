@@ -226,7 +226,13 @@ function applyFontSizePreference(size) {
 
 function applyMotionPreference(motion) {
   // Preferencia de movimento reduz animacoes para quem precisa de menos movimento.
-  document.body.dataset.motion = motion === "reduced" ? "reduced" : "normal";
+  const nextMotion = motion === "reduced" ? "reduced" : "normal";
+
+  document.body.dataset.motion = nextMotion;
+
+  window.dispatchEvent(new CustomEvent("titech:motion-change", {
+    detail: { motion: nextMotion },
+  }));
 }
 
 function applyCursorPreference(cursor) {

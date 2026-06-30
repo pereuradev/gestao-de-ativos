@@ -121,6 +121,7 @@ document.addEventListener("DOMContentLoaded", initDashboardProductsPage);
 function initDashboardProductsPage() {
   // O tema e a sidebar seguem o app-base.js; aqui so reagimos para redesenhar o grafico.
   window.onThemeChanged = () => renderCurrentChart();
+  window.addEventListener("titech:motion-change", renderCurrentChart);
   (window.startPageAnimation || startPageAnimation)();
   (window.loadSavedTheme || loadSavedTheme)();
   (window.setupThemeToggle || setupThemeToggle)();
@@ -151,6 +152,18 @@ function setSavedItem(key, value) {
   } catch {
     return;
   }
+}
+
+function isReducedMotionEnabled() {
+  if (document.body?.dataset.motion === "reduced") {
+    return true;
+  }
+
+  if (getSavedItem("titech-motion") === "reduced") {
+    return true;
+  }
+
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
 }
 
 function loadSavedTheme() {
@@ -770,7 +783,7 @@ function renderChart(rows, config) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: {
+      animation: isReducedMotionEnabled() ? false : {
         duration: 240,
         easing: "easeOutQuart",
       },

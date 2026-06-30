@@ -24,8 +24,10 @@
   const dialogTriggers = new WeakMap();
   let pendingDialogTrigger = null;
   let activeDialog = null;
+  let rippleEventsReady = false;
 
   document.addEventListener("DOMContentLoaded", initProfessionalUX);
+  window.addEventListener("titech:motion-change", handleMotionPreferenceChange);
 
   window.titechToast = showToast;
   window.titechConfirm = confirmAction;
@@ -45,6 +47,11 @@
 
   function setupReveals() {
     const elements = Array.from(document.querySelectorAll(REVEAL_SELECTOR));
+
+    if (isReducedMotionEnabled()) {
+      elements.forEach((element) => element.classList.add("is-visible"));
+      return;
+    }
 
     elements.forEach((element, index) => {
       element.classList.add("ux-reveal");
@@ -72,12 +79,23 @@
   }
 
   function setupRipples() {
+    if (isReducedMotionEnabled()) {
+      removeRippleArtifacts();
+      return;
+    }
+
     document.querySelectorAll(RIPPLE_SELECTOR).forEach((element) => {
       if (element.classList.contains("icon-button")) return;
       element.classList.add("ux-ripple");
     });
 
+    if (rippleEventsReady) return;
+
+    rippleEventsReady = true;
+
     document.addEventListener("click", (event) => {
+      if (isReducedMotionEnabled()) return;
+
       const target = event.target.closest(".ux-ripple");
 
       if (!target || target.disabled) return;
@@ -92,6 +110,40 @@
       target.append(ripple);
       ripple.addEventListener("animationend", () => ripple.remove(), { once: true });
     });
+  }
+
+  function handleMotionPreferenceChange() {
+    if (!isReducedMotionEnabled()) {
+      setupReveals();
+      setupRipples();
+      return;
+    }
+
+    document.querySelectorAll(REVEAL_SELECTOR).forEach((element) => {
+      element.classList.add("is-visible");
+      element.style.transitionDelay = "";
+    });
+    removeRippleArtifacts();
+  }
+
+  function removeRippleArtifacts() {
+    document.querySelectorAll(".ux-ripple-dot").forEach((ripple) => ripple.remove());
+  }
+
+  function isReducedMotionEnabled() {
+    if (document.body?.dataset.motion === "reduced") {
+      return true;
+    }
+
+    try {
+      if (localStorage.getItem("titech-motion") === "reduced") {
+        return true;
+      }
+    } catch {
+      return false;
+    }
+
+    return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
   }
 
   function setupTooltips() {

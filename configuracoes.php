@@ -214,17 +214,17 @@ $codigoInternoEscapado = e($codigoInterno);
 
 
   <!-- CSS separado por responsabilidade: base do sistema, efeitos gerais e ajustes específicos desta página. -->
-  <link rel="stylesheet" href="css/pagina-base.css?v=20260630-system-cursor" />
-  <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
+  <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
+  <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
   <link rel="stylesheet" href="css/configuracoes.css?v=20260630-clean-hero" />
 
 
   <!-- Scripts carregados com defer para não bloquear a montagem do HTML. -->
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
-  <script src="js/typewriter.js?v=20260619-stable" defer></script>
-  <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
-  <script src="js/app-base.js?v=20260630-system-cursor" defer></script>
+  <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
+  <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
+  <script src="js/app-base.js?v=20260630-reduced-motion" defer></script>
   <script src="js/configuracoes.js?v=20260630-system-cursor" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>

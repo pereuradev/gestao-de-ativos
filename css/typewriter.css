@@ -18,6 +18,10 @@ body.theme-dark .typewriter-heading::selection {
   background: rgba(102, 213, 194, 0.28);
 }
 
+body[data-motion="reduced"] .typewriter-heading-cursor {
+  display: none;
+}
+
 .typewriter-heading-cursor {
   display: inline-block;
   width: 2px;

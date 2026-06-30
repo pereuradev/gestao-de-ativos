@@ -270,10 +270,14 @@ body[data-motion="reduced"] *,
 body[data-motion="reduced"] *::before,
 body[data-motion="reduced"] *::after {
   /* Respeita a preferencia do usuario por menos movimento. */
-  transition-duration: 0.01ms !important;
-  animation-duration: 0.01ms !important;
-  animation-iteration-count: 1 !important;
+  transition: none !important;
+  animation: none !important;
   scroll-behavior: auto !important;
+}
+
+body[data-motion="reduced"].page-loading {
+  opacity: 1;
+  transform: none;
 }
 
 body.page-loading {

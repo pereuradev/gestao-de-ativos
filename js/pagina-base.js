@@ -101,6 +101,18 @@ function setSavedItem(key, value) {
   }
 }
 
+function isReducedMotionEnabled() {
+  if (document.body?.dataset.motion === "reduced") {
+    return true;
+  }
+
+  if (getSavedItem("titech-motion") === "reduced") {
+    return true;
+  }
+
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+}
+
 function updateBrandLogo(isDark) {
   document.querySelectorAll(".brand-logo").forEach((logo) => {
     logo.src = isDark ? "assets/logo-branca.png" : "assets/Logo.png";
@@ -116,12 +128,21 @@ function updateBrandLogo(isDark) {
 function initPage() {
   startPageAnimation();
   loadSavedTheme();
+  window.addEventListener("titech:motion-change", renderDashboardCharts);
   setupThemeToggle();
   setupSidebar();
   setupAssetMenu();
   setupCategorySearch();
   setupStockPeriodFilter();
   loadDashboardData();
+}
+
+function renderDashboardCharts() {
+  if (!dashboardData) return;
+
+  renderProductHealthChart(dashboardData.status_ativos || [], dashboardData.total_ativos);
+  renderStockEvolutionChart(getStockEvolutionSeries(dashboardData));
+  renderRegistrationEvolutionChart(dashboardData.cadastros_evolucao || []);
 }
 
 /**
@@ -539,7 +560,7 @@ function renderProductHealthChart(statuses, totalAssets) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: {
+      animation: isReducedMotionEnabled() ? false : {
         duration: 850,
         easing: "easeOutQuart",
       },
@@ -867,6 +888,7 @@ function renderEvolutionChart({
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: isReducedMotionEnabled() ? false : undefined,
 
       // Define como o gráfico responde ao passar o mouse.
       interaction: {
