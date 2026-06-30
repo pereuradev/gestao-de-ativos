@@ -268,7 +268,72 @@
 }
 
 .profile-details {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.profile-card {
+  position: relative;
+  overflow: hidden;
+  align-self: start;
+  background:
+    radial-gradient(
+      circle at 12% 0%,
+      color-mix(in srgb, var(--mint) 16%, transparent),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 92% 12%,
+      color-mix(in srgb, var(--cyan) 14%, transparent),
+      transparent 28%
+    ),
+    var(--surface);
+}
+
+.profile-card .card-header {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--mint) 18%, transparent);
+}
+
+.profile-card .section-tag {
+  color: var(--mint);
+}
+
+.profile-card h3 {
+  color: var(--text);
+}
+
+.profile-field {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--mint) 22%, var(--line));
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--mint) 9%, var(--soft)),
+      color-mix(in srgb, var(--cyan) 6%, var(--soft)));
+}
+
+.profile-field::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--mint), var(--cyan));
+  opacity: 0.78;
+}
+
+.profile-field:nth-child(2),
+.profile-field:nth-child(8),
+.profile-field:nth-child(9) {
+  grid-column: span 2;
+}
+
+.profile-field span {
+  color: color-mix(in srgb, var(--mint) 82%, var(--muted));
+}
+
+.profile-field strong {
+  color: var(--text);
 }
 
 .compact-preference-button {
@@ -965,6 +1030,12 @@ body[data-cursor="enhanced"]
   .diagnostics-grid,
   .work-mode-grid {
     grid-template-columns: 1fr;
+  }
+
+  .profile-field:nth-child(2),
+  .profile-field:nth-child(8),
+  .profile-field:nth-child(9) {
+    grid-column: auto;
   }
 
   .large-avatar {

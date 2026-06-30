@@ -217,7 +217,7 @@ $codigoInternoEscapado = e($codigoInterno);
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-system-cursor" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
-  <link rel="stylesheet" href="css/configuracoes.css?v=20260630-remove-section-index" />
+  <link rel="stylesheet" href="css/configuracoes.css?v=20260630-profile-card-clean" />
 
 
   <!-- Scripts carregados com defer para não bloquear a montagem do HTML. -->
