@@ -49,6 +49,17 @@ function setupPreferenceControls() {
     });
   });
 
+  document.querySelectorAll('input[name="fontSize"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      if (!input.checked) return;
+
+      setSavedItem("titech-font-size", input.value);
+      applyFontSizePreference(input.value);
+      showPreferenceMessage("Tamanho da fonte atualizado.");
+      showToast("Preferencia de leitura salva neste navegador.");
+    });
+  });
+
   document.getElementById("densityToggle")?.addEventListener("change", (event) => {
     const density = event.currentTarget.checked ? "compact" : "comfortable";
 
@@ -222,12 +233,14 @@ function setupDiagnostics() {
 function syncPreferenceForm() {
   const accent = getSavedItem("titech-accent") || "teal";
   const theme = getSavedItem("titech-theme") || (document.body.classList.contains("theme-light") ? "light" : "dark");
+  const fontSize = getSavedItem("titech-font-size") || "default";
   const density = getSavedItem("titech-density") || "comfortable";
   const motion = getSavedItem("titech-motion") || "normal";
   const cursor = getSavedItem("titech-cursor") || "normal";
 
   setCheckedValue("accent", accent);
   setCheckedValue("theme", theme);
+  setCheckedValue("fontSize", fontSize);
 
   setChecked("densityToggle", density === "compact");
   setChecked("motionToggle", motion === "reduced");
@@ -253,12 +266,14 @@ function setChecked(id, checked) {
 function resetPreferences() {
   setSavedItem("titech-accent", "teal");
   setSavedItem("titech-theme", "dark");
+  setSavedItem("titech-font-size", "default");
   setSavedItem("titech-density", "comfortable");
   setSavedItem("titech-motion", "normal");
   setSavedItem("titech-cursor", "normal");
 
   applyTheme("dark");
   applyAccent("teal");
+  applyFontSizePreference("default");
   applyDensity("comfortable");
   applyMotionPreference("normal");
   applyCursorPreference("normal");

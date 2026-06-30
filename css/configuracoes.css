@@ -312,6 +312,42 @@
   border-radius: 14px;
 }
 
+.settings-accent-button {
+  color: #ffffff;
+  border: 1px solid color-mix(in srgb, var(--mint) 54%, transparent);
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--cyan) 88%, #061829 12%),
+      color-mix(in srgb, var(--teal) 84%, var(--mint) 16%));
+  box-shadow:
+    0 14px 30px color-mix(in srgb, var(--teal) 24%, transparent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.settings-accent-button i {
+  color: inherit;
+  filter: drop-shadow(0 6px 12px rgba(3, 16, 29, 0.22));
+}
+
+.settings-accent-button:hover,
+.settings-accent-button:focus-visible {
+  color: #ffffff;
+  border-color: color-mix(in srgb, var(--mint) 74%, transparent);
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--mint) 32%, var(--cyan)),
+      color-mix(in srgb, var(--cyan) 22%, var(--teal)));
+  box-shadow:
+    0 18px 38px color-mix(in srgb, var(--teal) 32%, transparent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.theme-light .settings-accent-button {
+  box-shadow:
+    0 14px 28px color-mix(in srgb, var(--teal) 18%, transparent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
 .preferences-form,
 .preference-group,
 .accent-options,
@@ -433,6 +469,12 @@
   margin-top: 4px;
 }
 
+.four-options {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding-top: 4px;
+  margin-top: 4px;
+}
+
 .segmented-control label {
   min-height: 52px;
   border-radius: 16px;
@@ -447,6 +489,16 @@
   justify-content: center;
   gap: 10px;
   font-weight: 850;
+}
+
+.font-size-control span {
+  min-width: 0;
+  font-size: 0.88rem;
+  white-space: normal;
+}
+
+.font-size-control i {
+  font-size: 1rem;
 }
 
 .toggle-row {
@@ -942,6 +994,7 @@ body[data-cursor="enhanced"]
   .accent-options,
   .segmented-control,
   .three-options,
+  .four-options,
   .preference-select-grid,
   .password-rules,
   .diagnostics-grid,

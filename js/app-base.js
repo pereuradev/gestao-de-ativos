@@ -7,6 +7,12 @@ const SIDEBAR_DEFAULT_WIDTH = 292;
 const SIDEBAR_MIN_WIDTH = 236;
 const SIDEBAR_MAX_WIDTH = 392;
 const SIDEBAR_DESKTOP_QUERY = "(min-width: 921px)";
+const FONT_SIZE_OPTIONS = {
+  small: 15,
+  default: 16,
+  large: 17,
+  extra: 18,
+};
 
 // Paletas que podem ser escolhidas nas configuracoes do usuario.
 const ACCENT_THEMES = {
@@ -155,6 +161,7 @@ function setupSystemThemeListener() {
 function loadInterfacePreferences() {
   // Preferencias salvas deixam as paginas com a mesma aparencia escolhida pelo usuario.
   applyAccent(getSavedItem("titech-accent") || "teal");
+  applyFontSizePreference(getSavedItem("titech-font-size") || "default");
   applyDensity(getSavedItem("titech-density") || "comfortable");
   applyMotionPreference(getSavedItem("titech-motion") || "normal");
   applyCursorPreference(getSavedItem("titech-cursor") || "normal");
@@ -180,6 +187,18 @@ function applyAccent(accent) {
 function applyDensity(density) {
   // Densidade compacta reduz espacamentos sem criar outro CSS completo.
   document.body.dataset.density = density === "compact" ? "compact" : "comfortable";
+}
+
+function applyFontSizePreference(size) {
+  // A escala fica no html para que todos os textos em rem acompanhem a preferencia.
+  const nextSize = Object.hasOwn(FONT_SIZE_OPTIONS, size) ? size : "default";
+
+  document.documentElement.dataset.fontSize = nextSize;
+  document.documentElement.style.fontSize = `${FONT_SIZE_OPTIONS[nextSize]}px`;
+
+  window.dispatchEvent(new CustomEvent("titech:font-size-change", {
+    detail: { size: nextSize, pixels: FONT_SIZE_OPTIONS[nextSize] },
+  }));
 }
 
 function applyMotionPreference(motion) {
@@ -447,6 +466,7 @@ Object.assign(window, {
   resolveThemeMode,
   loadInterfacePreferences,
   applyAccent,
+  applyFontSizePreference,
   applyDensity,
   applyMotionPreference,
   applyCursorPreference,

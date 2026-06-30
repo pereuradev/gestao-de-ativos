@@ -217,15 +217,15 @@ $codigoInternoEscapado = e($codigoInterno);
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-sidebar-resize" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
-  <link rel="stylesheet" href="css/configuracoes.css?v=20260624-settings-panel" />
+  <link rel="stylesheet" href="css/configuracoes.css?v=20260630-font-size" />
 
 
   <!-- Scripts carregados com defer para não bloquear a montagem do HTML. -->
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
   <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
-  <script src="js/app-base.js?v=20260630-sidebar-resize" defer></script>
-  <script src="js/configuracoes.js?v=20260626-accent-fix" defer></script>
+  <script src="js/app-base.js?v=20260630-font-size" defer></script>
+  <script src="js/configuracoes.js?v=20260630-font-size" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
@@ -470,7 +470,8 @@ $codigoInternoEscapado = e($codigoInterno);
               <p class="section-tag">Interface</p>
               <h3 id="interfaceTitle">Prefer&ecirc;ncias visuais</h3>
             </div>
-            <button class="secondary-button compact-preference-button" id="resetPreferences" type="button">
+            <button class="secondary-button compact-preference-button settings-accent-button" id="resetPreferences"
+              type="button">
               <i class="bi bi-arrow-counterclockwise"></i>
               Restaurar
             </button>
@@ -502,6 +503,22 @@ $codigoInternoEscapado = e($codigoInterno);
                     Claro</span></label>
                 <label><input type="radio" name="theme" value="auto" /><span><i class="bi bi-circle-half"></i>
                     Auto</span></label>
+              </div>
+            </fieldset>
+
+            <!-- Tamanho da fonte aplicado no site inteiro para melhorar a leitura sem depender do zoom do navegador. -->
+            <fieldset class="preference-group">
+              <legend>Tamanho da fonte</legend>
+              <div class="segmented-control four-options font-size-control" role="radiogroup"
+                aria-label="Tamanho da fonte do site">
+                <label><input type="radio" name="fontSize" value="small" /><span><i class="bi bi-type"></i>
+                    Pequena</span></label>
+                <label><input type="radio" name="fontSize" value="default" /><span><i class="bi bi-type"></i>
+                    Padr&atilde;o</span></label>
+                <label><input type="radio" name="fontSize" value="large" /><span><i class="bi bi-fonts"></i>
+                    Grande</span></label>
+                <label><input type="radio" name="fontSize" value="extra" /><span><i class="bi bi-fonts"></i>
+                    Extra</span></label>
               </div>
             </fieldset>
 
@@ -587,7 +604,8 @@ $codigoInternoEscapado = e($codigoInterno);
               <p class="section-tag">Sistema</p>
               <h3 id="systemTitle">Diagn&oacute;stico para suporte</h3>
             </div>
-            <button class="secondary-button compact-preference-button" id="copyDiagnostics" type="button">
+            <button class="secondary-button compact-preference-button settings-accent-button" id="copyDiagnostics"
+              type="button">
               <i class="bi bi-clipboard-check"></i>
               Copiar informa&ccedil;&otilde;es
             </button>
