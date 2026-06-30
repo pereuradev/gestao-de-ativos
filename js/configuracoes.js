@@ -236,7 +236,7 @@ function syncPreferenceForm() {
   const fontSize = getSavedItem("titech-font-size") || "default";
   const density = getSavedItem("titech-density") || "comfortable";
   const motion = getSavedItem("titech-motion") || "normal";
-  const cursor = getSavedItem("titech-cursor") || "normal";
+  const cursor = getSavedItem("titech-cursor") || "enhanced";
 
   setCheckedValue("accent", accent);
   setCheckedValue("theme", theme);
@@ -269,14 +269,14 @@ function resetPreferences() {
   setSavedItem("titech-font-size", "default");
   setSavedItem("titech-density", "comfortable");
   setSavedItem("titech-motion", "normal");
-  setSavedItem("titech-cursor", "normal");
+  setSavedItem("titech-cursor", "enhanced");
 
   applyTheme("dark");
   applyAccent("teal");
   applyFontSizePreference("default");
   applyDensity("comfortable");
   applyMotionPreference("normal");
-  applyCursorPreference("normal");
+  applyCursorPreference("enhanced");
   syncPreferenceForm();
   showPreferenceMessage("Preferencias restauradas para o padrao do sistema.");
   showToast("Preferencias restauradas.");

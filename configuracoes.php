@@ -214,18 +214,18 @@ $codigoInternoEscapado = e($codigoInterno);
 
 
   <!-- CSS separado por responsabilidade: base do sistema, efeitos gerais e ajustes específicos desta página. -->
-  <link rel="stylesheet" href="css/pagina-base.css?v=20260630-sidebar-resize" />
+  <link rel="stylesheet" href="css/pagina-base.css?v=20260630-system-cursor" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
-  <link rel="stylesheet" href="css/configuracoes.css?v=20260630-font-size" />
+  <link rel="stylesheet" href="css/configuracoes.css?v=20260630-remove-section-index" />
 
 
   <!-- Scripts carregados com defer para não bloquear a montagem do HTML. -->
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
   <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
-  <script src="js/app-base.js?v=20260630-font-size" defer></script>
-  <script src="js/configuracoes.js?v=20260630-font-size" defer></script>
+  <script src="js/app-base.js?v=20260630-system-cursor" defer></script>
+  <script src="js/configuracoes.js?v=20260630-system-cursor" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
@@ -426,16 +426,6 @@ $codigoInternoEscapado = e($codigoInterno);
           </div>
         </article>
 
-        <!-- Índice interno para o usuário pular direto para uma seção da página. -->
-        <aside class="content-card settings-index" aria-label="Se&ccedil;&otilde;es da p&aacute;gina">
-          <p class="section-tag">Se&ccedil;&otilde;es</p>
-          <nav class="settings-section-nav">
-            <a href="#conta"><i class="bi bi-person-badge"></i> Conta</a>
-            <a href="#interface"><i class="bi bi-palette"></i> Interface</a>
-            <a href="#seguranca"><i class="bi bi-shield-lock"></i> Seguran&ccedil;a</a>
-            <a href="#sistema"><i class="bi bi-cpu"></i> Sistema</a>
-          </nav>
-        </aside>
       </section>
 
       <!-- Grade principal de cards. Cada article representa uma área de configuração. -->

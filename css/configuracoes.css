@@ -93,7 +93,7 @@
 }
 
 .settings-overview {
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.34fr);
+  grid-template-columns: 1fr;
 }
 
 .settings-grid {
@@ -105,7 +105,6 @@
 }
 
 .digital-badge-card,
-.settings-index,
 .profile-card,
 .preferences-card,
 .security-card,
@@ -266,40 +265,6 @@
   font-size: 0.95rem;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.settings-index {
-  align-self: stretch;
-}
-
-.settings-section-nav {
-  margin-top: 14px;
-  display: grid;
-  gap: 10px;
-}
-
-.settings-section-nav a {
-  min-height: 46px;
-  padding: 0 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  color: var(--text);
-  background: var(--soft);
-  font-weight: 850;
-  transition:
-    border-color var(--transition),
-    background var(--transition),
-    transform var(--transition);
-}
-
-.settings-section-nav a:hover,
-.settings-section-nav a:focus-visible {
-  border-color: color-mix(in srgb, var(--mint) 52%, transparent);
-  background: color-mix(in srgb, var(--mint) 12%, var(--soft));
-  transform: translateX(3px);
 }
 
 .profile-details {

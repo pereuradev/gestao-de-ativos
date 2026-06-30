@@ -267,7 +267,7 @@ try {
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
-  <link rel="stylesheet" href="css/pagina-base.css?v=20260630-sidebar-resize" />
+  <link rel="stylesheet" href="css/pagina-base.css?v=20260630-system-cursor" />
   <link rel="stylesheet" href="css/ativos.css?v=20260629-datasheet-column" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
@@ -275,7 +275,7 @@ try {
 
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
   <script src="js/ux-profissional.js?v=20260623-restore-content" defer></script>
-  <script src="js/app-base.js?v=20260630-font-size" defer></script>
+  <script src="js/app-base.js?v=20260630-system-cursor" defer></script>
   <script src="js/ativos.js?v=20260626-pagination" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>

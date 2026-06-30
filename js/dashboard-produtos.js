@@ -157,9 +157,10 @@ function loadSavedTheme() {
   // Fallback local caso o app-base.js nao esteja disponivel por algum motivo.
   applyAccent(getSavedItem(ACCENT_STORAGE_KEY) || "teal");
   applyTheme(getSavedItem(THEME_STORAGE_KEY) || "dark");
+  window.applyFontSizePreference?.(getSavedItem("titech-font-size") || "default");
   window.applyDensity?.(getSavedItem("titech-density") || "comfortable");
   window.applyMotionPreference?.(getSavedItem("titech-motion") || "normal");
-  window.applyCursorPreference?.(getSavedItem("titech-cursor") || "normal");
+  window.applyCursorPreference?.(getSavedItem("titech-cursor") || "enhanced");
 }
 
 function applyAccent(accent) {

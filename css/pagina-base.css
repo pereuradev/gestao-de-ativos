@@ -13,6 +13,7 @@
   --radius: 18px;
   --sidebar-width: 292px;
   --sidebar-resize-width: 12px;
+  --z-cursor: 3000;
   --transition: 0.25s ease;
   --theme-transition: 0.62s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -41,6 +42,68 @@ body {
     color var(--theme-transition),
     opacity 0.45s ease,
     transform 0.45s ease;
+}
+
+html.custom-cursor-enabled,
+html.custom-cursor-enabled *,
+body.custom-cursor-enabled,
+body.custom-cursor-enabled * {
+  cursor: none !important;
+}
+
+.custom-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: var(--z-cursor);
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--mint);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1);
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--mint) 14%, transparent),
+    0 0 22px color-mix(in srgb, var(--teal) 34%, transparent);
+  transition:
+    width 0.18s ease,
+    height 0.18s ease,
+    background 0.18s ease,
+    border 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease,
+    transform 0.08s linear;
+}
+
+body.cursor-visible .custom-cursor {
+  opacity: 1;
+}
+
+body.cursor-hover .custom-cursor {
+  width: 34px;
+  height: 34px;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--mint) 82%, transparent);
+  box-shadow:
+    0 0 0 8px color-mix(in srgb, var(--mint) 10%, transparent),
+    0 0 28px color-mix(in srgb, var(--teal) 24%, transparent);
+}
+
+body.cursor-click .custom-cursor {
+  transform: translate(-50%, -50%) scale(0.78);
+}
+
+body.theme-dark .custom-cursor {
+  background: var(--mint);
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--mint) 16%, transparent),
+    0 0 24px color-mix(in srgb, var(--mint) 36%, transparent);
+}
+
+body.theme-dark.cursor-hover .custom-cursor {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--mint) 86%, transparent);
 }
 
 body.theme-switching .app-shell {
@@ -2210,6 +2273,19 @@ body.theme-dark .records-actions select option:checked {
   .content-grid,
   .asset-registration-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  html.custom-cursor-enabled,
+  html.custom-cursor-enabled *,
+  body.custom-cursor-enabled,
+  body.custom-cursor-enabled * {
+    cursor: auto !important;
+  }
+
+  .custom-cursor {
+    display: none;
   }
 }
 

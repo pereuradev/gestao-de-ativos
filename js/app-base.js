@@ -13,6 +13,23 @@ const FONT_SIZE_OPTIONS = {
   large: 17,
   extra: 18,
 };
+const CUSTOM_CURSOR_INTERACTIVE_SELECTOR = [
+  "a",
+  "button",
+  "input",
+  "label",
+  "textarea",
+  "select",
+  ".form-control",
+  ".input-shell",
+  ".theme-toggle",
+  ".nav-link",
+  ".nav-toggle",
+  ".sidebar-resize-handle",
+  "[role='button']",
+  "[role='tab']",
+  "[tabindex]:not([tabindex='-1'])",
+].join(", ");
 
 // Paletas que podem ser escolhidas nas configuracoes do usuario.
 const ACCENT_THEMES = {
@@ -44,6 +61,12 @@ const ACCENT_THEMES = {
 
 let themeTimer = null;
 let systemThemeListenerAttached = false;
+let customCursorReady = false;
+let customCursorElement = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+  applyCursorPreference(getSavedItem("titech-cursor") || "enhanced");
+});
 
 function getSavedItem(key) {
   // localStorage pode falhar em navegador restrito, entao sempre acessamos com try/catch.
@@ -164,7 +187,7 @@ function loadInterfacePreferences() {
   applyFontSizePreference(getSavedItem("titech-font-size") || "default");
   applyDensity(getSavedItem("titech-density") || "comfortable");
   applyMotionPreference(getSavedItem("titech-motion") || "normal");
-  applyCursorPreference(getSavedItem("titech-cursor") || "normal");
+  applyCursorPreference(getSavedItem("titech-cursor") || "enhanced");
   applySavedSidebarWidth();
 }
 
@@ -207,8 +230,111 @@ function applyMotionPreference(motion) {
 }
 
 function applyCursorPreference(cursor) {
-  // Algumas telas podem usar cursor destacado quando a preferencia estiver ativa.
-  document.body.dataset.cursor = cursor === "enhanced" ? "enhanced" : "normal";
+  // O cursor personalizado segue o estilo do login e pode ser desligado nas configuracoes.
+  const isEnhanced = cursor === "enhanced";
+
+  if (!document.body) {
+    return;
+  }
+
+  document.body.dataset.cursor = isEnhanced ? "enhanced" : "normal";
+  setCustomCursorEnabled(isEnhanced);
+}
+
+function setCustomCursorEnabled(isEnabled) {
+  const shouldEnable = Boolean(isEnabled && isCustomCursorSupported());
+
+  if (shouldEnable) {
+    setupCustomCursor();
+  }
+
+  document.documentElement.classList.toggle("custom-cursor-enabled", shouldEnable);
+  document.body.classList.toggle("custom-cursor-enabled", shouldEnable);
+
+  if (!shouldEnable) {
+    document.body.classList.remove("cursor-visible", "cursor-hover", "cursor-click");
+  }
+}
+
+function setupCustomCursor() {
+  if (customCursorReady || !document.body || !isCustomCursorSupported()) {
+    return;
+  }
+
+  customCursorElement = document.querySelector(".custom-cursor");
+
+  if (!customCursorElement) {
+    customCursorElement = document.createElement("div");
+    customCursorElement.className = "custom-cursor";
+    customCursorElement.setAttribute("aria-hidden", "true");
+    document.body.appendChild(customCursorElement);
+  }
+
+  customCursorReady = true;
+
+  window.addEventListener("mousemove", updateCustomCursorPosition, { passive: true });
+  window.addEventListener("mouseleave", hideCustomCursor);
+  window.addEventListener("blur", hideCustomCursor);
+  window.addEventListener("mousedown", pressCustomCursor);
+  window.addEventListener("mouseup", releaseCustomCursor);
+  document.addEventListener("mouseover", updateCustomCursorHover);
+  document.addEventListener("mouseout", clearCustomCursorHover);
+}
+
+function updateCustomCursorPosition(event) {
+  if (!isCustomCursorActive() || !customCursorElement) {
+    return;
+  }
+
+  document.body.classList.add("cursor-visible");
+  customCursorElement.style.left = `${event.clientX}px`;
+  customCursorElement.style.top = `${event.clientY}px`;
+}
+
+function hideCustomCursor() {
+  document.body.classList.remove("cursor-visible", "cursor-hover", "cursor-click");
+}
+
+function pressCustomCursor() {
+  if (isCustomCursorActive()) {
+    document.body.classList.add("cursor-click");
+  }
+}
+
+function releaseCustomCursor() {
+  document.body.classList.remove("cursor-click");
+}
+
+function updateCustomCursorHover(event) {
+  if (!isCustomCursorActive()) {
+    return;
+  }
+
+  if (event.target instanceof Element && event.target.closest(CUSTOM_CURSOR_INTERACTIVE_SELECTOR)) {
+    document.body.classList.add("cursor-hover");
+  }
+}
+
+function clearCustomCursorHover(event) {
+  if (!isCustomCursorActive()) {
+    return;
+  }
+
+  if (event.target instanceof Element && event.target.closest(CUSTOM_CURSOR_INTERACTIVE_SELECTOR)) {
+    document.body.classList.remove("cursor-hover");
+  }
+}
+
+function isCustomCursorActive() {
+  return document.documentElement.classList.contains("custom-cursor-enabled");
+}
+
+function isCustomCursorSupported() {
+  if (!window.matchMedia) {
+    return true;
+  }
+
+  return window.matchMedia("(pointer: fine)").matches && !window.matchMedia("(hover: none)").matches;
 }
 
 function setupSidebar() {
@@ -470,6 +596,7 @@ Object.assign(window, {
   applyDensity,
   applyMotionPreference,
   applyCursorPreference,
+  setupCustomCursor,
   setupSidebar,
   openSidebar,
   closeSidebar,
