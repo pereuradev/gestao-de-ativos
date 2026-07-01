@@ -134,10 +134,17 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
         </a>
 
         <!-- Link para a tela de funcionÃ¡rios -->
+<?php if ($sidebarIsAdmin): ?>
         <a class="nav-link" href="funcionarios.php">
           <i class="bi bi-people-fill"></i>
           <span>Funcion&aacute;rios</span>
         </a>
+<?php else: ?>
+        <span class="nav-link nav-link-disabled" aria-disabled="true" title="Apenas administradores podem acessar funcion�rios">
+          <i class="bi bi-people-fill"></i>
+          <span>Funcion&aacute;rios</span>
+        </span>
+<?php endif; ?>
 
         <a class="nav-link" href="marcas-visualizacao.php">
           <i class="bi bi-tags-fill"></i>
