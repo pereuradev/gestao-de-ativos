@@ -118,7 +118,8 @@ try {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <title>Cadastro de funcion&aacute;rios | TI TECH Solutions</title>
-  <meta name="description" content="Cadastro interno de funcion&aacute;rios do portal da TI TECH Solutions, restrito a administradores." />
+  <meta name="description"
+    content="Cadastro interno de funcion&aacute;rios do portal da TI TECH Solutions, restrito a administradores." />
   <link rel="icon" type="image/png" href="assets/favicon.png?v=20260630-ti-favicon" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -162,17 +163,18 @@ try {
           <i class="bi bi-bar-chart-fill"></i>
           <span>Dashboard</span>
         </a>
-<?php if ($sidebarIsAdmin): ?>
-        <a class="nav-link" href="funcionarios.php">
-          <i class="bi bi-people-fill"></i>
-          <span>Funcion&aacute;rios</span>
-        </a>
-<?php else: ?>
-        <span class="nav-link nav-link-disabled" aria-disabled="true" title="Apenas administradores podem acessar funcionários">
-          <i class="bi bi-people-fill"></i>
-          <span>Funcion&aacute;rios</span>
-        </span>
-<?php endif; ?>
+        <?php if ($sidebarIsAdmin): ?>
+          <a class="nav-link" href="funcionarios.php">
+            <i class="bi bi-people-fill"></i>
+            <span>Funcion&aacute;rios</span>
+          </a>
+        <?php else: ?>
+          <span class="nav-link nav-link-disabled" aria-disabled="true"
+            title="Apenas administradores podem acessar funcionï¿½rios">
+            <i class="bi bi-people-fill"></i>
+            <span>Funcion&aacute;rios</span>
+          </span>
+        <?php endif; ?>
         <a class="nav-link" href="marcas-visualizacao.php">
           <i class="bi bi-tags-fill"></i>
           <span>Marcas</span>
@@ -187,7 +189,8 @@ try {
         </a>
 
         <div class="nav-group open" data-nav-group>
-          <button class="nav-link nav-toggle active" type="button" aria-expanded="true" aria-controls="registrationSubmenu">
+          <button class="nav-link nav-toggle active" type="button" aria-expanded="true"
+            aria-controls="registrationSubmenu">
             <i class="bi bi-folder-plus"></i>
             <span>Cadastros</span>
             <i class="bi bi-chevron-down nav-chevron"></i>
@@ -234,7 +237,8 @@ try {
           <div class="sidebar-user-info">
             <strong title="<?php echo $nomeUsuario; ?>"><?php echo $nomeUsuario; ?></strong>
             <span class="sidebar-role <?php echo $sidebarRoleClass; ?>"><?php echo $sidebarRoleLabel; ?></span>
-            <small title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
+            <small
+              title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
             <small title="<?php echo $sidebarDepartment; ?>"><?php echo $sidebarDepartment; ?></small>
           </div>
         </div>
@@ -257,7 +261,8 @@ try {
           <div>
             <p class="eyebrow">Cadastros</p>
             <h1>
-              <span class="typewriter-heading" style="--typewriter-min: 23ch">Funcion&aacute;rios</span><span aria-hidden="true"></span>
+              <span class="typewriter-heading" style="--typewriter-min: 23ch">Funcion&aacute;rios</span><span
+                aria-hidden="true"></span>
             </h1>
           </div>
         </div>
@@ -280,16 +285,19 @@ try {
           <p class="section-tag">Acesso interno</p>
           <h2 id="employeeRegisterTitle">
             <span class="typewriter-heading" style="--typewriter-min: 35ch" data-typewriter-loop
-              data-typewriter-phrases="Cadastre administradores e colaboradores.|Controle quem entra no portal.|Centralize o acesso por perfil.">Cadastre administradores e colaboradores.</span><span aria-hidden="true"></span>
+              data-typewriter-phrases="Cadastre administradores e colaboradores.|Controle quem entra no portal.|Centralize o acesso por perfil.">Cadastre
+              administradores e colaboradores.</span><span aria-hidden="true"></span>
           </h2>
           <p>
-            Esta &aacute;rea &eacute; exclusiva para administradores. Use-a para criar novos acessos com o perfil correto,
+            Esta &aacute;rea &eacute; exclusiva para administradores. Use-a para criar novos acessos com o perfil
+            correto,
             dados corporativos completos e rastreabilidade desde o primeiro login.
           </p>
         </div>
       </section>
 
-      <section class="metrics-grid employee-registration-metrics" aria-label="Resumo de cadastros de funcion&aacute;rios">
+      <section class="metrics-grid employee-registration-metrics"
+        aria-label="Resumo de cadastros de funcion&aacute;rios">
         <article class="metric-card">
           <div class="metric-icon">
             <i class="bi bi-people-fill"></i>
@@ -353,13 +361,11 @@ try {
               </span>
             </div>
 
-            <span class="form-badge">
-              <i class="bi bi-shield-check"></i>
-              Somente administrador
-            </span>
+
           </div>
 
-          <form id="employeeSignupForm" class="enhanced-asset-form" action="Backend/cadastrar-usuario.php" method="post" novalidate>
+          <form id="employeeSignupForm" class="enhanced-asset-form" action="Backend/cadastrar-usuario.php" method="post"
+            novalidate>
             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
             <input id="selectedEmployeeRole" type="hidden" name="tipo_usuario" value="Colaborador" />
 
@@ -373,7 +379,8 @@ try {
                 <span>Nome completo <strong>*</strong></span>
                 <div class="input-shell">
                   <i class="bi bi-person"></i>
-                  <input id="employeeFullName" name="nome_completo" type="text" placeholder="Nome e sobrenome" autocomplete="name" required />
+                  <input id="employeeFullName" name="nome_completo" type="text" placeholder="Nome e sobrenome"
+                    autocomplete="name" required />
                 </div>
               </label>
 
@@ -381,7 +388,8 @@ try {
                 <span>E-mail corporativo <strong>*</strong></span>
                 <div class="input-shell">
                   <i class="bi bi-envelope"></i>
-                  <input id="employeeEmail" name="email" type="email" placeholder="nome@titechsolutions.com.br" autocomplete="email" required />
+                  <input id="employeeEmail" name="email" type="email" placeholder="nome@titechsolutions.com.br"
+                    autocomplete="email" required />
                 </div>
               </label>
 
@@ -400,7 +408,8 @@ try {
 
               <div class="asset-field wide-field">
                 <span>Perfil de acesso <strong>*</strong></span>
-                <div class="segment-control" id="employeeRoleControl" data-active="Colaborador" aria-label="Perfil de acesso do funcion&aacute;rio">
+                <div class="segment-control" id="employeeRoleControl" data-active="Colaborador"
+                  aria-label="Perfil de acesso do funcion&aacute;rio">
                   <button class="active" data-role="Colaborador" type="button">Colaborador</button>
                   <button data-role="Administrador" type="button">Administrador</button>
                 </div>
@@ -415,7 +424,8 @@ try {
                 <span>RG <strong>*</strong></span>
                 <div class="input-shell">
                   <i class="bi bi-card-text"></i>
-                  <input id="employeeRg" name="rg" type="text" placeholder="00.000.000-0" inputmode="numeric" autocomplete="off" required />
+                  <input id="employeeRg" name="rg" type="text" placeholder="00.000.000-0" inputmode="numeric"
+                    autocomplete="off" required />
                 </div>
               </label>
 
@@ -423,7 +433,8 @@ try {
                 <span>CPF <strong>*</strong></span>
                 <div class="input-shell">
                   <i class="bi bi-person-vcard"></i>
-                  <input id="employeeCpf" name="cpf" type="text" placeholder="000.000.000-00" inputmode="numeric" autocomplete="off" required />
+                  <input id="employeeCpf" name="cpf" type="text" placeholder="000.000.000-00" inputmode="numeric"
+                    autocomplete="off" required />
                 </div>
               </label>
 
@@ -431,7 +442,8 @@ try {
                 <span>Celular <strong>*</strong></span>
                 <div class="input-shell">
                   <i class="bi bi-phone"></i>
-                  <input id="employeeCellphone" name="celular" type="tel" placeholder="(00) 00000-0000" inputmode="tel" autocomplete="tel" required />
+                  <input id="employeeCellphone" name="celular" type="tel" placeholder="(00) 00000-0000" inputmode="tel"
+                    autocomplete="tel" required />
                 </div>
               </label>
 
@@ -447,7 +459,8 @@ try {
                 <span>Empresa <strong>*</strong></span>
                 <div class="input-shell">
                   <i class="bi bi-buildings"></i>
-                  <input id="employeeCompany" name="empresa" type="text" placeholder="Nome da empresa" autocomplete="organization" required />
+                  <input id="employeeCompany" name="empresa" type="text" placeholder="Nome da empresa"
+                    autocomplete="organization" required />
                 </div>
               </label>
 
@@ -455,8 +468,10 @@ try {
                 <span>Senha inicial <strong>*</strong></span>
                 <div class="input-shell">
                   <i class="bi bi-key"></i>
-                  <input id="employeePassword" name="senha" type="password" placeholder="Minimo de 6 caracteres" autocomplete="new-password" required />
-                  <button class="password-toggle" data-target="employeePassword" type="button" aria-label="Mostrar senha">
+                  <input id="employeePassword" name="senha" type="password" placeholder="Minimo de 6 caracteres"
+                    autocomplete="new-password" required />
+                  <button class="password-toggle" data-target="employeePassword" type="button"
+                    aria-label="Mostrar senha">
                     <i class="bi bi-eye"></i>
                   </button>
                 </div>
@@ -470,7 +485,8 @@ try {
               <small id="employeePasswordStrengthText">Forca da senha: aguardando</small>
             </div>
 
-            <div id="employeeFormMessage" class="form-message employee-form-message" role="status" aria-live="polite"></div>
+            <div id="employeeFormMessage" class="form-message employee-form-message" role="status" aria-live="polite">
+            </div>
 
             <div class="asset-form-actions enhanced-form-actions">
               <button class="form-action-button danger-button" type="reset">
@@ -515,7 +531,8 @@ try {
               <article class="recent-asset-item recent-employee-card">
                 <div class="recent-asset-topline">
                   <strong><?php echo e((string) ($funcionario["nome_completo"] ?? "--")); ?></strong>
-                  <span class="status-badge <?php echo strtolower((string) ($funcionario["status"] ?? "")) === "ativo" ? "status-active" : "status-neutral"; ?>">
+                  <span
+                    class="status-badge <?php echo strtolower((string) ($funcionario["status"] ?? "")) === "ativo" ? "status-active" : "status-neutral"; ?>">
                     <?php echo e((string) ($funcionario["status"] ?? "Ativo")); ?>
                   </span>
                 </div>
@@ -527,7 +544,8 @@ try {
 
                 <div class="recent-asset-footer">
                   <span><?php echo e((string) ($funcionario["email"] ?? "--")); ?></span>
-                  <time datetime="<?php echo e((string) ($funcionario["criado_em"] ?? "")); ?>"><?php echo e(formatarData((string) ($funcionario["criado_em"] ?? ""))); ?></time>
+                  <time
+                    datetime="<?php echo e((string) ($funcionario["criado_em"] ?? "")); ?>"><?php echo e(formatarData((string) ($funcionario["criado_em"] ?? ""))); ?></time>
                 </div>
               </article>
             <?php endforeach; ?>
