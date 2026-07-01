@@ -26,8 +26,20 @@
   pointer-events: none;
   border-radius: inherit;
   background:
-    linear-gradient(90deg, rgba(3, 16, 29, 0.99) 0%, rgba(3, 16, 29, 0.96) 30%, rgba(3, 16, 29, 0.68) 50%, rgba(3, 16, 29, 0.18) 72%, rgba(3, 16, 29, 0) 100%),
-    linear-gradient(180deg, rgba(3, 16, 29, 0.24) 0%, rgba(3, 16, 29, 0) 45%, rgba(3, 16, 29, 0.4) 100%);
+    linear-gradient(
+      90deg,
+      rgba(3, 16, 29, 0.99) 0%,
+      rgba(3, 16, 29, 0.96) 30%,
+      rgba(3, 16, 29, 0.68) 50%,
+      rgba(3, 16, 29, 0.18) 72%,
+      rgba(3, 16, 29, 0) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(3, 16, 29, 0.24) 0%,
+      rgba(3, 16, 29, 0) 45%,
+      rgba(3, 16, 29, 0.4) 100%
+    );
 }
 
 .theme-light .locations-hero {
@@ -36,9 +48,13 @@
   background-image:
     linear-gradient(0deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.18)),
     url("../assets/FUNDO-LOCALIZACOES.png");
-  background-position: center, 74% 34%;
+  background-position:
+    center,
+    74% 34%;
   background-repeat: no-repeat, no-repeat;
-  background-size: 100% 100%, cover;
+  background-size:
+    100% 100%,
+    cover;
   box-shadow:
     0 18px 48px rgba(9, 31, 48, 0.1),
     inset 0 0 0 1px rgba(255, 255, 255, 0.72);
@@ -46,8 +62,20 @@
 
 .theme-light .locations-hero::before {
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(246, 252, 255, 0.94) 30%, rgba(236, 247, 251, 0.68) 50%, rgba(236, 247, 251, 0.18) 72%, rgba(236, 247, 251, 0) 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 45%, rgba(255, 255, 255, 0.32) 100%);
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.98) 0%,
+      rgba(246, 252, 255, 0.94) 30%,
+      rgba(236, 247, 251, 0.68) 50%,
+      rgba(236, 247, 251, 0.18) 72%,
+      rgba(236, 247, 251, 0) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0) 45%,
+      rgba(255, 255, 255, 0.32) 100%
+    );
 }
 
 .locations-hero .hero-content {
@@ -209,8 +237,12 @@
   }
 
   .theme-light .locations-hero {
-    background-position: center, 70% 34%;
-    background-size: 100% 100%, cover;
+    background-position:
+      center,
+      70% 34%;
+    background-size:
+      100% 100%,
+      cover;
   }
 
   .location-form-grid,

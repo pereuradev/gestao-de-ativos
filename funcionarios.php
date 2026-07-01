@@ -172,17 +172,18 @@ try {
           <span>Dashboard</span>
         </a>
 
-<?php if ($sidebarIsAdmin): ?>
-        <a class="nav-link active" href="funcionarios.php">
-          <i class="bi bi-people-fill"></i>
-          <span>Funcion&aacute;rios</span>
-        </a>
-<?php else: ?>
-        <span class="nav-link nav-link-disabled" aria-disabled="true" title="Apenas administradores podem acessar funcionários">
-          <i class="bi bi-people-fill"></i>
-          <span>Funcion&aacute;rios</span>
-        </span>
-<?php endif; ?>
+        <?php if ($sidebarIsAdmin): ?>
+          <a class="nav-link active" href="funcionarios.php">
+            <i class="bi bi-people-fill"></i>
+            <span>Funcion&aacute;rios</span>
+          </a>
+        <?php else: ?>
+          <span class="nav-link nav-link-disabled" aria-disabled="true"
+            title="Apenas administradores podem acessar funcionï¿½rios">
+            <i class="bi bi-people-fill"></i>
+            <span>Funcion&aacute;rios</span>
+          </span>
+        <?php endif; ?>
 
         <a class="nav-link" href="marcas-visualizacao.php">
           <i class="bi bi-tags-fill"></i>
@@ -209,9 +210,9 @@ try {
             <a href="cadastro-ativos.php">Ativos</a>
             <a href="marcas.php">Marcas</a>
             <a href="propriedades.php">Propriedades</a>
-<?php if ($sidebarIsAdmin): ?>
-            <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
-<?php endif; ?>
+            <?php if ($sidebarIsAdmin): ?>
+              <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
+            <?php endif; ?>
             <a href="locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>
