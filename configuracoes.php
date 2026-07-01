@@ -1,31 +1,31 @@
 <?php
 
-// Esta página concentra as configurações do usuário logado.
-// Primeiro validamos a sessão, depois buscamos os dados no banco
-// e, por fim, usamos essas informações para montar a interface.
+// Esta pÃ¡gina concentra as configuraÃ§Ãµes do usuÃ¡rio logado.
+// Primeiro validamos a sessÃ£o, depois buscamos os dados no banco
+// e, por fim, usamos essas informaÃ§Ãµes para montar a interface.
 
 declare(strict_types=1);
 
-// Inicia a sessão para conseguir acessar os dados do usuário autenticado.
+// Inicia a sessÃ£o para conseguir acessar os dados do usuÃ¡rio autenticado.
 session_start();
 
-// Se não existir usuário válido na sessão, não deixa acessar a página direto pela URL.
-// Nesse caso, o usuário é mandado de volta para a tela de login.
+// Se nÃ£o existir usuÃ¡rio vÃ¡lido na sessÃ£o, nÃ£o deixa acessar a pÃ¡gina direto pela URL.
+// Nesse caso, o usuÃ¡rio Ã© mandado de volta para a tela de login.
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
   header("Location: Pagina-login.html?sessao=expirada");
   exit;
 }
 
 // Atalho para escapar textos antes de jogar no HTML.
-// Isso evita que algum valor vindo do banco ou da sessão quebre a página
-// ou abra brecha para injeção de código no navegador.
+// Isso evita que algum valor vindo do banco ou da sessÃ£o quebre a pÃ¡gina
+// ou abra brecha para injeÃ§Ã£o de cÃ³digo no navegador.
 function e(string $value): string
 {
   return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
 }
 
-// Busca um campo dentro do perfil e devolve um valor padrão quando ele está vazio.
-// Ajuda a evitar vários ifs espalhados no HTML só para mostrar "--".
+// Busca um campo dentro do perfil e devolve um valor padrÃ£o quando ele estÃ¡ vazio.
+// Ajuda a evitar vÃ¡rios ifs espalhados no HTML sÃ³ para mostrar "--".
 function campoPerfil(array $perfil, string $campo, string $padrao = "--"): string
 {
   $valor = trim((string) ($perfil[$campo] ?? ""));
@@ -33,8 +33,8 @@ function campoPerfil(array $perfil, string $campo, string $padrao = "--"): strin
   return $valor !== "" ? $valor : $padrao;
 }
 
-// Formata datas vindas do banco para o padrão brasileiro.
-// Se a data vier inválida, a tela continua funcionando e mostra apenas "--".
+// Formata datas vindas do banco para o padrÃ£o brasileiro.
+// Se a data vier invÃ¡lida, a tela continua funcionando e mostra apenas "--".
 function formatarDataPerfil(?string $value): string
 {
   if (!$value) {
@@ -50,7 +50,7 @@ function formatarDataPerfil(?string $value): string
   }
 }
 
-// Monta as iniciais do usuário para usar no avatar do crachá digital.
+// Monta as iniciais do usuÃ¡rio para usar no avatar do crachÃ¡ digital.
 // Exemplo: "Pietro Pereira" vira "PP".
 function iniciaisUsuario(string $nome): string
 {
@@ -72,7 +72,7 @@ function iniciaisUsuario(string $nome): string
   return $iniciais !== "" ? $iniciais : "TT";
 }
 
-// Converte o status do usuário em uma classe CSS.
+// Converte o status do usuÃ¡rio em uma classe CSS.
 // Assim o PHP decide o estado e o CSS cuida do visual.
 function statusClasseConfiguracao(string $status): string
 {
@@ -89,19 +89,19 @@ function statusClasseConfiguracao(string $status): string
   return "status-neutral";
 }
 
-// Começamos usando os dados que já estão salvos na sessão.
-// Se o banco responder, esses dados serão complementados logo abaixo.
+// ComeÃ§amos usando os dados que jÃ¡ estÃ£o salvos na sessÃ£o.
+// Se o banco responder, esses dados serÃ£o complementados logo abaixo.
 $usuario = $_SESSION["usuario"];
 $perfil = $usuario;
 $erroBanco = "";
 
 try {
-  // Carrega a conexão com o banco.
-  // O __DIR__ evita problema de caminho quando o arquivo é chamado de lugares diferentes.
+  // Carrega a conexÃ£o com o banco.
+  // O __DIR__ evita problema de caminho quando o arquivo Ã© chamado de lugares diferentes.
   require __DIR__ . "/Backend/Conexao.php";
 
-  // Consulta os dados completos do usuário no Supabase/PostgreSQL.
-  // A busca usa id ou email para funcionar mesmo se algum desses dados estiver ausente na sessão.
+  // Consulta os dados completos do usuÃ¡rio no Supabase/PostgreSQL.
+  // A busca usa id ou email para funcionar mesmo se algum desses dados estiver ausente na sessÃ£o.
   $stmt = $pdo->prepare("
         select
             id,
@@ -123,7 +123,7 @@ try {
          limit 1
     ");
 
-  // Os valores são enviados separados da SQL para evitar SQL Injection.
+  // Os valores sÃ£o enviados separados da SQL para evitar SQL Injection.
   $stmt->execute([
     ":id" => (string) ($usuario["id"] ?? ""),
     ":email" => (string) ($usuario["email"] ?? ""),
@@ -131,19 +131,19 @@ try {
 
   $perfilBanco = $stmt->fetch();
 
-  // Se encontrou o usuário no banco, junta os dados da sessão com os dados mais completos.
+  // Se encontrou o usuÃ¡rio no banco, junta os dados da sessÃ£o com os dados mais completos.
   // O banco fica com prioridade quando houver campos repetidos.
   if (is_array($perfilBanco)) {
     $perfil = array_merge($usuario, $perfilBanco);
   }
 } catch (Throwable) {
-  // Não travamos a página se o banco falhar.
-  // A tela ainda abre com os dados da sessão e mostra um aviso discreto ao usuário.
+  // NÃ£o travamos a pÃ¡gina se o banco falhar.
+  // A tela ainda abre com os dados da sessÃ£o e mostra um aviso discreto ao usuÃ¡rio.
   $erroBanco = "Nao foi possivel carregar todos os dados do banco. Mostrando informacoes da sessao.";
 }
 
-// A partir daqui, os dados são tratados para exibição.
-// Separar essa preparação do HTML deixa a tela mais organizada.
+// A partir daqui, os dados sÃ£o tratados para exibiÃ§Ã£o.
+// Separar essa preparaÃ§Ã£o do HTML deixa a tela mais organizada.
 $nomeUsuarioTexto = campoPerfil($perfil, "nome_completo", "Usuario TI TECH");
 $tipoUsuarioTexto = campoPerfil($perfil, "tipo_usuario", "Colaborador");
 $emailUsuarioTexto = campoPerfil($perfil, "email");
@@ -196,31 +196,31 @@ $codigoInternoEscapado = e($codigoInterno);
 <html lang="pt-BR">
 
 <head>
-  <!-- Configurações básicas da página e responsividade. -->
+  <!-- ConfiguraÃ§Ãµes bÃ¡sicas da pÃ¡gina e responsividade. -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <title>Configura&ccedil;&otilde;es | TI TECH Solutions</title>
   <meta name="description"
     content="Painel de configura&ccedil;&otilde;es de conta, seguran&ccedil;a e prefer&ecirc;ncias do portal TI TECH Solutions" />
-  <!-- Ícone da aba do navegador. -->
+  <!-- Ãcone da aba do navegador. -->
   <link rel="icon" type="image/png" href="assets/favicon.png?v=20260630-ti-favicon" />
 
-  <!-- Pré-conexão e fonte principal usada na interface. -->
+  <!-- PrÃ©-conexÃ£o e fonte principal usada na interface. -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
 
-  <!-- CSS separado por responsabilidade: base do sistema, efeitos gerais e ajustes específicos desta página. -->
+  <!-- CSS separado por responsabilidade: base do sistema, efeitos gerais e ajustes especÃ­ficos desta pÃ¡gina. -->
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
   <link rel="stylesheet" href="css/configuracoes.css?v=20260630-clean-hero" />
 
 
-  <!-- Scripts carregados com defer para não bloquear a montagem do HTML. -->
+  <!-- Scripts carregados com defer para nÃ£o bloquear a montagem do HTML. -->
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
@@ -232,11 +232,11 @@ $codigoInternoEscapado = e($codigoInterno);
 </head>
 
 <body class="theme-dark page-loading">
-  <!-- Estrutura principal da aplicação: menu lateral + área de conteúdo. -->
+  <!-- Estrutura principal da aplicaÃ§Ã£o: menu lateral + Ã¡rea de conteÃºdo. -->
   <div class="app-shell">
-    <!-- Menu lateral usado para navegar entre as áreas do sistema. -->
+    <!-- Menu lateral usado para navegar entre as Ã¡reas do sistema. -->
     <aside class="sidebar" id="sidebar">
-      <!-- Cabeçalho do menu com logo e botão de fechar no mobile. -->
+      <!-- CabeÃ§alho do menu com logo e botÃ£o de fechar no mobile. -->
       <div class="sidebar-header">
         <a href="https://www.titechsolutions.com.br/" class="brand-area" aria-label="Acessar site da TI TECH Solutions">
           <img class="brand-logo" src="assets/logo-branca.png" alt="TI TECH Solutions" />
@@ -247,7 +247,7 @@ $codigoInternoEscapado = e($codigoInterno);
         </button>
       </div>
 
-      <!-- Links principais do sistema. O aria-label ajuda leitores de tela a entenderem a navegação. -->
+      <!-- Links principais do sistema. O aria-label ajuda leitores de tela a entenderem a navegaÃ§Ã£o. -->
       <nav class="sidebar-nav" aria-label="Menu principal">
         <a class="nav-link" href="pagina-inicial.php">
           <i class="bi bi-house-door-fill"></i>
@@ -276,7 +276,7 @@ $codigoInternoEscapado = e($codigoInterno);
           <i class="bi bi-geo-alt-fill"></i>
           <span>Localiza&ccedil;&otilde;es</span>
         </a>
-        <!-- Grupo recolhível para evitar que o menu fique grande demais. -->
+        <!-- Grupo recolhÃ­vel para evitar que o menu fique grande demais. -->
         <div class="nav-group" data-nav-group>
           <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="registrationSubmenu">
             <i class="bi bi-folder-plus"></i>
@@ -288,11 +288,14 @@ $codigoInternoEscapado = e($codigoInterno);
             <a href="cadastro-ativos.php">Ativos</a>
             <a href="marcas.php">Marcas</a>
             <a href="propriedades.php">Propriedades</a>
+<?php if ($sidebarIsAdmin): ?>
+            <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
+<?php endif; ?>
             <a href="locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>
 
-        <!-- Segundo grupo recolhível, agora para telas de edição. -->
+        <!-- Segundo grupo recolhÃ­vel, agora para telas de ediÃ§Ã£o. -->
         <div class="nav-group" data-nav-group>
           <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="editingSubmenu">
             <i class="bi bi-pencil-square"></i>
@@ -319,7 +322,7 @@ $codigoInternoEscapado = e($codigoInterno);
         </a>
       </nav>
 
-      <!-- Rodapé do menu com resumo do usuário logado e botão de logout. -->
+      <!-- RodapÃ© do menu com resumo do usuÃ¡rio logado e botÃ£o de logout. -->
       <div class="sidebar-footer">
         <div class="sidebar-summary user-summary-card">
           <div class="sidebar-avatar" aria-hidden="true"><?php echo $sidebarInitials; ?></div>
@@ -341,9 +344,9 @@ $codigoInternoEscapado = e($codigoInterno);
     <!-- Camada escura usada quando o menu lateral abre em telas menores. -->
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
-    <!-- Conteúdo principal da página. O data-user-role permite que o JavaScript/CSS adaptem comportamentos pelo cargo. -->
+    <!-- ConteÃºdo principal da pÃ¡gina. O data-user-role permite que o JavaScript/CSS adaptem comportamentos pelo cargo. -->
     <main class="main-area settings-page" data-user-role="<?php echo e(strtolower($tipoUsuarioTexto)); ?>">
-      <!-- Barra superior com título da página e atalho para alternar tema. -->
+      <!-- Barra superior com tÃ­tulo da pÃ¡gina e atalho para alternar tema. -->
       <header class="topbar">
         <div class="topbar-left">
           <button class="icon-button menu-button" id="openSidebar" type="button" aria-label="Abrir menu">
@@ -367,7 +370,7 @@ $codigoInternoEscapado = e($codigoInterno);
         </div>
       </header>
 
-      <!-- Bloco de apresentação da página, dando contexto ao usuário sobre o que ele pode configurar. -->
+      <!-- Bloco de apresentaÃ§Ã£o da pÃ¡gina, dando contexto ao usuÃ¡rio sobre o que ele pode configurar. -->
       <section class="hero-panel settings-hero" aria-labelledby="settingsTitle">
         <div class="hero-content">
           <p class="section-tag">Central do usu&aacute;rio</p>
@@ -389,9 +392,9 @@ $codigoInternoEscapado = e($codigoInterno);
         </div>
       <?php endif; ?>
 
-      <!-- Resumo rápido da conta antes das configurações detalhadas. -->
+      <!-- Resumo rÃ¡pido da conta antes das configuraÃ§Ãµes detalhadas. -->
       <section class="settings-overview" aria-label="Resumo das configura&ccedil;&otilde;es">
-        <!-- Crachá digital com os principais dados do usuário logado. -->
+        <!-- CrachÃ¡ digital com os principais dados do usuÃ¡rio logado. -->
         <article class="content-card digital-badge-card" id="conta">
           <div class="badge-topline">
             <span>Cracha digital</span>
@@ -428,7 +431,7 @@ $codigoInternoEscapado = e($codigoInterno);
 
       </section>
 
-      <!-- Grade principal de cards. Cada article representa uma área de configuração. -->
+      <!-- Grade principal de cards. Cada article representa uma Ã¡rea de configuraÃ§Ã£o. -->
       <section class="settings-grid" aria-label="Painel de configura&ccedil;&otilde;es">
         <!-- Dados operacionais do perfil, exibidos de forma somente leitura. -->
         <article class="content-card profile-card" aria-labelledby="profileTitle">
@@ -453,7 +456,7 @@ $codigoInternoEscapado = e($codigoInterno);
           </div>
         </article>
 
-        <!-- Preferências visuais salvas pelo JavaScript, como tema, cor e densidade da interface. -->
+        <!-- PreferÃªncias visuais salvas pelo JavaScript, como tema, cor e densidade da interface. -->
         <article class="content-card preferences-card" id="interface" aria-labelledby="interfaceTitle">
           <div class="card-header">
             <div>
@@ -468,7 +471,7 @@ $codigoInternoEscapado = e($codigoInterno);
           </div>
 
           <form class="preferences-form" id="preferencesForm">
-            <!-- Cores de destaque da interface. O JS lê o radio selecionado e aplica a classe/variável correspondente. -->
+            <!-- Cores de destaque da interface. O JS lÃª o radio selecionado e aplica a classe/variÃ¡vel correspondente. -->
             <fieldset class="preference-group">
               <legend>Prefer&ecirc;ncia de cor</legend>
               <div class="accent-options" role="radiogroup" aria-label="Prefer&ecirc;ncia de cor">
@@ -483,7 +486,7 @@ $codigoInternoEscapado = e($codigoInterno);
               </div>
             </fieldset>
 
-            <!-- Escolha do tema visual: escuro, claro ou automático pelo sistema. -->
+            <!-- Escolha do tema visual: escuro, claro ou automÃ¡tico pelo sistema. -->
             <fieldset class="preference-group">
               <legend>Modo de tela</legend>
               <div class="segmented-control three-options" role="radiogroup" aria-label="Modo de tela">
@@ -512,7 +515,7 @@ $codigoInternoEscapado = e($codigoInterno);
               </div>
             </fieldset>
 
-            <!-- Ajustes finos de experiência para adaptar a tela ao jeito de trabalho do usuário. -->
+            <!-- Ajustes finos de experiÃªncia para adaptar a tela ao jeito de trabalho do usuÃ¡rio. -->
             <fieldset class="preference-group">
               <legend>Ajustes de UX</legend>
               <div class="toggle-list">
@@ -537,7 +540,7 @@ $codigoInternoEscapado = e($codigoInterno);
           <div class="form-message success" id="preferencesMessage" role="status"></div>
         </article>
 
-        <!-- Área de segurança. A validação visual da senha fica no JS; a troca real precisa ser feita no backend. -->
+        <!-- Ãrea de seguranÃ§a. A validaÃ§Ã£o visual da senha fica no JS; a troca real precisa ser feita no backend. -->
         <article class="content-card security-card wide-card" id="seguranca" aria-labelledby="securityTitle">
           <div class="card-header">
             <div>
@@ -547,7 +550,7 @@ $codigoInternoEscapado = e($codigoInterno);
           </div>
 
           <div class="security-layout">
-            <!-- Formulário de senha preparado para receber integração real depois. -->
+            <!-- FormulÃ¡rio de senha preparado para receber integraÃ§Ã£o real depois. -->
             <form class="password-form" id="passwordForm">
               <label class="asset-field">
                 <span>Senha atual</span>
@@ -587,7 +590,7 @@ $codigoInternoEscapado = e($codigoInterno);
           </div>
         </article>
 
-        <!-- Diagnóstico do ambiente do usuário. Os dados com id são preenchidos pelo JavaScript no navegador. -->
+        <!-- DiagnÃ³stico do ambiente do usuÃ¡rio. Os dados com id sÃ£o preenchidos pelo JavaScript no navegador. -->
         <article class="content-card diagnostics-card wide-card" id="sistema" aria-labelledby="systemTitle">
           <div class="card-header">
             <div>
@@ -609,7 +612,7 @@ $codigoInternoEscapado = e($codigoInterno);
         </article>
       </section>
 
-      <!-- Toast usado para mensagens rápidas sem interromper a navegação. -->
+      <!-- Toast usado para mensagens rÃ¡pidas sem interromper a navegaÃ§Ã£o. -->
       <div class="settings-toast" id="settingsToast" role="status" aria-live="polite"></div>
     </main>
   </div>

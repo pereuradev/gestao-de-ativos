@@ -187,7 +187,7 @@ gestao-de-ativos/
 ├── css/
 │   ├── pagina-base.css
 │   ├── pagina-login.css
-│   ├── pagina-cadastro.css
+│   ├── cadastro-funcionarios.css
 │   ├── responsivo-global.css
 │   ├── typewriter.css
 │   ├── ux-profissional.css
@@ -207,7 +207,7 @@ gestao-de-ativos/
 │   ├── app-base.js
 │   ├── pagina-base.js
 │   ├── pagina-login.js
-│   ├── pagina-cadastro.js
+│   ├── cadastro-funcionarios.js
 │   ├── react-widgets.js
 │   ├── typewriter.js
 │   ├── ux-profissional.js
@@ -224,11 +224,11 @@ gestao-de-ativos/
 │   └── edicao-propriedades.js
 │
 ├── Pagina-login.html
-├── Pagina-cadastro.html
 ├── pagina-inicial.html
 ├── pagina-inicial.php
 ├── ativos.php
 ├── cadastro-ativos.php
+├── cadastro-funcionarios.php
 ├── funcionarios.php
 ├── configuracoes.php
 ├── marcas.php
@@ -252,10 +252,10 @@ gestao-de-ativos/
 | Página | Função |
 |---|---|
 | `Pagina-login.html` | Tela inicial de autenticação do sistema. |
-| `Pagina-cadastro.html` | Tela de cadastro de usuário. |
 | `pagina-inicial.php` | Dashboard operacional após login. |
 | `ativos.php` | Consulta e filtragem de ativos. |
 | `cadastro-ativos.php` | Cadastro de novos ativos. |
+| `cadastro-funcionarios.php` | Cadastro interno de funcionários, restrito a administradores. |
 | `edicao-ativos.php` | Edição de ativos cadastrados. |
 | `funcionarios.php` | Listagem de funcionários/usuários. |
 | `marcas.php` | Cadastro de marcas. |
@@ -279,7 +279,7 @@ gestao-de-ativos/
 | `Backend/config.php` | Carrega variáveis de ambiente do arquivo `.env`. |
 | `Backend/login-usuario.php` | Processa autenticação do usuário. |
 | `Backend/logout.php` | Encerra a sessão do usuário. |
-| `Backend/cadastrar-usuario.php` | Registra novos usuários. |
+| `Backend/cadastrar-usuario.php` | Registra novos usuários via área interna do administrador. |
 | `Backend/cadastrar-ativo.php` | Registra novos ativos. |
 | `Backend/atualizar-ativo.php` | Atualiza dados de ativos. |
 | `Backend/excluir-ativo.php` | Remove ativos. |

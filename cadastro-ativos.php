@@ -66,12 +66,12 @@ $ultimosAtivos = [];
 $totalAtivos = 0;
 $ativosDisponiveis = 0;
 $erroBanco = "";
-$statusPadrao = "DisponÃ­vel";
+$statusPadrao = "DisponÃƒÂ­vel";
 $statusOptions = [
-  "DisponÃ­vel",
+  "DisponÃƒÂ­vel",
   "Em uso",
-  "HomologaÃ§Ã£o",
-  "ManutenÃ§Ã£o",
+  "HomologaÃƒÂ§ÃƒÂ£o",
+  "ManutenÃƒÂ§ÃƒÂ£o",
 ];
 
 try {
@@ -238,6 +238,9 @@ try {
             <a class="active-submenu" href="cadastro-ativos.php">Ativos</a>
             <a href="marcas.php">Marcas</a>
             <a href="propriedades.php">Propriedades</a>
+<?php if ($sidebarIsAdmin): ?>
+            <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
+<?php endif; ?>
             <a href="locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>
@@ -372,7 +375,7 @@ try {
         </div>
       <?php endif; ?>
 
-      <section class="asset-registration-layout" aria-label="Cadastro e Ãºltimos ativos">
+      <section class="asset-registration-layout" aria-label="Cadastro e ÃƒÂºltimos ativos">
         <article class="content-card asset-form-card asset-form-card-enhanced">
           <div class="card-header asset-card-header">
             <div>
@@ -382,7 +385,7 @@ try {
                 rastreabilidade do estoque.</span>
             </div>
 
-            <div class="form-badge" aria-label="Campos obrigatÃ³rios">
+            <div class="form-badge" aria-label="Campos obrigatÃƒÂ³rios">
               <i class="bi bi-asterisk"></i>
               Obrigat&oacute;rios
             </div>

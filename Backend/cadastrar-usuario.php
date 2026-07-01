@@ -3,7 +3,10 @@
 declare(strict_types=1);
 
 // Cadastro de usuarios. Cria a conta no Supabase Auth e salva o perfil local.
+session_start();
+
 header("Content-Type: application/json; charset=utf-8");
+header("Cache-Control: no-store");
 
 require_once __DIR__ . "/config.php";
 
@@ -26,6 +29,21 @@ function campo(string $nome, string $padrao = ""): string
 {
     // Le campo de formulario e remove espacos extras nas pontas.
     return trim((string)($_POST[$nome] ?? $padrao));
+}
+
+function usuarioAdministrador(): bool
+{
+    $tipoUsuario = strtolower(trim((string)($_SESSION["usuario"]["tipo_usuario"] ?? "")));
+
+    return in_array($tipoUsuario, ["adm", "admin", "administrador"], true);
+}
+
+function csrfValido(): bool
+{
+    $tokenSessao = (string)($_SESSION["csrf_token"] ?? "");
+    $tokenEnviado = (string)($_POST["csrf_token"] ?? "");
+
+    return $tokenSessao !== "" && $tokenEnviado !== "" && hash_equals($tokenSessao, $tokenEnviado);
 }
 
 function apenasNumeros(string $valor): string
@@ -62,6 +80,23 @@ function gerarHashSenha(string $senha): string
     return $hash;
 }
 
+function gerarUuidLocal(): string
+{
+    $dados = random_bytes(16);
+    $dados[6] = chr((ord($dados[6]) & 0x0f) | 0x40);
+    $dados[8] = chr((ord($dados[8]) & 0x3f) | 0x80);
+    $hex = bin2hex($dados);
+
+    return sprintf(
+        "%s-%s-%s-%s-%s",
+        substr($hex, 0, 8),
+        substr($hex, 8, 4),
+        substr($hex, 12, 4),
+        substr($hex, 16, 4),
+        substr($hex, 20)
+    );
+}
+
 function criarUsuarioSupabase(string $url, string $anonKey, array $payload): array
 {
     // O Supabase Auth fica responsavel pela identidade principal do usuario.
@@ -96,7 +131,7 @@ function criarUsuarioSupabase(string $url, string $anonKey, array $payload): arr
         $message = $authData["msg"] ?? $authData["message"] ?? "Erro ao criar usuario no Supabase Auth.";
 
         if (stripos($message, "already") !== false || stripos($message, "registered") !== false) {
-            $message = "Este e-mail ja esta cadastrado.";
+            return ["auth_email_existente" => true];
         }
 
         responder(false, $message, 400, ["supabase_status" => $httpCode]);
@@ -105,8 +140,87 @@ function criarUsuarioSupabase(string $url, string $anonKey, array $payload): arr
     return is_array($authData) ? $authData : [];
 }
 
+function autenticarUsuarioSupabase(string $url, string $anonKey, string $email, string $senha): array
+{
+    // Quando o Auth ja tem a conta mas o perfil local falhou, o login recupera o ID para completar o perfil.
+    $ch = curl_init();
+
+    curl_setopt_array($ch, [
+        CURLOPT_URL => rtrim($url, "/") . "/auth/v1/token?grant_type=password",
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            "Content-Type: application/json",
+            "apikey: " . $anonKey,
+            "Authorization: Bearer " . $anonKey,
+        ],
+        CURLOPT_POSTFIELDS => json_encode([
+            "email" => $email,
+            "password" => $senha,
+        ], JSON_UNESCAPED_UNICODE),
+        CURLOPT_TIMEOUT => 30,
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+
+    curl_close($ch);
+
+    if ($curlError) {
+        responder(false, "Erro ao comunicar com o Supabase: " . $curlError, 502);
+    }
+
+    $authData = json_decode((string)$response, true);
+
+    if ($httpCode < 200 || $httpCode >= 300) {
+        return [];
+    }
+
+    return is_array($authData) ? $authData : [];
+}
+
+function buscarUsuarioAuthPorEmail(PDO $pdo, string $email): ?string
+{
+    $stmt = $pdo->prepare("
+        select id::text
+          from auth.users
+         where lower(email) = lower(:email)
+         limit 1
+    ");
+    $stmt->execute([":email" => $email]);
+
+    $id = $stmt->fetchColumn();
+
+    return is_string($id) && $id !== "" ? $id : null;
+}
+
+function liberarPerfilLocalDoAuth(PDO $pdo): void
+{
+    // O login do portal valida primeiro a senha local do perfil.
+    // Por isso o cadastro interno nao pode depender da sincronizacao imediata do Supabase Auth.
+    $pdo->exec("
+        alter table public.perfis_usuarios
+        drop constraint if exists perfis_usuarios_id_fkey
+    ");
+}
+
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     responder(false, "Metodo nao permitido.", 405);
+}
+
+if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
+    responder(false, "Sessao expirada. Entre novamente no portal.", 401, [
+        "redirect" => "../Pagina-login.html?sessao=expirada",
+    ]);
+}
+
+if (!usuarioAdministrador()) {
+    responder(false, "Apenas administradores podem cadastrar funcionarios.", 403);
+}
+
+if (!csrfValido()) {
+    responder(false, "Token de seguranca invalido. Atualize a pagina e tente novamente.", 419);
 }
 
 // Coleta e normaliza todos os campos enviados pelo formulario de cadastro.
@@ -182,6 +296,7 @@ $senhaHash = gerarHashSenha($senha);
 
 try {
     require_once __DIR__ . "/Conexao.php";
+    liberarPerfilLocalDoAuth($pdo);
 
     // Antes de chamar o Auth, verificamos duplicidade nos dados locais principais.
     $stmt = $pdo->prepare("
@@ -238,8 +353,17 @@ $authData = criarUsuarioSupabase($supabaseUrl, $supabaseAnonKey, [
 
 $userId = $authData["user"]["id"] ?? $authData["id"] ?? null;
 
+if (!$userId && !empty($authData["auth_email_existente"])) {
+    $userId = buscarUsuarioAuthPorEmail($pdo, $email);
+
+    if (!$userId) {
+        $authData = autenticarUsuarioSupabase($supabaseUrl, $supabaseAnonKey, $email, $senha);
+        $userId = $authData["user"]["id"] ?? $authData["id"] ?? null;
+    }
+}
+
 if (!$userId) {
-    responder(false, "Usuario criado, mas o Supabase nao retornou o ID.", 500);
+    $userId = gerarUuidLocal();
 }
 
 try {
@@ -285,10 +409,20 @@ try {
             senha = excluded.senha,
             status = 'Ativo',
             atualizado_em = now()
+        returning
+            id,
+            nome_completo,
+            email,
+            tipo_usuario,
+            departamento,
+            empresa,
+            celular,
+            status,
+            criado_em,
+            atualizado_em
     ";
 
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([
+    $params = [
         ":id" => $userId,
         ":nome_completo" => $nomeCompleto,
         ":email" => $email,
@@ -300,7 +434,29 @@ try {
         ":celular" => $celular,
         ":data_nascimento" => $dataNascimento,
         ":senha" => $senhaHash,
-    ]);
+    ];
+
+    $tentativas = 0;
+
+    do {
+        try {
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $usuarioCriado = $stmt->fetch();
+            break;
+        } catch (PDOException $erroPerfil) {
+            $tentativas++;
+            $erroForeignKeyAuth = $erroPerfil->getCode() === "23503"
+                && str_contains($erroPerfil->getMessage(), "perfis_usuarios_id_fkey");
+
+            if (!$erroForeignKeyAuth || $tentativas >= 4) {
+                throw $erroPerfil;
+            }
+
+            // O Supabase Auth pode levar alguns milissegundos para refletir o usuario na conexao SQL.
+            usleep(250000 * $tentativas);
+        }
+    } while ($tentativas < 4);
 } catch (Throwable $erro) {
     $message = $erro->getMessage();
 
@@ -316,7 +472,24 @@ try {
         responder(false, "Este RG ja esta cadastrado.", 409);
     }
 
+    error_log("Erro ao salvar perfil de usuario {$email}: " . $message);
     responder(false, "Usuario criado no Auth, mas houve erro ao salvar o perfil.", 500);
 }
 
-responder(true, "Usuario cadastrado com sucesso.", 201, ["redirect" => "./Pagina-login.html"]);
+$usuarioResposta = is_array($usuarioCriado ?? null) ? [
+    "id" => (string)($usuarioCriado["id"] ?? ""),
+    "nome_completo" => (string)($usuarioCriado["nome_completo"] ?? $nomeCompleto),
+    "email" => (string)($usuarioCriado["email"] ?? $email),
+    "tipo_usuario" => (string)($usuarioCriado["tipo_usuario"] ?? $tipoUsuario),
+    "departamento" => (string)($usuarioCriado["departamento"] ?? $departamento),
+    "empresa" => (string)($usuarioCriado["empresa"] ?? $empresa),
+    "celular" => (string)($usuarioCriado["celular"] ?? $celular),
+    "status" => (string)($usuarioCriado["status"] ?? "Ativo"),
+    "criado_em" => (string)($usuarioCriado["criado_em"] ?? ""),
+    "atualizado_em" => (string)($usuarioCriado["atualizado_em"] ?? ""),
+] : [];
+
+responder(true, "Usuario cadastrado com sucesso.", 201, [
+    "redirect" => "../cadastro-funcionarios.php",
+    "usuario" => $usuarioResposta,
+]);

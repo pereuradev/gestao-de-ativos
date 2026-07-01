@@ -505,19 +505,11 @@ function initRequestAccess() {
 
 function initSupportLinks() {
   const forgotPasswordLink = getEl("forgotPasswordLink");
-  const registerUserLink = getEl("registerUserLink");
 
   if (forgotPasswordLink) {
     forgotPasswordLink.addEventListener("click", (event) => {
       event.preventDefault();
       showToast("Fluxo de recupera\u00e7\u00e3o de senha ainda n\u00e3o configurado.");
-    });
-  }
-
-  if (registerUserLink) {
-    registerUserLink.addEventListener("click", (event) => {
-      event.preventDefault();
-      navigateWithTransition(registerUserLink.getAttribute("href"));
     });
   }
 }

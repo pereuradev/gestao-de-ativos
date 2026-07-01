@@ -200,6 +200,9 @@ try {
             <a href="cadastro-ativos.php">Ativos</a>
             <a class="active-submenu" href="marcas.php">Marcas</a>
             <a href="propriedades.php">Propriedades</a>
+<?php if ($sidebarIsAdmin): ?>
+            <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
+<?php endif; ?>
             <a href="locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>

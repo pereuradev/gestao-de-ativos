@@ -103,21 +103,21 @@ $ativosDisponiveis = 0;
 $erroBanco = "";
 
 $statusOptions = [
-  "DisponÃ­vel",
+  "DisponÃƒÂ­vel",
   "Em uso",
-  "ManutenÃ§Ã£o",
-  "FormataÃ§Ã£o",
-  "HomologaÃ§Ã£o",
+  "ManutenÃƒÂ§ÃƒÂ£o",
+  "FormataÃƒÂ§ÃƒÂ£o",
+  "HomologaÃƒÂ§ÃƒÂ£o",
   "Baixado",
   "Perdido",
 ];
 $statusOptions = [
-  "DisponÃ­vel",
+  "DisponÃƒÂ­vel",
   "Em uso",
-  "HomologaÃ§Ã£o",
-  "ManutenÃ§Ã£o",
+  "HomologaÃƒÂ§ÃƒÂ£o",
+  "ManutenÃƒÂ§ÃƒÂ£o",
 ];
-$statusPadrao = "DisponÃ­vel";
+$statusPadrao = "DisponÃƒÂ­vel";
 
 try {
   require __DIR__ . "/Backend/Conexao.php";
@@ -169,7 +169,7 @@ try {
   $disponiveisStmt = $pdo->prepare("
         select count(*)::int
           from public.ativos
-         where lower(status) in ('disponivel', 'disponÃ­vel', 'estoque', 'em estoque')
+         where lower(status) in ('disponivel', 'disponÃƒÂ­vel', 'estoque', 'em estoque')
     ");
   $disponiveisStmt->execute();
   $ativosDisponiveis = (int) $disponiveisStmt->fetchColumn();
@@ -364,6 +364,9 @@ try {
             <a href="cadastro-ativos.php">Ativos</a>
             <a href="marcas.php">Marcas</a>
             <a href="propriedades.php">Propriedades</a>
+<?php if ($sidebarIsAdmin): ?>
+            <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
+<?php endif; ?>
             <a href="locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>

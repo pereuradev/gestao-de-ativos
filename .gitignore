@@ -3,3 +3,5 @@ Backend/.env
 *.local.php
 *.log
 *.tmp
+outputs/~$apresentacao-gestao-de-ativos.pptx
+outputs/apresentacao-gestao-de-ativos.pptx

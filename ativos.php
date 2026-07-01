@@ -104,12 +104,12 @@ $ativosDisponiveis = 0;
 
 $erroBanco = "";
 
-$statusPadrao = "Disponível";
+$statusPadrao = "DisponÃ­vel";
 $statusOptions = [
-  "Disponível",
+  "DisponÃ­vel",
   "Em uso",
-  "Homologação",
-  "Manutenção",
+  "HomologaÃ§Ã£o",
+  "ManutenÃ§Ã£o",
 ];
 
 try {
@@ -337,6 +337,9 @@ try {
             <a href="cadastro-ativos.php">Ativos</a>
             <a href="marcas.php">Marcas</a>
             <a href="propriedades.php">Propriedades</a>
+<?php if ($sidebarIsAdmin): ?>
+            <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
+<?php endif; ?>
             <a href="locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>
@@ -529,10 +532,10 @@ try {
             <?php endforeach; ?>
           </select>
 
-          <select id="assetPerPage" name="por_pagina" aria-label="Registros por página">
+          <select id="assetPerPage" name="por_pagina" aria-label="Registros por pÃ¡gina">
             <?php foreach ($porPaginaOpcoes as $opcaoPorPagina): ?>
               <option value="<?php echo e((string) $opcaoPorPagina); ?>" <?php echo $porPagina === $opcaoPorPagina ? "selected" : ""; ?>>
-                <?php echo e((string) $opcaoPorPagina); ?> por página
+                <?php echo e((string) $opcaoPorPagina); ?> por pÃ¡gina
               </option>
             <?php endforeach; ?>
           </select>
@@ -625,7 +628,7 @@ try {
         </div>
 
         <?php if ($totalFiltradoAtivos > 0): ?>
-          <nav class="asset-pagination" aria-label="Paginação de ativos">
+          <nav class="asset-pagination" aria-label="PaginaÃ§Ã£o de ativos">
             <div class="asset-pagination-info">
               Mostrando
               <strong><?php echo e((string) $inicioRegistro); ?>-<?php echo e((string) $fimRegistro); ?></strong>
@@ -685,12 +688,12 @@ try {
 
                 <?php if ($paginaAtual < $totalPaginas): ?>
                   <a class="pagination-button" href="<?php echo e(urlAtivosPaginada($paginaAtual + 1)); ?>">
-                    Próxima
+                    PrÃ³xima
                     <i class="bi bi-chevron-right"></i>
                   </a>
                 <?php else: ?>
                   <span class="pagination-button disabled" aria-disabled="true">
-                    Próxima
+                    PrÃ³xima
                     <i class="bi bi-chevron-right"></i>
                   </span>
                 <?php endif; ?>

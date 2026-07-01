@@ -99,7 +99,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
             <nav class="sidebar-nav" aria-label="Menu principal">
                 <a class="nav-link" href="pagina-inicial.php">
                     <i class="bi bi-house-door-fill"></i>
-                    <span>Página Inicial</span>
+                    <span>PÃ¡gina Inicial</span>
                 </a>
 
                 <a class="nav-link active" href="dashboard.php" aria-current="page">
@@ -109,7 +109,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 
                 <a class="nav-link" href="funcionarios.php">
                     <i class="bi bi-people-fill"></i>
-                    <span>Funcionários</span>
+                    <span>FuncionÃ¡rios</span>
                 </a>
 
                 <a class="nav-link" href="marcas-visualizacao.php">
@@ -124,7 +124,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 
                 <a class="nav-link" href="locais-visualizacao.php">
                     <i class="bi bi-geo-alt-fill"></i>
-                    <span>Localizações</span>
+                    <span>LocalizaÃ§Ãµes</span>
                 </a>
 
                 <div class="nav-group" data-nav-group>
@@ -139,7 +139,10 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                         <a href="cadastro-ativos.php">Ativos</a>
                         <a href="marcas.php">Marcas</a>
                         <a href="propriedades.php">Propriedades</a>
-                        <a href="locais.php">Localizações</a>
+<?php if ($sidebarIsAdmin): ?>
+            <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
+<?php endif; ?>
+                        <a href="locais.php">LocalizaÃ§Ãµes</a>
                     </div>
                 </div>
 
@@ -147,7 +150,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                     <button class="nav-link nav-toggle" type="button" aria-expanded="false"
                         aria-controls="editingSubmenu">
                         <i class="bi bi-pencil-square"></i>
-                        <span>Edição</span>
+                        <span>EdiÃ§Ã£o</span>
                         <i class="bi bi-chevron-down nav-chevron"></i>
                     </button>
 
@@ -155,7 +158,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                         <a href="edicao-ativos.php">Ativos</a>
                         <a href="edicao-marcas.php">Marcas</a>
                         <a href="edicao-propriedades.php">Propriedades</a>
-                        <a href="edicao-locais.php">Localizações</a>
+                        <a href="edicao-locais.php">LocalizaÃ§Ãµes</a>
                     </div>
                 </div>
 
@@ -166,7 +169,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 
                 <a class="nav-link" href="configuracoes.php">
                     <i class="bi bi-gear-fill"></i>
-                    <span>Configurações</span>
+                    <span>ConfiguraÃ§Ãµes</span>
                 </a>
             </nav>
 
@@ -179,7 +182,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                         <span
                             class="sidebar-role <?php echo $sidebarRoleClass; ?>"><?php echo $sidebarRoleLabel; ?></span>
                         <small
-                            title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email não informado"; ?></small>
+                            title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nÃ£o informado"; ?></small>
                         <small title="<?php echo $sidebarDepartment; ?>"><?php echo $sidebarDepartment; ?></small>
                     </div>
                 </div>
@@ -218,15 +221,15 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
             <!-- Hero do dashboard. O texto principal usa typewriter para alternar as frases. -->
             <section class="dashboard-hero" aria-labelledby="dashboardTitle">
                 <div>
-                    <span class="eyebrow">Análise visual do inventário</span>
+                    <span class="eyebrow">AnÃ¡lise visual do inventÃ¡rio</span>
                     <h2 id="dashboardTitle">
                         <span class="typewriter-heading" data-typewriter-loop
-                            data-typewriter-phrases="Veja seus produtos por tipo, status, marca, local e evolução.|Filtre um tipo e veja as marcas.|Acompanhe o inventário por grupo.">Veja
-                            seus produtos por tipo, status, marca, local e evolução.</span><span
+                            data-typewriter-phrases="Veja seus produtos por tipo, status, marca, local e evoluÃ§Ã£o.|Filtre um tipo e veja as marcas.|Acompanhe o inventÃ¡rio por grupo.">Veja
+                            seus produtos por tipo, status, marca, local e evoluÃ§Ã£o.</span><span
                             aria-hidden="true"></span>
                     </h2>
                     <p>
-                        Escolha o tipo de gráfico, filtre uma categoria específica e acompanhe quantos ativos existem em
+                        Escolha o tipo de grÃ¡fico, filtre uma categoria especÃ­fica e acompanhe quantos ativos existem em
                         cada grupo.
                     </p>
                 </div>
@@ -239,11 +242,11 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
             </p>
 
             <!-- Cards preenchidos pelo JavaScript depois que o endpoint retorna os dados. -->
-            <section class="dashboard-summary-grid" aria-label="Resumo do inventário">
+            <section class="dashboard-summary-grid" aria-label="Resumo do inventÃ¡rio">
                 <article class="summary-card">
                     <span>Total de ativos</span>
                     <strong id="totalAssetsMetric">--</strong>
-                    <small>Itens cadastrados no inventário.</small>
+                    <small>Itens cadastrados no inventÃ¡rio.</small>
                 </article>
 
                 <article class="summary-card">
@@ -255,7 +258,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                 <article class="summary-card">
                     <span>Tipo selecionado</span>
                     <strong id="selectedTypeMetric">Todos</strong>
-                    <small id="selectedTypeDetail">Visualização geral do inventário.</small>
+                    <small id="selectedTypeDetail">VisualizaÃ§Ã£o geral do inventÃ¡rio.</small>
                 </article>
 
                 <article class="summary-card">
@@ -275,18 +278,18 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                 </div>
 
                 <div class="dashboard-control-group">
-                    <label for="metricFilter">Dados do gráfico</label>
+                    <label for="metricFilter">Dados do grÃ¡fico</label>
                     <select id="metricFilter">
                         <option value="categorias">Quantidade por tipo</option>
                         <option value="status">Quantidade por status</option>
                         <option value="marcas">Quantidade por marca</option>
-                        <option value="locais">Quantidade por localização</option>
-                        <option value="evolucao">Evolução de cadastros</option>
+                        <option value="locais">Quantidade por localizaÃ§Ã£o</option>
+                        <option value="evolucao">EvoluÃ§Ã£o de cadastros</option>
                     </select>
                 </div>
 
                 <div class="dashboard-control-group">
-                    <label for="chartTypeFilter">Tipo de gráfico</label>
+                    <label for="chartTypeFilter">Tipo de grÃ¡fico</label>
                     <select id="chartTypeFilter">
                         <option value="bar">Barras</option>
                         <option value="pie">Pizza</option>
@@ -297,11 +300,11 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                 </div>
 
                 <div class="dashboard-control-group">
-                    <label for="periodFilter">Período da evolução</label>
+                    <label for="periodFilter">PerÃ­odo da evoluÃ§Ã£o</label>
                     <select id="periodFilter">
-                        <option value="7">Últimos 7 dias</option>
-                        <option value="30" selected>Últimos 30 dias</option>
-                        <option value="90">Últimos 90 dias</option>
+                        <option value="7">Ãšltimos 7 dias</option>
+                        <option value="30" selected>Ãšltimos 30 dias</option>
+                        <option value="90">Ãšltimos 90 dias</option>
                     </select>
                 </div>
 
@@ -316,9 +319,9 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                 <article class="dashboard-panel main-chart-card">
                     <div class="panel-heading">
                         <div>
-                            <span class="eyebrow">Gráfico principal</span>
+                            <span class="eyebrow">GrÃ¡fico principal</span>
                             <h3 id="mainChartTitle">Quantidade por tipo</h3>
-                            <p id="mainChartDescription">Distribuição dos ativos cadastrados por categoria de produto.
+                            <p id="mainChartDescription">DistribuiÃ§Ã£o dos ativos cadastrados por categoria de produto.
                             </p>
                         </div>
 
@@ -329,20 +332,20 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                     </div>
 
                     <div class="chart-wrapper">
-                        <canvas id="productsChart" aria-label="Gráfico do dashboard de produtos" role="img"></canvas>
+                        <canvas id="productsChart" aria-label="GrÃ¡fico do dashboard de produtos" role="img"></canvas>
                     </div>
                 </article>
 
                 <aside class="dashboard-panel details-card">
                     <div class="panel-heading compact">
                         <div>
-                            <span class="eyebrow">Leitura rápida</span>
+                            <span class="eyebrow">Leitura rÃ¡pida</span>
                             <h3>Dados exibidos</h3>
                         </div>
                     </div>
 
                     <div id="dashboardRanking" class="ranking-list" aria-live="polite">
-                        <div class="ranking-empty">Carregando informações...</div>
+                        <div class="ranking-empty">Carregando informaÃ§Ãµes...</div>
                     </div>
                 </aside>
             </section>
@@ -351,9 +354,9 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
             <section class="dashboard-panel table-panel" aria-label="Tabela de apoio do dashboard">
                 <div class="panel-heading">
                     <div>
-                        <span class="eyebrow">Base do gráfico</span>
+                        <span class="eyebrow">Base do grÃ¡fico</span>
                         <h3>Tabela dos dados atuais</h3>
-                        <p>Use a tabela para conferir os números exatos usados no gráfico.</p>
+                        <p>Use a tabela para conferir os nÃºmeros exatos usados no grÃ¡fico.</p>
                     </div>
                 </div>
 
@@ -363,7 +366,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                             <tr>
                                 <th>Grupo</th>
                                 <th>Quantidade</th>
-                                <th>Participação</th>
+                                <th>ParticipaÃ§Ã£o</th>
                             </tr>
                         </thead>
                         <tbody id="dashboardTableBody">

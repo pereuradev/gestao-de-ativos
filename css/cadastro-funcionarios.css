@@ -1,0 +1,354 @@
+.employee-registration-page .employee-register-hero {
+  min-height: 244px;
+  background-color: #071b2a;
+  background-image: url("../assets/FUNDO-FUNCIONARIOS.png");
+  background-position: center;
+  background-size: cover;
+  box-shadow:
+    var(--shadow),
+    inset 0 0 150px rgba(3, 16, 29, 0.82);
+}
+
+.employee-registration-page .employee-register-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(3, 16, 29, 0.99) 0%, rgba(3, 16, 29, 0.95) 26%, rgba(6, 24, 41, 0.82) 48%, rgba(8, 31, 47, 0.4) 72%, rgba(3, 16, 29, 0.56) 100%),
+    linear-gradient(180deg, rgba(3, 16, 29, 0.84) 0%, rgba(3, 16, 29, 0.28) 36%, rgba(3, 16, 29, 0.88) 100%);
+}
+
+.theme-light .employee-registration-page .employee-register-hero {
+  box-shadow:
+    0 22px 70px rgba(9, 31, 48, 0.11),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.62);
+}
+
+.theme-light .employee-registration-page .employee-register-hero::before {
+  background:
+    linear-gradient(90deg, rgba(247, 251, 253, 0.98) 0%, rgba(242, 248, 251, 0.95) 28%, rgba(231, 241, 246, 0.8) 50%, rgba(214, 231, 239, 0.34) 74%, rgba(6, 24, 41, 0.18) 100%),
+    linear-gradient(180deg, rgba(247, 251, 253, 0.78) 0%, rgba(247, 251, 253, 0.18) 38%, rgba(247, 251, 253, 0.88) 100%);
+}
+
+.employee-registration-page .employee-register-hero .hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+}
+
+.employee-registration-page .employee-register-hero .hero-content h2 {
+  color: #f6fbff;
+  text-shadow: 0 10px 28px rgba(3, 16, 29, 0.52);
+}
+
+.employee-registration-page .employee-register-hero .hero-content p:not(.section-tag) {
+  color: rgba(246, 251, 255, 0.84);
+  text-shadow: 0 8px 22px rgba(3, 16, 29, 0.42);
+}
+
+.theme-light .employee-registration-page .employee-register-hero .hero-content h2 {
+  color: #0b1f30;
+  text-shadow: 0 10px 28px rgba(255, 255, 255, 0.5);
+}
+
+.theme-light .employee-registration-page .employee-register-hero .hero-content p:not(.section-tag) {
+  color: #315369;
+  text-shadow: 0 8px 22px rgba(255, 255, 255, 0.55);
+}
+
+.employee-registration-page .employee-registration-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.employee-registration-layout {
+  gap: 32px;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.55fr);
+}
+
+.employee-form-card .asset-form-grid {
+  margin-top: 22px;
+}
+
+.employee-form-card .segment-control {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid var(--asset-border);
+  border-radius: 18px;
+  background: var(--asset-field-bg);
+  box-shadow: var(--asset-inner-shadow);
+}
+
+.employee-form-card .segment-control::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 0;
+  width: calc((100% - 20px) / 2);
+  height: calc(100% - 12px);
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--asset-navy), var(--asset-cyan) 55%, var(--asset-teal));
+  box-shadow: 0 14px 28px rgba(57, 168, 214, 0.18);
+  transform: translateX(0);
+  transition: transform 220ms ease;
+}
+
+.employee-form-card .segment-control[data-active="Administrador"]::before {
+  transform: translateX(calc(100% + 8px));
+}
+
+.employee-form-card .segment-control button {
+  position: relative;
+  z-index: 1;
+  min-height: 42px;
+  border: 0;
+  border-radius: 14px;
+  padding: 10px 12px;
+  color: var(--asset-muted);
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.employee-form-card .segment-control button.active {
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.employee-form-card .password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 12px;
+  color: var(--asset-muted);
+  background: transparent;
+  transform: translateY(-50%);
+  transition: background 180ms ease, color 180ms ease;
+}
+
+.employee-form-card .password-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--asset-text);
+}
+
+.employee-form-card .input-shell input:-webkit-autofill,
+.employee-form-card .input-shell input:-webkit-autofill:hover,
+.employee-form-card .input-shell input:-webkit-autofill:focus,
+.employee-form-card .input-shell input:-webkit-autofill:active,
+.employee-form-card .input-shell input:autofill,
+.employee-form-card .input-shell input:autofill:hover,
+.employee-form-card .input-shell input:autofill:focus,
+.employee-form-card .input-shell input:autofill:active,
+.employee-form-card .input-shell select:-webkit-autofill,
+.employee-form-card .input-shell select:-webkit-autofill:hover,
+.employee-form-card .input-shell select:-webkit-autofill:focus,
+.employee-form-card .input-shell select:-webkit-autofill:active,
+.employee-form-card .input-shell select:autofill,
+.employee-form-card .input-shell select:autofill:hover,
+.employee-form-card .input-shell select:autofill:focus,
+.employee-form-card .input-shell select:autofill:active {
+  -webkit-text-fill-color: var(--asset-text) !important;
+  caret-color: var(--asset-teal);
+  background: transparent !important;
+  box-shadow: 0 0 0 1000px var(--asset-field-bg) inset !important;
+  border-radius: 18px;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+.employee-form-card .input-shell:focus-within input:-webkit-autofill,
+.employee-form-card .input-shell:focus-within input:-webkit-autofill:hover,
+.employee-form-card .input-shell:focus-within input:-webkit-autofill:focus,
+.employee-form-card .input-shell:focus-within input:-webkit-autofill:active,
+.employee-form-card .input-shell:focus-within input:autofill,
+.employee-form-card .input-shell:focus-within input:autofill:hover,
+.employee-form-card .input-shell:focus-within input:autofill:focus,
+.employee-form-card .input-shell:focus-within input:autofill:active,
+.employee-form-card .input-shell:focus-within select:-webkit-autofill,
+.employee-form-card .input-shell:focus-within select:-webkit-autofill:hover,
+.employee-form-card .input-shell:focus-within select:-webkit-autofill:focus,
+.employee-form-card .input-shell:focus-within select:-webkit-autofill:active,
+.employee-form-card .input-shell:focus-within select:autofill,
+.employee-form-card .input-shell:focus-within select:autofill:hover,
+.employee-form-card .input-shell:focus-within select:autofill:focus,
+.employee-form-card .input-shell:focus-within select:autofill:active {
+  box-shadow: 0 0 0 1000px var(--asset-field-bg-focus) inset !important;
+}
+
+.password-meter {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 12px;
+}
+
+.meter-track {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.theme-light .meter-track {
+  background: rgba(6, 40, 60, 0.12);
+}
+
+.meter-track span {
+  display: block;
+  width: var(--strength, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--strength-color, var(--mint));
+  transition: width 180ms ease, background 180ms ease;
+}
+
+.password-meter small {
+  color: var(--asset-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.employee-form-message {
+  min-height: 22px;
+  margin-top: 2px;
+}
+
+.employee-form-message.is-error {
+  color: #ff8f8f;
+}
+
+.employee-form-message.is-success {
+  color: #7be7d2;
+}
+
+.theme-light .employee-form-message.is-error {
+  color: #b42318;
+}
+
+.theme-light .employee-form-message.is-success {
+  color: #0f8b6e;
+}
+
+.employee-side-card {
+  gap: 18px;
+}
+
+.employee-note-panel {
+  padding: 18px 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface-soft);
+}
+
+.employee-note-panel h4 {
+  margin: 0 0 12px;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.employee-note-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.recent-employee-list {
+  display: grid;
+  gap: 12px;
+}
+
+.recent-employee-card {
+  padding: 14px 16px;
+  display: grid;
+  gap: 10px;
+  align-items: start;
+}
+
+.recent-employee-card:hover {
+  transform: translateX(3px);
+}
+
+.recent-employee-card .recent-asset-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.recent-employee-card .recent-asset-topline strong {
+  display: block;
+  max-width: 220px;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.recent-employee-card .recent-asset-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.recent-employee-card .recent-asset-meta span,
+.recent-employee-card .recent-asset-footer span,
+.recent-employee-card .recent-asset-footer time {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.recent-employee-card .recent-asset-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recent-employee-card .status-badge {
+  flex: 0 0 auto;
+}
+
+.compact-empty-state {
+  min-height: 160px;
+}
+
+@media (max-width: 1180px) {
+  .employee-registration-page .employee-registration-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .employee-registration-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .employee-registration-page .employee-registration-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .employee-form-card .segment-control {
+    grid-template-columns: 1fr;
+  }
+
+  .employee-form-card .segment-control::before,
+  .employee-form-card .segment-control[data-active="Administrador"]::before {
+    width: calc(100% - 12px);
+    transform: translateX(0);
+  }
+
+  .employee-form-card .segment-control[data-active="Administrador"]::before {
+    transform: translateY(calc(100% + 8px));
+  }
+}
