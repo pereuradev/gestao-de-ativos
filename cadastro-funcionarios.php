@@ -538,11 +538,15 @@ try {
                 </div>
 
                 <div class="recent-asset-meta">
-                  <span><?php echo e((string) ($funcionario["tipo_usuario"] ?? "--")); ?></span>
-                  <span><?php echo e((string) ($funcionario["departamento"] ?? "--")); ?></span>
                 </div>
 
                 <div class="recent-asset-footer">
+                  <span>
+                    <?php echo e((string) ($funcionario["tipo_usuario"] ?? "--")); ?>
+                  </span>
+                  <span>
+                    <?php echo e((string) ($funcionario["departamento"] ?? "--")); ?>
+                  </span>
                   <span><?php echo e((string) ($funcionario["email"] ?? "--")); ?></span>
                   <time
                     datetime="<?php echo e((string) ($funcionario["criado_em"] ?? "")); ?>"><?php echo e(formatarData((string) ($funcionario["criado_em"] ?? ""))); ?></time>
