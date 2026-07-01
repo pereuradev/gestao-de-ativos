@@ -65,7 +65,7 @@ foreach ($sidebarNameParts as $sidebarNamePart) {
 $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 $csrfToken = e((string) $_SESSION["csrf_token"]);
 
-$departamentos = ["TI", "Operacao", "Financeiro", "Administrativo", "Gestao"];
+$departamentos = ["TI", "Comercial", "Administrativo"];
 $totalFuncionarios = 0;
 $totalAdministradores = 0;
 $totalColaboradores = 0;
