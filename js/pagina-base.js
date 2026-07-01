@@ -888,7 +888,10 @@ function renderEvolutionChart({
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: isReducedMotionEnabled() ? false : undefined,
+      animation: isReducedMotionEnabled() ? false : {
+        duration: 650,
+        easing: "easeOutQuart",
+      },
 
       // Define como o gráfico responde ao passar o mouse.
       interaction: {
