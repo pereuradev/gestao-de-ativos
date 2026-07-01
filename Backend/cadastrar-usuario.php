@@ -28,20 +28,20 @@ function responder(bool $ok, string $message, int $statusCode = 200, array $extr
 function campo(string $nome, string $padrao = ""): string
 {
     // Le campo de formulario e remove espacos extras nas pontas.
-    return trim((string)($_POST[$nome] ?? $padrao));
+    return trim((string) ($_POST[$nome] ?? $padrao));
 }
 
 function usuarioAdministrador(): bool
 {
-    $tipoUsuario = strtolower(trim((string)($_SESSION["usuario"]["tipo_usuario"] ?? "")));
+    $tipoUsuario = strtolower(trim((string) ($_SESSION["usuario"]["tipo_usuario"] ?? "")));
 
     return in_array($tipoUsuario, ["adm", "admin", "administrador"], true);
 }
 
 function csrfValido(): bool
 {
-    $tokenSessao = (string)($_SESSION["csrf_token"] ?? "");
-    $tokenEnviado = (string)($_POST["csrf_token"] ?? "");
+    $tokenSessao = (string) ($_SESSION["csrf_token"] ?? "");
+    $tokenEnviado = (string) ($_POST["csrf_token"] ?? "");
 
     return $tokenSessao !== "" && $tokenEnviado !== "" && hash_equals($tokenSessao, $tokenEnviado);
 }
@@ -50,6 +50,50 @@ function apenasNumeros(string $valor): string
 {
     // Usado para validar RG, CPF e celular sem mascara.
     return preg_replace("/\D+/", "", $valor) ?? "";
+}
+
+function cpfValido(string $valor): bool
+{
+    // Valida o CPF pelo calculo dos dois digitos verificadores.
+    $cpf = apenasNumeros($valor);
+
+    if (strlen($cpf) !== 11) {
+        return false;
+    }
+
+    if (preg_match("/^(\d)\1{10}$/", $cpf)) {
+        return false;
+    }
+
+    $soma = 0;
+
+    for ($i = 0; $i < 9; $i++) {
+        $soma += (int) $cpf[$i] * (10 - $i);
+    }
+
+    $primeiroDigito = ($soma * 10) % 11;
+
+    if ($primeiroDigito === 10) {
+        $primeiroDigito = 0;
+    }
+
+    if ($primeiroDigito !== (int) $cpf[9]) {
+        return false;
+    }
+
+    $soma = 0;
+
+    for ($i = 0; $i < 10; $i++) {
+        $soma += (int) $cpf[$i] * (11 - $i);
+    }
+
+    $segundoDigito = ($soma * 10) % 11;
+
+    if ($segundoDigito === 10) {
+        $segundoDigito = 0;
+    }
+
+    return $segundoDigito === (int) $cpf[10];
 }
 
 function validarCampoPermitido(string $valor, array $permitidos, string $padrao): string
@@ -116,7 +160,7 @@ function criarUsuarioSupabase(string $url, string $anonKey, array $payload): arr
     ]);
 
     $response = curl_exec($ch);
-    $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
 
     curl_close($ch);
@@ -125,7 +169,7 @@ function criarUsuarioSupabase(string $url, string $anonKey, array $payload): arr
         responder(false, "Erro ao comunicar com o Supabase: " . $curlError, 502);
     }
 
-    $authData = json_decode((string)$response, true);
+    $authData = json_decode((string) $response, true);
 
     if ($httpCode < 200 || $httpCode >= 300) {
         $message = $authData["msg"] ?? $authData["message"] ?? "Erro ao criar usuario no Supabase Auth.";
@@ -162,7 +206,7 @@ function autenticarUsuarioSupabase(string $url, string $anonKey, string $email, 
     ]);
 
     $response = curl_exec($ch);
-    $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
 
     curl_close($ch);
@@ -171,7 +215,7 @@ function autenticarUsuarioSupabase(string $url, string $anonKey, string $email, 
         responder(false, "Erro ao comunicar com o Supabase: " . $curlError, 502);
     }
 
-    $authData = json_decode((string)$response, true);
+    $authData = json_decode((string) $response, true);
 
     if ($httpCode < 200 || $httpCode >= 300) {
         return [];
@@ -226,7 +270,7 @@ if (!csrfValido()) {
 // Coleta e normaliza todos os campos enviados pelo formulario de cadastro.
 $nomeCompleto = campo("nome_completo");
 $email = campo("email");
-$senha = (string)($_POST["senha"] ?? "");
+$senha = (string) ($_POST["senha"] ?? "");
 $tipoUsuario = validarCampoPermitido(
     campo("tipo_usuario", "Colaborador"),
     ["Colaborador", "Administrador"],
@@ -274,7 +318,7 @@ if (strlen(apenasNumeros($rg)) < 7) {
     responder(false, "Informe um RG valido.", 422);
 }
 
-if (strlen(apenasNumeros($cpf)) !== 11) {
+if (!cpfValido($cpf)) {
     responder(false, "Informe um CPF valido.", 422);
 }
 
@@ -477,16 +521,16 @@ try {
 }
 
 $usuarioResposta = is_array($usuarioCriado ?? null) ? [
-    "id" => (string)($usuarioCriado["id"] ?? ""),
-    "nome_completo" => (string)($usuarioCriado["nome_completo"] ?? $nomeCompleto),
-    "email" => (string)($usuarioCriado["email"] ?? $email),
-    "tipo_usuario" => (string)($usuarioCriado["tipo_usuario"] ?? $tipoUsuario),
-    "departamento" => (string)($usuarioCriado["departamento"] ?? $departamento),
-    "empresa" => (string)($usuarioCriado["empresa"] ?? $empresa),
-    "celular" => (string)($usuarioCriado["celular"] ?? $celular),
-    "status" => (string)($usuarioCriado["status"] ?? "Ativo"),
-    "criado_em" => (string)($usuarioCriado["criado_em"] ?? ""),
-    "atualizado_em" => (string)($usuarioCriado["atualizado_em"] ?? ""),
+    "id" => (string) ($usuarioCriado["id"] ?? ""),
+    "nome_completo" => (string) ($usuarioCriado["nome_completo"] ?? $nomeCompleto),
+    "email" => (string) ($usuarioCriado["email"] ?? $email),
+    "tipo_usuario" => (string) ($usuarioCriado["tipo_usuario"] ?? $tipoUsuario),
+    "departamento" => (string) ($usuarioCriado["departamento"] ?? $departamento),
+    "empresa" => (string) ($usuarioCriado["empresa"] ?? $empresa),
+    "celular" => (string) ($usuarioCriado["celular"] ?? $celular),
+    "status" => (string) ($usuarioCriado["status"] ?? "Ativo"),
+    "criado_em" => (string) ($usuarioCriado["criado_em"] ?? ""),
+    "atualizado_em" => (string) ($usuarioCriado["atualizado_em"] ?? ""),
 ] : [];
 
 responder(true, "Usuario cadastrado com sucesso.", 201, [

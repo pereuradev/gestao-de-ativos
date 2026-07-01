@@ -38,7 +38,9 @@ function createEmployeeElement(tag, className = "", text = "") {
 
 function setupEmployeeRoleSelector() {
   const roleControl = getEmployeeElement("employeeRoleControl");
-  const buttons = roleControl ? [...roleControl.querySelectorAll("button[data-role]")] : [];
+  const buttons = roleControl
+    ? [...roleControl.querySelectorAll("button[data-role]")]
+    : [];
 
   if (!roleControl || !buttons.length) {
     return;
@@ -48,7 +50,10 @@ function setupEmployeeRoleSelector() {
     button.addEventListener("click", () => {
       const nextRole = button.dataset.role || "Colaborador";
 
-      if (employeeSignupState.role === nextRole && button.classList.contains("active")) {
+      if (
+        employeeSignupState.role === nextRole &&
+        button.classList.contains("active")
+      ) {
         return;
       }
 
@@ -63,7 +68,9 @@ function setEmployeeRole(role) {
   const nextRole = role === "Administrador" ? "Administrador" : "Colaborador";
   const roleControl = getEmployeeElement("employeeRoleControl");
   const hiddenRole = getEmployeeElement("selectedEmployeeRole");
-  const buttons = roleControl ? [...roleControl.querySelectorAll("button[data-role]")] : [];
+  const buttons = roleControl
+    ? [...roleControl.querySelectorAll("button[data-role]")]
+    : [];
 
   employeeSignupState.role = nextRole;
 
@@ -81,27 +88,32 @@ function setEmployeeRole(role) {
 }
 
 function setupEmployeePasswordToggle() {
-  document.querySelectorAll(".password-toggle[data-target]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const targetId = button.dataset.target;
-      const input = targetId ? getEmployeeElement(targetId) : null;
-      const icon = button.querySelector("i");
+  document
+    .querySelectorAll(".password-toggle[data-target]")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        const targetId = button.dataset.target;
+        const input = targetId ? getEmployeeElement(targetId) : null;
+        const icon = button.querySelector("i");
 
-      if (!input) {
-        return;
-      }
+        if (!input) {
+          return;
+        }
 
-      const isHidden = input.type === "password";
+        const isHidden = input.type === "password";
 
-      input.type = isHidden ? "text" : "password";
+        input.type = isHidden ? "text" : "password";
 
-      if (icon) {
-        icon.className = isHidden ? "bi bi-eye-slash" : "bi bi-eye";
-      }
+        if (icon) {
+          icon.className = isHidden ? "bi bi-eye-slash" : "bi bi-eye";
+        }
 
-      button.setAttribute("aria-label", isHidden ? "Ocultar senha" : "Mostrar senha");
+        button.setAttribute(
+          "aria-label",
+          isHidden ? "Ocultar senha" : "Mostrar senha",
+        );
+      });
     });
-  });
 }
 
 function getEmployeePasswordStrength(password) {
@@ -114,7 +126,11 @@ function getEmployeePasswordStrength(password) {
   if (/[^A-Za-z0-9]/.test(password)) score += 1;
 
   if (!password) {
-    return { label: "Forca da senha: aguardando", width: "0%", color: "var(--muted)" };
+    return {
+      label: "Forca da senha: aguardando",
+      width: "0%",
+      color: "var(--muted)",
+    };
   }
 
   if (score <= 2) {
@@ -167,6 +183,48 @@ function formatEmployeeCpf(value) {
     .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
 }
 
+function isValidEmployeeCpf(value) {
+  const cpf = getOnlyNumbers(value);
+
+  if (cpf.length !== 11) {
+    return false;
+  }
+
+  if (/^(\d)\1{10}$/.test(cpf)) {
+    return false;
+  }
+
+  let sum = 0;
+
+  for (let index = 0; index < 9; index += 1) {
+    sum += Number(cpf[index]) * (10 - index);
+  }
+
+  let firstDigit = (sum * 10) % 11;
+
+  if (firstDigit === 10) {
+    firstDigit = 0;
+  }
+
+  if (firstDigit !== Number(cpf[9])) {
+    return false;
+  }
+
+  sum = 0;
+
+  for (let index = 0; index < 10; index += 1) {
+    sum += Number(cpf[index]) * (11 - index);
+  }
+
+  let secondDigit = (sum * 10) % 11;
+
+  if (secondDigit === 10) {
+    secondDigit = 0;
+  }
+
+  return secondDigit === Number(cpf[10]);
+}
+
 function formatEmployeeRg(value) {
   return getOnlyNumbers(value)
     .slice(0, 9)
@@ -186,7 +244,10 @@ function setupEmployeeDocumentMasks() {
   const masks = [
     { input: getEmployeeElement("employeeRg"), formatter: formatEmployeeRg },
     { input: getEmployeeElement("employeeCpf"), formatter: formatEmployeeCpf },
-    { input: getEmployeeElement("employeeCellphone"), formatter: formatEmployeeCellphone },
+    {
+      input: getEmployeeElement("employeeCellphone"),
+      formatter: formatEmployeeCellphone,
+    },
   ];
 
   masks.forEach(({ input, formatter }) => {
@@ -228,7 +289,7 @@ function validateEmployeeSignup(data) {
     return "Informe um RG valido.";
   }
 
-  if (getOnlyNumbers(data.cpf).length !== 11) {
+  if (!isValidEmployeeCpf(data.cpf)) {
     return "Informe um CPF valido.";
   }
 
@@ -339,17 +400,27 @@ async function handleEmployeeSignup(event) {
     }
 
     if (!response.ok || !result.ok) {
-      throw new Error(result.message || "Nao foi possivel cadastrar o funcionario.");
+      throw new Error(
+        result.message || "Nao foi possivel cadastrar o funcionario.",
+      );
     }
 
-    setEmployeeFormMessage(result.message || "Funcionario cadastrado com sucesso.", "success");
-    window.titechToast?.(result.message || "Funcionario cadastrado com sucesso.");
+    setEmployeeFormMessage(
+      result.message || "Funcionario cadastrado com sucesso.",
+      "success",
+    );
+    window.titechToast?.(
+      result.message || "Funcionario cadastrado com sucesso.",
+    );
     updateEmployeeSummary(result.usuario || null);
     prependRecentEmployee(result.usuario || null);
     form.reset();
     resetEmployeeSignupFormState();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Nao foi possivel cadastrar o funcionario.";
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Nao foi possivel cadastrar o funcionario.";
 
     setEmployeeFormMessage(message, "error");
     window.titechToast?.(message, "error");
@@ -432,13 +503,28 @@ function prependRecentEmployee(usuario) {
 
   list.querySelector(".compact-empty-state")?.remove();
 
-  const article = createEmployeeElement("article", "recent-asset-item recent-employee-card");
+  const article = createEmployeeElement(
+    "article",
+    "recent-asset-item recent-employee-card",
+  );
   const topLine = createEmployeeElement("div", "recent-asset-topline");
-  const name = createEmployeeElement("strong", "", usuario.nome_completo || "Funcionario");
-  const status = createEmployeeElement("span", `status-badge ${String(usuario.status || "").toLowerCase() === "ativo" ? "status-active" : "status-neutral"}`, usuario.status || "Ativo");
+  const name = createEmployeeElement(
+    "strong",
+    "",
+    usuario.nome_completo || "Funcionario",
+  );
+  const status = createEmployeeElement(
+    "span",
+    `status-badge ${String(usuario.status || "").toLowerCase() === "ativo" ? "status-active" : "status-neutral"}`,
+    usuario.status || "Ativo",
+  );
   const meta = createEmployeeElement("div", "recent-asset-meta");
   const role = createEmployeeElement("span", "", usuario.tipo_usuario || "--");
-  const department = createEmployeeElement("span", "", usuario.departamento || "--");
+  const department = createEmployeeElement(
+    "span",
+    "",
+    usuario.departamento || "--",
+  );
   const footer = createEmployeeElement("div", "recent-asset-footer");
   const email = createEmployeeElement("span", "", usuario.email || "--");
   const time = document.createElement("time");
