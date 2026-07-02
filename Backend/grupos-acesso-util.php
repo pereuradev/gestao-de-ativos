@@ -16,6 +16,12 @@ function garantirTabelasGruposAcesso(PDO $pdo): void
         )
     ");
 
+    $pdo->exec("alter table public.grupos_acesso add column if not exists descricao text");
+    $pdo->exec("alter table public.grupos_acesso add column if not exists status varchar(20) not null default 'Ativo'");
+    $pdo->exec("alter table public.grupos_acesso add column if not exists criado_por uuid null");
+    $pdo->exec("alter table public.grupos_acesso add column if not exists criado_em timestamptz not null default now()");
+    $pdo->exec("alter table public.grupos_acesso add column if not exists atualizado_em timestamptz not null default now()");
+
     $pdo->exec("
         create unique index if not exists grupos_acesso_nome_lower_unique
             on public.grupos_acesso (lower(nome))

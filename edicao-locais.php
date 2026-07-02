@@ -230,6 +230,11 @@ try {
             <a href="edicao-ativos.php">Ativos</a>
             <a href="edicao-marcas.php">Marcas</a>
             <a href="edicao-propriedades.php">Propriedades</a>
+            <?php if ($sidebarIsAdmin): ?>
+            <a href="edicao-grupos.php">Grupos</a>
+            <?php else: ?>
+            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Edicao de grupos" title="Apenas administradores podem editar grupos">Grupos</span>
+            <?php endif; ?>
             <a class="active-submenu" href="edicao-locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>
