@@ -201,6 +201,7 @@ try {
             <a href="marcas.php">Marcas</a>
             <a href="propriedades.php">Propriedades</a>
             <a class="active-submenu" href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
+            <a href="cadastro-grupos.php">Grupos</a>
             <a href="locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>

@@ -297,9 +297,11 @@ $codigoInternoEscapado = e($codigoInterno);
             <a href="propriedades.php">Propriedades</a>
 <?php if ($sidebarIsAdmin): ?>
             <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
+            <a href="cadastro-grupos.php">Grupos</a>
 
 <?php else: ?>
             <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Cadastro de funcionarios" title="Apenas administradores podem cadastrar funcionarios">Funcion&aacute;rios</span>
+            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Cadastro de grupos" title="Apenas administradores podem criar grupos">Grupos</span>
 
 <?php endif; ?>
             <a href="locais.php">Localiza&ccedil;&otilde;es</a>
