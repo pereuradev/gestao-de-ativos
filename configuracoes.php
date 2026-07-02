@@ -216,7 +216,7 @@ $codigoInternoEscapado = e($codigoInterno);
   <!-- CSS separado por responsabilidade: base do sistema, efeitos gerais e ajustes especÃ­ficos desta pÃ¡gina. -->
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
+  <link rel="stylesheet" href="css/ux-profissional.css?v=20260702-bottom-toast" />
   <link rel="stylesheet" href="css/configuracoes.css?v=20260630-clean-hero" />
 
 
@@ -263,7 +263,7 @@ $codigoInternoEscapado = e($codigoInterno);
           <span>Funcion&aacute;rios</span>
         </a>
 <?php else: ?>
-        <span class="nav-link nav-link-disabled" aria-disabled="true" title="Apenas administradores podem acessar funcionarios">
+        <span class="nav-link nav-link-disabled" aria-disabled="true" data-permission-resource="Funcionarios" title="Apenas administradores podem acessar funcionarios">
           <i class="bi bi-people-fill"></i>
           <span>Funcion&aacute;rios</span>
         </span>
@@ -297,6 +297,10 @@ $codigoInternoEscapado = e($codigoInterno);
             <a href="propriedades.php">Propriedades</a>
 <?php if ($sidebarIsAdmin): ?>
             <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
+
+<?php else: ?>
+            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Cadastro de funcionarios" title="Apenas administradores podem cadastrar funcionarios">Funcion&aacute;rios</span>
+
 <?php endif; ?>
             <a href="locais.php">Localiza&ccedil;&otilde;es</a>
           </div>

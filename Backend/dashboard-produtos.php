@@ -76,6 +76,42 @@ function montarFiltroCategoria(string $categoriaId): array
     return [" where a.categoria_id::text = :categoria_id ", [":categoria_id" => $categoriaId]];
 }
 
+function montarFiltrosAtivos(string $categoriaId, string $marca, string $localId): array
+{
+    // Todos os filtros do dashboard passam por aqui para manter as consultas coerentes.
+    $condicoes = [];
+    $params = [];
+    $categoriaId = trim($categoriaId);
+    $marca = trim($marca);
+    $localId = trim($localId);
+
+    if ($categoriaId === "sem-categoria") {
+        $condicoes[] = "a.categoria_id is null";
+    } elseif ($categoriaId !== "" && $categoriaId !== "todos") {
+        $condicoes[] = "a.categoria_id::text = :categoria_id";
+        $params[":categoria_id"] = $categoriaId;
+    }
+
+    if ($marca === "sem-marca") {
+        $condicoes[] = "nullif(trim(a.marca), '') is null";
+    } elseif ($marca !== "" && $marca !== "todos") {
+        $condicoes[] = "lower(trim(a.marca)) = lower(:marca)";
+        $params[":marca"] = $marca;
+    }
+
+    if ($localId === "sem-localizacao") {
+        $condicoes[] = "a.local_id is null";
+    } elseif ($localId !== "" && $localId !== "todos") {
+        $condicoes[] = "a.local_id::text = :local_id";
+        $params[":local_id"] = $localId;
+    }
+
+    return [
+        $condicoes ? " where " . implode(" and ", $condicoes) . " " : "",
+        $params,
+    ];
+}
+
 function calcularPercentual(int $valor, int $total): float
 {
     // Evita divisao por zero quando o filtro nao encontra dados.
@@ -116,9 +152,14 @@ try {
     }
 
     $categoriaId = trim((string)($_GET["categoria_id"] ?? "todos"));
+    $marcaFiltro = trim((string)($_GET["marca"] ?? "todos"));
+    $localId = trim((string)($_GET["local_id"] ?? "todos"));
     $periodo = normalizarPeriodo($_GET["periodo"] ?? 30);
 
-    [$whereCategoria, $paramsCategoria] = montarFiltroCategoria($categoriaId);
+    [$whereFiltros, $paramsFiltros] = montarFiltrosAtivos($categoriaId, $marcaFiltro, $localId);
+    [$whereSemCategoria, $paramsSemCategoria] = montarFiltrosAtivos("todos", $marcaFiltro, $localId);
+    [$whereSemMarca, $paramsSemMarca] = montarFiltrosAtivos($categoriaId, "todos", $localId);
+    [$whereSemLocal, $paramsSemLocal] = montarFiltrosAtivos($categoriaId, $marcaFiltro, "todos");
 
     // Numeros gerais que alimentam os cards principais do dashboard.
     $totalAtivos = consultarValor($pdo, "select count(*) from public.ativos");
@@ -126,28 +167,16 @@ try {
 
     // Lista todos os tipos de produto, incluindo ativos sem categoria.
     $categorias = consultarLinhas($pdo, "
-        select id, nome, total
-        from (
-            select
-                c.id::text as id,
-                coalesce(nullif(trim(c.nome), ''), 'Sem nome') as nome,
-                count(a.id)::int as total
-            from public.categorias_ativos c
-            left join public.ativos a on a.categoria_id = c.id
-            group by c.id, c.nome
-
-            union all
-
-            select
-                'sem-categoria' as id,
-                'Sem categoria' as nome,
-                count(a.id)::int as total
-            from public.ativos a
-            where a.categoria_id is null
-            having count(a.id) > 0
-        ) dados
+        select
+            coalesce(c.id::text, 'sem-categoria') as id,
+            coalesce(nullif(trim(c.nome), ''), 'Sem categoria') as nome,
+            count(a.id)::int as total
+        from public.ativos a
+        left join public.categorias_ativos c on c.id = a.categoria_id
+        {$whereSemCategoria}
+        group by coalesce(c.id::text, 'sem-categoria'), coalesce(nullif(trim(c.nome), ''), 'Sem categoria')
         order by total desc, nome asc
-    ");
+    ", $paramsSemCategoria);
 
     $totaisPorCategoria = [];
 
@@ -159,7 +188,7 @@ try {
     }
     unset($categoria);
 
-    $totalSelecionado = consultarValor($pdo, "select count(*) from public.ativos a {$whereCategoria}", $paramsCategoria);
+    $totalSelecionado = consultarValor($pdo, "select count(*) from public.ativos a {$whereFiltros}", $paramsFiltros);
 
     // Por padrao a tela esta em "Todos"; se vier um tipo especifico, substituimos abaixo.
     $categoriaSelecionada = [
@@ -191,10 +220,10 @@ try {
             coalesce(nullif(trim(a.status), ''), 'Sem status') as nome,
             count(*)::int as total
         from public.ativos a
-        {$whereCategoria}
+        {$whereFiltros}
         group by coalesce(nullif(trim(a.status), ''), 'Sem status')
         order by total desc, nome asc
-    ", $paramsCategoria);
+    ", $paramsFiltros);
 
     // Mesmo agrupamento, mas separado por categoria para troca instantanea no frontend.
     $statusPorCategoria = consultarLinhas($pdo, "
@@ -203,11 +232,12 @@ try {
             coalesce(nullif(trim(a.status), ''), 'Sem status') as nome,
             count(*)::int as total
         from public.ativos a
+        {$whereSemCategoria}
         group by
             coalesce(a.categoria_id::text, 'sem-categoria'),
             coalesce(nullif(trim(a.status), ''), 'Sem status')
         order by categoria_id asc, total desc, nome asc
-    ");
+    ", $paramsSemCategoria);
 
     // Ranking de marcas do filtro atual, limitado para manter a leitura simples.
     $marcas = consultarLinhas($pdo, "
@@ -215,11 +245,28 @@ try {
             coalesce(nullif(trim(a.marca), ''), 'Sem marca') as nome,
             count(*)::int as total
         from public.ativos a
-        {$whereCategoria}
+        {$whereFiltros}
         group by coalesce(nullif(trim(a.marca), ''), 'Sem marca')
         order by total desc, nome asc
         limit 12
-    ", $paramsCategoria);
+    ", $paramsFiltros);
+
+    $marcasFiltro = consultarLinhas($pdo, "
+        select
+            coalesce(nullif(trim(a.marca), ''), 'Sem marca') as nome,
+            case
+                when nullif(trim(a.marca), '') is null then 'sem-marca'
+                else trim(a.marca)
+            end as id,
+            count(*)::int as total
+        from public.ativos a
+        {$whereSemMarca}
+        group by coalesce(nullif(trim(a.marca), ''), 'Sem marca'), case
+            when nullif(trim(a.marca), '') is null then 'sem-marca'
+            else trim(a.marca)
+        end
+        order by total desc, nome asc
+    ", $paramsSemMarca);
 
     // Ranking de marcas pre-carregado por categoria.
     $marcasPorCategoria = consultarLinhas($pdo, "
@@ -229,6 +276,7 @@ try {
                 coalesce(nullif(trim(a.marca), ''), 'Sem marca') as nome,
                 count(*)::int as total
             from public.ativos a
+            {$whereSemCategoria}
             group by
                 coalesce(a.categoria_id::text, 'sem-categoria'),
                 coalesce(nullif(trim(a.marca), ''), 'Sem marca')
@@ -248,7 +296,7 @@ try {
         from ordenadas
         where posicao <= 12
         order by categoria_id asc, posicao asc
-    ");
+    ", $paramsSemCategoria);
 
     // Ranking de locais do filtro atual.
     $locais = consultarLinhas($pdo, "
@@ -257,11 +305,23 @@ try {
             count(a.id)::int as total
         from public.ativos a
         left join public.locais l on l.id = a.local_id
-        {$whereCategoria}
+        {$whereFiltros}
         group by coalesce(nullif(trim(l.nome), ''), 'Sem localização')
         order by total desc, nome asc
         limit 12
-    ", $paramsCategoria);
+    ", $paramsFiltros);
+
+    $locaisFiltro = consultarLinhas($pdo, "
+        select
+            coalesce(l.id::text, 'sem-localizacao') as id,
+            coalesce(nullif(trim(l.nome), ''), 'Sem localizacao') as nome,
+            count(a.id)::int as total
+        from public.ativos a
+        left join public.locais l on l.id = a.local_id
+        {$whereSemLocal}
+        group by coalesce(l.id::text, 'sem-localizacao'), coalesce(nullif(trim(l.nome), ''), 'Sem localizacao')
+        order by total desc, nome asc
+    ", $paramsSemLocal);
 
     // Ranking de locais pre-carregado por categoria.
     $locaisPorCategoria = consultarLinhas($pdo, "
@@ -272,6 +332,7 @@ try {
                 count(a.id)::int as total
             from public.ativos a
             left join public.locais l on l.id = a.local_id
+            {$whereSemCategoria}
             group by
                 coalesce(a.categoria_id::text, 'sem-categoria'),
                 coalesce(nullif(trim(l.nome), ''), 'Sem localizacao')
@@ -291,9 +352,9 @@ try {
         from ordenados
         where posicao <= 12
         order by categoria_id asc, posicao asc
-    ");
+    ", $paramsSemCategoria);
 
-    $evolucaoParams = $paramsCategoria;
+    $evolucaoParams = $paramsFiltros;
     $evolucaoParams[":periodo"] = $periodo;
 
     // A evolucao precisa manter todos os dias do periodo, mesmo quando o total do dia e zero.
@@ -303,6 +364,18 @@ try {
         $joinEvolucao .= " and a.categoria_id is null";
     } elseif ($categoriaId !== "" && $categoriaId !== "todos") {
         $joinEvolucao .= " and a.categoria_id::text = :categoria_id";
+    }
+
+    if ($marcaFiltro === "sem-marca") {
+        $joinEvolucao .= " and nullif(trim(a.marca), '') is null";
+    } elseif ($marcaFiltro !== "" && $marcaFiltro !== "todos") {
+        $joinEvolucao .= " and lower(trim(a.marca)) = lower(:marca)";
+    }
+
+    if ($localId === "sem-localizacao") {
+        $joinEvolucao .= " and a.local_id is null";
+    } elseif ($localId !== "" && $localId !== "todos") {
+        $joinEvolucao .= " and a.local_id::text = :local_id";
     }
 
     $evolucao = consultarLinhas($pdo, "
@@ -335,12 +408,24 @@ try {
         }, $lista);
     };
 
+    $normalizarOpcoesFiltro = static function (array $lista): array {
+        return array_map(static function (array $item): array {
+            return [
+                "id" => (string)($item["id"] ?? $item["nome"] ?? ""),
+                "nome" => (string)($item["nome"] ?? "Sem nome"),
+                "total" => (int)($item["total"] ?? 0),
+            ];
+        }, $lista);
+    };
+
     // Resposta unica que alimenta cards, filtros, grafico, ranking e tabela.
     responderJson([
         "ok" => true,
         "gerado_em" => date("c"),
         "periodo" => $periodo,
         "categoria_filtro" => $categoriaId,
+        "marca_filtro" => $marcaFiltro,
+        "local_filtro" => $localId,
         "resumo" => [
             "total_ativos" => $totalAtivos,
             "total_tipos" => $totalTipos,
@@ -354,6 +439,8 @@ try {
         ],
         "categoria_selecionada" => $categoriaSelecionada,
         "categorias" => $categorias,
+        "marcas_filtro" => $normalizarOpcoesFiltro($marcasFiltro),
+        "locais_filtro" => $normalizarOpcoesFiltro($locaisFiltro),
         "status" => $normalizarLista($status, $totalSelecionado),
         "status_por_categoria" => agruparLinhasPorCategoria($statusPorCategoria, $totaisPorCategoria),
         "marcas" => $normalizarLista($marcas, $totalSelecionado),

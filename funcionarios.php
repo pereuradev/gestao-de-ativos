@@ -49,12 +49,7 @@ $nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
 $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
 $sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
 $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
-
-if (!$sidebarIsAdmin) {
-  header("Location: pagina-inicial.php?acesso=restrito");
-  exit;
-}
-
+$accessDenied = !$sidebarIsAdmin;
 $sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
 $sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
 $sidebarEmail = e((string) ($usuario["email"] ?? ""));
@@ -82,10 +77,13 @@ $funcionariosInativos = 0;
 $ultimoMovimento = "--";
 $erroBanco = "";
 
-try {
-  require __DIR__ . "/Backend/Conexao.php";
+if ($accessDenied) {
+  http_response_code(403);
+} else {
+  try {
+    require __DIR__ . "/Backend/Conexao.php";
 
-  $resumoStmt = $pdo->prepare("
+    $resumoStmt = $pdo->prepare("
         select
             count(*)::int as total,
             count(*) filter (where lower(status) = 'ativo')::int as ativos,
@@ -93,15 +91,15 @@ try {
             max(greatest(criado_em, atualizado_em)) as ultimo_movimento
           from public.perfis_usuarios
     ");
-  $resumoStmt->execute();
-  $resumo = $resumoStmt->fetch() ?: [];
+    $resumoStmt->execute();
+    $resumo = $resumoStmt->fetch() ?: [];
 
-  $totalFuncionarios = (int) ($resumo["total"] ?? 0);
-  $funcionariosAtivos = (int) ($resumo["ativos"] ?? 0);
-  $funcionariosInativos = (int) ($resumo["inativos"] ?? 0);
-  $ultimoMovimento = formatarData((string) ($resumo["ultimo_movimento"] ?? ""));
+    $totalFuncionarios = (int) ($resumo["total"] ?? 0);
+    $funcionariosAtivos = (int) ($resumo["ativos"] ?? 0);
+    $funcionariosInativos = (int) ($resumo["inativos"] ?? 0);
+    $ultimoMovimento = formatarData((string) ($resumo["ultimo_movimento"] ?? ""));
 
-  $funcionariosStmt = $pdo->prepare("
+    $funcionariosStmt = $pdo->prepare("
         select
             id,
             nome_completo,
@@ -119,10 +117,11 @@ try {
             greatest(criado_em, atualizado_em) desc,
             nome_completo asc
     ");
-  $funcionariosStmt->execute();
-  $funcionarios = $funcionariosStmt->fetchAll();
-} catch (Throwable) {
-  $erroBanco = "Nao foi possivel carregar os funcionarios agora.";
+    $funcionariosStmt->execute();
+    $funcionarios = $funcionariosStmt->fetchAll();
+  } catch (Throwable) {
+    $erroBanco = "Nao foi possivel carregar os funcionarios agora.";
+  }
 }
 ?>
 <!doctype html>
@@ -143,7 +142,7 @@ try {
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/funcionarios.css?v=20260622-hero-polish" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
+  <link rel="stylesheet" href="css/ux-profissional.css?v=20260702-bottom-toast" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
@@ -154,7 +153,7 @@ try {
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
 </head>
 
-<body class="theme-dark page-loading">
+<body class="theme-dark page-loading" <?php echo $accessDenied ? 'data-permission-dialog-open="true" data-permission-resource="Funcionarios"' : ""; ?>>
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
@@ -184,7 +183,7 @@ try {
             <span>Funcion&aacute;rios</span>
           </a>
         <?php else: ?>
-          <span class="nav-link nav-link-disabled" aria-disabled="true"
+          <span class="nav-link nav-link-disabled" aria-disabled="true" data-permission-resource="Funcionarios"
             title="Apenas administradores podem acessar funcionarios">
             <i class="bi bi-people-fill"></i>
             <span>Funcion&aacute;rios</span>
@@ -218,6 +217,10 @@ try {
             <a href="propriedades.php">Propriedades</a>
             <?php if ($sidebarIsAdmin): ?>
               <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
+
+            <?php else: ?>
+              <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Cadastro de funcionarios" title="Apenas administradores podem cadastrar funcionarios">Funcion&aacute;rios</span>
+
             <?php endif; ?>
             <a href="locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
@@ -366,6 +369,12 @@ try {
       <?php if ($erroBanco !== ""): ?>
         <div class="dashboard-status error-status" role="status">
           <?php echo e($erroBanco); ?>
+        </div>
+      <?php endif; ?>
+
+      <?php if ($accessDenied): ?>
+        <div class="dashboard-status error-status" role="status">
+          Apenas administradores podem acessar a pagina de funcionarios.
         </div>
       <?php endif; ?>
 

@@ -301,12 +301,12 @@ try {
   <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260619-select-options" />
   <link rel="stylesheet" href="css/edicao-ativos.css?v=20260629-pagination" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
+  <link rel="stylesheet" href="css/ux-profissional.css?v=20260702-bottom-toast" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
   <script src="js/app-base.js?v=20260630-reduced-motion" defer></script>
-  <script src="js/edicao-ativos.js?v=20260629-pagination" defer></script>
+  <script src="js/edicao-ativos.js?v=20260702-confirm-dialogs" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
@@ -340,7 +340,7 @@ try {
           <span>Funcion&aacute;rios</span>
         </a>
 <?php else: ?>
-        <span class="nav-link nav-link-disabled" aria-disabled="true" title="Apenas administradores podem acessar funcionarios">
+        <span class="nav-link nav-link-disabled" aria-disabled="true" data-permission-resource="Funcionarios" title="Apenas administradores podem acessar funcionarios">
           <i class="bi bi-people-fill"></i>
           <span>Funcion&aacute;rios</span>
         </span>
@@ -373,6 +373,10 @@ try {
             <a href="propriedades.php">Propriedades</a>
 <?php if ($sidebarIsAdmin): ?>
             <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
+
+<?php else: ?>
+            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Cadastro de funcionarios" title="Apenas administradores podem cadastrar funcionarios">Funcion&aacute;rios</span>
+
 <?php endif; ?>
             <a href="locais.php">Localiza&ccedil;&otilde;es</a>
           </div>

@@ -63,9 +63,12 @@ let themeTimer = null;
 let systemThemeListenerAttached = false;
 let customCursorReady = false;
 let customCursorElement = null;
+let permissionDialogElement = null;
+let permissionDialogPreviousFocus = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   applyCursorPreference(getSavedItem("titech-cursor") || "enhanced");
+  setupPermissionDeniedTriggers();
 });
 
 function getSavedItem(key) {
@@ -556,6 +559,108 @@ function setupNavGroups() {
   });
 }
 
+function setupPermissionDeniedTriggers() {
+  const restrictedItems = Array.from(document.querySelectorAll(".nav-link-disabled, .disabled-action"));
+
+  restrictedItems.forEach((item) => {
+    item.setAttribute("role", "button");
+    item.setAttribute("tabindex", "0");
+
+    item.addEventListener("click", (event) => {
+      event.preventDefault();
+      openPermissionDeniedDialog(item);
+    });
+
+    item.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+
+      event.preventDefault();
+      openPermissionDeniedDialog(item);
+    });
+  });
+
+  if (document.body.dataset.permissionDialogOpen === "true") {
+    openPermissionDeniedDialog(document.body);
+  }
+}
+
+function openPermissionDeniedDialog(source) {
+  document.getElementById("uxToastRegion")?.remove();
+  document.getElementById("settingsToast")?.classList.remove("show");
+
+  const event = new CustomEvent("titech:permission-denied", {
+    cancelable: true,
+    detail: {
+      resource: source?.dataset?.permissionResource || document.body.dataset.permissionResource || "esta area",
+    },
+  });
+
+  window.dispatchEvent(event);
+
+  if (!event.defaultPrevented) {
+    showPermissionDeniedDialog(event.detail.resource);
+  }
+}
+
+function showPermissionDeniedDialog(resource = "esta area") {
+  closePermissionDeniedDialog();
+
+  permissionDialogPreviousFocus = document.activeElement;
+  permissionDialogElement = document.createElement("div");
+  permissionDialogElement.className = "permission-dialog-layer";
+  permissionDialogElement.setAttribute("role", "presentation");
+  permissionDialogElement.innerHTML = `
+    <div class="permission-dialog-backdrop" data-permission-close></div>
+    <section class="permission-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="permissionDialogTitle" aria-describedby="permissionDialogDescription">
+      <div class="permission-dialog-icon" aria-hidden="true">
+        <i class="bi bi-shield-lock-fill"></i>
+      </div>
+      <p class="section-tag">Permissao necessaria</p>
+      <h2 id="permissionDialogTitle">Acesso restrito</h2>
+      <p id="permissionDialogDescription">Voce nao tem permissao para acessar ${escapeHtml(resource)}. Solicite liberacao a um administrador para continuar.</p>
+      <button type="button" class="primary-button permission-dialog-close" data-permission-close>
+        <i class="bi bi-check2-circle" aria-hidden="true"></i>
+        <span>Entendi</span>
+      </button>
+    </section>
+  `;
+
+  permissionDialogElement.addEventListener("click", (event) => {
+    if (event.target?.closest?.("[data-permission-close]")) {
+      closePermissionDeniedDialog();
+    }
+  });
+
+  document.addEventListener("keydown", handlePermissionDialogKeydown);
+  document.body.append(permissionDialogElement);
+  permissionDialogElement.querySelector(".permission-dialog-close")?.focus();
+}
+
+function closePermissionDeniedDialog() {
+  if (!permissionDialogElement) return;
+
+  permissionDialogElement.remove();
+  permissionDialogElement = null;
+  document.removeEventListener("keydown", handlePermissionDialogKeydown);
+  permissionDialogPreviousFocus?.focus?.();
+  permissionDialogPreviousFocus = null;
+}
+
+function handlePermissionDialogKeydown(event) {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closePermissionDeniedDialog();
+  }
+}
+
+function escapeHtml(value) {
+  const text = document.createElement("span");
+
+  text.textContent = String(value || "");
+
+  return text.innerHTML;
+}
+
 function setInputValue(id, value) {
   // Helper pequeno para preencher inputs por id sem repetir verificacao de null.
   const element = document.getElementById(id);
@@ -609,6 +714,10 @@ Object.assign(window, {
   applySidebarWidth,
   setupSidebarResize,
   setupNavGroups,
+  setupPermissionDeniedTriggers,
+  openPermissionDeniedDialog,
+  showPermissionDeniedDialog,
+  closePermissionDeniedDialog,
   setInputValue,
   setText,
   updateText,

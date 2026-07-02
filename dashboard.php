@@ -68,15 +68,15 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 
     <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
     <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
-    <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
-    <link rel="stylesheet" href="css/dashboard-produtos.css?v=20260629-dashboard-theme-fix" />
+    <link rel="stylesheet" href="css/ux-profissional.css?v=20260702-bottom-toast" />
+    <link rel="stylesheet" href="css/dashboard-produtos.css?v=20260702-loading-spinner-fix" />
     <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
     <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
     <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
     <script src="js/app-base.js?v=20260630-reduced-motion" defer></script>
-    <script src="js/dashboard-produtos.js?v=20260630-reduced-motion" defer></script>
+    <script src="js/dashboard-produtos.js?v=20260702-filter-loading-feedback" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
     <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
     <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
@@ -114,7 +114,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                     <span>Funcionários</span>
                 </a>
 <?php else: ?>
-                <span class="nav-link nav-link-disabled" aria-disabled="true" title="Apenas administradores podem acessar funcionarios">
+                <span class="nav-link nav-link-disabled" aria-disabled="true" data-permission-resource="Funcionarios" title="Apenas administradores podem acessar funcionarios">
                     <i class="bi bi-people-fill"></i>
                     <span>Funcionários</span>
                 </span>
@@ -149,6 +149,10 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                         <a href="propriedades.php">Propriedades</a>
                         <?php if ($sidebarIsAdmin): ?>
                             <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
+
+                        <?php else: ?>
+                            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Cadastro de funcionarios" title="Apenas administradores podem cadastrar funcionarios">Funcion&aacute;rios</span>
+
                         <?php endif; ?>
                         <a href="locais.php">Localizações</a>
                     </div>
@@ -264,7 +268,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                 </article>
 
                 <article class="summary-card">
-                    <span>Tipo selecionado</span>
+                    <span>Filtro ativo</span>
                     <strong id="selectedTypeMetric">Todos</strong>
                     <small id="selectedTypeDetail">Visualização geral do inventário.</small>
                 </article>
@@ -286,7 +290,21 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
                 </div>
 
                 <div class="dashboard-control-group">
-                    <label for="metricFilter">Dados do gráfico</label>
+                    <label for="brandFilter">Marca</label>
+                    <select id="brandFilter">
+                        <option value="todos">Todas as marcas</option>
+                    </select>
+                </div>
+
+                <div class="dashboard-control-group">
+                    <label for="locationFilter">Localiza&ccedil;&atilde;o</label>
+                    <select id="locationFilter">
+                        <option value="todos">Todos os locais</option>
+                    </select>
+                </div>
+
+                <div class="dashboard-control-group">
+                    <label for="metricFilter">Dados do gr&aacute;fico</label>
                     <select id="metricFilter">
                         <option value="categorias">Quantidade por tipo</option>
                         <option value="status">Quantidade por status</option>

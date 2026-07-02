@@ -163,6 +163,12 @@ async function submitEditForm(event) {
     return;
   }
 
+  const confirmed = await confirmAssetEdition(form);
+
+  if (!confirmed) {
+    return;
+  }
+
   setLoading(submitButton, true, "Salvando...");
   clearEditMessage();
 
@@ -187,6 +193,23 @@ async function submitEditForm(event) {
   } finally {
     setLoading(submitButton, false);
   }
+}
+
+async function confirmAssetEdition(form) {
+  const data = new FormData(form);
+  const assetName = String(data.get("nome") || "este ativo").trim() || "este ativo";
+
+  if (typeof window.titechConfirm === "function") {
+    return window.titechConfirm({
+      title: "Confirmar edicao?",
+      text: `Confirme para salvar as alteracoes de ${assetName}.`,
+      confirmButtonText: "Salvar edicao",
+      cancelButtonText: "Continuar editando",
+      icon: "warning",
+    });
+  }
+
+  return window.confirm(`Salvar as alteracoes de ${assetName}?`);
 }
 
 function validateAssetForm(form) {

@@ -117,7 +117,7 @@ try {
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/marcas.css?v=20260626-clear-button" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260626-clear-button" />
+  <link rel="stylesheet" href="css/ux-profissional.css?v=20260702-bottom-toast" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
@@ -156,7 +156,7 @@ try {
           <span>Funcion&aacute;rios</span>
         </a>
 <?php else: ?>
-        <span class="nav-link nav-link-disabled" aria-disabled="true" title="Apenas administradores podem acessar funcionarios">
+        <span class="nav-link nav-link-disabled" aria-disabled="true" data-permission-resource="Funcionarios" title="Apenas administradores podem acessar funcionarios">
           <i class="bi bi-people-fill"></i>
           <span>Funcion&aacute;rios</span>
         </span>
@@ -189,6 +189,10 @@ try {
             <a href="propriedades.php">Propriedades</a>
 <?php if ($sidebarIsAdmin): ?>
             <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
+
+<?php else: ?>
+            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Cadastro de funcionarios" title="Apenas administradores podem cadastrar funcionarios">Funcion&aacute;rios</span>
+
 <?php endif; ?>
             <a href="locais.php">Localiza&ccedil;&otilde;es</a>
           </div>

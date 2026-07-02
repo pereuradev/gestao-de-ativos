@@ -50,7 +50,12 @@ const DEFAULT_DASHBOARD_DATA = {
     total: 0,
     percentual: 0,
   },
+  categoria_filtro: "todos",
+  marca_filtro: "todos",
+  local_filtro: "todos",
   categorias: [],
+  marcas_filtro: [],
+  locais_filtro: [],
   status: [],
   status_por_categoria: {},
   marcas: [],
@@ -111,6 +116,8 @@ const dashboardCache = new Map();
 // Estado atual dos filtros da tela. Toda renderizacao le esses valores.
 const state = {
   categoriaId: "todos",
+  marca: "todos",
+  localId: "todos",
   metrica: "categorias",
   tipoGrafico: "bar",
   periodo: "30",
@@ -301,6 +308,8 @@ function setupNavGroups() {
 
 function setupDashboardControls() {
   const categoryFilter = document.getElementById("categoryFilter");
+  const brandFilter = document.getElementById("brandFilter");
+  const locationFilter = document.getElementById("locationFilter");
   const metricFilter = document.getElementById("metricFilter");
   const chartTypeFilter = document.getElementById("chartTypeFilter");
   const periodFilter = document.getElementById("periodFilter");
@@ -309,12 +318,18 @@ function setupDashboardControls() {
   categoryFilter?.addEventListener("change", () => {
     state.categoriaId = categoryFilter.value || "todos";
     setDashboardMetric(state.categoriaId === "todos" ? "categorias" : "marcas");
+    loadDashboardProducts();
+  });
 
-    // Quando os dados da categoria ja vieram no primeiro carregamento, filtramos na tela.
-    // Isso evita a sensacao de demora ao trocar o tipo de produto.
-    if (!applyLocalCategorySelection()) {
-      loadDashboardProducts();
-    }
+  brandFilter?.addEventListener("change", () => {
+    state.marca = brandFilter.value || "todos";
+    setDashboardMetric(state.marca === "todos" ? state.metrica : "categorias");
+    loadDashboardProducts();
+  });
+
+  locationFilter?.addEventListener("change", () => {
+    state.localId = locationFilter.value || "todos";
+    loadDashboardProducts();
   });
 
   metricFilter?.addEventListener("change", () => {
@@ -422,7 +437,7 @@ function applyLocalCategorySelection() {
 
 async function loadDashboardProducts(showLoading = true, options = {}) {
   // Cache por categoria e periodo: evita buscar novamente dados que acabaram de ser carregados.
-  const cacheKey = `${state.categoriaId}|${state.periodo}`;
+  const cacheKey = `${state.categoriaId}|${state.marca}|${state.localId}|${state.periodo}`;
   const forceRefresh = Boolean(options.forceRefresh);
 
   if (forceRefresh) {
@@ -442,11 +457,14 @@ async function loadDashboardProducts(showLoading = true, options = {}) {
   const requestId = ++dashboardRequestId;
 
   if (showLoading) {
+    setDashboardLoading(true);
     setStatus("Carregando dados...", "Buscando informações no banco.");
   }
 
   const params = new URLSearchParams({
     categoria_id: state.categoriaId,
+    marca: state.marca,
+    local_id: state.localId,
     periodo: state.periodo,
   });
 
@@ -507,20 +525,43 @@ async function loadDashboardProducts(showLoading = true, options = {}) {
   } finally {
     if (requestId === dashboardRequestId) {
       dashboardRequestController = null;
+      setDashboardLoading(false);
     }
+  }
+}
+
+function setDashboardLoading(isLoading) {
+  document.body.classList.toggle("dashboard-filtering", isLoading);
+
+  const mainArea = document.querySelector(".dashboard-products-page .app-main");
+  const chartCard = document.querySelector(".main-chart-card");
+  const refreshButton = document.getElementById("refreshDashboard");
+
+  mainArea?.setAttribute("aria-busy", String(isLoading));
+  chartCard?.setAttribute("aria-busy", String(isLoading));
+
+  if (refreshButton) {
+    refreshButton.disabled = isLoading;
   }
 }
 
 function applyDashboardPayload(payload) {
   // Normaliza o JSON antes de qualquer componente tentar usar os dados.
   dashboardData = normalizeDashboardPayload(payload);
+  syncStateWithDashboardPayload();
 
-  if (dashboardData.categoria_selecionada.id === "todos") {
+  if (
+    dashboardData.categoria_filtro === "todos" &&
+    dashboardData.marca_filtro === "todos" &&
+    dashboardData.local_filtro === "todos"
+  ) {
     // A resposta geral vira a base para filtros instantaneos por categoria.
     dashboardBaseData = dashboardData;
   }
 
   populateCategoryFilter(dashboardData.categorias);
+  populateBrandFilter(dashboardData.marcas_filtro);
+  populateLocationFilter(dashboardData.locais_filtro);
   renderSummaryCards();
   renderCurrentChart();
 }
@@ -542,6 +583,7 @@ function normalizeDashboardPayload(payload) {
     ok: Boolean(data.ok),
     gerado_em: data.gerado_em || null,
     periodo: normalizeNumber(data.periodo) || Number(state.periodo),
+    categoria_filtro: String(data.categoria_filtro || state.categoriaId || "todos"),
     resumo: {
       total_ativos: normalizeNumber(resumo.total_ativos),
       total_tipos: normalizeNumber(resumo.total_tipos),
@@ -554,7 +596,11 @@ function normalizeDashboardPayload(payload) {
       total: normalizeNumber(categoriaSelecionada.total),
       percentual: normalizePercent(categoriaSelecionada.percentual),
     },
+    marca_filtro: String(data.marca_filtro || state.marca || "todos"),
+    local_filtro: String(data.local_filtro || state.localId || "todos"),
     categorias: normalizeDataRows(data.categorias, true),
+    marcas_filtro: normalizeFilterOptions(data.marcas_filtro),
+    locais_filtro: normalizeFilterOptions(data.locais_filtro),
     status: normalizeDataRows(data.status),
     status_por_categoria: normalizeRowsByCategory(data.status_por_categoria),
     marcas: normalizeDataRows(data.marcas),
@@ -563,6 +609,27 @@ function normalizeDashboardPayload(payload) {
     locais_por_categoria: normalizeRowsByCategory(data.locais_por_categoria),
     evolucao: normalizeDataRows(data.evolucao),
   };
+}
+
+function syncStateWithDashboardPayload() {
+  state.categoriaId = dashboardData.categoria_filtro || "todos";
+  state.marca = dashboardData.marca_filtro || "todos";
+  state.localId = dashboardData.local_filtro || "todos";
+  state.periodo = String(dashboardData.periodo || state.periodo || "30");
+}
+
+function normalizeFilterOptions(rows) {
+  if (!Array.isArray(rows)) {
+    return [];
+  }
+
+  return rows
+    .map((row) => ({
+      id: String(row?.id || row?.nome || "").trim(),
+      nome: String(row?.nome || "Sem nome").trim(),
+      total: normalizeNumber(row?.total),
+    }))
+    .filter((row) => row.id !== "" && row.nome !== "" && row.total > 0);
 }
 
 function normalizeRowsByCategory(groups) {
@@ -642,6 +709,57 @@ function populateCategoryFilter(categories) {
   state.categoriaId = categoryFilter.value;
 }
 
+function populateBrandFilter(brands) {
+  populateDashboardSelect({
+    elementId: "brandFilter",
+    defaultValue: "todos",
+    defaultLabel: "Todas as marcas",
+    selectedValue: state.marca,
+    rows: brands,
+    onUpdate(value) {
+      state.marca = value;
+    },
+  });
+}
+
+function populateLocationFilter(locations) {
+  populateDashboardSelect({
+    elementId: "locationFilter",
+    defaultValue: "todos",
+    defaultLabel: "Todos os locais",
+    selectedValue: state.localId,
+    rows: locations,
+    onUpdate(value) {
+      state.localId = value;
+    },
+  });
+}
+
+function populateDashboardSelect(config) {
+  const select = document.getElementById(config.elementId);
+
+  if (!select) {
+    return;
+  }
+
+  const previousValue = select.value || config.selectedValue || config.defaultValue;
+
+  select.innerHTML = "";
+  select.appendChild(createOption(config.defaultValue, config.defaultLabel));
+
+  config.rows.forEach((row) => {
+    select.appendChild(
+      createOption(row.id, `${row.nome} (${formatNumber(row.total)})`),
+    );
+  });
+
+  select.value = config.rows.some((row) => row.id === previousValue)
+    ? previousValue
+    : config.defaultValue;
+
+  config.onUpdate(select.value);
+}
+
 function createOption(value, label) {
   const option = document.createElement("option");
   option.value = value;
@@ -657,18 +775,17 @@ function renderSummaryCards() {
     dashboardData.categoria_selecionada ||
     DEFAULT_DASHBOARD_DATA.categoria_selecionada;
   const largest = resumo.maior_categoria;
+  const activeFilters = buildActiveFilterLabels(selected);
+  const totalFiltrado = normalizeNumber(resumo.total_filtrado);
+  const resultText = totalFiltrado === 1 ? "ativo encontrado" : "ativos encontrados";
 
   setText("totalAssetsMetric", formatNumber(resumo.total_ativos));
   setText("totalTypesMetric", formatNumber(resumo.total_tipos));
-  setText(
-    "selectedTypeMetric",
-    selected.id === "todos" ? "Todos" : formatCategoryLabel(selected.nome),
-  );
+  setText("selectedTypeMetric", activeFilters.title);
 
-  const selectedDetail =
-    selected.id === "todos"
-      ? `Analisando ${formatNumber(resumo.total_filtrado)} ativos no total.`
-      : `${formatNumber(selected.total)} ativos, ${formatPercent(selected.percentual)} do inventário.`;
+  const selectedDetail = `${formatNumber(totalFiltrado)} ${resultText}${
+    activeFilters.detail ? ` para ${activeFilters.detail}.` : " no inventario."
+  }`;
 
   setText("selectedTypeDetail", selectedDetail);
 
@@ -682,6 +799,42 @@ function renderSummaryCards() {
     setText("largestTypeMetric", "--");
     setText("largestTypeDetail", "Nenhuma categoria encontrada.");
   }
+}
+
+function buildActiveFilterLabels(selectedCategory) {
+  const labels = [];
+
+  if (selectedCategory.id !== "todos") {
+    labels.push(formatCategoryLabel(selectedCategory.nome));
+  }
+
+  if (state.marca !== "todos") {
+    labels.push(getSelectedOptionLabel("brandFilter"));
+  }
+
+  if (state.localId !== "todos") {
+    labels.push(getSelectedOptionLabel("locationFilter"));
+  }
+
+  if (!labels.length) {
+    return {
+      title: "Todos",
+      detail: "",
+    };
+  }
+
+  return {
+    title: labels[0],
+    detail: labels.join(" em "),
+  };
+}
+
+function getSelectedOptionLabel(selectId) {
+  const select = document.getElementById(selectId);
+  const option = select?.selectedOptions?.[0];
+  const text = option?.textContent || "";
+
+  return text.replace(/\s+\([0-9.]+\)$/u, "").trim() || "Filtro selecionado";
 }
 
 function renderCurrentChart() {
@@ -718,12 +871,13 @@ function buildChartDescription(config) {
   const selected =
     dashboardData.categoria_selecionada ||
     DEFAULT_DASHBOARD_DATA.categoria_selecionada;
+  const activeFilters = buildActiveFilterLabels(selected);
 
-  if (selected.id === "todos") {
+  if (!activeFilters.detail) {
     return config.description;
   }
 
-  return `${config.description} Filtro ativo: ${selected.nome}.`;
+  return `${config.description} Filtro ativo: ${activeFilters.detail}.`;
 }
 
 function calculateRowsTotal(rows) {

@@ -1,7 +1,24 @@
 .employee-registration-page .employee-register-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   min-height: 244px;
   background-color: #071b2a;
-  background-image: url("../assets/FUNDO-FUNCIONARIOS.png");
+  background-image:
+    linear-gradient(
+      90deg,
+      rgba(3, 16, 29, 0.99) 0%,
+      rgba(3, 16, 29, 0.95) 34%,
+      rgba(6, 24, 41, 0.76) 62%,
+      rgba(3, 16, 29, 0.42) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(3, 16, 29, 0.82) 0%,
+      rgba(3, 16, 29, 0.16) 48%,
+      rgba(3, 16, 29, 0.88) 100%
+    ),
+    url("../assets/FUNDO-FUNCIONARIOS.png");
   background-position: center;
   background-size: cover;
   box-shadow:
@@ -13,25 +30,29 @@
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 0;
   pointer-events: none;
   background:
-    linear-gradient(
-      90deg,
-      rgba(3, 16, 29, 0.99) 0%,
-      rgba(3, 16, 29, 0.95) 26%,
-      rgba(6, 24, 41, 0.82) 48%,
-      rgba(8, 31, 47, 0.4) 72%,
-      rgba(3, 16, 29, 0.56) 100%
-    ),
-    linear-gradient(
-      180deg,
-      rgba(3, 16, 29, 0.84) 0%,
-      rgba(3, 16, 29, 0.28) 36%,
-      rgba(3, 16, 29, 0.88) 100%
-    );
+    radial-gradient(ellipse at 70% 45%, rgba(85, 208, 219, 0.16), transparent 38%),
+    radial-gradient(ellipse at center, rgba(3, 16, 29, 0.02) 18%, rgba(3, 16, 29, 0.78) 100%);
 }
 
 .theme-light .employee-registration-page .employee-register-hero {
+  background-image:
+    linear-gradient(
+      90deg,
+      rgba(247, 251, 253, 0.99) 0%,
+      rgba(242, 248, 251, 0.95) 36%,
+      rgba(231, 241, 246, 0.72) 64%,
+      rgba(247, 251, 253, 0.38) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(247, 251, 253, 0.84) 0%,
+      rgba(247, 251, 253, 0.18) 48%,
+      rgba(247, 251, 253, 0.9) 100%
+    ),
+    url("../assets/FUNDO-FUNCIONARIOS.png");
   box-shadow:
     0 22px 70px rgba(9, 31, 48, 0.11),
     inset 0 0 0 1px rgba(255, 255, 255, 0.62);
@@ -39,20 +60,8 @@
 
 .theme-light .employee-registration-page .employee-register-hero::before {
   background:
-    linear-gradient(
-      90deg,
-      rgba(247, 251, 253, 0.98) 0%,
-      rgba(242, 248, 251, 0.95) 28%,
-      rgba(231, 241, 246, 0.8) 50%,
-      rgba(214, 231, 239, 0.34) 74%,
-      rgba(6, 24, 41, 0.18) 100%
-    ),
-    linear-gradient(
-      180deg,
-      rgba(247, 251, 253, 0.78) 0%,
-      rgba(247, 251, 253, 0.18) 38%,
-      rgba(247, 251, 253, 0.88) 100%
-    );
+    radial-gradient(ellipse at 70% 45%, rgba(58, 188, 207, 0.14), transparent 38%),
+    radial-gradient(ellipse at center, rgba(247, 251, 253, 0.02) 18%, rgba(247, 251, 253, 0.72) 100%);
 }
 
 .employee-registration-page .employee-register-hero .hero-content {

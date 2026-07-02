@@ -377,6 +377,12 @@ async function handleEmployeeSignup(event) {
     return;
   }
 
+  const confirmed = await confirmEmployeeRegistration(payload);
+
+  if (!confirmed) {
+    return;
+  }
+
   setEmployeeFormMessage("");
   setEmployeeSubmitLoading(submitButton, true);
 
@@ -427,6 +433,23 @@ async function handleEmployeeSignup(event) {
   } finally {
     setEmployeeSubmitLoading(submitButton, false);
   }
+}
+
+async function confirmEmployeeRegistration(payload) {
+  const employeeName = payload.nomeCompleto || "este funcionario";
+  const employeeRole = payload.tipoUsuario || "Colaborador";
+
+  if (typeof window.titechConfirm === "function") {
+    return window.titechConfirm({
+      title: "Cadastrar funcionario?",
+      text: `Confirme para criar o acesso de ${employeeName} como ${employeeRole}.`,
+      confirmButtonText: "Cadastrar funcionario",
+      cancelButtonText: "Revisar dados",
+      icon: "info",
+    });
+  }
+
+  return window.confirm(`Criar o acesso de ${employeeName} como ${employeeRole}?`);
 }
 
 function setupEmployeeSignupForm() {

@@ -535,7 +535,8 @@ body.sidebar-resizing .sidebar-resize-handle::before {
   gap: 6px;
 }
 
-.nav-submenu a {
+.nav-submenu a,
+.nav-submenu-disabled {
   min-width: 0;
   min-height: 36px;
   padding: 8px 10px;
@@ -564,6 +565,17 @@ body.sidebar-resizing .sidebar-resize-handle::before {
   color: var(--text);
   background: var(--soft);
   transform: translateX(2px);
+}
+
+.nav-submenu-disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  color: var(--muted);
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.nav-submenu-disabled:hover {
+  transform: none;
 }
 
 .nav-submenu small {

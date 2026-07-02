@@ -34,6 +34,12 @@ async function submitAssetForm(event) {
     return;
   }
 
+  const confirmed = await confirmAssetRegistration(form);
+
+  if (!confirmed) {
+    return;
+  }
+
   setButtonLoading(submitButton, true);
   setFormMessage("", "");
 
@@ -64,6 +70,23 @@ async function submitAssetForm(event) {
   } finally {
     setButtonLoading(submitButton, false);
   }
+}
+
+async function confirmAssetRegistration(form) {
+  const data = new FormData(form);
+  const assetName = String(data.get("nome") || "este ativo").trim() || "este ativo";
+
+  if (typeof window.titechConfirm === "function") {
+    return window.titechConfirm({
+      title: "Cadastrar ativo?",
+      text: `Confirme para cadastrar ${assetName} no inventario.`,
+      confirmButtonText: "Cadastrar ativo",
+      cancelButtonText: "Revisar dados",
+      icon: "info",
+    });
+  }
+
+  return window.confirm(`Cadastrar ${assetName} no inventario?`);
 }
 
 function validateAssetForm(form) {
