@@ -175,7 +175,7 @@ try {
           <span>Funcion&aacute;rios</span>
         </a>
 <?php else: ?>
-        <span class="nav-link nav-link-disabled" aria-disabled="true" title="Apenas administradores podem acessar funcionários">
+        <span class="nav-link nav-link-disabled" aria-disabled="true" title="Apenas administradores podem acessar funcionarios">
           <i class="bi bi-people-fill"></i>
           <span>Funcion&aacute;rios</span>
         </span>

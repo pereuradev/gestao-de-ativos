@@ -49,6 +49,12 @@ $nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
 $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
 $sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
 $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
+
+if (!$sidebarIsAdmin) {
+  header("Location: pagina-inicial.php?acesso=restrito");
+  exit;
+}
+
 $sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
 $sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
 $sidebarEmail = e((string) ($usuario["email"] ?? ""));
@@ -179,7 +185,7 @@ try {
           </a>
         <?php else: ?>
           <span class="nav-link nav-link-disabled" aria-disabled="true"
-            title="Apenas administradores podem acessar funcion�rios">
+            title="Apenas administradores podem acessar funcionarios">
             <i class="bi bi-people-fill"></i>
             <span>Funcion&aacute;rios</span>
           </span>

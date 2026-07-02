@@ -170,7 +170,7 @@ try {
           </a>
         <?php else: ?>
           <span class="nav-link nav-link-disabled" aria-disabled="true"
-            title="Apenas administradores podem acessar funcion�rios">
+            title="Apenas administradores podem acessar funcionarios">
             <i class="bi bi-people-fill"></i>
             <span>Funcion&aacute;rios</span>
           </span>
@@ -198,9 +198,9 @@ try {
 
           <div class="nav-submenu" id="registrationSubmenu">
             <a href="cadastro-ativos.php">Ativos</a>
-            <a class="active-submenu" href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
             <a href="marcas.php">Marcas</a>
             <a href="propriedades.php">Propriedades</a>
+            <a class="active-submenu" href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
             <a href="locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>

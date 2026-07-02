@@ -145,6 +145,17 @@ body.ux-enhanced .nav-submenu a.active-submenu {
   color: var(--ux-text);
 }
 
+body.ux-enhanced .nav-link.nav-link-disabled,
+body.ux-enhanced .nav-link.nav-link-disabled:hover {
+  cursor: not-allowed;
+  opacity: 0.48;
+  color: var(--ux-muted);
+  border-color: rgba(148, 163, 184, 0.14);
+  background: rgba(148, 163, 184, 0.08);
+  box-shadow: none;
+  transform: none;
+}
+
 body.ux-enhanced .hero-panel,
 body.ux-enhanced .metric-card,
 body.ux-enhanced .content-card {
@@ -295,6 +306,18 @@ body.ux-enhanced .primary-button:hover,
 body.ux-enhanced .secondary-button:hover,
 body.ux-enhanced .table-action:hover {
   box-shadow: var(--ux-shadow-sm);
+}
+
+body.ux-enhanced .nav-link.nav-link-disabled:hover {
+  box-shadow: none;
+}
+
+body.ux-enhanced .disabled-action,
+body.ux-enhanced .disabled-action:hover {
+  cursor: not-allowed;
+  opacity: 0.48;
+  box-shadow: none;
+  transform: none;
 }
 
 body.ux-enhanced :where(a, button):focus-visible {

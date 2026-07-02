@@ -487,6 +487,34 @@ body.sidebar-resizing .sidebar-resize-handle::before {
   transform: translateX(2px);
 }
 
+.nav-link.nav-link-disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  color: var(--muted);
+  background: rgba(148, 163, 184, 0.08);
+  border-color: rgba(148, 163, 184, 0.14);
+  box-shadow: none;
+}
+
+.nav-link.nav-link-disabled:hover {
+  color: var(--muted);
+  background: rgba(148, 163, 184, 0.08);
+  border-color: rgba(148, 163, 184, 0.14);
+  transform: none;
+}
+
+.disabled-action {
+  cursor: not-allowed;
+  opacity: 0.48;
+  box-shadow: none;
+  filter: grayscale(0.25);
+}
+
+.disabled-action:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 .nav-chevron {
   margin-left: auto;
   font-size: 0.8rem;

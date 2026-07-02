@@ -140,7 +140,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
           <span>Funcion&aacute;rios</span>
         </a>
 <?php else: ?>
-        <span class="nav-link nav-link-disabled" aria-disabled="true" title="Apenas administradores podem acessar funcionários">
+        <span class="nav-link nav-link-disabled" aria-disabled="true" title="Apenas administradores podem acessar funcionarios">
           <i class="bi bi-people-fill"></i>
           <span>Funcion&aacute;rios</span>
         </span>
@@ -296,10 +296,17 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
               Ver ativos
             </a>
 
+<?php if ($sidebarIsAdmin): ?>
             <a href="funcionarios.php" class="secondary-button">
               <i class="bi bi-people-fill"></i>
               Funcion&aacute;rios
             </a>
+<?php else: ?>
+            <span class="secondary-button disabled-action" aria-disabled="true" title="Apenas administradores podem acessar funcionarios">
+              <i class="bi bi-people-fill"></i>
+              Funcion&aacute;rios
+            </span>
+<?php endif; ?>
           </div>
         </div>
       </section>
