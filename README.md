@@ -355,4 +355,10 @@ Projeto criado para apoiar a gestao interna de ativos da TI TECH Solutions.
 
 ## Licenca
 
-Projeto interno. Uso, copia, modificacao ou distribuicao devem respeitar as regras da organizacao responsavel.
+Este projeto e proprietario e esta protegido por direitos autorais.
+
+Nao e permitido copiar, modificar, distribuir, revender, hospedar, publicar,
+comercializar ou usar este codigo, total ou parcialmente, sem autorizacao previa
+e por escrito do titular dos direitos.
+
+Consulte o arquivo [LICENSE](LICENSE) para mais detalhes.
