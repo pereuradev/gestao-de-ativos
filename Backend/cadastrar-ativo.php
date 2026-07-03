@@ -24,7 +24,7 @@ function responder(bool $ok, string $message, int $statusCode = 200, array $extr
 function campo(string $nome): string
 {
     // Busca um campo enviado via POST e remove espacos nas extremidades.
-    return trim((string)($_POST[$nome] ?? ""));
+    return trim((string) ($_POST[$nome] ?? ""));
 }
 
 function campoNulo(string $nome): ?string
@@ -53,7 +53,7 @@ function uuidValido(?string $valor): bool
         return true;
     }
 
-    return (bool)preg_match(
+    return (bool) preg_match(
         "/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i",
         $valor
     );
@@ -67,9 +67,7 @@ function statusPermitido(string $status): bool
         "Em uso",
         "Manutenção",
         "Formatação",
-        "Homologação",
-        "Baixado",
-        "Perdido",
+        "Homologação"
     ], true);
 }
 
@@ -147,7 +145,7 @@ try {
     ");
 
     if ($marca !== null) {
-        // So permitimos cadastrar ativo com marca ativa ja cadastrada.
+        // So permite cadastrar ativo com marca ativa ja cadastrada.
         $marcaStmt = $pdo->prepare("
             select nome
               from public.marcas_ativos
@@ -166,7 +164,7 @@ try {
             responder(false, "Selecione uma marca ativa cadastrada.", 422);
         }
 
-        $marca = (string)$marcaAtiva;
+        $marca = (string) $marcaAtiva;
     }
 
     // Insere o ativo e devolve os campos basicos para o frontend atualizar a tela.
