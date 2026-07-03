@@ -10,6 +10,7 @@ function initGroupEditPage() {
   callGroupEditGlobal("setupNavGroups");
   setupGroupEditSearch();
   setupGroupEditActions();
+  setupGroupEditModal();
   updateGroupEditEmptyState();
 }
 
@@ -26,8 +27,14 @@ function setupGroupEditSearch() {
 
 function setupGroupEditActions() {
   document.getElementById("groupEditList")?.addEventListener("click", (event) => {
+    const editButton = event.target.closest("[data-group-action='edit']");
     const removeButton = event.target.closest("[data-member-action='remove']");
     const deleteButton = event.target.closest("[data-group-action='delete']");
+
+    if (editButton) {
+      openGroupEditModal(editButton.closest(".group-edit-item"));
+      return;
+    }
 
     if (removeButton) {
       removeGroupMember(removeButton);
@@ -38,6 +45,99 @@ function setupGroupEditActions() {
       deleteGroup(deleteButton);
     }
   });
+}
+
+function setupGroupEditModal() {
+  const modal = document.getElementById("groupEditModal");
+  const form = document.getElementById("groupModalForm");
+  const search = document.getElementById("editGroupEmployeeSearch");
+
+  form?.addEventListener("submit", submitGroupModal);
+  search?.addEventListener("input", filterGroupModalMembers);
+
+  document.querySelectorAll("[data-close-group-modal]").forEach((button) => {
+    button.addEventListener("click", closeGroupEditModal);
+  });
+
+  modal?.addEventListener("click", (event) => {
+    if (event.target === modal) {
+      closeGroupEditModal();
+    }
+  });
+}
+
+function openGroupEditModal(card) {
+  const modal = document.getElementById("groupEditModal");
+
+  if (!modal || !card) {
+    return;
+  }
+
+  setGroupInputValue("editGroupId", card.dataset.id || "");
+  setGroupInputValue("editGroupName", card.dataset.name || "");
+  setGroupInputValue("editGroupDescription", card.dataset.description || "");
+
+  const memberIds = new Set(
+    Array.from(card.querySelectorAll(".group-member-row"))
+      .map((row) => row.dataset.memberId || "")
+      .filter(Boolean),
+  );
+  const permissionCodes = new Set((card.dataset.permissionCodes || "").split(",").filter(Boolean));
+
+  setGroupModalChecks("membros[]", memberIds);
+  setGroupModalChecks("permissoes[]", permissionCodes);
+  setGroupInputValue("editGroupEmployeeSearch", "");
+  filterGroupModalMembers();
+  clearGroupModalMessage();
+
+  window.titechRememberDialogTrigger?.();
+  modal.hidden = false;
+  document.getElementById("editGroupName")?.focus();
+}
+
+function closeGroupEditModal() {
+  const modal = document.getElementById("groupEditModal");
+
+  if (modal) {
+    modal.hidden = true;
+  }
+}
+
+async function submitGroupModal(event) {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const submitButton = document.getElementById("saveGroupButton");
+  const error = validateGroupModalForm(form);
+
+  if (error) {
+    setGroupModalMessage(error, "error");
+    return;
+  }
+
+  const confirmed = await confirmGroupModalEdition(form);
+
+  if (!confirmed) {
+    return;
+  }
+
+  setGroupEditLoading(submitButton, true, "Salvando...");
+  clearGroupModalMessage();
+
+  try {
+    const result = await postGroupEdit(form.action, new FormData(form));
+
+    if (result.grupo) {
+      updateGroupCard(result.grupo);
+    }
+
+    closeGroupEditModal();
+    setGroupEditMessage(result.message || "Grupo atualizado com sucesso.", "success");
+  } catch (error) {
+    setGroupModalMessage(error.message || "Nao foi possivel atualizar o grupo.", "error");
+  } finally {
+    setGroupEditLoading(submitButton, false);
+  }
 }
 
 async function removeGroupMember(button) {
@@ -127,6 +227,162 @@ async function deleteGroup(button) {
   }
 }
 
+function validateGroupModalForm(form) {
+  const data = new FormData(form);
+  const name = String(data.get("nome") || "").trim();
+
+  if (name.length < 3) {
+    return "Informe um nome de grupo com pelo menos 3 caracteres.";
+  }
+
+  if (name.length > 90) {
+    return "O nome do grupo pode ter no maximo 90 caracteres.";
+  }
+
+  return "";
+}
+
+async function confirmGroupModalEdition(form) {
+  const data = new FormData(form);
+  const name = String(data.get("nome") || "este grupo").trim() || "este grupo";
+
+  return confirmGroupEditAction({
+    title: "Salvar alteracoes?",
+    text: `Confirme para atualizar nome, descricao, membros e permissoes de ${name}.`,
+    confirmButtonText: "Salvar alteracoes",
+    cancelButtonText: "Continuar editando",
+    icon: "warning",
+  });
+}
+
+function filterGroupModalMembers() {
+  const search = normalizeGroupEditText(document.getElementById("editGroupEmployeeSearch")?.value || "");
+
+  document.querySelectorAll("[data-modal-member-card]").forEach((card) => {
+    const matches = !search || normalizeGroupEditText(card.dataset.search || "").includes(search);
+    card.hidden = !matches;
+  });
+}
+
+function updateGroupCard(group) {
+  const card = document.querySelector(`.group-edit-item[data-id="${cssEscapeGroupEdit(group.id)}"]`);
+
+  if (!card) {
+    return;
+  }
+
+  const oldMemberTotal = Number(card.dataset.members || 0);
+  const oldPermissionTotal = Number(card.dataset.permissions || 0);
+  const members = Array.isArray(group.membros) ? group.membros : [];
+  const permissions = Array.isArray(group.permissoes) ? group.permissoes : [];
+  const memberTotal = Number(group.total_membros ?? members.length);
+  const permissionTotal = Number(group.total_permissoes ?? permissions.length);
+  const description = String(group.descricao || "");
+
+  card.dataset.name = String(group.nome || "");
+  card.dataset.description = description;
+  card.dataset.members = String(memberTotal);
+  card.dataset.permissions = String(permissionTotal);
+  card.dataset.permissionCodes = permissions.map((permission) => String(permission.codigo || "")).filter(Boolean).join(",");
+  card.dataset.search = buildGroupSearchValue(group, members, permissions);
+
+  updateElementText(card.querySelector("[data-group-name]"), group.nome || "--");
+  updateElementText(card.querySelector("[data-group-description]"), description || "Sem descricao informada.");
+  updateElementText(card.querySelector("[data-member-count]"), String(memberTotal));
+  updateElementText(card.querySelector("[data-permission-count]"), String(permissionTotal));
+
+  renderGroupPermissions(card, permissions);
+  renderGroupMembers(card, members);
+  incrementGroupEditMetric("editGroupMetricMembers", memberTotal - oldMemberTotal);
+  incrementGroupEditMetric("editGroupMetricPermissions", permissionTotal - oldPermissionTotal);
+  filterGroupEditItems();
+}
+
+function renderGroupPermissions(card, permissions) {
+  const list = card.querySelector("[data-permission-list]");
+
+  if (!list) {
+    return;
+  }
+
+  list.replaceChildren();
+
+  if (!permissions.length) {
+    list.append(createGroupPermissionChip("Nenhuma permissao cadastrada."));
+    return;
+  }
+
+  permissions.forEach((permission) => {
+    list.append(createGroupPermissionChip(permission.rotulo || permission.codigo || "--"));
+  });
+}
+
+function renderGroupMembers(card, members) {
+  const list = card.querySelector("[data-member-list]");
+
+  if (!list) {
+    return;
+  }
+
+  list.replaceChildren();
+
+  members.forEach((member) => {
+    list.append(createGroupMemberRow(member));
+  });
+
+  ensureGroupMemberEmptyState(card);
+}
+
+function createGroupPermissionChip(label) {
+  const chip = document.createElement("span");
+  chip.textContent = label;
+
+  return chip;
+}
+
+function createGroupMemberRow(member) {
+  const row = document.createElement("article");
+  const avatar = document.createElement("div");
+  const info = document.createElement("div");
+  const name = document.createElement("strong");
+  const email = document.createElement("span");
+  const details = document.createElement("small");
+  const button = document.createElement("button");
+
+  row.className = "group-member-row";
+  row.dataset.memberId = member.id || "";
+
+  avatar.className = "group-member-avatar";
+  avatar.setAttribute("aria-hidden", "true");
+  avatar.textContent = member.iniciais || getGroupEditInitials(member.nome || "");
+
+  info.className = "group-member-info";
+  name.textContent = member.nome || "--";
+  email.textContent = member.email || "--";
+  details.textContent = `${member.tipo_usuario || "--"} - ${member.departamento || "--"}`;
+  info.append(name, email, details);
+
+  button.className = "table-action remove-member-button";
+  button.type = "button";
+  button.dataset.memberAction = "remove";
+  button.innerHTML = '<i class="bi bi-person-dash"></i><span>Remover</span>';
+
+  row.append(avatar, info, button);
+
+  return row;
+}
+
+function buildGroupSearchValue(group, members, permissions) {
+  const memberSearch = members
+    .map((member) => `${member.nome || ""} ${member.email || ""} ${member.departamento || ""}`)
+    .join(" ");
+  const permissionSearch = permissions
+    .map((permission) => `${permission.rotulo || ""} ${permission.codigo || ""}`)
+    .join(" ");
+
+  return `${group.nome || ""} ${group.descricao || ""} ${memberSearch} ${permissionSearch}`.toLowerCase().trim();
+}
+
 async function postGroupEdit(url, body) {
   const response = await fetch(url, {
     method: "POST",
@@ -208,6 +464,23 @@ function updateGroupEditEmptyState() {
   }
 }
 
+function setGroupModalMessage(message, type) {
+  const element = document.getElementById("groupModalMessage");
+
+  if (!element) {
+    return;
+  }
+
+  element.textContent = message;
+  element.classList.toggle("show", Boolean(message));
+  element.classList.toggle("success", type === "success");
+  element.classList.toggle("error", type === "error");
+}
+
+function clearGroupModalMessage() {
+  setGroupModalMessage("", "");
+}
+
 function setGroupEditMessage(message, type) {
   const element = document.getElementById("groupEditPageMessage");
 
@@ -266,6 +539,46 @@ function updateGroupEditText(id, value) {
   if (element) {
     element.textContent = value;
   }
+}
+
+function updateElementText(element, value) {
+  if (element) {
+    element.textContent = value;
+  }
+}
+
+function setGroupInputValue(id, value) {
+  const input = document.getElementById(id);
+
+  if (input) {
+    input.value = value;
+  }
+}
+
+function setGroupModalChecks(name, selectedValues) {
+  document.querySelectorAll(`#groupEditModal input[name="${name}"]`).forEach((input) => {
+    input.checked = selectedValues.has(input.value);
+  });
+}
+
+function cssEscapeGroupEdit(value) {
+  if (window.CSS?.escape) {
+    return window.CSS.escape(String(value || ""));
+  }
+
+  return String(value || "").replace(/["\\]/g, "\\$&");
+}
+
+function getGroupEditInitials(name) {
+  const initials = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+
+  return initials || "TT";
 }
 
 function normalizeGroupEditText(value) {

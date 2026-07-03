@@ -11,6 +11,17 @@
   min-height: 48px;
 }
 
+body.ux-enhanced .group-edit-page .group-edit-card .records-actions span,
+.group-edit-page .group-edit-card .records-actions span {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--muted);
+  background: transparent;
+  box-shadow: none;
+}
+
 .group-page-message {
   display: none;
   margin: 0 0 16px;
@@ -193,12 +204,29 @@
   box-shadow: 0 16px 28px rgba(6, 22, 34, 0.16);
 }
 
+.group-edit-actions .table-action,
+.group-edit-actions .table-action:hover,
+.group-edit-actions .table-action:focus-visible,
+.group-edit-actions .table-action i,
+.group-edit-actions .table-action span {
+  color: #ffffff;
+}
+
 .remove-member-button {
   background: linear-gradient(135deg, #f59e0b, #b45309);
 }
 
+.edit-group-button {
+  background:
+    linear-gradient(135deg, var(--asset-navy), var(--group-accent-strong));
+}
+
 .delete-group-button {
-  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  background: linear-gradient(135deg, #dc2626, #7f1d1d);
+}
+
+.delete-group-button:hover {
+  background: linear-gradient(135deg, #ef4444, #991b1b);
 }
 
 .group-member-empty {
@@ -218,6 +246,109 @@
   color: var(--group-accent);
 }
 
+.group-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.56);
+  backdrop-filter: blur(8px);
+}
+
+.group-modal-backdrop[hidden] {
+  display: none;
+}
+
+.group-modal-card {
+  width: min(980px, 100%);
+  max-height: min(900px, calc(100vh - 36px));
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid color-mix(in srgb, var(--group-accent) 24%, var(--line));
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--group-accent) 8%, transparent), transparent 58%),
+    var(--surface-strong);
+  box-shadow: var(--shadow);
+}
+
+.theme-light .group-modal-card {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--group-accent) 7%, transparent), transparent 58%),
+    rgba(255, 255, 255, 0.96);
+}
+
+.group-modal-card .edit-modal-header {
+  margin-bottom: 18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.group-modal-card .edit-modal-header h3 {
+  margin: 4px 0 0;
+  letter-spacing: 0;
+}
+
+.group-modal-card .modal-close-button {
+  flex: 0 0 auto;
+}
+
+.group-modal-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.group-modal-selector {
+  padding: 14px;
+}
+
+.group-modal-list {
+  max-height: 320px;
+}
+
+.group-modal-permission-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.group-modal-actions {
+  gap: 12px;
+  padding-top: 22px;
+  margin-top: 22px;
+  border-top: 1px solid color-mix(in srgb, var(--group-accent) 18%, var(--asset-border));
+}
+
+.group-modal-actions .form-action-button {
+  min-height: 50px;
+  padding: 0 18px;
+  border-radius: 16px;
+  letter-spacing: 0;
+}
+
+.group-modal-actions .danger-button {
+  color: color-mix(in srgb, var(--text) 88%, var(--group-accent));
+  border-color: color-mix(in srgb, var(--group-accent) 30%, var(--line));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--group-accent) 10%, transparent), transparent 54%),
+    var(--surface-soft);
+  box-shadow: none;
+}
+
+.group-modal-actions .danger-button:hover {
+  color: #ffffff;
+  border-color: color-mix(in srgb, var(--group-accent) 60%, var(--line));
+  background: linear-gradient(135deg, var(--asset-navy), var(--group-accent-strong));
+}
+
+.group-modal-actions .success-button {
+  color: #ffffff;
+  border-color: color-mix(in srgb, var(--group-accent) 58%, transparent);
+  background: linear-gradient(135deg, var(--asset-navy), var(--group-accent-strong));
+  box-shadow: 0 18px 38px color-mix(in srgb, var(--group-accent) 24%, transparent);
+}
+
 @media (max-width: 760px) {
   .group-edit-item-header,
   .group-edit-actions {
@@ -232,5 +363,14 @@
   .group-member-row .remove-member-button {
     grid-column: 1 / -1;
     width: 100%;
+  }
+
+  .group-modal-grid,
+  .group-modal-permission-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .group-modal-actions {
+    align-items: stretch;
   }
 }

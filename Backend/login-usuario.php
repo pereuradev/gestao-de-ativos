@@ -320,6 +320,8 @@ try {
         "nome_completo" => (string)($perfil["nome_completo"] ?? ""),
         "email" => (string)($perfil["email"] ?? $authEmail),
         "tipo_usuario" => (string)$perfil["tipo_usuario"],
+        "departamento" => (string)($perfil["departamento"] ?? ""),
+        "empresa" => (string)($perfil["empresa"] ?? ""),
         "status" => (string)$perfil["status"],
     ];
 

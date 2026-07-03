@@ -129,11 +129,11 @@ try {
   <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260619-select-options" />
   <link rel="stylesheet" href="css/edicao-marcas.css?v=20260619-brand-status-actions" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260702-bottom-toast" />
+  <link rel="stylesheet" href="css/ux-profissional.css?v=20260703-modal-sidebar-profile" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
-  <script src="js/app-base.js?v=20260630-reduced-motion" defer></script>
+  <script src="js/app-base.js?v=20260703-sidebar-profile-modal" defer></script>
   <script src="js/edicao-marcas.js?v=20260624-common-ui" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>

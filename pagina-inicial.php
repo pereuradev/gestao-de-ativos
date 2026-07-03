@@ -85,7 +85,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
   <!-- Arquivos CSS da pÃ¡gina -->
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260702-bottom-toast" />
+  <link rel="stylesheet" href="css/ux-profissional.css?v=20260703-modal-sidebar-profile" />
 
   <!-- Chart.js usado para renderizar grÃ¡ficos no dashboard -->
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
@@ -94,7 +94,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
   <!-- Scripts da pÃ¡gina. O defer evita bloquear o carregamento do HTML. -->
   <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
-  <script src="js/app-base.js?v=20260630-reduced-motion" defer></script>
+  <script src="js/app-base.js?v=20260703-sidebar-profile-modal" defer></script>
   <script src="js/pagina-base.js?v=20260630-reduced-motion" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>

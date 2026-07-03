@@ -68,14 +68,14 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 
     <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
     <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
-    <link rel="stylesheet" href="css/ux-profissional.css?v=20260702-bottom-toast" />
+    <link rel="stylesheet" href="css/ux-profissional.css?v=20260703-modal-sidebar-profile" />
     <link rel="stylesheet" href="css/dashboard-produtos.css?v=20260702-loading-spinner-fix" />
     <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
     <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
     <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
-    <script src="js/app-base.js?v=20260630-reduced-motion" defer></script>
+    <script src="js/app-base.js?v=20260703-sidebar-profile-modal" defer></script>
     <script src="js/dashboard-produtos.js?v=20260702-filter-loading-feedback" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
     <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>

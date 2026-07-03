@@ -68,6 +68,7 @@ let permissionDialogPreviousFocus = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   applyCursorPreference(getSavedItem("titech-cursor") || "enhanced");
+  hydrateSidebarProfile();
   setupPermissionDeniedTriggers();
 });
 
@@ -86,6 +87,64 @@ function setSavedItem(key, value) {
     localStorage.setItem(key, value);
   } catch {
     return;
+  }
+}
+
+async function hydrateSidebarProfile() {
+  // A sidebar nasce com dados da sessao PHP, mas este refresh corrige sessoes antigas sem novo login.
+  if (!document.querySelector(".sidebar-user-info")) {
+    return;
+  }
+
+  try {
+    const response = await fetch("Backend/usuario-sessao.php", {
+      method: "GET",
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+    });
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok || !result?.ok || !result.usuario) {
+      return;
+    }
+
+    updateSidebarProfile(result.usuario);
+  } catch {
+    return;
+  }
+}
+
+function updateSidebarProfile(usuario) {
+  const summary = document.querySelector(".sidebar-user-info");
+  const avatar = document.querySelector(".sidebar-avatar");
+
+  if (!summary) {
+    return;
+  }
+
+  const name = String(usuario.nome_completo || "Usuario").trim() || "Usuario";
+  const email = String(usuario.email || "").trim();
+  const department = String(usuario.departamento || "").trim() || "Sem departamento";
+  const nameElement = summary.querySelector("strong");
+  const smalls = summary.querySelectorAll("small");
+
+  if (avatar && usuario.iniciais) {
+    avatar.textContent = usuario.iniciais;
+  }
+
+  if (nameElement) {
+    nameElement.textContent = name;
+    nameElement.title = name;
+  }
+
+  if (smalls[0]) {
+    smalls[0].textContent = email || "Email nao informado";
+    smalls[0].title = email || "Email nao informado";
+  }
+
+  if (smalls[1]) {
+    smalls[1].textContent = department;
+    smalls[1].title = department;
   }
 }
 

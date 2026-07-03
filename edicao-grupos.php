@@ -71,8 +71,10 @@ $sidebarInitials = e(iniciaisEdicaoGrupo((string) ($usuario["nome_completo"] ?? 
 $csrfToken = e((string) $_SESSION["csrf_token"]);
 
 $grupos = [];
+$funcionarios = [];
 $membrosPorGrupo = [];
 $permissoesPorGrupo = [];
+$permissoesCodigosPorGrupo = [];
 $permissoesDisponiveis = [];
 $totalGrupos = 0;
 $totalMembros = 0;
@@ -85,6 +87,15 @@ try {
 
   garantirTabelasGruposAcesso($pdo);
   $permissoesDisponiveis = permissoesGruposAcesso();
+
+  $funcionariosStmt = $pdo->prepare("
+      select id, nome_completo, email, tipo_usuario, departamento
+        from public.perfis_usuarios
+       where lower(coalesce(status, 'ativo')) = 'ativo'
+    order by nome_completo asc
+  ");
+  $funcionariosStmt->execute();
+  $funcionarios = $funcionariosStmt->fetchAll();
 
   $resumoStmt = $pdo->prepare("
       select
@@ -148,6 +159,7 @@ try {
   foreach ($permissoesStmt->fetchAll() as $permissao) {
     $grupoId = (string) ($permissao["grupo_id"] ?? "");
     $codigo = (string) ($permissao["permissao"] ?? "");
+    $permissoesCodigosPorGrupo[$grupoId][] = $codigo;
     $permissoesPorGrupo[$grupoId][] = $permissoesDisponiveis[$codigo] ?? $codigo;
   }
 } catch (Throwable) {
@@ -174,14 +186,14 @@ try {
   <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260701-admin-employee-register-v2" />
   <link rel="stylesheet" href="css/cadastro-funcionarios.css?v=20260702-employee-hero-gradient" />
   <link rel="stylesheet" href="css/cadastro-grupos.css?v=20260702-groups-clear-red" />
-  <link rel="stylesheet" href="css/edicao-grupos.css?v=20260702-group-edit" />
+  <link rel="stylesheet" href="css/edicao-grupos.css?v=20260703-group-edit-modal" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260701-admin-employee-register-v2" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260702-bottom-toast" />
+  <link rel="stylesheet" href="css/ux-profissional.css?v=20260703-modal-sidebar-profile" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260701-admin-employee-register-v2" defer></script>
   <script src="js/ux-profissional.js?v=20260701-admin-employee-register-v2" defer></script>
-  <script src="js/app-base.js?v=20260701-admin-employee-register-v2" defer></script>
-  <script src="js/edicao-grupos.js?v=20260702-group-edit" defer></script>
+  <script src="js/app-base.js?v=20260703-sidebar-profile-modal" defer></script>
+  <script src="js/edicao-grupos.js?v=20260703-group-edit-modal" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
@@ -395,24 +407,31 @@ try {
             $status = (string) ($grupo["status"] ?? "Ativo");
             $membros = $membrosPorGrupo[$grupoId] ?? [];
             $permissoes = $permissoesPorGrupo[$grupoId] ?? [];
+            $permissoesCodigos = $permissoesCodigosPorGrupo[$grupoId] ?? [];
             $buscaMembros = implode(" ", array_map(static fn(array $membro): string => (string) ($membro["nome_completo"] ?? ""), $membros));
             $buscaPermissoes = implode(" ", $permissoes);
             $search = strtolower(trim($nome . " " . $descricao . " " . $buscaMembros . " " . $buscaPermissoes));
             ?>
             <article class="group-edit-item" data-id="<?php echo e($grupoId); ?>" data-name="<?php echo e($nome); ?>"
+              data-description="<?php echo e($descricao); ?>"
               data-members="<?php echo e((string) count($membros)); ?>"
-              data-permissions="<?php echo e((string) count($permissoes)); ?>" data-search="<?php echo e($search); ?>">
+              data-permissions="<?php echo e((string) count($permissoes)); ?>"
+              data-permission-codes="<?php echo e(implode(",", $permissoesCodigos)); ?>" data-search="<?php echo e($search); ?>">
               <header class="group-edit-item-header">
                 <div>
                   <p class="section-tag">Grupo</p>
-                  <h4><?php echo e($nome); ?></h4>
-                  <span><?php echo e($descricao !== "" ? $descricao : "Sem descricao informada."); ?></span>
+                  <h4 data-group-name><?php echo e($nome); ?></h4>
+                  <span data-group-description><?php echo e($descricao !== "" ? $descricao : "Sem descricao informada."); ?></span>
                 </div>
 
                 <div class="group-edit-actions">
                   <span class="status-badge <?php echo strtolower($status) === "ativo" ? "status-active" : "status-inactive"; ?>">
                     <?php echo e($status); ?>
                   </span>
+                  <button class="table-action edit-group-button" type="button" data-group-action="edit">
+                    <i class="bi bi-pencil-square"></i>
+                    <span>Editar</span>
+                  </button>
                   <button class="table-action delete-group-button" type="button" data-group-action="delete">
                     <i class="bi bi-trash3"></i>
                     <span>Excluir grupo</span>
@@ -422,11 +441,11 @@ try {
 
               <div class="group-edit-summary">
                 <span><strong data-member-count><?php echo e((string) count($membros)); ?></strong> membros</span>
-                <span><strong><?php echo e((string) count($permissoes)); ?></strong> permissoes</span>
+                <span><strong data-permission-count><?php echo e((string) count($permissoes)); ?></strong> permissoes</span>
                 <span>Atualizado em <?php echo e(formatarDataEdicaoGrupo((string) ($grupo["atualizado_em"] ?? ""))); ?></span>
               </div>
 
-              <div class="group-permission-list" aria-label="Permissoes do grupo">
+              <div class="group-permission-list" aria-label="Permissoes do grupo" data-permission-list>
                 <?php foreach ($permissoes as $permissao): ?>
                   <span><?php echo e((string) $permissao); ?></span>
                 <?php endforeach; ?>
@@ -472,6 +491,114 @@ try {
         </div>
       </section>
     </main>
+  </div>
+
+  <div class="edit-modal-backdrop group-modal-backdrop" id="groupEditModal" hidden>
+    <section class="edit-modal-card group-modal-card" role="dialog" aria-modal="true"
+      aria-labelledby="groupEditModalTitle">
+      <div class="edit-modal-header">
+        <div>
+          <p class="section-tag">Alterar grupo</p>
+          <h3 id="groupEditModalTitle">Dados do grupo</h3>
+        </div>
+
+        <button class="icon-button modal-close-button" type="button" aria-label="Fechar edicao"
+          data-close-group-modal>
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <form id="groupModalForm" class="enhanced-asset-form" action="Backend/atualizar-grupo.php" method="post"
+        novalidate>
+        <input id="editGroupId" type="hidden" name="id" />
+        <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
+
+        <div class="asset-form-grid group-modal-grid">
+          <label class="asset-field">
+            <span>Nome do grupo <strong>*</strong></span>
+            <div class="input-shell">
+              <i class="bi bi-diagram-3"></i>
+              <input id="editGroupName" name="nome" type="text" maxlength="90" required />
+            </div>
+          </label>
+
+          <label class="asset-field">
+            <span>Descri&ccedil;&atilde;o</span>
+            <div class="input-shell">
+              <i class="bi bi-card-text"></i>
+              <input id="editGroupDescription" name="descricao" type="text" maxlength="220" />
+            </div>
+          </label>
+
+          <div class="form-section-title secondary-section">
+            <i class="bi bi-people"></i>
+            <span>Funcion&aacute;rios do grupo</span>
+          </div>
+
+          <div class="group-selector group-modal-selector wide-field">
+            <div class="group-selector-toolbar">
+              <div class="search-box group-search-box">
+                <i class="bi bi-search"></i>
+                <input id="editGroupEmployeeSearch" type="search" placeholder="Buscar funcionario" autocomplete="off" />
+              </div>
+            </div>
+
+            <div id="editGroupEmployeeList" class="group-check-list group-modal-list">
+              <?php foreach ($funcionarios as $funcionario): ?>
+                <?php
+                $funcionarioId = (string) ($funcionario["id"] ?? "");
+                $funcionarioNome = (string) ($funcionario["nome_completo"] ?? "--");
+                $funcionarioBusca = strtolower($funcionarioNome . " " . (string) ($funcionario["email"] ?? "") . " " . (string) ($funcionario["departamento"] ?? ""));
+                ?>
+                <label class="group-check-card" data-search="<?php echo e($funcionarioBusca); ?>" data-modal-member-card>
+                  <input type="checkbox" name="membros[]" value="<?php echo e($funcionarioId); ?>" />
+                  <span class="group-check-body">
+                    <strong><?php echo e($funcionarioNome); ?></strong>
+                    <small><?php echo e((string) ($funcionario["email"] ?? "--")); ?></small>
+                    <small><?php echo e((string) ($funcionario["tipo_usuario"] ?? "--")); ?> &middot; <?php echo e((string) ($funcionario["departamento"] ?? "--")); ?></small>
+                  </span>
+                </label>
+              <?php endforeach; ?>
+
+              <?php if (!$funcionarios): ?>
+                <div class="empty-state records-empty compact-empty-state">
+                  <i class="bi bi-info-circle"></i>
+                  <span>Nenhum funcionario ativo encontrado.</span>
+                </div>
+              <?php endif; ?>
+            </div>
+          </div>
+
+          <div class="form-section-title secondary-section">
+            <i class="bi bi-shield-check"></i>
+            <span>Permiss&otilde;es do grupo</span>
+          </div>
+
+          <div class="permission-grid group-modal-permission-grid wide-field">
+            <?php foreach ($permissoesDisponiveis as $codigo => $rotulo): ?>
+              <label class="permission-toggle">
+                <input type="checkbox" name="permissoes[]" value="<?php echo e((string) $codigo); ?>" />
+                <span><?php echo e((string) $rotulo); ?></span>
+              </label>
+            <?php endforeach; ?>
+          </div>
+        </div>
+
+        <div id="groupModalMessage" class="form-message employee-form-message" role="status" aria-live="polite"></div>
+
+        <div class="asset-form-actions enhanced-form-actions group-modal-actions">
+          <button class="form-action-button danger-button" type="button" data-close-group-modal>
+            <i class="bi bi-x-lg"></i>
+            <span>Cancelar</span>
+          </button>
+
+          <button id="saveGroupButton" class="form-action-button success-button" type="submit">
+            <i class="bi bi-check-lg"></i>
+            <span>Salvar altera&ccedil;&otilde;es</span>
+          </button>
+        </div>
+      </form>
+    </section>
   </div>
 </body>
 
