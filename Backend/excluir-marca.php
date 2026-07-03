@@ -55,6 +55,9 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     responder(false, "Sessao expirada. Faca login novamente.", 401);
 }
 
+require_once __DIR__ . "/permissoes-acesso.php";
+exigirPermissaoApi("editar_marcas", "Edicao de marcas");
+
 if (!csrfValido()) {
     responder(false, "Token de seguranca invalido. Atualize a pagina e tente novamente.", 403);
 }

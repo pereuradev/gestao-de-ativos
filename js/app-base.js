@@ -30,6 +30,25 @@ const CUSTOM_CURSOR_INTERACTIVE_SELECTOR = [
   "[role='tab']",
   "[tabindex]:not([tabindex='-1'])",
 ].join(", ");
+const PAGE_PERMISSION_RULES = {
+  "dashboard.php": { permission: "visualizar_dashboard", resource: "Dashboard" },
+  "ativos.php": { permission: "visualizar_ativos", resource: "Ativos" },
+  "cadastro-ativos.php": { permission: "cadastrar_ativos", resource: "Cadastro de ativos" },
+  "edicao-ativos.php": { permission: "editar_ativos", resource: "Edicao de ativos" },
+  "marcas-visualizacao.php": { permission: "visualizar_marcas", resource: "Marcas" },
+  "marcas.php": { permission: "cadastrar_marcas", resource: "Cadastro de marcas" },
+  "edicao-marcas.php": { permission: "editar_marcas", resource: "Edicao de marcas" },
+  "propriedades-visualizacao.php": { permission: "visualizar_propriedades", resource: "Propriedades" },
+  "propriedades.php": { permission: "cadastrar_propriedades", resource: "Cadastro de propriedades" },
+  "edicao-propriedades.php": { permission: "editar_propriedades", resource: "Edicao de propriedades" },
+  "locais-visualizacao.php": { permission: "visualizar_locais", resource: "Localizacoes" },
+  "locais.php": { permission: "cadastrar_locais", resource: "Cadastro de localizacoes" },
+  "edicao-locais.php": { permission: "editar_locais", resource: "Edicao de localizacoes" },
+  "funcionarios.php": { permission: "visualizar_funcionarios", resource: "Funcionarios" },
+};
+const DISABLED_PERMISSION_LINKS = {
+  Funcionarios: { permission: "visualizar_funcionarios", href: "funcionarios.php" },
+};
 
 // Paletas que podem ser escolhidas nas configuracoes do usuario.
 const ACCENT_THEMES = {
@@ -109,6 +128,7 @@ async function hydrateSidebarProfile() {
     }
 
     updateSidebarProfile(result.usuario);
+    applyNavigationPermissions(result.usuario);
   } catch {
     return;
   }
@@ -146,6 +166,80 @@ function updateSidebarProfile(usuario) {
     smalls[1].textContent = department;
     smalls[1].title = department;
   }
+}
+
+function applyNavigationPermissions(usuario) {
+  if (usuario?.is_admin) {
+    return;
+  }
+
+  const permissions = new Set(Array.isArray(usuario?.permissoes) ? usuario.permissoes : []);
+
+  enableAllowedDisabledLinks(permissions);
+
+  document.querySelectorAll(".sidebar-nav a[href]").forEach((link) => {
+    const rule = PAGE_PERMISSION_RULES[getPageNameFromHref(link.getAttribute("href"))];
+
+    if (!rule || permissions.has(rule.permission)) {
+      return;
+    }
+
+    disableNavigationLink(link, rule.resource);
+  });
+
+  setupPermissionDeniedTriggers();
+}
+
+function enableAllowedDisabledLinks(permissions) {
+  document.querySelectorAll(".nav-link-disabled, .disabled-action").forEach((item) => {
+    const rule = DISABLED_PERMISSION_LINKS[item.dataset.permissionResource];
+
+    if (!rule || !permissions.has(rule.permission)) {
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.href = rule.href;
+    link.className = item.className;
+    link.classList.remove("nav-link-disabled", "disabled-action");
+
+    if (item.classList.contains("nav-submenu-disabled")) {
+      link.classList.remove("nav-submenu-disabled");
+    }
+
+    link.innerHTML = item.innerHTML;
+    item.replaceWith(link);
+  });
+}
+
+function getPageNameFromHref(href) {
+  try {
+    const url = new URL(href || "", window.location.href);
+    const parts = url.pathname.split("/").filter(Boolean);
+
+    return (parts.pop() || "").toLowerCase();
+  } catch {
+    return String(href || "").split("?")[0].split("/").pop().toLowerCase();
+  }
+}
+
+function disableNavigationLink(link, resource) {
+  const disabled = document.createElement("span");
+  const isTopLevel = link.classList.contains("nav-link");
+
+  disabled.className = link.className || "nav-submenu-disabled";
+  disabled.classList.remove("active", "active-submenu");
+  disabled.classList.add("nav-link-disabled");
+
+  if (!isTopLevel) {
+    disabled.classList.add("nav-submenu-disabled");
+  }
+
+  disabled.innerHTML = link.innerHTML;
+  disabled.setAttribute("aria-disabled", "true");
+  disabled.setAttribute("data-permission-resource", resource);
+  disabled.setAttribute("title", `Voce nao tem permissao para acessar ${resource}`);
+  link.replaceWith(disabled);
 }
 
 function updateBrandLogo(isDark) {
@@ -622,25 +716,34 @@ function setupPermissionDeniedTriggers() {
   const restrictedItems = Array.from(document.querySelectorAll(".nav-link-disabled, .disabled-action"));
 
   restrictedItems.forEach((item) => {
-    item.setAttribute("role", "button");
-    item.setAttribute("tabindex", "0");
-
-    item.addEventListener("click", (event) => {
-      event.preventDefault();
-      openPermissionDeniedDialog(item);
-    });
-
-    item.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-
-      event.preventDefault();
-      openPermissionDeniedDialog(item);
-    });
+    setupPermissionDeniedTrigger(item);
   });
 
   if (document.body.dataset.permissionDialogOpen === "true") {
     openPermissionDeniedDialog(document.body);
   }
+}
+
+function setupPermissionDeniedTrigger(item) {
+  if (item.dataset.permissionTriggerReady === "true") {
+    return;
+  }
+
+  item.dataset.permissionTriggerReady = "true";
+  item.setAttribute("role", "button");
+  item.setAttribute("tabindex", "0");
+
+  item.addEventListener("click", (event) => {
+    event.preventDefault();
+    openPermissionDeniedDialog(item);
+  });
+
+  item.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+
+    event.preventDefault();
+    openPermissionDeniedDialog(item);
+  });
 }
 
 function openPermissionDeniedDialog(source) {

@@ -243,6 +243,97 @@
   gap: 12px;
 }
 
+.permission-sections {
+  display: grid;
+  gap: 12px;
+}
+
+.permission-section {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--group-accent) 18%, var(--asset-border));
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--group-accent) 6%, transparent), transparent 54%),
+    color-mix(in srgb, var(--asset-field-bg) 92%, transparent);
+  box-shadow: 0 12px 26px rgba(0, 12, 22, 0.1);
+}
+
+.permission-section[open] {
+  border-color: color-mix(in srgb, var(--group-accent) 58%, var(--asset-border));
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--group-accent) 9%, transparent),
+    0 18px 38px rgba(0, 12, 22, 0.16);
+}
+
+.theme-light .permission-section {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--group-accent) 5%, transparent), transparent 54%),
+    rgba(255, 255, 255, 0.92);
+  box-shadow: 0 14px 34px rgba(0, 51, 79, 0.07);
+}
+
+.permission-section summary {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 17px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.permission-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.permission-section-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--asset-navy), var(--group-accent-strong));
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--group-accent) 20%, transparent);
+}
+
+.permission-section-title {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.permission-section-title strong {
+  color: var(--asset-text);
+  font-size: 0.98rem;
+  font-weight: 900;
+}
+
+.permission-section-title small {
+  color: var(--asset-muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.permission-section-chevron {
+  margin-left: auto;
+  color: var(--asset-muted);
+  transition: transform 180ms ease;
+}
+
+.permission-section[open] .permission-section-chevron {
+  transform: rotate(180deg);
+}
+
+.permission-section-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 14px 14px;
+}
+
 .permission-toggle {
   position: relative;
   display: flex;
@@ -449,6 +540,10 @@
   .permission-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .permission-section-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 720px) {
@@ -467,6 +562,10 @@
 
   .group-check-list,
   .permission-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .permission-section-options {
     grid-template-columns: 1fr;
   }
 }

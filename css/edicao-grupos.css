@@ -309,7 +309,7 @@ body.ux-enhanced .group-edit-page .group-edit-card .records-actions span,
   max-height: 320px;
 }
 
-.group-modal-permission-grid {
+.group-modal-permission-sections .permission-section-options {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -366,7 +366,7 @@ body.ux-enhanced .group-edit-page .group-edit-card .records-actions span,
   }
 
   .group-modal-grid,
-  .group-modal-permission-grid {
+  .group-modal-permission-sections .permission-section-options {
     grid-template-columns: 1fr;
   }
 

@@ -9,6 +9,9 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
   exit;
 }
 
+require_once __DIR__ . "/Backend/permissoes-acesso.php";
+exigirPermissaoPagina("visualizar_funcionarios", "Funcionarios");
+
 function e(string $value): string
 {
   return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
@@ -49,7 +52,7 @@ $nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
 $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
 $sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
 $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
-$accessDenied = !$sidebarIsAdmin;
+$accessDenied = false;
 $sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
 $sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
 $sidebarEmail = e((string) ($usuario["email"] ?? ""));
@@ -146,7 +149,7 @@ if ($accessDenied) {
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
-  <script src="js/app-base.js?v=20260703-sidebar-profile-modal" defer></script>
+  <script src="js/app-base.js?v=20260703-group-permissions" defer></script>
   <script src="js/funcionarios.js?v=20260624-common-ui" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>

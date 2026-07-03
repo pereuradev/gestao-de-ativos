@@ -52,6 +52,7 @@ if ($email === "") {
 
 try {
     require __DIR__ . "/Conexao.php";
+    require __DIR__ . "/grupos-acesso-util.php";
 
     $stmt = $pdo->prepare("
         select id, nome_completo, email, tipo_usuario, departamento, empresa, status
@@ -78,6 +79,7 @@ try {
 
     $usuarioAtualizado = $_SESSION["usuario"];
     $nome = (string) ($usuarioAtualizado["nome_completo"] ?? "");
+    $permissoes = sincronizarPermissoesUsuarioSessao($pdo);
 
     responderUsuarioSessao(true, "Perfil carregado.", 200, [
         "usuario" => [
@@ -88,6 +90,8 @@ try {
             "empresa" => (string) ($usuarioAtualizado["empresa"] ?? ""),
             "status" => (string) ($usuarioAtualizado["status"] ?? ""),
             "iniciais" => iniciaisUsuarioSessao($nome),
+            "permissoes" => $permissoes,
+            "is_admin" => usuarioGrupoAcessoAdmin($usuarioAtualizado),
         ],
     ]);
 } catch (Throwable) {

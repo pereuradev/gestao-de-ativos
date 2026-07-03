@@ -21,6 +21,9 @@ if (empty($_SESSION['usuario']) || !is_array($_SESSION['usuario'])) {
     exit;
 }
 
+require_once __DIR__ . "/permissoes-acesso.php";
+exigirPermissaoApi("visualizar_dashboard", "Dashboard");
+
 function consultarValorInteiro(PDO $pdo, string $sql, array $parametros = []): int
 {
     // Atalho para contagens simples exibidas nos cards.

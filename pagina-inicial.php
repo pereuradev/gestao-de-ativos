@@ -15,6 +15,13 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
   exit;
 }
 
+$permissionDeniedResource = "";
+
+if (($_GET["permissao"] ?? "") === "negada") {
+  $permissionDeniedResource = (string) ($_SESSION["permission_denied_resource"] ?? "esta area");
+  unset($_SESSION["permission_denied_resource"]);
+}
+
 /**
  * Prepara textos antes de exibir no HTML.
  *
@@ -94,14 +101,14 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
   <!-- Scripts da pÃ¡gina. O defer evita bloquear o carregamento do HTML. -->
   <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
-  <script src="js/app-base.js?v=20260703-sidebar-profile-modal" defer></script>
+  <script src="js/app-base.js?v=20260703-group-permissions" defer></script>
   <script src="js/pagina-base.js?v=20260630-reduced-motion" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
 </head>
 
-<body class="theme-dark page-loading">
+<body class="theme-dark page-loading" <?php echo $permissionDeniedResource !== "" ? 'data-permission-dialog-open="true" data-permission-resource="' . e($permissionDeniedResource) . '"' : ""; ?>>
   <!-- Estrutura principal: menu lateral e conteÃºdo da pÃ¡gina -->
   <div class="app-shell">
 

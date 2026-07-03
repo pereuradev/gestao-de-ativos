@@ -76,6 +76,7 @@ $membrosPorGrupo = [];
 $permissoesPorGrupo = [];
 $permissoesCodigosPorGrupo = [];
 $permissoesDisponiveis = [];
+$permissoesAgrupadas = [];
 $totalGrupos = 0;
 $totalMembros = 0;
 $totalPermissoes = 0;
@@ -87,6 +88,7 @@ try {
 
   garantirTabelasGruposAcesso($pdo);
   $permissoesDisponiveis = permissoesGruposAcesso();
+  $permissoesAgrupadas = permissoesGruposAcessoAgrupadas();
 
   $funcionariosStmt = $pdo->prepare("
       select id, nome_completo, email, tipo_usuario, departamento
@@ -185,15 +187,15 @@ try {
   <link rel="stylesheet" href="css/pagina-base.css?v=20260701-admin-employee-register-v2" />
   <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260701-admin-employee-register-v2" />
   <link rel="stylesheet" href="css/cadastro-funcionarios.css?v=20260702-employee-hero-gradient" />
-  <link rel="stylesheet" href="css/cadastro-grupos.css?v=20260702-groups-clear-red" />
-  <link rel="stylesheet" href="css/edicao-grupos.css?v=20260703-group-edit-modal" />
+  <link rel="stylesheet" href="css/cadastro-grupos.css?v=20260703-permission-sections" />
+  <link rel="stylesheet" href="css/edicao-grupos.css?v=20260703-permission-sections" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260701-admin-employee-register-v2" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260703-modal-sidebar-profile" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260701-admin-employee-register-v2" defer></script>
   <script src="js/ux-profissional.js?v=20260701-admin-employee-register-v2" defer></script>
-  <script src="js/app-base.js?v=20260703-sidebar-profile-modal" defer></script>
-  <script src="js/edicao-grupos.js?v=20260703-group-edit-modal" defer></script>
+  <script src="js/app-base.js?v=20260703-group-permissions" defer></script>
+  <script src="js/edicao-grupos.js?v=20260703-permission-sections" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
@@ -574,12 +576,29 @@ try {
             <span>Permiss&otilde;es do grupo</span>
           </div>
 
-          <div class="permission-grid group-modal-permission-grid wide-field">
-            <?php foreach ($permissoesDisponiveis as $codigo => $rotulo): ?>
-              <label class="permission-toggle">
-                <input type="checkbox" name="permissoes[]" value="<?php echo e((string) $codigo); ?>" />
-                <span><?php echo e((string) $rotulo); ?></span>
-              </label>
+          <div class="permission-sections group-modal-permission-sections wide-field">
+            <?php foreach ($permissoesAgrupadas as $grupoPermissao): ?>
+              <details class="permission-section">
+                <summary>
+                  <span class="permission-section-icon" aria-hidden="true">
+                    <i class="bi <?php echo e((string) ($grupoPermissao["icone"] ?? "bi-shield-check")); ?>"></i>
+                  </span>
+                  <span class="permission-section-title">
+                    <strong><?php echo e((string) ($grupoPermissao["titulo"] ?? "")); ?></strong>
+                    <small><?php echo e((string) ($grupoPermissao["descricao"] ?? "")); ?></small>
+                  </span>
+                  <i class="bi bi-chevron-down permission-section-chevron" aria-hidden="true"></i>
+                </summary>
+
+                <div class="permission-section-options">
+                  <?php foreach (($grupoPermissao["permissoes"] ?? []) as $codigo => $rotulo): ?>
+                    <label class="permission-toggle">
+                      <input type="checkbox" name="permissoes[]" value="<?php echo e((string) $codigo); ?>" />
+                      <span><?php echo e((string) $rotulo); ?></span>
+                    </label>
+                  <?php endforeach; ?>
+                </div>
+              </details>
             <?php endforeach; ?>
           </div>
         </div>

@@ -19,6 +19,9 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     exit;
 }
 
+require_once __DIR__ . "/permissoes-acesso.php";
+exigirPermissaoApi("visualizar_dashboard", "Dashboard");
+
 function responderJson(array $payload, int $statusCode = 200): void
 {
     // Centraliza o formato da resposta para sucesso e erro sairem iguais.

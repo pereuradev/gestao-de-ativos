@@ -261,6 +261,7 @@ if (!tipoUsuarioValido($tipoUsuario)) {
 
 try {
     require_once __DIR__ . "/Conexao.php";
+    require_once __DIR__ . "/grupos-acesso-util.php";
 
     // Comecamos pelo perfil local; se ele nao resolver a senha, caimos para Supabase.
     $authData = null;
@@ -324,6 +325,7 @@ try {
         "empresa" => (string)($perfil["empresa"] ?? ""),
         "status" => (string)$perfil["status"],
     ];
+    $_SESSION["usuario"]["permissoes_grupos"] = permissoesUsuarioGrupoAcesso($pdo, $_SESSION["usuario"]);
 
     if (is_array($authData)) {
         // Guardamos tokens quando a autenticacao veio do Supabase.

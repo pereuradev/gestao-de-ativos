@@ -12,6 +12,9 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     exit;
 }
 
+require_once __DIR__ . "/Backend/permissoes-acesso.php";
+exigirPermissaoPagina("visualizar_dashboard", "Dashboard");
+
 // Escapa qualquer texto vindo da sessao antes de mostrar no HTML.
 function e(string $value): string
 {
@@ -75,7 +78,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
     <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
     <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
-    <script src="js/app-base.js?v=20260703-sidebar-profile-modal" defer></script>
+    <script src="js/app-base.js?v=20260703-group-permissions" defer></script>
     <script src="js/dashboard-produtos.js?v=20260702-filter-loading-feedback" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
     <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>

@@ -86,6 +86,7 @@ function openGroupEditModal(card) {
 
   setGroupModalChecks("membros[]", memberIds);
   setGroupModalChecks("permissoes[]", permissionCodes);
+  syncGroupModalPermissionSections();
   setGroupInputValue("editGroupEmployeeSearch", "");
   filterGroupModalMembers();
   clearGroupModalMessage();
@@ -558,6 +559,12 @@ function setGroupInputValue(id, value) {
 function setGroupModalChecks(name, selectedValues) {
   document.querySelectorAll(`#groupEditModal input[name="${name}"]`).forEach((input) => {
     input.checked = selectedValues.has(input.value);
+  });
+}
+
+function syncGroupModalPermissionSections() {
+  document.querySelectorAll("#groupEditModal .permission-section").forEach((section) => {
+    section.open = Boolean(section.querySelector('input[name="permissoes[]"]:checked'));
   });
 }
 
