@@ -1,308 +1,273 @@
-# Gestão de Ativos TI TECH Solutions
+# Gestao de Ativos TI TECH Solutions
 
-Sistema web interno para gestão de ativos de TI, desenvolvido para apoiar o controle operacional de equipamentos, usuários, marcas, propriedades, localizações e indicadores de inventário.
+Sistema web interno para gestao de ativos de TI, criado para centralizar inventario, usuarios, marcas, propriedades, localizacoes, permissoes e indicadores operacionais em um unico portal.
 
-O projeto tem foco em uso corporativo: login, dashboard, cadastros, consultas, filtros, edição de registros e uma interface responsiva com identidade visual própria da TI TECH Solutions.
-
----
-
-## Visão geral
-
-O sistema centraliza informações importantes para a rotina de suporte técnico e inventário. A proposta é transformar o controle de ativos em um fluxo mais organizado, visual e rastreável, reduzindo dependência de planilhas soltas e facilitando a consulta de dados no dia a dia.
-
-A aplicação roda em ambiente local com XAMPP/Apache, utiliza PHP no backend, JavaScript no frontend e Supabase/PostgreSQL como banco de dados.
+O projeto foi desenvolvido para uso corporativo da TI TECH Solutions, com foco em organizacao, rastreabilidade, visual moderno e operacao simples para administradores e colaboradores.
 
 ---
 
-## Status do projeto
+## Status
 
-Projeto em desenvolvimento.
+Projeto em desenvolvimento ativo.
 
-Funcionalidades principais já estruturadas:
+Principais areas ja estruturadas:
 
-- Autenticação de usuários.
-- Diferenciação visual entre perfil de colaborador e administrador.
-- Dashboard com indicadores operacionais.
-- Cadastro e consulta de ativos.
-- Cadastro, visualização, edição e exclusão de marcas.
-- Cadastro, visualização, edição e exclusão de localizações.
-- Cadastro, visualização, edição e exclusão de propriedades.
-- Listagem de funcionários.
-- Página de configurações.
+- Login com Supabase Auth.
+- Controle de sessao com PHP.
+- Diferenciacao entre administrador e colaborador.
+- Sidebar responsiva com secoes de cadastro, edicao e consulta.
+- Dashboard de produtos com filtros por tipo, marca e localizacao.
+- Cadastro, visualizacao, edicao e exclusao de ativos.
+- Cadastro, visualizacao, edicao e exclusao de marcas.
+- Cadastro, visualizacao, edicao e exclusao de propriedades.
+- Cadastro, visualizacao, edicao e exclusao de localizacoes.
+- Cadastro e listagem de funcionarios.
+- Criacao e edicao de grupos de acesso.
+- Remocao de membros de grupos.
+- Exclusao de grupos.
+- Configuracoes visuais do usuario.
 - Modo claro e modo escuro.
-- Preferências visuais salvas no navegador.
-- Layout responsivo para desktop, tablet e celular.
+- Preferencia de cor, tamanho de fonte, reducao de animacoes e cursor personalizado.
+- Interface responsiva para desktop, tablet e celular.
+
+---
+
+## Visao geral
+
+O sistema substitui controles manuais e planilhas soltas por uma aplicacao web organizada, com dados salvos em PostgreSQL/Supabase e operacoes internas feitas por telas protegidas.
+
+Administradores conseguem cadastrar funcionarios, ativos e dados auxiliares, alem de gerenciar grupos de acesso. Colaboradores acessam apenas as areas permitidas pelo perfil e pelas regras de interface.
 
 ---
 
 ## Funcionalidades
 
-### Autenticação
+### Autenticacao
 
-- Tela de login para acesso ao portal.
-- Seleção visual de perfil entre colaborador e administrador.
-- Fluxo de sessão PHP para proteger páginas internas.
-- Logout do sistema.
+- Login com e-mail corporativo.
+- Integracao com Supabase Auth.
+- Sessao PHP para proteger paginas internas.
+- Logout seguro.
+- Redirecionamento para login quando a sessao expira.
 
 ### Dashboard
 
-- Total de ativos cadastrados.
-- Total de funcionários.
-- Funcionários ativos.
-- Distribuição de ativos por categoria.
-- Distribuição por status.
-- Evolução de ativos por período:
-  - Hoje.
-  - Semana.
-  - Mês.
-  - Ano.
+- Indicadores gerais do inventario.
+- Filtro por tipo de produto.
+- Filtro por marca.
+- Filtro por localizacao.
+- Visualizacao por tipo, marca, status, local e evolucao de cadastros.
+- Graficos em barras, pizza, rosca, linhas e polar.
+- Painel lateral com leitura rapida dos dados exibidos.
 
 ### Ativos
 
-- Consulta de ativos cadastrados.
-- Cadastro de novos ativos.
-- Edição de ativos existentes.
-- Exclusão de ativos.
-- Filtros por:
-  - Status.
-  - Categoria.
-  - Marca.
-  - Busca textual.
-- Exibição de dados como:
-  - Nome do ativo.
-  - Categoria.
-  - Marca.
-  - Número de série.
-  - Status.
-  - Localização.
-  - Data de criação.
+- Cadastro de ativos.
+- Edicao de ativos cadastrados.
+- Exclusao de ativos.
+- Visualizacao com filtros e paginacao.
+- Coluna de datasheet.
+- Campos de categoria, status, local, marca, propriedade, numero de serie, IMEI e descricao.
 
 ### Marcas
 
-- Cadastro de marcas de ativos.
-- Visualização de marcas.
-- Edição de marcas.
-- Exclusão de marcas.
+- Cadastro de marcas.
+- Visualizacao de marcas.
+- Edicao de marcas.
+- Exclusao de marcas.
 - Controle de status ativo/inativo.
-
-### Localizações
-
-- Cadastro de locais, setores, salas ou pontos de armazenamento.
-- Visualização de localizações.
-- Edição de localizações.
-- Exclusão de localizações.
 
 ### Propriedades
 
-- Cadastro de propriedades responsáveis pelos ativos.
-- Visualização de propriedades.
-- Edição de propriedades.
-- Exclusão de propriedades.
+- Cadastro de propriedades responsaveis pelos ativos.
+- Visualizacao de propriedades.
+- Edicao de propriedades.
+- Exclusao de propriedades.
 - Controle de status ativo/inativo.
 
-### Funcionários
+### Localizacoes
 
-- Listagem de usuários/colaboradores cadastrados.
-- Exibição de informações úteis para suporte e controle interno.
+- Cadastro de locais, setores, salas ou pontos de estoque.
+- Visualizacao de localizacoes.
+- Edicao de localizacoes.
+- Exclusao de localizacoes.
+- Controle de status ativo/inativo.
 
-### Configurações
+### Funcionarios
 
-- Painel de preferências do usuário.
-- Ajustes visuais.
-- Preferências salvas localmente no navegador.
-- Preparação para futura integração das preferências com o banco de dados.
+- Listagem de funcionarios.
+- Cadastro interno de novos funcionarios por administradores.
+- Definicao de perfil de acesso: administrador ou colaborador.
+- Informacoes de contato, documento, departamento e empresa.
+- Ultimos acessos criados na tela de cadastro.
+
+### Grupos de acesso
+
+- Criacao de grupos.
+- Selecao de funcionarios para cada grupo.
+- Selecao de permissoes por grupo.
+- Edicao de grupos.
+- Remocao de funcionarios de um grupo.
+- Exclusao de grupos.
+- Cards com membros e permissoes vinculadas.
+
+### Configuracoes
+
+- Preferencia de tema.
+- Cor de destaque.
+- Tamanho da fonte do site.
+- Reducao de animacoes.
+- Cursor personalizado.
+- Copia de informacoes tecnicas para suporte.
 
 ---
 
-## Tecnologias utilizadas
+## Tecnologias
 
 ### Frontend
 
 - HTML5.
 - CSS3.
 - JavaScript.
-- Bootstrap 5.
 - Bootstrap Icons.
 - Chart.js.
-- React via CDN para widgets específicos da interface.
-- LocalStorage para preferências visuais.
+- React via CDN para widgets especificos.
+- LocalStorage para preferencias visuais.
 
 ### Backend
 
 - PHP.
 - PDO.
-- Sessões PHP.
-- Respostas JSON para operações assíncronas.
-- Validações no servidor.
-- Proteção básica com CSRF em rotas sensíveis.
+- Sessoes PHP.
+- Rotas JSON para operacoes assincronas.
+- Validacao no servidor.
+- CSRF em rotas sensiveis.
 
 ### Banco de dados
 
 - Supabase.
 - PostgreSQL.
-- Conexão via PDO PostgreSQL.
-- SSL habilitado na conexão.
+- Conexao via PDO PostgreSQL.
+- SSL habilitado na conexao.
 
 ### Ambiente local
 
 - XAMPP.
 - Apache.
-- PHP com extensão PostgreSQL habilitada.
+- PHP com `pgsql` e `pdo_pgsql` habilitados.
 
 ---
 
-## Estrutura do projeto
+## Estrutura resumida
 
 ```text
-gestao-de-ativos/
+SIte-Gestao_de_Ativos/
 ├── Backend/
-│   ├── .env.example
 │   ├── Conexao.php
 │   ├── config.php
 │   ├── login-usuario.php
 │   ├── logout.php
 │   ├── cadastrar-usuario.php
 │   ├── cadastrar-ativo.php
-│   ├── cadastrar-marca.php
-│   ├── cadastrar-local.php
-│   ├── cadastrar-propriedade.php
-│   ├── atualizar-ativo.php
-│   ├── atualizar-marca.php
-│   ├── atualizar-local.php
-│   ├── atualizar-propriedade.php
-│   ├── excluir-ativo.php
-│   ├── excluir-marca.php
-│   ├── excluir-local.php
-│   ├── excluir-propriedade.php
-│   ├── dashboard-metricas.php
-│   ├── marcas-ativos.php
-│   └── status-ativos.php
+│   ├── cadastrar-grupo.php
+│   ├── remover-membro-grupo.php
+│   ├── excluir-grupo.php
+│   ├── dashboard-produtos.php
+│   ├── grupos-acesso-util.php
+│   └── demais rotas de cadastro, edicao e exclusao
 │
 ├── assets/
 │   ├── Logo.png
 │   ├── logo-branca.png
 │   ├── favicon.png
-│   └── imagens utilizadas na interface
+│   └── imagens de fundo da interface
 │
 ├── css/
 │   ├── pagina-base.css
 │   ├── pagina-login.css
-│   ├── cadastro-funcionarios.css
-│   ├── responsivo-global.css
-│   ├── typewriter.css
-│   ├── ux-profissional.css
-│   ├── ativos.css
-│   ├── cadastro-ativos.css
-│   ├── configuracoes.css
-│   ├── funcionarios.css
-│   ├── locais.css
-│   ├── marcas.css
-│   ├── propriedades.css
-│   ├── edicao-ativos.css
-│   ├── edicao-locais.css
-│   ├── edicao-marcas.css
-│   └── edicao-propriedades.css
+│   ├── dashboard-produtos.css
+│   ├── cadastro-grupos.css
+│   ├── edicao-grupos.css
+│   └── estilos das demais paginas
 │
 ├── js/
 │   ├── app-base.js
-│   ├── pagina-base.js
 │   ├── pagina-login.js
-│   ├── cadastro-funcionarios.js
-│   ├── react-widgets.js
-│   ├── typewriter.js
-│   ├── ux-profissional.js
-│   ├── ativos.js
-│   ├── cadastro-ativos.js
-│   ├── configuracoes.js
-│   ├── funcionarios.js
-│   ├── locais.js
-│   ├── marcas.js
-│   ├── propriedades.js
-│   ├── edicao-ativos.js
-│   ├── edicao-locais.js
-│   ├── edicao-marcas.js
-│   └── edicao-propriedades.js
+│   ├── dashboard-produtos.js
+│   ├── cadastro-grupos.js
+│   ├── edicao-grupos.js
+│   └── scripts das demais paginas
 │
 ├── Pagina-login.html
-├── pagina-inicial.html
 ├── pagina-inicial.php
+├── dashboard.php
 ├── ativos.php
 ├── cadastro-ativos.php
+├── edicao-ativos.php
 ├── cadastro-funcionarios.php
 ├── funcionarios.php
+├── cadastro-grupos.php
+├── edicao-grupos.php
 ├── configuracoes.php
-├── marcas.php
-├── marcas-visualizacao.php
-├── edicao-marcas.php
-├── locais.php
-├── locais-visualizacao.php
-├── edicao-locais.php
-├── propriedades.php
-├── propriedades-visualizacao.php
-├── edicao-propriedades.php
-├── edicao-ativos.php
-├── .gitignore
 └── README.md
 ```
 
 ---
 
-## Páginas principais
+## Paginas principais
 
-| Página | Função |
-|---|---|
-| `Pagina-login.html` | Tela inicial de autenticação do sistema. |
-| `pagina-inicial.php` | Dashboard operacional após login. |
-| `ativos.php` | Consulta e filtragem de ativos. |
-| `cadastro-ativos.php` | Cadastro de novos ativos. |
-| `cadastro-funcionarios.php` | Cadastro interno de funcionários, restrito a administradores. |
-| `edicao-ativos.php` | Edição de ativos cadastrados. |
-| `funcionarios.php` | Listagem de funcionários/usuários. |
-| `marcas.php` | Cadastro de marcas. |
-| `marcas-visualizacao.php` | Visualização de marcas cadastradas. |
-| `edicao-marcas.php` | Edição de marcas. |
-| `locais.php` | Cadastro de localizações. |
-| `locais-visualizacao.php` | Visualização de localizações cadastradas. |
-| `edicao-locais.php` | Edição de localizações. |
-| `propriedades.php` | Cadastro de propriedades. |
-| `propriedades-visualizacao.php` | Visualização de propriedades cadastradas. |
-| `edicao-propriedades.php` | Edição de propriedades. |
-| `configuracoes.php` | Preferências, segurança e ajustes do usuário. |
+| Pagina                          | Funcao                                                |
+| ------------------------------- | ----------------------------------------------------- |
+| `Pagina-login.html`             | Tela de login do sistema.                             |
+| `pagina-inicial.php`            | Pagina inicial interna apos login.                    |
+| `dashboard.php`                 | Dashboard visual de produtos e inventario.            |
+| `ativos.php`                    | Visualizacao e filtros de ativos.                     |
+| `cadastro-ativos.php`           | Cadastro de ativos.                                   |
+| `edicao-ativos.php`             | Edicao e exclusao de ativos.                          |
+| `funcionarios.php`              | Listagem de funcionarios.                             |
+| `cadastro-funcionarios.php`     | Cadastro de funcionarios, restrito a administradores. |
+| `cadastro-grupos.php`           | Criacao de grupos e permissoes.                       |
+| `edicao-grupos.php`             | Remocao de membros e exclusao de grupos.              |
+| `marcas.php`                    | Cadastro de marcas.                                   |
+| `marcas-visualizacao.php`       | Visualizacao de marcas.                               |
+| `edicao-marcas.php`             | Edicao e exclusao de marcas.                          |
+| `locais.php`                    | Cadastro de localizacoes.                             |
+| `locais-visualizacao.php`       | Visualizacao de localizacoes.                         |
+| `edicao-locais.php`             | Edicao e exclusao de localizacoes.                    |
+| `propriedades.php`              | Cadastro de propriedades.                             |
+| `propriedades-visualizacao.php` | Visualizacao de propriedades.                         |
+| `edicao-propriedades.php`       | Edicao e exclusao de propriedades.                    |
+| `configuracoes.php`             | Preferencias, seguranca e ajustes do usuario.         |
 
 ---
 
-## Endpoints principais do backend
+## Endpoints principais
 
-| Arquivo | Responsabilidade |
-|---|---|
-| `Backend/Conexao.php` | Cria a conexão PDO com o PostgreSQL/Supabase. |
-| `Backend/config.php` | Carrega variáveis de ambiente do arquivo `.env`. |
-| `Backend/login-usuario.php` | Processa autenticação do usuário. |
-| `Backend/logout.php` | Encerra a sessão do usuário. |
-| `Backend/cadastrar-usuario.php` | Registra novos usuários via área interna do administrador. |
-| `Backend/cadastrar-ativo.php` | Registra novos ativos. |
-| `Backend/atualizar-ativo.php` | Atualiza dados de ativos. |
-| `Backend/excluir-ativo.php` | Remove ativos. |
-| `Backend/cadastrar-marca.php` | Cadastra marcas. |
-| `Backend/atualizar-marca.php` | Atualiza marcas. |
-| `Backend/excluir-marca.php` | Remove marcas. |
-| `Backend/cadastrar-local.php` | Cadastra localizações. |
-| `Backend/atualizar-local.php` | Atualiza localizações. |
-| `Backend/excluir-local.php` | Remove localizações. |
-| `Backend/cadastrar-propriedade.php` | Cadastra propriedades. |
-| `Backend/atualizar-propriedade.php` | Atualiza propriedades. |
-| `Backend/excluir-propriedade.php` | Remove propriedades. |
-| `Backend/dashboard-metricas.php` | Retorna métricas do dashboard em JSON. |
-| `Backend/marcas-ativos.php` | Fornece dados de marcas para uso na interface. |
-| `Backend/status-ativos.php` | Centraliza status disponíveis para ativos. |
+| Arquivo                            | Responsabilidade                               |
+| ---------------------------------- | ---------------------------------------------- |
+| `Backend/Conexao.php`              | Cria a conexao PDO com PostgreSQL/Supabase.    |
+| `Backend/config.php`               | Carrega variaveis do arquivo `.env`.           |
+| `Backend/login-usuario.php`        | Autentica usuarios.                            |
+| `Backend/logout.php`               | Encerra a sessao.                              |
+| `Backend/cadastrar-usuario.php`    | Cria funcionarios no Auth e no perfil local.   |
+| `Backend/cadastrar-ativo.php`      | Cadastra ativos.                               |
+| `Backend/atualizar-ativo.php`      | Atualiza ativos.                               |
+| `Backend/excluir-ativo.php`        | Exclui ativos.                                 |
+| `Backend/cadastrar-grupo.php`      | Cria grupos de acesso.                         |
+| `Backend/remover-membro-grupo.php` | Remove funcionario de um grupo.                |
+| `Backend/excluir-grupo.php`        | Exclui grupo, membros e permissoes vinculadas. |
+| `Backend/grupos-acesso-util.php`   | Garante tabelas e lista permissoes de grupos.  |
+| `Backend/dashboard-produtos.php`   | Retorna dados do dashboard de produtos.        |
+| `Backend/status-ativos.php`        | Centraliza status de ativos.                   |
+| `Backend/marcas-ativos.php`        | Fornece marcas para telas e formularios.       |
 
 ---
 
 ## Banco de dados
 
-O projeto utiliza Supabase com PostgreSQL.
+O projeto usa Supabase com PostgreSQL.
 
-Tabelas esperadas ou utilizadas pelo sistema:
+Tabelas principais utilizadas:
 
 - `perfis_usuarios`
 - `ativos`
@@ -310,138 +275,73 @@ Tabelas esperadas ou utilizadas pelo sistema:
 - `marcas_ativos`
 - `locais`
 - `propriedade_ativos`
+- `grupos_acesso`
+- `grupos_acesso_membros`
+- `grupos_acesso_permissoes`
 
-Algumas rotas do backend criam tabelas auxiliares automaticamente quando necessário, mas a recomendação para evolução do projeto é versionar um arquivo SQL de estrutura inicial, por exemplo:
+Algumas rotas garantem tabelas auxiliares automaticamente quando necessario. Para producao ou instalacao em outro ambiente, o ideal e versionar scripts SQL em uma pasta como:
 
 ```text
 database/schema.sql
 database/seed.sql
 ```
 
-Isso facilita reinstalar o sistema em outro ambiente sem depender apenas da criação automática espalhada pelos scripts PHP.
-
 ---
 
-## Variáveis de ambiente
+## Variaveis de ambiente
 
-O projeto utiliza um arquivo local para credenciais:
+O sistema usa credenciais locais em:
 
 ```text
 Backend/.env
 ```
 
-Use o arquivo de exemplo como base:
+Use `Backend/.env.example` como base:
 
 ```env
 DB_HOST=SEU_HOST_POOLER_SUPABASE
 DB_PORT=5432
 DB_NAME=postgres
 DB_USER=postgres.SEUIDDOPROJETO
-DB_PASSWORD=SUA_NOVA_SENHA_DO_BANCO
+DB_PASSWORD=SUA_SENHA_DO_BANCO
 DB_SSLMODE=require
 
 SUPABASE_URL=https://SEUIDDOPROJETO.supabase.co
 SUPABASE_ANON_KEY=SUA_CHAVE_PUBLICAVEL_DO_SUPABASE
 ```
 
+O arquivo `Backend/.env` nao deve ser enviado para o GitHub.
 
 ---
 
-## Como rodar o projeto localmente
+## Seguranca e boas praticas aplicadas
 
-### 1. Clonar o repositório
-
-Abra o terminal na pasta `htdocs` do XAMPP:
-
-```bash
-cd C:\xampp\htdocs
-git clone https://github.com/pereuradev/gestao-de-ativos.git
-```
-
-### 2. Entrar na pasta
-
-```bash
-cd gestao-de-ativos
-```
-
-### 3. Configurar variáveis de ambiente
-
-Crie uma cópia do arquivo de exemplo:
-
-```bash
-copy Backend\.env.example Backend\.env
-```
-
-Depois edite `Backend/.env` com os dados reais do Supabase.
-
-### 4. Habilitar PostgreSQL no PHP
-
-No XAMPP, abra o arquivo `php.ini` e confira se as extensões abaixo estão habilitadas:
-
-```ini
-extension=pgsql
-extension=pdo_pgsql
-```
-
-Depois reinicie o Apache.
-
-### 5. Iniciar o Apache
-
-Abra o painel do XAMPP e inicie:
-
-```text
-Apache
-```
-
-### 6. Acessar no navegador
-
-```text
-http://localhost/gestao-de-ativos/Pagina-login.html
-```
-
-Se a pasta local estiver com outro nome, ajuste a URL de acordo com o nome da pasta dentro de `htdocs`.
-
----
-
-## Fluxo básico de uso
-
-1. Acesse a tela de login.
-2. Entre com um usuário cadastrado.
-3. Use a página inicial para acompanhar indicadores.
-4. Cadastre marcas, propriedades e localizações.
-5. Cadastre os ativos.
-6. Consulte os ativos pela tela de inventário.
-7. Use as telas de edição para manter os dados atualizados.
-8. Ajuste preferências visuais em configurações.
-
----
-
-## Segurança
-- Uso de `.env` para credenciais.
-- `.gitignore` bloqueando arquivos sensíveis.
-- Conexão PDO com tratamento de exceções.
-- Sessões PHP para controle de autenticação.
-- Validação de método HTTP em rotas do backend.
-- Validação de campos recebidos por formulário.
-- CSRF em rotas sensíveis.
+- Credenciais fora do codigo, via `.env`.
+- `.env` ignorado pelo Git.
+- Sessao PHP para paginas internas.
+- Validacao de metodo HTTP nos endpoints.
+- Validacao de campos no backend.
+- CSRF nas rotas sensiveis.
+- Escape de dados antes de exibir no HTML.
 - Respostas JSON padronizadas.
-- Mensagens de erro mais genéricas para evitar exposição de detalhes internos.
-- Escape de dados antes da exibição em HTML.
+- Mensagens de erro controladas.
+- Uso de PDO com excecoes.
+- Separacao entre telas, estilos, scripts e endpoints.
 
 ---
 
-## Decisões de interface
+## Decisoes de interface
 
-A interface segue uma linha visual corporativa e tecnológica, com:
-
-- Tema escuro como experiência principal.
-- Suporte a modo claro.
-- Layout com sidebar nas páginas internas.
+- Tema escuro como experiencia principal.
+- Modo claro disponivel.
+- Sidebar fixa e redimensionavel.
 - Componentes responsivos.
-- Cards de indicadores.
-- Gráficos para leitura rápida do inventário.
-- Animações sutis.
-- Preferências visuais salvas localmente.
+- Cards de metricas.
+- Graficos para leitura rapida.
+- Typewriter em titulos selecionados.
+- Dialogs de confirmacao para acoes importantes.
+- Toasts posicionados no canto inferior direito.
+- Preferencias visuais salvas no navegador.
 
 ---
 
@@ -449,10 +349,10 @@ A interface segue uma linha visual corporativa e tecnológica, com:
 
 Desenvolvido por Pietro Pereira.
 
-Projeto criado para apoiar a gestão interna de ativos da TI TECH Solutions.
+Projeto criado para apoiar a gestao interna de ativos da TI TECH Solutions.
 
 ---
 
-## Licença
+## Licenca
 
-Projeto interno. O uso, cópia, modificação ou distribuição deve respeitar as regras da organização responsável.
+Projeto interno. Uso, copia, modificacao ou distribuicao devem respeitar as regras da organizacao responsavel.
