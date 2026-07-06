@@ -1471,6 +1471,18 @@ body.theme-light .sidebar-user-info small {
   font-weight: 850;
 }
 
+.records-actions [id$="ResultCount"] {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--muted);
+  background: transparent;
+  box-shadow: none;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .records-actions select {
   min-height: 38px;
   padding: 0 34px 0 12px;

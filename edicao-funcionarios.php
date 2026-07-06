@@ -9,8 +9,9 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
   exit;
 }
 
-require_once __DIR__ . "/Backend/permissoes-acesso.php";
-exigirPermissaoPagina("visualizar_funcionarios", "Funcionarios");
+if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {
+  $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+}
 
 function e(string $value): string
 {
@@ -87,7 +88,12 @@ $nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
 $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
 $sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
 $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
-$accessDenied = false;
+
+if (!$sidebarIsAdmin) {
+  header("Location: pagina-inicial.php?permissao=negada&recurso=Edicao%20de%20funcionarios");
+  exit;
+}
+
 $sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
 $sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
 $sidebarEmail = e((string) ($usuario["email"] ?? ""));
@@ -114,14 +120,13 @@ $funcionariosAtivos = 0;
 $funcionariosInativos = 0;
 $ultimoMovimento = "--";
 $erroBanco = "";
+$csrfToken = e((string) $_SESSION["csrf_token"]);
+$departamentos = ["TI", "Operacao", "Financeiro", "Administrativo", "Gestao"];
 
-if ($accessDenied) {
-  http_response_code(403);
-} else {
-  try {
-    require __DIR__ . "/Backend/Conexao.php";
+try {
+  require __DIR__ . "/Backend/Conexao.php";
 
-    $resumoStmt = $pdo->prepare("
+  $resumoStmt = $pdo->prepare("
         select
             count(*)::int as total,
             count(*) filter (where lower(status) = 'ativo')::int as ativos,
@@ -129,15 +134,15 @@ if ($accessDenied) {
             max(greatest(criado_em, atualizado_em)) as ultimo_movimento
           from public.perfis_usuarios
     ");
-    $resumoStmt->execute();
-    $resumo = $resumoStmt->fetch() ?: [];
+  $resumoStmt->execute();
+  $resumo = $resumoStmt->fetch() ?: [];
 
-    $totalFuncionarios = (int) ($resumo["total"] ?? 0);
-    $funcionariosAtivos = (int) ($resumo["ativos"] ?? 0);
-    $funcionariosInativos = (int) ($resumo["inativos"] ?? 0);
-    $ultimoMovimento = formatarData((string) ($resumo["ultimo_movimento"] ?? ""));
+  $totalFuncionarios = (int) ($resumo["total"] ?? 0);
+  $funcionariosAtivos = (int) ($resumo["ativos"] ?? 0);
+  $funcionariosInativos = (int) ($resumo["inativos"] ?? 0);
+  $ultimoMovimento = formatarData((string) ($resumo["ultimo_movimento"] ?? ""));
 
-    $funcionariosStmt = $pdo->prepare("
+  $funcionariosStmt = $pdo->prepare("
         select
             id,
             nome_completo,
@@ -158,11 +163,10 @@ if ($accessDenied) {
             greatest(criado_em, atualizado_em) desc,
             nome_completo asc
     ");
-    $funcionariosStmt->execute();
-    $funcionarios = $funcionariosStmt->fetchAll();
-  } catch (Throwable) {
-    $erroBanco = "Nao foi possivel carregar os funcionarios agora.";
-  }
+  $funcionariosStmt->execute();
+  $funcionarios = $funcionariosStmt->fetchAll();
+} catch (Throwable) {
+  $erroBanco = "Nao foi possivel carregar os funcionarios agora.";
 }
 ?>
 <!doctype html>
@@ -172,8 +176,9 @@ if ($accessDenied) {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <title>Funcion&aacute;rios | TI TECH Solutions</title>
-  <meta name="description" content="Lista de funcion&aacute;rios cadastrados no portal interno da TI TECH Solutions" />
+  <title>Edi&ccedil;&atilde;o de funcion&aacute;rios | TI TECH Solutions</title>
+  <meta name="description" content="Edi&ccedil;&atilde;o de funcion&aacute;rios cadastrados no portal interno da TI TECH Solutions" />
+  <meta name="csrf-token" content="<?php echo $csrfToken; ?>" />
   <link rel="icon" type="image/png" href="assets/favicon.png?v=20260630-ti-favicon" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -181,20 +186,20 @@ if ($accessDenied) {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/funcionarios.css?v=20260706-employee-filter-modal" />
+  <link rel="stylesheet" href="css/funcionarios.css?v=20260706-employee-edit-page" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-search-box-reset" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
   <script src="js/app-base.js?v=20260703-group-permissions" defer></script>
-  <script src="js/funcionarios.js?v=20260706-employee-cards-modal" defer></script>
+  <script src="js/edicao-funcionarios.js?v=20260706-employee-edit-page" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
 </head>
 
-<body class="theme-dark page-loading" <?php echo $accessDenied ? 'data-permission-dialog-open="true" data-permission-resource="Funcionarios"' : ""; ?>>
+<body class="theme-dark page-loading">
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
@@ -219,7 +224,7 @@ if ($accessDenied) {
         </a>
 
         <?php if ($sidebarIsAdmin): ?>
-          <a class="nav-link active" href="funcionarios.php">
+          <a class="nav-link" href="funcionarios.php">
             <i class="bi bi-people-fill"></i>
             <span>Funcion&aacute;rios</span>
           </a>
@@ -281,7 +286,7 @@ if ($accessDenied) {
             <a href="edicao-marcas.php">Marcas</a>
             <a href="edicao-propriedades.php">Propriedades</a>
             <?php if ($sidebarIsAdmin): ?>
-            <a href="edicao-funcionarios.php">Funcion&aacute;rios</a>
+            <a class="active-submenu" href="edicao-funcionarios.php">Funcion&aacute;rios</a>
             <a href="edicao-grupos.php">Grupos</a>
             <?php else: ?>
             <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Edicao de funcionarios" title="Apenas administradores podem editar funcionarios">Funcion&aacute;rios</span>
@@ -332,7 +337,7 @@ if ($accessDenied) {
           <div>
             <p class="eyebrow">Equipe</p>
             <h1>
-              <span class="typewriter-heading" style="--typewriter-min: 17ch">Funcion&aacute;rios</span><span
+              <span class="typewriter-heading" style="--typewriter-min: 22ch">Editar funcion&aacute;rios</span><span
                 aria-hidden="true"></span>
             </h1>
           </div>
@@ -355,12 +360,12 @@ if ($accessDenied) {
         <div class="hero-content">
           <h2 id="employeesTitle">
             <span class="typewriter-heading" style="--typewriter-min: 31ch" data-typewriter-loop
-              data-typewriter-phrases="Vis&atilde;o geral dos funcion&aacute;rios.|Dados principais da equipe.|Busca simples e objetiva.">Vis&atilde;o
-              geral dos funcion&aacute;rios.</span><span aria-hidden="true"></span>
+              data-typewriter-phrases="Edite dados dos funcion&aacute;rios.|Mantenha perfis atualizados.|Controle status e departamento.">Edite
+              dados dos funcion&aacute;rios.</span><span aria-hidden="true"></span>
           </h2>
           <p>
-            Consulte dados principais da equipe, identifique rapidamente quem est&aacute; ativo ou inativo
-            e filtre a lista para apoiar rotinas de suporte, acessos e invent&aacute;rio.
+            Selecione um funcion&aacute;rio para atualizar perfil, departamento, contato, documentos
+            e status de acesso sem sair desta tela.
           </p>
         </div>
       </section>
@@ -373,7 +378,7 @@ if ($accessDenied) {
 
           <div>
             <span>Total</span>
-            <strong><?php echo e((string) $totalFuncionarios); ?></strong>
+            <strong id="employeeTotalMetric"><?php echo e((string) $totalFuncionarios); ?></strong>
             <p>Funcion&aacute;rios cadastrados</p>
           </div>
         </article>
@@ -385,7 +390,7 @@ if ($accessDenied) {
 
           <div>
             <span>Ativos</span>
-            <strong><?php echo e((string) $funcionariosAtivos); ?></strong>
+            <strong id="employeeActiveMetric"><?php echo e((string) $funcionariosAtivos); ?></strong>
             <p>Usu&aacute;rios liberados para acesso</p>
           </div>
         </article>
@@ -397,7 +402,7 @@ if ($accessDenied) {
 
           <div>
             <span>Inativos</span>
-            <strong><?php echo e((string) $funcionariosInativos); ?></strong>
+            <strong id="employeeInactiveMetric"><?php echo e((string) $funcionariosInativos); ?></strong>
             <p>Acesso bloqueado pelo status</p>
           </div>
         </article>
@@ -421,17 +426,13 @@ if ($accessDenied) {
         </div>
       <?php endif; ?>
 
-      <?php if ($accessDenied): ?>
-        <div class="dashboard-status error-status" role="status">
-          Apenas administradores podem acessar a pagina de funcionarios.
-        </div>
-      <?php endif; ?>
+      <div id="employeeEditPageMessage" class="form-message employee-form-message" role="status" aria-live="polite"></div>
 
       <section class="content-card records-card employees-records-card" aria-labelledby="employeesListTitle">
         <div class="card-header records-header">
           <div>
-            <p class="section-tag">Lista</p>
-            <h3 id="employeesListTitle">Funcion&aacute;rios cadastrados</h3>
+            <p class="section-tag">Edi&ccedil;&atilde;o</p>
+            <h3 id="employeesListTitle">Funcion&aacute;rios para editar</h3>
           </div>
 
           <div class="records-actions">
@@ -471,7 +472,8 @@ if ($accessDenied) {
             $status = (string) ($funcionario["status"] ?? "--");
             $cadastroFuncionario = formatarData((string) ($funcionario["criado_em"] ?? ""));
             $atualizacaoFuncionario = formatarData((string) ($funcionario["atualizado_em"] ?? ""));
-            $nascimentoFuncionario = formatarDataCurta((string) ($funcionario["data_nascimento"] ?? ""));
+            $nascimentoValor = (string) ($funcionario["data_nascimento"] ?? "");
+            $nascimentoFuncionario = formatarDataCurta($nascimentoValor);
             $searchText = implode(" ", [
               $nomeFuncionario,
               $emailFuncionario,
@@ -484,13 +486,15 @@ if ($accessDenied) {
               $status,
             ]);
             ?>
-            <button class="employee-card employee-row" type="button" data-employee-card
+            <button class="employee-card employee-row employee-edit-card" type="button" data-employee-card
+              data-id="<?php echo e((string) ($funcionario["id"] ?? "")); ?>"
               data-status="<?php echo e(strtolower($status)); ?>" data-search="<?php echo e($searchText); ?>"
               data-name="<?php echo e($nomeFuncionario); ?>" data-email="<?php echo e($emailFuncionario); ?>"
               data-role="<?php echo e($tipoFuncionario); ?>" data-department="<?php echo e($departamentoFuncionario); ?>"
               data-company="<?php echo e($empresaFuncionario); ?>" data-phone="<?php echo e($celularFuncionario); ?>"
               data-rg="<?php echo e($rgFuncionario); ?>" data-cpf="<?php echo e($cpfFuncionario); ?>"
-              data-birth="<?php echo e($nascimentoFuncionario); ?>" data-status-label="<?php echo e($status); ?>"
+              data-birth="<?php echo e($nascimentoFuncionario); ?>" data-birth-value="<?php echo e($nascimentoValor); ?>"
+              data-status-label="<?php echo e($status); ?>"
               data-created="<?php echo e($cadastroFuncionario); ?>" data-updated="<?php echo e($atualizacaoFuncionario); ?>"
               data-initials="<?php echo e(iniciaisFuncionario($nomeFuncionario)); ?>">
               <span class="employee-card-header">
@@ -531,8 +535,8 @@ if ($accessDenied) {
                   Cadastro em <?php echo e($cadastroFuncionario); ?>
                 </span>
                 <span class="employee-card-open">
-                  Ver detalhes
-                  <i class="bi bi-arrow-up-right"></i>
+                  Editar funcion&aacute;rio
+                  <i class="bi bi-pencil-square"></i>
                 </span>
               </span>
             </button>
@@ -545,74 +549,135 @@ if ($accessDenied) {
         </div>
       </section>
 
-      <div id="employeeDetailsModal" class="employee-modal-backdrop" hidden>
-        <section class="employee-modal-card" role="dialog" aria-modal="true" aria-labelledby="employeeModalTitle">
-          <div class="employee-modal-header">
-            <div class="employee-modal-profile">
-              <span id="employeeModalInitials" class="employee-modal-avatar" aria-hidden="true">TT</span>
-              <div>
-                <p class="section-tag">Ficha do funcion&aacute;rio</p>
-                <h3 id="employeeModalTitle">Funcion&aacute;rio</h3>
-                <span id="employeeModalEmail" class="employee-modal-email">--</span>
+      <div id="employeeEditModal" class="employee-modal-backdrop" hidden>
+        <section class="employee-modal-card employee-edit-modal-card" role="dialog" aria-modal="true"
+          aria-labelledby="employeeEditModalTitle">
+          <form id="employeeEditForm" class="enhanced-asset-form employee-edit-form" action="Backend/atualizar-funcionario.php"
+            method="post" novalidate>
+            <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
+            <input id="editEmployeeId" type="hidden" name="id" />
+
+            <div class="employee-modal-header">
+              <div class="employee-modal-profile">
+                <span id="employeeEditInitials" class="employee-modal-avatar" aria-hidden="true">TT</span>
+                <div>
+                  <p class="section-tag">Edi&ccedil;&atilde;o do funcion&aacute;rio</p>
+                  <h3 id="employeeEditModalTitle">Funcion&aacute;rio</h3>
+                  <span id="employeeEditEmailText" class="employee-modal-email">--</span>
+                </div>
               </div>
+
+              <button class="icon-button modal-close-button" type="button" data-close-employee-modal
+                aria-label="Fechar edi&ccedil;&atilde;o do funcion&aacute;rio">
+                <i class="bi bi-x-lg"></i>
+              </button>
             </div>
 
-            <button class="icon-button modal-close-button" type="button" data-close-employee-modal
-              aria-label="Fechar detalhes do funcion&aacute;rio">
-              <i class="bi bi-x-lg"></i>
-            </button>
-          </div>
+            <div class="employee-edit-grid">
+              <label class="asset-field">
+                <span>Nome completo <strong>*</strong></span>
+                <div class="input-shell">
+                  <i class="bi bi-person"></i>
+                  <input id="editEmployeeName" name="nome_completo" type="text" required />
+                </div>
+              </label>
 
-          <div class="employee-modal-status-row">
-            <span id="employeeModalStatus" class="status-badge status-neutral">--</span>
-            <span id="employeeModalRole" class="employee-modal-role">--</span>
-          </div>
+              <label class="asset-field">
+                <span>E-mail de login</span>
+                <div class="input-shell is-readonly">
+                  <i class="bi bi-envelope"></i>
+                  <input id="editEmployeeEmail" name="email" type="email" readonly />
+                </div>
+              </label>
 
-          <dl class="employee-modal-grid">
-            <div>
-              <dt><i class="bi bi-diagram-3"></i> Departamento</dt>
-              <dd id="employeeModalDepartment">--</dd>
-            </div>
-            <div>
-              <dt><i class="bi bi-buildings"></i> Empresa</dt>
-              <dd id="employeeModalCompany">--</dd>
-            </div>
-            <div>
-              <dt><i class="bi bi-phone"></i> Celular</dt>
-              <dd id="employeeModalPhone">--</dd>
-            </div>
-            <div>
-              <dt><i class="bi bi-card-text"></i> RG</dt>
-              <dd id="employeeModalRg">--</dd>
-            </div>
-            <div>
-              <dt><i class="bi bi-person-vcard"></i> CPF</dt>
-              <dd id="employeeModalCpf">--</dd>
-            </div>
-            <div>
-              <dt><i class="bi bi-calendar3"></i> Nascimento</dt>
-              <dd id="employeeModalBirth">--</dd>
-            </div>
-            <div>
-              <dt><i class="bi bi-calendar2-check"></i> Criado em</dt>
-              <dd id="employeeModalCreated">--</dd>
-            </div>
-            <div>
-              <dt><i class="bi bi-clock-history"></i> Atualizado em</dt>
-              <dd id="employeeModalUpdated">--</dd>
-            </div>
-          </dl>
+              <label class="asset-field">
+                <span>Perfil <strong>*</strong></span>
+                <div class="input-shell">
+                  <i class="bi bi-person-badge"></i>
+                  <select id="editEmployeeRole" name="tipo_usuario" required>
+                    <option value="Colaborador">Colaborador</option>
+                    <option value="Administrador">Administrador</option>
+                  </select>
+                </div>
+              </label>
 
-          <div class="employee-modal-actions">
-            <button class="secondary-button" type="button" data-close-employee-modal>
-              <i class="bi bi-x-lg"></i>
-              <span>Fechar</span>
-            </button>
-            <a class="employee-create-button" href="cadastro-funcionarios.php">
-              <i class="bi bi-person-plus-fill"></i>
-              <span>Novo funcion&aacute;rio</span>
-            </a>
-          </div>
+              <label class="asset-field">
+                <span>Status <strong>*</strong></span>
+                <div class="input-shell">
+                  <i class="bi bi-toggle-on"></i>
+                  <select id="editEmployeeStatus" name="status" required>
+                    <option value="Ativo">Ativo</option>
+                    <option value="Inativo">Inativo</option>
+                  </select>
+                </div>
+              </label>
+
+              <label class="asset-field">
+                <span>Departamento <strong>*</strong></span>
+                <div class="input-shell">
+                  <i class="bi bi-diagram-3"></i>
+                  <select id="editEmployeeDepartment" name="departamento" required>
+                    <?php foreach ($departamentos as $departamento): ?>
+                      <option value="<?php echo e($departamento); ?>"><?php echo e($departamento); ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+              </label>
+
+              <label class="asset-field">
+                <span>Empresa <strong>*</strong></span>
+                <div class="input-shell">
+                  <i class="bi bi-buildings"></i>
+                  <input id="editEmployeeCompany" name="empresa" type="text" required />
+                </div>
+              </label>
+
+              <label class="asset-field">
+                <span>RG <strong>*</strong></span>
+                <div class="input-shell">
+                  <i class="bi bi-card-text"></i>
+                  <input id="editEmployeeRg" name="rg" type="text" required />
+                </div>
+              </label>
+
+              <label class="asset-field">
+                <span>CPF <strong>*</strong></span>
+                <div class="input-shell">
+                  <i class="bi bi-person-vcard"></i>
+                  <input id="editEmployeeCpf" name="cpf" type="text" required />
+                </div>
+              </label>
+
+              <label class="asset-field">
+                <span>Celular <strong>*</strong></span>
+                <div class="input-shell">
+                  <i class="bi bi-phone"></i>
+                  <input id="editEmployeePhone" name="celular" type="tel" required />
+                </div>
+              </label>
+
+              <label class="asset-field">
+                <span>Data de nascimento <strong>*</strong></span>
+                <div class="input-shell">
+                  <i class="bi bi-calendar3"></i>
+                  <input id="editEmployeeBirth" name="data_nascimento" type="date" required />
+                </div>
+              </label>
+            </div>
+
+            <div id="employeeEditMessage" class="form-message employee-form-message" role="status" aria-live="polite"></div>
+
+            <div class="employee-modal-actions">
+              <button class="secondary-button" type="button" data-close-employee-modal>
+                <i class="bi bi-x-lg"></i>
+                <span>Cancelar</span>
+              </button>
+              <button id="saveEmployeeButton" class="employee-create-button" type="submit">
+                <i class="bi bi-check-lg"></i>
+                <span>Salvar altera&ccedil;&otilde;es</span>
+              </button>
+            </div>
+          </form>
         </section>
       </div>
     </main>

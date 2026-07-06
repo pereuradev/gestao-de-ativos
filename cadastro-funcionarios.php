@@ -130,7 +130,7 @@ try {
   <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260701-admin-employee-register-v2" />
   <link rel="stylesheet" href="css/cadastro-funcionarios.css?v=20260702-employee-hero-gradient" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260701-admin-employee-register-v2" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260703-modal-sidebar-profile" />
+  <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260701-admin-employee-register-v2" defer></script>
   <script src="js/ux-profissional.js?v=20260701-admin-employee-register-v2" defer></script>
@@ -218,8 +218,10 @@ try {
             <a href="edicao-marcas.php">Marcas</a>
             <a href="edicao-propriedades.php">Propriedades</a>
             <?php if ($sidebarIsAdmin): ?>
+            <a href="edicao-funcionarios.php">Funcion&aacute;rios</a>
             <a href="edicao-grupos.php">Grupos</a>
             <?php else: ?>
+            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Edicao de funcionarios" title="Apenas administradores podem editar funcionarios">Funcion&aacute;rios</span>
             <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Edicao de grupos" title="Apenas administradores podem editar grupos">Grupos</span>
             <?php endif; ?>
             <a href="edicao-locais.php">Localiza&ccedil;&otilde;es</a>

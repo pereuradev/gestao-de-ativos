@@ -11,6 +11,8 @@ const STORAGE_KEYS = {
 const CONFIG = {
   loginUrl: "Backend/login-usuario.php",
   redirectUrl: "pagina-inicial.php",
+  inactiveAccountMessage:
+    "Sua conta est\u00e1 inativa. Solicite ajuda a um administrador para reativar o acesso.",
   pageTransitionDelay: 520,
   themeTransitionDelay: 560,
   toastDuration: 2200,
@@ -18,9 +20,26 @@ const CONFIG = {
   redirectDelay: 450,
 };
 
+const ROLE_CONTENT = {
+  Administrador: {
+    badge: "Controle total do ambiente",
+    title: "Acesso administrativo",
+    description:
+      "Gerencie usu\u00e1rios, ativos, permiss\u00f5es e configura\u00e7\u00f5es internas do sistema.",
+  },
+  Colaborador: {
+    badge: "Acesso operacional seguro",
+    title: "Acesso colaborador",
+    description:
+      "Consulte informa\u00e7\u00f5es, acompanhe ativos e utilize os recursos liberados para sua fun\u00e7\u00e3o.",
+  },
+};
+
 let themeTimer = null;
 let toastTimer = null;
 let toastRemoveTimer = null;
+let inactiveDialogLastFocus = null;
+let roleSwitchAnimating = false;
 
 document.addEventListener("DOMContentLoaded", init);
 
@@ -255,6 +274,64 @@ function saveProfilePreference(email, role, shouldSave) {
   removeSavedItem(STORAGE_KEYS.profile);
 }
 
+function openInactiveAccountDialog(message) {
+  const dialog = getEl("inactiveAccountDialog");
+  const text = getEl("inactiveAccountText");
+
+  if (!dialog) {
+    showToast(message || CONFIG.inactiveAccountMessage, "error");
+    return;
+  }
+
+  inactiveDialogLastFocus =
+    document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+  if (text) {
+    text.textContent = message || CONFIG.inactiveAccountMessage;
+  }
+
+  dialog.hidden = false;
+  document.body.classList.add("login-modal-open");
+  dialog.querySelector("[data-close-inactive-dialog]")?.focus();
+}
+
+function closeInactiveAccountDialog() {
+  const dialog = getEl("inactiveAccountDialog");
+
+  if (!dialog) {
+    return;
+  }
+
+  dialog.hidden = true;
+  document.body.classList.remove("login-modal-open");
+  inactiveDialogLastFocus?.focus?.();
+  inactiveDialogLastFocus = null;
+}
+
+function initInactiveAccountDialog() {
+  const dialog = getEl("inactiveAccountDialog");
+
+  if (!dialog) {
+    return;
+  }
+
+  dialog.querySelectorAll("[data-close-inactive-dialog]").forEach((button) => {
+    button.addEventListener("click", closeInactiveAccountDialog);
+  });
+
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) {
+      closeInactiveAccountDialog();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !dialog.hidden) {
+      closeInactiveAccountDialog();
+    }
+  });
+}
+
 async function handleLogin(event) {
   event.preventDefault();
 
@@ -303,6 +380,13 @@ async function handleLogin(event) {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok || !data.ok) {
+      if (data.reason === "inactive_account") {
+        loginError.textContent = "";
+        setLoginButtonLoading(loginButton, false);
+        openInactiveAccountDialog();
+        return;
+      }
+
       throw new Error(data.message || "Nao foi possivel validar o acesso.");
     }
 
@@ -394,6 +478,70 @@ function initSessionMessage() {
   }
 }
 
+function shouldReduceMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function updateRolePanelContent(role) {
+  const content = ROLE_CONTENT[role] || ROLE_CONTENT.Colaborador;
+  const badge = getEl("roleBadge");
+  const title = getEl("roleTitle");
+  const description = getEl("roleDescription");
+
+  if (badge) {
+    badge.textContent = content.badge;
+  }
+
+  if (title) {
+    title.textContent = content.title;
+  }
+
+  if (description) {
+    description.textContent = content.description;
+  }
+}
+
+function animateRolePanelChange(role, direction, segmentControl) {
+  const panel = getEl("rolePanel");
+  const gsapInstance = window.gsap;
+
+  if (!panel || !gsapInstance || shouldReduceMotion()) {
+    updateRolePanelContent(role);
+    roleSwitchAnimating = false;
+    segmentControl?.removeAttribute("data-switching");
+    return;
+  }
+
+  const exitX = direction === "left" ? -28 : 28;
+  const enterX = direction === "left" ? 28 : -28;
+
+  roleSwitchAnimating = true;
+
+  gsapInstance
+    .timeline({
+      defaults: {
+        duration: 0.32,
+        ease: "power2.out",
+      },
+      onComplete: () => {
+        roleSwitchAnimating = false;
+        segmentControl?.removeAttribute("data-switching");
+        gsapInstance.set(panel, { clearProps: "transform,opacity" });
+      },
+    })
+    .to(panel, {
+      x: exitX,
+      opacity: 0,
+      duration: 0.28,
+    })
+    .add(() => updateRolePanelContent(role))
+    .fromTo(
+      panel,
+      { x: enterX, opacity: 0 },
+      { x: 0, opacity: 1, duration: 0.34, ease: "power3.out" },
+    );
+}
+
 function updateSecurityMeter(role) {
   const meter = getEl("securityMeter");
 
@@ -403,14 +551,23 @@ function updateSecurityMeter(role) {
 }
 
 function setActiveRole(buttons, selectedButton, segmentControl) {
+  if (roleSwitchAnimating) {
+    return;
+  }
+
   const selectedRole = selectedButton.dataset.role;
 
   if (!selectedRole) return;
+
+  const previousRole = state.role;
+  const direction = selectedRole === "Administrador" ? "left" : "right";
 
   buttons.forEach((button) => {
     button.classList.toggle("active", button === selectedButton);
   });
 
+  roleSwitchAnimating = true;
+  segmentControl.dataset.switching = "true";
   state.role = selectedRole;
   segmentControl.dataset.active = selectedRole;
   updateSecurityMeter(selectedRole);
@@ -428,6 +585,13 @@ function setActiveRole(buttons, selectedButton, segmentControl) {
       ? `Perfil ${selectedRole} atualizado e salvo.`
       : `Perfil selecionado: ${selectedRole}`,
   );
+
+  if (previousRole !== selectedRole) {
+    animateRolePanelChange(selectedRole, direction, segmentControl);
+  } else {
+    roleSwitchAnimating = false;
+    segmentControl.removeAttribute("data-switching");
+  }
 }
 
 function initRoleSelector() {
@@ -455,6 +619,7 @@ function initRoleSelector() {
 
   segmentControl.dataset.active = state.role;
   updateSecurityMeter(state.role);
+  updateRolePanelContent(state.role);
 
   buttons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -591,6 +756,7 @@ function initCustomCursor() {
 
 function init() {
   initTheme();
+  initInactiveAccountDialog();
   initRoleSelector();
   initSavedProfile();
   initPasswordToggle();

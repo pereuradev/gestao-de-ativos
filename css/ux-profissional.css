@@ -501,11 +501,16 @@ body.ux-enhanced .records-table td {
   border-bottom-color: var(--ux-border);
 }
 
-body.ux-enhanced .records-actions span,
 body.ux-enhanced .form-badge,
 body.ux-enhanced .status-badge {
   border: 1px solid rgba(61, 214, 198, 0.2);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+body.ux-enhanced .records-actions [id$="ResultCount"] {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 body.ux-enhanced .status-badge {
@@ -661,7 +666,7 @@ body.ux-enhanced.theme-light .records-table tbody tr:hover td {
 }
 
 body.ux-enhanced .records-actions select,
-body.ux-enhanced .records-actions input,
+body.ux-enhanced .records-actions > input,
 body.ux-enhanced .search-box,
 body.ux-enhanced .input-shell {
   min-height: 44px;
@@ -670,7 +675,7 @@ body.ux-enhanced .input-shell {
 }
 
 body.ux-enhanced.theme-light .records-actions select,
-body.ux-enhanced.theme-light .records-actions input,
+body.ux-enhanced.theme-light .records-actions > input,
 body.ux-enhanced.theme-light .search-box,
 body.ux-enhanced.theme-light .input-shell {
   background: rgba(255, 255, 255, 0.9);
@@ -1109,7 +1114,7 @@ body.ux-enhanced .settings-confirm-dialog {
   }
 
   body.ux-enhanced .records-actions select,
-  body.ux-enhanced .records-actions input,
+  body.ux-enhanced .records-actions > input,
   body.ux-enhanced .search-box,
   body.ux-enhanced .input-shell {
     min-height: 48px;

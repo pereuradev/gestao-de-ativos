@@ -273,7 +273,7 @@ try {
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/ativos.css?v=20260629-datasheet-column" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260703-modal-sidebar-profile" />
+  <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
 
   <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
@@ -372,8 +372,10 @@ try {
             <a href="edicao-marcas.php">Marcas</a>
             <a href="edicao-propriedades.php">Propriedades</a>
             <?php if ($sidebarIsAdmin): ?>
+            <a href="edicao-funcionarios.php">Funcion&aacute;rios</a>
             <a href="edicao-grupos.php">Grupos</a>
             <?php else: ?>
+            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Edicao de funcionarios" title="Apenas administradores podem editar funcionarios">Funcion&aacute;rios</span>
             <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Edicao de grupos" title="Apenas administradores podem editar grupos">Grupos</span>
             <?php endif; ?>
             <a href="edicao-locais.php">Localiza&ccedil;&otilde;es</a>
@@ -553,10 +555,10 @@ try {
             <?php endforeach; ?>
           </select>
 
-          <select id="assetPerPage" name="por_pagina" aria-label="Registros por pÃ¡gina">
+          <select id="assetPerPage" name="por_pagina" aria-label="Registros por p&aacute;gina">
             <?php foreach ($porPaginaOpcoes as $opcaoPorPagina): ?>
               <option value="<?php echo e((string) $opcaoPorPagina); ?>" <?php echo $porPagina === $opcaoPorPagina ? "selected" : ""; ?>>
-                <?php echo e((string) $opcaoPorPagina); ?> por pÃ¡gina
+                <?php echo e((string) $opcaoPorPagina); ?> por p&aacute;gina
               </option>
             <?php endforeach; ?>
           </select>
@@ -649,7 +651,7 @@ try {
         </div>
 
         <?php if ($totalFiltradoAtivos > 0): ?>
-          <nav class="asset-pagination" aria-label="PaginaÃ§Ã£o de ativos">
+          <nav class="asset-pagination" aria-label="Pagina&ccedil;&atilde;o de ativos">
             <div class="asset-pagination-info">
               Mostrando
               <strong><?php echo e((string) $inicioRegistro); ?>-<?php echo e((string) $fimRegistro); ?></strong>

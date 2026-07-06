@@ -300,7 +300,10 @@ try {
     $status = strtolower(trim((string)($perfil["status"] ?? "")));
 
     if ($status !== "ativo") {
-        responder(false, "Usuario inativo. Entre em contato com o administrador.", 403);
+        unset($_SESSION["usuario"], $_SESSION["supabase"]);
+        responder(false, "Conta inativa. Solicite ajuda a um administrador para reativar o acesso.", 403, [
+            "reason" => "inactive_account",
+        ]);
     }
 
     // Confere se o tipo escolhido no login bate com o perfil cadastrado.

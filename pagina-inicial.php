@@ -92,7 +92,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
   <!-- Arquivos CSS da pÃ¡gina -->
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260703-modal-sidebar-profile" />
+  <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
 
   <!-- Chart.js usado para renderizar grÃ¡ficos no dashboard -->
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
@@ -205,8 +205,10 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
             <a href="edicao-marcas.php">Marcas</a>
             <a href="edicao-propriedades.php">Propriedades</a>
             <?php if ($sidebarIsAdmin): ?>
+            <a href="edicao-funcionarios.php">Funcion&aacute;rios</a>
             <a href="edicao-grupos.php">Grupos</a>
             <?php else: ?>
+            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Edicao de funcionarios" title="Apenas administradores podem editar funcionarios">Funcion&aacute;rios</span>
             <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Edicao de grupos" title="Apenas administradores podem editar grupos">Grupos</span>
             <?php endif; ?>
             <a href="edicao-locais.php">Localiza&ccedil;&otilde;es</a>

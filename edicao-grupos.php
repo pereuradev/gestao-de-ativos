@@ -190,7 +190,7 @@ try {
   <link rel="stylesheet" href="css/cadastro-grupos.css?v=20260703-permission-sections" />
   <link rel="stylesheet" href="css/edicao-grupos.css?v=20260703-permission-sections" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260701-admin-employee-register-v2" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260703-modal-sidebar-profile" />
+  <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260701-admin-employee-register-v2" defer></script>
   <script src="js/ux-profissional.js?v=20260701-admin-employee-register-v2" defer></script>
@@ -269,6 +269,7 @@ try {
             <a href="edicao-ativos.php">Ativos</a>
             <a href="edicao-marcas.php">Marcas</a>
             <a href="edicao-propriedades.php">Propriedades</a>
+            <a href="edicao-funcionarios.php">Funcion&aacute;rios</a>
             <a class="active-submenu" href="edicao-grupos.php">Grupos</a>
             <a href="edicao-locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
