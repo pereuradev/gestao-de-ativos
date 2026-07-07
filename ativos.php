@@ -12,6 +12,10 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
 require_once __DIR__ . "/Backend/permissoes-acesso.php";
 exigirPermissaoPagina("visualizar_ativos", "Ativos");
 
+if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {
+  $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+}
+
 function e(string $value): string
 {
   return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
@@ -50,6 +54,21 @@ function urlAtivosPaginada(int $pagina, array $overrides = []): string
   return "ativos.php" . ($params ? "?" . http_build_query($params) : "");
 }
 
+function urlExportarAtivosCsv(array $overrides = []): string
+{
+  $params = array_merge($_GET, $overrides);
+
+  unset($params["pagina"], $params["por_pagina"]);
+
+  foreach ($params as $key => $value) {
+    if ($value === null || $value === "" || $value === "todos") {
+      unset($params[$key]);
+    }
+  }
+
+  return "Backend/exportar-ativos.php" . ($params ? "?" . http_build_query($params) : "");
+}
+
 $usuario = $_SESSION["usuario"];
 
 $nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
@@ -84,6 +103,7 @@ $categoriaFiltro = trim((string) ($_GET["categoria"] ?? ""));
 $buscaFiltro = trim((string) ($_GET["busca"] ?? ""));
 $statusFiltro = trim((string) ($_GET["status"] ?? "todos"));
 $marcaFiltro = trim((string) ($_GET["marca"] ?? "todos"));
+$localizacaoFiltro = trim((string) ($_GET["localizacao"] ?? "todos"));
 
 $porPaginaOpcoes = [10, 25, 50, 100];
 $porPagina = (int) ($_GET["por_pagina"] ?? 10);
@@ -97,6 +117,7 @@ $paginaAtual = max(1, (int) ($_GET["pagina"] ?? 1));
 $ativos = [];
 $categorias = [];
 $marcas = [];
+$locais = [];
 
 $totalAtivos = 0;
 $totalFiltradoAtivos = 0;
@@ -150,6 +171,14 @@ try {
   $marcasStmt->execute([":status" => "Ativa"]);
   $marcas = $marcasStmt->fetchAll();
 
+  $locaisStmt = $pdo->prepare("
+        select id, nome
+        from public.locais
+        order by nome asc
+    ");
+  $locaisStmt->execute();
+  $locais = $locaisStmt->fetchAll();
+
   $totalStmt = $pdo->prepare("select count(*)::int from public.ativos");
   $totalStmt->execute();
   $totalAtivos = (int) $totalStmt->fetchColumn();
@@ -192,6 +221,11 @@ try {
   if ($marcaFiltro !== "" && $marcaFiltro !== "todos") {
     $where[] = "a.marca = :marcaFiltro";
     $params[":marcaFiltro"] = $marcaFiltro;
+  }
+
+  if ($localizacaoFiltro !== "" && $localizacaoFiltro !== "todos") {
+    $where[] = "l.nome = :localizacaoFiltro";
+    $params[":localizacaoFiltro"] = $localizacaoFiltro;
   }
 
   $whereSql = $where ? " where " . implode(" and ", $where) : "";
@@ -254,6 +288,11 @@ try {
 } catch (Throwable) {
   $erroBanco = "Nao foi possivel carregar os ativos do banco agora.";
 }
+
+$csrfToken = e((string) $_SESSION["csrf_token"]);
+$podeImportarAtivos = usuarioAtualTemPermissao("cadastrar_ativos");
+$exportarAtivosUrl = e(urlExportarAtivosCsv());
+$modeloImportacaoAtivosUrl = "Backend/modelo-importacao-ativos.php";
 ?>
 <!doctype html>
 <html lang="pt-BR">
@@ -271,7 +310,7 @@ try {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/ativos.css?v=20260629-datasheet-column" />
+  <link rel="stylesheet" href="css/ativos.css?v=20260707-import-export-csv" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
@@ -279,7 +318,7 @@ try {
   <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
   <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
-  <script src="js/ativos.js?v=20260626-pagination" defer></script>
+  <script src="js/ativos.js?v=20260707-import-export-csv" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
@@ -507,6 +546,25 @@ try {
               <?php echo e((string) $totalFiltradoAtivos); ?>
               <?php echo $totalFiltradoAtivos === 1 ? "registro encontrado" : "registros encontrados"; ?>
             </span>
+
+            <div class="asset-csv-actions" aria-label="Importacao e exportacao de ativos">
+              <a class="asset-csv-button asset-csv-button-secondary" href="<?php echo $exportarAtivosUrl; ?>">
+                <i class="bi bi-download"></i>
+                <span>Exportar CSV</span>
+              </a>
+
+              <?php if ($podeImportarAtivos): ?>
+                <button class="asset-csv-button asset-csv-button-primary" id="openAssetImportModal" type="button">
+                  <i class="bi bi-upload"></i>
+                  <span>Importar CSV</span>
+                </button>
+
+                <a class="asset-csv-button asset-csv-button-ghost" href="<?php echo e($modeloImportacaoAtivosUrl); ?>">
+                  <i class="bi bi-filetype-csv"></i>
+                  <span>Baixar modelo</span>
+                </a>
+              <?php endif; ?>
+            </div>
           </div>
         </div>
 
@@ -551,6 +609,18 @@ try {
 
               <option value="<?php echo e($marcaNome); ?>" <?php echo strcasecmp($marcaFiltro, $marcaNome) === 0 ? "selected" : ""; ?>>
                 <?php echo e($marcaNome); ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+
+          <select id="assetLocationFilter" name="localizacao" aria-label="Filtrar por localizacao">
+            <option value="todos">Todas as localizacoes</option>
+
+            <?php foreach ($locais as $localFiltroOpcao): ?>
+              <?php $localNome = (string) ($localFiltroOpcao["nome"] ?? ""); ?>
+
+              <option value="<?php echo e($localNome); ?>" <?php echo strcasecmp($localizacaoFiltro, $localNome) === 0 ? "selected" : ""; ?>>
+                <?php echo e($localNome); ?>
               </option>
             <?php endforeach; ?>
           </select>
@@ -727,6 +797,63 @@ try {
       </section>
     </main>
   </div>
+
+  <?php if ($podeImportarAtivos): ?>
+    <div class="asset-import-backdrop" id="assetImportModal" hidden>
+      <section class="asset-import-modal" role="dialog" aria-modal="true" aria-labelledby="assetImportTitle"
+        aria-describedby="assetImportDescription">
+        <div class="asset-import-header">
+          <div>
+            <p class="section-tag">Importa&ccedil;&atilde;o</p>
+            <h3 id="assetImportTitle">Importar ativos por CSV</h3>
+          </div>
+
+          <button class="icon-button asset-import-close" type="button" aria-label="Fechar importacao"
+            data-close-asset-import>
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <p class="asset-import-description" id="assetImportDescription">
+          Use CSV separado por ponto e v&iacute;rgula. Linhas com erro n&atilde;o ser&atilde;o cadastradas.
+        </p>
+
+        <div class="asset-import-format">
+          <strong>Formato esperado</strong>
+          <code>nome;descricao;numero_serie;imei;categoria;marca;propriedade;localizacao;status;datasheet</code>
+        </div>
+
+        <form id="assetImportForm" class="asset-import-form" action="Backend/importar-ativos.php" method="post"
+          enctype="multipart/form-data" novalidate>
+          <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
+
+          <label class="asset-import-file">
+            <span>Arquivo CSV</span>
+            <input id="assetImportFile" name="arquivo_csv" type="file" accept=".csv,text/csv" required />
+          </label>
+
+          <div id="assetImportResult" class="asset-import-result" role="status" aria-live="polite" hidden></div>
+
+          <div class="asset-import-actions">
+            <a class="asset-csv-button asset-csv-button-ghost" href="<?php echo e($modeloImportacaoAtivosUrl); ?>">
+              <i class="bi bi-file-earmark-arrow-down"></i>
+              <span>Baixar modelo CSV</span>
+            </a>
+
+            <button class="asset-csv-button asset-csv-button-secondary" type="button" data-close-asset-import>
+              <i class="bi bi-x-lg"></i>
+              <span>Cancelar</span>
+            </button>
+
+            <button class="asset-csv-button asset-csv-button-primary" id="assetImportSubmit" type="submit">
+              <i class="bi bi-upload"></i>
+              <span>Importar ativos</span>
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  <?php endif; ?>
 </body>
 
 </html>
