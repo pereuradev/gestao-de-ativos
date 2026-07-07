@@ -13,6 +13,18 @@ if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {
   $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
 }
 
+require_once __DIR__ . "/Backend/permissoes-acesso.php";
+
+$podeVisualizarGrupos = usuarioAtualTemPermissao("visualizar_grupos");
+$podeEditarGrupos = usuarioAtualTemPermissao("editar_grupos");
+$podeCadastrarGrupos = usuarioAtualTemPermissao("cadastrar_grupos");
+
+if (!$podeVisualizarGrupos && !$podeEditarGrupos) {
+  $_SESSION["permission_denied_resource"] = "Grupos";
+  header("Location: pagina-inicial.php?permissao=negada");
+  exit;
+}
+
 function e(string $value): string
 {
   return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
@@ -57,14 +69,8 @@ $usuario = $_SESSION["usuario"];
 $nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
 $sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
 $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
-
-if (!$sidebarIsAdmin) {
-  header("Location: pagina-inicial.php");
-  exit;
-}
-
-$sidebarRoleLabel = e("ADM");
-$sidebarRoleClass = e("is-admin");
+$sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
+$sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
 $sidebarEmail = e((string) ($usuario["email"] ?? ""));
 $sidebarDepartment = e((string) ($usuario["departamento"] ?? "Sem departamento"));
 $sidebarInitials = e(iniciaisEdicaoGrupo((string) ($usuario["nome_completo"] ?? "Usuario")));
@@ -83,8 +89,8 @@ $totalPermissoes = 0;
 $erroBanco = "";
 
 try {
-  require __DIR__ . "/Backend/Conexao.php";
-  require __DIR__ . "/Backend/grupos-acesso-util.php";
+  require_once __DIR__ . "/Backend/Conexao.php";
+  require_once __DIR__ . "/Backend/grupos-acesso-util.php";
 
   garantirTabelasGruposAcesso($pdo);
   $permissoesDisponiveis = permissoesGruposAcesso();
@@ -187,15 +193,15 @@ try {
   <link rel="stylesheet" href="css/pagina-base.css?v=20260701-admin-employee-register-v2" />
   <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260701-admin-employee-register-v2" />
   <link rel="stylesheet" href="css/cadastro-funcionarios.css?v=20260702-employee-hero-gradient" />
-  <link rel="stylesheet" href="css/cadastro-grupos.css?v=20260703-permission-sections" />
+  <link rel="stylesheet" href="css/cadastro-grupos.css?v=20260707-permission-icons" />
   <link rel="stylesheet" href="css/edicao-grupos.css?v=20260703-permission-sections" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260701-admin-employee-register-v2" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260701-admin-employee-register-v2" defer></script>
   <script src="js/ux-profissional.js?v=20260701-admin-employee-register-v2" defer></script>
-  <script src="js/app-base.js?v=20260703-group-permissions" defer></script>
-  <script src="js/edicao-grupos.js?v=20260703-permission-sections" defer></script>
+  <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
+  <script src="js/edicao-grupos.js?v=20260707-group-status" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
@@ -322,10 +328,12 @@ try {
         </div>
 
         <div class="topbar-actions">
-          <a class="secondary-button compact-button" href="cadastro-grupos.php">
-            <i class="bi bi-plus-circle"></i>
-            Novo grupo
-          </a>
+          <?php if ($podeCadastrarGrupos): ?>
+            <a class="secondary-button compact-button" href="cadastro-grupos.php">
+              <i class="bi bi-plus-circle"></i>
+              Novo grupo
+            </a>
+          <?php endif; ?>
 
           <button class="theme-toggle" id="themeToggle" type="button">
             <i class="bi bi-sun-fill"></i>
@@ -413,10 +421,11 @@ try {
             $permissoesCodigos = $permissoesCodigosPorGrupo[$grupoId] ?? [];
             $buscaMembros = implode(" ", array_map(static fn(array $membro): string => (string) ($membro["nome_completo"] ?? ""), $membros));
             $buscaPermissoes = implode(" ", $permissoes);
-            $search = strtolower(trim($nome . " " . $descricao . " " . $buscaMembros . " " . $buscaPermissoes));
+            $search = strtolower(trim($nome . " " . $descricao . " " . $status . " " . $buscaMembros . " " . $buscaPermissoes));
             ?>
             <article class="group-edit-item" data-id="<?php echo e($grupoId); ?>" data-name="<?php echo e($nome); ?>"
               data-description="<?php echo e($descricao); ?>"
+              data-status="<?php echo e($status); ?>"
               data-members="<?php echo e((string) count($membros)); ?>"
               data-permissions="<?php echo e((string) count($permissoes)); ?>"
               data-permission-codes="<?php echo e(implode(",", $permissoesCodigos)); ?>" data-search="<?php echo e($search); ?>">
@@ -428,17 +437,19 @@ try {
                 </div>
 
                 <div class="group-edit-actions">
-                  <span class="status-badge <?php echo strtolower($status) === "ativo" ? "status-active" : "status-inactive"; ?>">
+                  <span class="status-badge <?php echo strtolower($status) === "ativo" ? "status-active" : "status-inactive"; ?>" data-group-status>
                     <?php echo e($status); ?>
                   </span>
-                  <button class="table-action edit-group-button" type="button" data-group-action="edit">
-                    <i class="bi bi-pencil-square"></i>
-                    <span>Editar</span>
-                  </button>
-                  <button class="table-action delete-group-button" type="button" data-group-action="delete">
-                    <i class="bi bi-trash3"></i>
-                    <span>Excluir grupo</span>
-                  </button>
+                  <?php if ($podeEditarGrupos): ?>
+                    <button class="table-action edit-group-button" type="button" data-group-action="edit">
+                      <i class="bi bi-pencil-square"></i>
+                      <span>Editar</span>
+                    </button>
+                    <button class="table-action delete-group-button" type="button" data-group-action="delete">
+                      <i class="bi bi-trash3"></i>
+                      <span>Excluir grupo</span>
+                    </button>
+                  <?php endif; ?>
                 </div>
               </header>
 
@@ -470,10 +481,12 @@ try {
                       <span><?php echo e((string) ($membro["email"] ?? "--")); ?></span>
                       <small><?php echo e((string) ($membro["tipo_usuario"] ?? "--")); ?> &middot; <?php echo e((string) ($membro["departamento"] ?? "--")); ?></small>
                     </div>
-                    <button class="table-action remove-member-button" type="button" data-member-action="remove">
-                      <i class="bi bi-person-dash"></i>
-                      <span>Remover</span>
-                    </button>
+                    <?php if ($podeEditarGrupos): ?>
+                      <button class="table-action remove-member-button" type="button" data-member-action="remove">
+                        <i class="bi bi-person-dash"></i>
+                        <span>Remover</span>
+                      </button>
+                    <?php endif; ?>
                   </article>
                 <?php endforeach; ?>
 
@@ -496,6 +509,7 @@ try {
     </main>
   </div>
 
+  <?php if ($podeEditarGrupos): ?>
   <div class="edit-modal-backdrop group-modal-backdrop" id="groupEditModal" hidden>
     <section class="edit-modal-card group-modal-card" role="dialog" aria-modal="true"
       aria-labelledby="groupEditModalTitle">
@@ -530,6 +544,17 @@ try {
             <div class="input-shell">
               <i class="bi bi-card-text"></i>
               <input id="editGroupDescription" name="descricao" type="text" maxlength="220" />
+            </div>
+          </label>
+
+          <label class="asset-field">
+            <span>Status do grupo <strong>*</strong></span>
+            <div class="input-shell">
+              <i class="bi bi-toggle-on"></i>
+              <select id="editGroupStatus" name="status" required>
+                <option value="Ativo">Ativo</option>
+                <option value="Inativo">Inativo</option>
+              </select>
             </div>
           </label>
 
@@ -620,6 +645,7 @@ try {
       </form>
     </section>
   </div>
+  <?php endif; ?>
 </body>
 
 </html>

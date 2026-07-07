@@ -45,9 +45,19 @@ const PAGE_PERMISSION_RULES = {
   "locais.php": { permission: "cadastrar_locais", resource: "Cadastro de localizacoes" },
   "edicao-locais.php": { permission: "editar_locais", resource: "Edicao de localizacoes" },
   "funcionarios.php": { permission: "visualizar_funcionarios", resource: "Funcionarios" },
+  "grupos-visualizacao.php": { permission: "visualizar_grupos", resource: "Grupos" },
+  "cadastro-funcionarios.php": { permission: "cadastrar_funcionarios", resource: "Cadastro de funcionarios" },
+  "edicao-funcionarios.php": { permission: "editar_funcionarios", resource: "Edicao de funcionarios" },
+  "cadastro-grupos.php": { permission: "cadastrar_grupos", resource: "Cadastro de grupos" },
+  "edicao-grupos.php": { permission: "editar_grupos", resource: "Edicao de grupos" },
 };
 const DISABLED_PERMISSION_LINKS = {
   Funcionarios: { permission: "visualizar_funcionarios", href: "funcionarios.php" },
+  Grupos: { permission: "visualizar_grupos", href: "grupos-visualizacao.php" },
+  "Cadastro de funcionarios": { permission: "cadastrar_funcionarios", href: "cadastro-funcionarios.php" },
+  "Edicao de funcionarios": { permission: "editar_funcionarios", href: "edicao-funcionarios.php" },
+  "Cadastro de grupos": { permission: "cadastrar_grupos", href: "cadastro-grupos.php" },
+  "Edicao de grupos": { permission: "editar_grupos", href: "edicao-grupos.php" },
 };
 
 // Paletas que podem ser escolhidas nas configuracoes do usuario.
@@ -169,18 +179,20 @@ function updateSidebarProfile(usuario) {
 }
 
 function applyNavigationPermissions(usuario) {
+  const permissions = new Set(Array.isArray(usuario?.permissoes) ? usuario.permissoes : []);
+
   if (usuario?.is_admin) {
+    ensureGroupViewNavigationLink(permissions);
     return;
   }
 
-  const permissions = new Set(Array.isArray(usuario?.permissoes) ? usuario.permissoes : []);
-
   enableAllowedDisabledLinks(permissions);
+  ensureGroupViewNavigationLink(permissions);
 
   document.querySelectorAll(".sidebar-nav a[href]").forEach((link) => {
     const rule = PAGE_PERMISSION_RULES[getPageNameFromHref(link.getAttribute("href"))];
 
-    if (!rule || permissions.has(rule.permission)) {
+    if (!rule || permissionRuleIsAllowed(permissions, rule)) {
       return;
     }
 
@@ -194,7 +206,7 @@ function enableAllowedDisabledLinks(permissions) {
   document.querySelectorAll(".nav-link-disabled, .disabled-action").forEach((item) => {
     const rule = DISABLED_PERMISSION_LINKS[item.dataset.permissionResource];
 
-    if (!rule || !permissions.has(rule.permission)) {
+    if (!rule || !permissionRuleIsAllowed(permissions, rule)) {
       return;
     }
 
@@ -210,6 +222,39 @@ function enableAllowedDisabledLinks(permissions) {
     link.innerHTML = item.innerHTML;
     item.replaceWith(link);
   });
+}
+
+function ensureGroupViewNavigationLink(permissions) {
+  if (!permissions.has("visualizar_grupos") || document.querySelector('.sidebar-nav a[href="grupos-visualizacao.php"]')) {
+    return;
+  }
+
+  const sidebarNav = document.querySelector(".sidebar-nav");
+  const reference = document.querySelector('.sidebar-nav a[href="funcionarios.php"], .sidebar-nav [data-permission-resource="Funcionarios"]')
+    || document.querySelector('.sidebar-nav a[href="dashboard.php"]');
+
+  if (!sidebarNav || !reference) {
+    return;
+  }
+
+  const link = document.createElement("a");
+  link.className = "nav-link";
+  link.href = "grupos-visualizacao.php";
+
+  if (getPageNameFromHref(window.location.href) === "grupos-visualizacao.php") {
+    link.classList.add("active");
+  }
+
+  link.innerHTML = '<i class="bi bi-collection-fill"></i><span>Grupos</span>';
+  reference.insertAdjacentElement("afterend", link);
+}
+
+function permissionRuleIsAllowed(permissions, rule) {
+  const requiredPermissions = Array.isArray(rule.permissions)
+    ? rule.permissions
+    : [rule.permission].filter(Boolean);
+
+  return requiredPermissions.some((permission) => permissions.has(permission));
 }
 
 function getPageNameFromHref(href) {

@@ -78,7 +78,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
     <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
     <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
-    <script src="js/app-base.js?v=20260703-group-permissions" defer></script>
+    <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
     <script src="js/dashboard-produtos.js?v=20260702-filter-loading-feedback" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
     <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>

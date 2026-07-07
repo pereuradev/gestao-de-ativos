@@ -298,6 +298,15 @@
   box-shadow: 0 12px 24px color-mix(in srgb, var(--group-accent) 20%, transparent);
 }
 
+.theme-light .permission-section-icon {
+  color: var(--group-accent);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--group-accent) 18%, #ffffff), #ffffff);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--group-accent) 26%, transparent),
+    0 12px 24px color-mix(in srgb, var(--group-accent) 14%, transparent);
+}
+
 .permission-section-title {
   display: grid;
   gap: 4px;

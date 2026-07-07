@@ -31,13 +31,6 @@ function campo(string $nome, string $padrao = ""): string
     return trim((string) ($_POST[$nome] ?? $padrao));
 }
 
-function usuarioAdministrador(): bool
-{
-    $tipoUsuario = strtolower(trim((string) ($_SESSION["usuario"]["tipo_usuario"] ?? "")));
-
-    return in_array($tipoUsuario, ["adm", "admin", "administrador"], true);
-}
-
 function csrfValido(): bool
 {
     $tokenSessao = (string) ($_SESSION["csrf_token"] ?? "");
@@ -259,9 +252,8 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     ]);
 }
 
-if (!usuarioAdministrador()) {
-    responder(false, "Apenas administradores podem cadastrar funcionarios.", 403);
-}
+require_once __DIR__ . "/permissoes-acesso.php";
+exigirPermissaoApi("cadastrar_funcionarios", "Cadastro de funcionarios");
 
 if (!csrfValido()) {
     responder(false, "Token de seguranca invalido. Atualize a pagina e tente novamente.", 419);

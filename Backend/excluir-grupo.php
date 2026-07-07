@@ -24,13 +24,6 @@ function campoExclusaoGrupo(string $nome): string
     return trim((string) ($_POST[$nome] ?? ""));
 }
 
-function usuarioExclusaoGrupoAdmin(): bool
-{
-    $tipo = strtolower(trim((string) ($_SESSION["usuario"]["tipo_usuario"] ?? "")));
-
-    return in_array($tipo, ["adm", "admin", "administrador"], true);
-}
-
 function csrfExclusaoGrupoValido(): bool
 {
     $sessao = (string) ($_SESSION["csrf_token"] ?? "");
@@ -55,9 +48,8 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     responderExclusaoGrupo(false, "Sessao expirada. Faca login novamente.", 401);
 }
 
-if (!usuarioExclusaoGrupoAdmin()) {
-    responderExclusaoGrupo(false, "Apenas administradores podem excluir grupos.", 403);
-}
+require_once __DIR__ . "/permissoes-acesso.php";
+exigirPermissaoApi("editar_grupos", "Edicao de grupos");
 
 if (!csrfExclusaoGrupoValido()) {
     responderExclusaoGrupo(false, "Token de seguranca invalido. Atualize a pagina.", 403);
@@ -70,8 +62,8 @@ if (!uuidExclusaoGrupoValido($grupoId)) {
 }
 
 try {
-    require __DIR__ . "/Conexao.php";
-    require __DIR__ . "/grupos-acesso-util.php";
+    require_once __DIR__ . "/Conexao.php";
+    require_once __DIR__ . "/grupos-acesso-util.php";
 
     garantirTabelasGruposAcesso($pdo);
 

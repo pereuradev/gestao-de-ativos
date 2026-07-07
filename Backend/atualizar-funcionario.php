@@ -25,13 +25,6 @@ function campoFuncionario(string $nome): string
     return trim((string) ($_POST[$nome] ?? ""));
 }
 
-function usuarioAdministradorFuncionario(): bool
-{
-    $tipoUsuario = strtolower(trim((string) ($_SESSION["usuario"]["tipo_usuario"] ?? "")));
-
-    return in_array($tipoUsuario, ["adm", "admin", "administrador"], true);
-}
-
 function csrfFuncionarioValido(): bool
 {
     $tokenSessao = (string) ($_SESSION["csrf_token"] ?? "");
@@ -103,9 +96,8 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     responderFuncionario(false, "Sessao expirada. Entre novamente no portal.", 401);
 }
 
-if (!usuarioAdministradorFuncionario()) {
-    responderFuncionario(false, "Apenas administradores podem editar funcionarios.", 403);
-}
+require_once __DIR__ . "/permissoes-acesso.php";
+exigirPermissaoApi("editar_funcionarios", "Edicao de funcionarios");
 
 if (!csrfFuncionarioValido()) {
     responderFuncionario(false, "Token de seguranca invalido. Atualize a pagina e tente novamente.", 419);
@@ -179,7 +171,7 @@ if ($usuarioSessaoId === $id && ($status !== "Ativo" || $tipoUsuario !== "Admini
 }
 
 try {
-    require __DIR__ . "/Conexao.php";
+    require_once __DIR__ . "/Conexao.php";
 
     $duplicadoStmt = $pdo->prepare("
         select cpf, rg

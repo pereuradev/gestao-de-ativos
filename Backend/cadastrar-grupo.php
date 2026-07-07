@@ -17,13 +17,6 @@ function responderGrupo(bool $ok, string $message, int $statusCode = 200, array 
     exit;
 }
 
-function usuarioGrupoAdministrador(): bool
-{
-    $tipo = strtolower(trim((string) ($_SESSION["usuario"]["tipo_usuario"] ?? "")));
-
-    return in_array($tipo, ["adm", "admin", "administrador"], true);
-}
-
 function csrfGrupoValido(): bool
 {
     $sessao = (string) ($_SESSION["csrf_token"] ?? "");
@@ -68,9 +61,8 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     ]);
 }
 
-if (!usuarioGrupoAdministrador()) {
-    responderGrupo(false, "Apenas administradores podem criar grupos.", 403);
-}
+require_once __DIR__ . "/permissoes-acesso.php";
+exigirPermissaoApi("cadastrar_grupos", "Cadastro de grupos");
 
 if (!csrfGrupoValido()) {
     responderGrupo(false, "Token de seguranca invalido. Atualize a pagina e tente novamente.", 419);
@@ -100,8 +92,8 @@ foreach ($membros as $membroId) {
 }
 
 try {
-    require __DIR__ . "/Conexao.php";
-    require __DIR__ . "/grupos-acesso-util.php";
+    require_once __DIR__ . "/Conexao.php";
+    require_once __DIR__ . "/grupos-acesso-util.php";
 
     garantirTabelasGruposAcesso($pdo);
 

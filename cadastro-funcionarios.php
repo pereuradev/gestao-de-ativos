@@ -13,6 +13,9 @@ if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {
   $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
 }
 
+require_once __DIR__ . "/Backend/permissoes-acesso.php";
+exigirPermissaoPagina("cadastrar_funcionarios", "Cadastro de funcionarios");
+
 function e(string $value): string
 {
   return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
@@ -38,14 +41,8 @@ $nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
 $tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
 $sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
 $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
-
-if (!$sidebarIsAdmin) {
-  header("Location: pagina-inicial.php");
-  exit;
-}
-
-$sidebarRoleLabel = e("ADM");
-$sidebarRoleClass = e("is-admin");
+$sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
+$sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
 $sidebarEmail = e((string) ($usuario["email"] ?? ""));
 $sidebarDepartment = e((string) ($usuario["departamento"] ?? "Sem departamento"));
 $sidebarNameText = (string) ($usuario["nome_completo"] ?? "Usuario");
@@ -74,7 +71,7 @@ $ultimosFuncionarios = [];
 $erroBanco = "";
 
 try {
-  require __DIR__ . "/Backend/Conexao.php";
+  require_once __DIR__ . "/Backend/Conexao.php";
 
   $resumoStmt = $pdo->prepare("
         select
@@ -134,7 +131,7 @@ try {
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260701-admin-employee-register-v2" defer></script>
   <script src="js/ux-profissional.js?v=20260701-admin-employee-register-v2" defer></script>
-  <script src="js/app-base.js?v=20260703-group-permissions" defer></script>
+  <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
   <script src="js/cadastro-funcionarios.js?v=20260702-confirm-dialogs" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>

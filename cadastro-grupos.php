@@ -13,6 +13,9 @@ if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {
   $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
 }
 
+require_once __DIR__ . "/Backend/permissoes-acesso.php";
+exigirPermissaoPagina("cadastrar_grupos", "Cadastro de grupos");
+
 function e(string $value): string
 {
   return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
@@ -37,14 +40,8 @@ $usuario = $_SESSION["usuario"];
 $nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
 $sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
 $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
-
-if (!$sidebarIsAdmin) {
-  header("Location: pagina-inicial.php");
-  exit;
-}
-
-$sidebarRoleLabel = e("ADM");
-$sidebarRoleClass = e("is-admin");
+$sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
+$sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
 $sidebarEmail = e((string) ($usuario["email"] ?? ""));
 $sidebarDepartment = e((string) ($usuario["departamento"] ?? "Sem departamento"));
 $sidebarNameText = (string) ($usuario["nome_completo"] ?? "Usuario");
@@ -74,8 +71,8 @@ $totalPermissoes = 0;
 $erroBanco = "";
 
 try {
-  require __DIR__ . "/Backend/Conexao.php";
-  require __DIR__ . "/Backend/grupos-acesso-util.php";
+  require_once __DIR__ . "/Backend/Conexao.php";
+  require_once __DIR__ . "/Backend/grupos-acesso-util.php";
 
   garantirTabelasGruposAcesso($pdo);
   $permissoesAgrupadas = permissoesGruposAcessoAgrupadas();
@@ -142,13 +139,13 @@ try {
   <link rel="stylesheet" href="css/pagina-base.css?v=20260701-admin-employee-register-v2" />
   <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260701-admin-employee-register-v2" />
   <link rel="stylesheet" href="css/cadastro-funcionarios.css?v=20260702-employee-hero-gradient" />
-  <link rel="stylesheet" href="css/cadastro-grupos.css?v=20260703-permission-sections" />
+  <link rel="stylesheet" href="css/cadastro-grupos.css?v=20260707-permission-icons" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260701-admin-employee-register-v2" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260701-admin-employee-register-v2" defer></script>
   <script src="js/ux-profissional.js?v=20260701-admin-employee-register-v2" defer></script>
-  <script src="js/app-base.js?v=20260703-group-permissions" defer></script>
+  <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
   <script src="js/cadastro-grupos.js?v=20260702-groups-page" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>

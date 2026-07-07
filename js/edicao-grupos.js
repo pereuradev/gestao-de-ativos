@@ -76,6 +76,7 @@ function openGroupEditModal(card) {
   setGroupInputValue("editGroupId", card.dataset.id || "");
   setGroupInputValue("editGroupName", card.dataset.name || "");
   setGroupInputValue("editGroupDescription", card.dataset.description || "");
+  setGroupInputValue("editGroupStatus", card.dataset.status || "Ativo");
 
   const memberIds = new Set(
     Array.from(card.querySelectorAll(".group-member-row"))
@@ -231,6 +232,7 @@ async function deleteGroup(button) {
 function validateGroupModalForm(form) {
   const data = new FormData(form);
   const name = String(data.get("nome") || "").trim();
+  const status = String(data.get("status") || "").trim();
 
   if (name.length < 3) {
     return "Informe um nome de grupo com pelo menos 3 caracteres.";
@@ -238,6 +240,10 @@ function validateGroupModalForm(form) {
 
   if (name.length > 90) {
     return "O nome do grupo pode ter no maximo 90 caracteres.";
+  }
+
+  if (!["Ativo", "Inativo"].includes(status)) {
+    return "Selecione se o grupo ficara ativo ou inativo.";
   }
 
   return "";
@@ -279,9 +285,11 @@ function updateGroupCard(group) {
   const memberTotal = Number(group.total_membros ?? members.length);
   const permissionTotal = Number(group.total_permissoes ?? permissions.length);
   const description = String(group.descricao || "");
+  const status = String(group.status || "Ativo");
 
   card.dataset.name = String(group.nome || "");
   card.dataset.description = description;
+  card.dataset.status = status;
   card.dataset.members = String(memberTotal);
   card.dataset.permissions = String(permissionTotal);
   card.dataset.permissionCodes = permissions.map((permission) => String(permission.codigo || "")).filter(Boolean).join(",");
@@ -291,6 +299,7 @@ function updateGroupCard(group) {
   updateElementText(card.querySelector("[data-group-description]"), description || "Sem descricao informada.");
   updateElementText(card.querySelector("[data-member-count]"), String(memberTotal));
   updateElementText(card.querySelector("[data-permission-count]"), String(permissionTotal));
+  updateGroupStatusBadge(card, status);
 
   renderGroupPermissions(card, permissions);
   renderGroupMembers(card, members);
@@ -381,7 +390,21 @@ function buildGroupSearchValue(group, members, permissions) {
     .map((permission) => `${permission.rotulo || ""} ${permission.codigo || ""}`)
     .join(" ");
 
-  return `${group.nome || ""} ${group.descricao || ""} ${memberSearch} ${permissionSearch}`.toLowerCase().trim();
+  return `${group.nome || ""} ${group.descricao || ""} ${group.status || ""} ${memberSearch} ${permissionSearch}`.toLowerCase().trim();
+}
+
+function updateGroupStatusBadge(card, status) {
+  const badge = card.querySelector("[data-group-status]");
+
+  if (!badge) {
+    return;
+  }
+
+  const isActive = normalizeGroupEditText(status) === "ativo";
+
+  badge.textContent = status || "Ativo";
+  badge.classList.toggle("status-active", isActive);
+  badge.classList.toggle("status-inactive", !isActive);
 }
 
 async function postGroupEdit(url, body) {

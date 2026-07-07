@@ -187,7 +187,7 @@ if ($accessDenied) {
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
-  <script src="js/app-base.js?v=20260703-group-permissions" defer></script>
+  <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
   <script src="js/funcionarios.js?v=20260706-employee-cards-modal" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>

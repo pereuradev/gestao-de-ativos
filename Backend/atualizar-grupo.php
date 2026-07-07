@@ -37,13 +37,6 @@ function listaAtualizacaoGrupo(string $nome): array
     }, $valor))));
 }
 
-function usuarioAtualizacaoGrupoAdmin(): bool
-{
-    $tipo = strtolower(trim((string) ($_SESSION["usuario"]["tipo_usuario"] ?? "")));
-
-    return in_array($tipo, ["adm", "admin", "administrador"], true);
-}
-
 function csrfAtualizacaoGrupoValido(): bool
 {
     $sessao = (string) ($_SESSION["csrf_token"] ?? "");
@@ -155,9 +148,8 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     responderAtualizacaoGrupo(false, "Sessao expirada. Faca login novamente.", 401);
 }
 
-if (!usuarioAtualizacaoGrupoAdmin()) {
-    responderAtualizacaoGrupo(false, "Apenas administradores podem editar grupos.", 403);
-}
+require_once __DIR__ . "/permissoes-acesso.php";
+exigirPermissaoApi("editar_grupos", "Edicao de grupos");
 
 if (!csrfAtualizacaoGrupoValido()) {
     responderAtualizacaoGrupo(false, "Token de seguranca invalido. Atualize a pagina.", 403);
@@ -166,6 +158,7 @@ if (!csrfAtualizacaoGrupoValido()) {
 $grupoId = campoAtualizacaoGrupo("id");
 $nome = preg_replace("/\s+/u", " ", campoAtualizacaoGrupo("nome")) ?? campoAtualizacaoGrupo("nome");
 $descricao = campoAtualizacaoGrupo("descricao");
+$status = campoAtualizacaoGrupo("status") ?: "Ativo";
 $membros = listaAtualizacaoGrupo("membros");
 $permissoes = listaAtualizacaoGrupo("permissoes");
 
@@ -177,6 +170,10 @@ if (strlen($nome) < 3 || strlen($nome) > 90) {
     responderAtualizacaoGrupo(false, "Informe um nome de grupo entre 3 e 90 caracteres.", 422);
 }
 
+if (!in_array($status, ["Ativo", "Inativo"], true)) {
+    responderAtualizacaoGrupo(false, "Status do grupo invalido.", 422);
+}
+
 foreach ($membros as $membroId) {
     if (!uuidAtualizacaoGrupoValido($membroId)) {
         responderAtualizacaoGrupo(false, "Existe um funcionario invalido na selecao.", 422);
@@ -184,8 +181,8 @@ foreach ($membros as $membroId) {
 }
 
 try {
-    require __DIR__ . "/Conexao.php";
-    require __DIR__ . "/grupos-acesso-util.php";
+    require_once __DIR__ . "/Conexao.php";
+    require_once __DIR__ . "/grupos-acesso-util.php";
 
     garantirTabelasGruposAcesso($pdo);
 
@@ -241,6 +238,7 @@ try {
         update public.grupos_acesso
            set nome = :nome,
                descricao = :descricao,
+               status = :status,
                atualizado_em = now()
          where id = cast(:id as uuid)
      returning id
@@ -249,6 +247,7 @@ try {
         ":id" => $grupoId,
         ":nome" => $nome,
         ":descricao" => $descricao !== "" ? $descricao : null,
+        ":status" => $status,
     ]);
 
     if (!$grupoStmt->fetch()) {

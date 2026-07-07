@@ -91,9 +91,29 @@ function statusClasseConfiguracao(string $status): string
 
 // ComeÃ§amos usando os dados que jÃ¡ estÃ£o salvos na sessÃ£o.
 // Se o banco responder, esses dados serÃ£o complementados logo abaixo.
+require_once __DIR__ . "/Backend/grupos-acesso-util.php";
+
 $usuario = $_SESSION["usuario"];
 $perfil = $usuario;
 $erroBanco = "";
+$usuarioTipoRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
+$usuarioEhAdmin = in_array($usuarioTipoRaw, ["adm", "admin", "administrador"], true);
+$permissoesAdministrativas = [
+  "gerenciar_configuracoes" => "Gerenciar configuracoes",
+];
+$grupoPermissoesAdministrativas = [
+  "titulo" => "Sistema",
+  "descricao" => "Acessos de controle geral do portal.",
+  "icone" => "bi-shield-lock-fill",
+  "permissoes" => [
+    "gerenciar_configuracoes" => "Configuracoes",
+  ],
+];
+$rotulosPermissoes = array_merge(permissoesGruposAcesso(), $permissoesAdministrativas);
+$permissoesAgrupadas = array_merge(permissoesGruposAcessoAgrupadas(), [$grupoPermissoesAdministrativas]);
+$permissoesUsuario = $usuarioEhAdmin
+  ? array_keys($rotulosPermissoes)
+  : array_values(array_intersect((array) ($usuario["permissoes_grupos"] ?? []), array_keys($rotulosPermissoes)));
 
 try {
   // Carrega a conexÃ£o com o banco.
@@ -136,6 +156,12 @@ try {
   if (is_array($perfilBanco)) {
     $perfil = array_merge($usuario, $perfilBanco);
   }
+
+  $permissoesUsuario = permissoesUsuarioGrupoAcesso($pdo, $perfil);
+
+  if (!empty($_SESSION["usuario"]) && is_array($_SESSION["usuario"])) {
+    $_SESSION["usuario"]["permissoes_grupos"] = $permissoesUsuario;
+  }
 } catch (Throwable) {
   // NÃ£o travamos a pÃ¡gina se o banco falhar.
   // A tela ainda abre com os dados da sessÃ£o e mostra um aviso discreto ao usuÃ¡rio.
@@ -144,6 +170,13 @@ try {
 
 // A partir daqui, os dados sÃ£o tratados para exibiÃ§Ã£o.
 // Separar essa preparaÃ§Ã£o do HTML deixa a tela mais organizada.
+$usuarioTipoRaw = strtolower(trim((string) ($perfil["tipo_usuario"] ?? ($usuario["tipo_usuario"] ?? ""))));
+$usuarioEhAdmin = in_array($usuarioTipoRaw, ["adm", "admin", "administrador"], true);
+
+if ($usuarioEhAdmin) {
+  $permissoesUsuario = array_keys($rotulosPermissoes);
+}
+
 $nomeUsuarioTexto = campoPerfil($perfil, "nome_completo", "Usuario TI TECH");
 $tipoUsuarioTexto = campoPerfil($perfil, "tipo_usuario", "Colaborador");
 $emailUsuarioTexto = campoPerfil($perfil, "email");
@@ -160,8 +193,8 @@ $codigoInterno = "TT-USER-" . str_pad(substr(preg_replace("/\D/", "", (string) (
 
 $nomeUsuario = e($nomeUsuarioTexto);
 $tipoUsuario = e($tipoUsuarioTexto);
-$sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
-$sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
+$sidebarRoleRaw = $usuarioTipoRaw;
+$sidebarIsAdmin = $usuarioEhAdmin;
 $sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
 $sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
 $sidebarEmail = e((string) ($usuario["email"] ?? ""));
@@ -191,6 +224,31 @@ $cpfUsuario = e($cpfUsuarioTexto);
 $iniciais = e(iniciaisUsuario($nomeUsuarioTexto));
 $statusClasse = e(statusClasseConfiguracao($statusUsuarioTexto));
 $codigoInternoEscapado = e($codigoInterno);
+$permissoesUsuario = array_values(array_unique(array_intersect($permissoesUsuario, array_keys($rotulosPermissoes))));
+$permissoesConcedidas = array_flip($permissoesUsuario);
+$totalPermissoesUsuario = count($permissoesUsuario);
+$permissoesVisiveis = [];
+
+foreach ($permissoesAgrupadas as $grupoPermissao) {
+  $itensPermitidos = [];
+
+  foreach (($grupoPermissao["permissoes"] ?? []) as $codigoPermissao => $rotuloPermissao) {
+    if (!isset($permissoesConcedidas[$codigoPermissao])) {
+      continue;
+    }
+
+    $itensPermitidos[$codigoPermissao] = $rotuloPermissao;
+  }
+
+  if ($itensPermitidos) {
+    $grupoPermissao["permissoes"] = $itensPermitidos;
+    $permissoesVisiveis[] = $grupoPermissao;
+  }
+}
+
+$resumoPermissoes = $usuarioEhAdmin
+  ? "Todas as permissoes do sistema estao liberadas para administradores."
+  : "Permissoes liberadas pelos grupos de acesso ativos.";
 ?>
 <!doctype html>
 <html lang="pt-BR">
@@ -217,14 +275,14 @@ $codigoInternoEscapado = e($codigoInterno);
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
-  <link rel="stylesheet" href="css/configuracoes.css?v=20260630-clean-hero" />
+  <link rel="stylesheet" href="css/configuracoes.css?v=20260707-user-permissions" />
 
 
   <!-- Scripts carregados com defer para nÃ£o bloquear a montagem do HTML. -->
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
-  <script src="js/app-base.js?v=20260703-group-permissions" defer></script>
+  <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
   <script src="js/configuracoes.js?v=20260630-system-cursor" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
@@ -473,6 +531,40 @@ $codigoInternoEscapado = e($codigoInterno);
             <div class="profile-field"><span>CPF</span><strong><?php echo $cpfUsuario; ?></strong></div>
             <div class="profile-field"><span>Criado em</span><strong><?php echo e($criadoEm); ?></strong></div>
             <div class="profile-field"><span>Atualizado em</span><strong><?php echo e($atualizadoEm); ?></strong></div>
+          </div>
+
+          <div class="account-permissions-panel" aria-labelledby="accountPermissionsTitle">
+            <div class="account-permissions-head">
+              <div>
+                <p class="section-tag">Permiss&otilde;es</p>
+                <h4 id="accountPermissionsTitle">Acessos liberados</h4>
+                <span><?php echo e($resumoPermissoes); ?></span>
+              </div>
+              <strong><?php echo e((string) $totalPermissoesUsuario); ?></strong>
+            </div>
+
+            <?php if ($permissoesVisiveis): ?>
+              <div class="account-permissions-grid">
+                <?php foreach ($permissoesVisiveis as $grupoPermissao): ?>
+                  <section class="account-permission-group">
+                    <span class="account-permission-title">
+                      <i class="bi <?php echo e((string) ($grupoPermissao["icone"] ?? "bi-shield-check")); ?>"></i>
+                      <?php echo e((string) ($grupoPermissao["titulo"] ?? "Permissao")); ?>
+                    </span>
+                    <div class="account-permission-chips">
+                      <?php foreach (($grupoPermissao["permissoes"] ?? []) as $rotuloPermissao): ?>
+                        <span><i class="bi bi-check2"></i><?php echo e((string) $rotuloPermissao); ?></span>
+                      <?php endforeach; ?>
+                    </div>
+                  </section>
+                <?php endforeach; ?>
+              </div>
+            <?php else: ?>
+              <div class="account-permissions-empty">
+                <i class="bi bi-lock"></i>
+                <span>Nenhuma permiss&atilde;o liberada para este usu&aacute;rio.</span>
+              </div>
+            <?php endif; ?>
           </div>
         </article>
 

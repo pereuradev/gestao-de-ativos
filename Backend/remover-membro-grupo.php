@@ -24,13 +24,6 @@ function campoRemocaoMembroGrupo(string $nome): string
     return trim((string) ($_POST[$nome] ?? ""));
 }
 
-function usuarioRemocaoMembroGrupoAdmin(): bool
-{
-    $tipo = strtolower(trim((string) ($_SESSION["usuario"]["tipo_usuario"] ?? "")));
-
-    return in_array($tipo, ["adm", "admin", "administrador"], true);
-}
-
 function csrfRemocaoMembroGrupoValido(): bool
 {
     $sessao = (string) ($_SESSION["csrf_token"] ?? "");
@@ -55,9 +48,8 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     responderRemocaoMembroGrupo(false, "Sessao expirada. Faca login novamente.", 401);
 }
 
-if (!usuarioRemocaoMembroGrupoAdmin()) {
-    responderRemocaoMembroGrupo(false, "Apenas administradores podem alterar grupos.", 403);
-}
+require_once __DIR__ . "/permissoes-acesso.php";
+exigirPermissaoApi("editar_grupos", "Edicao de grupos");
 
 if (!csrfRemocaoMembroGrupoValido()) {
     responderRemocaoMembroGrupo(false, "Token de seguranca invalido. Atualize a pagina.", 403);
@@ -71,8 +63,8 @@ if (!uuidRemocaoMembroGrupoValido($grupoId) || !uuidRemocaoMembroGrupoValido($us
 }
 
 try {
-    require __DIR__ . "/Conexao.php";
-    require __DIR__ . "/grupos-acesso-util.php";
+    require_once __DIR__ . "/Conexao.php";
+    require_once __DIR__ . "/grupos-acesso-util.php";
 
     garantirTabelasGruposAcesso($pdo);
 

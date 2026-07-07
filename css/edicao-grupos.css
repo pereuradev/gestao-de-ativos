@@ -138,6 +138,10 @@ body.ux-enhanced .group-edit-page .group-edit-card .records-actions span,
   background: color-mix(in srgb, var(--surface-strong) 84%, transparent);
 }
 
+.group-view-page .group-member-row {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
 .theme-light .group-member-row {
   background: rgba(255, 255, 255, 0.86);
 }
