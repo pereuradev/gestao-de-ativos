@@ -1,1 +1,0 @@
--- Dados de referencia sao versionados nas migrations.
