@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>pagina-Login | TI TECH Assets</title>
+    <title>Login | TI TECH Assets</title>
     <meta
       name="description"
       content="P&aacute;gina inicial de login do portal interno da TI TECH Solutions"
@@ -20,15 +20,12 @@
       rel="stylesheet"
     />
 
-    <link rel="stylesheet" href="css/pagina-login.css?v=20260706-login-bg-no-grid" />
+    <link rel="stylesheet" href="css/pagina-login.css?v=20260710-password-toggle-fix" />
     <link rel="stylesheet" href="css/typewriter.css?v=20260619-stable" />
     <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="js/typewriter.js?v=20260619-stable" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
-    <script src="js/pagina-login.js?v=20260706-role-switch-gsap" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
-  <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
+    <script src="js/pagina-login.js?v=20260710-premium-login" defer></script>
 </head>
 
   <body class="theme-dark page-loading">
@@ -37,13 +34,15 @@
         <div class="theme-floating">
           <button
             id="themeToggleLogin"
-            class="theme-toggle"
+            class="theme-toggle has-tooltip"
             type="button"
             aria-label="Alternar para modo claro"
+            data-tooltip="Alternar tema"
           >
             <span class="theme-icon" aria-hidden="true">
               <i class="bi bi-sun"></i>
             </span>
+            <span class="sr-only">Alterna entre tema claro e escuro.</span>
 
             <span class="theme-copy">
               <span class="label">Modo claro</span>
@@ -85,37 +84,54 @@
         </aside>
 
         <section class="login-side">
+          <div class="login-ambient" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+
           <div class="login-card" aria-label="Formul&aacute;rio de acesso">
-            <a
-              class="logo-link"
-              href="https://www.titechsolutions.com.br/"
-              aria-label="Acessar site da TI TECH Solutions"
-            >
-              <img
-                class="login-card-logo logo-dark"
-                src="assets/logo.png"
-                alt="TI TECH Solutions"
-              />
-              <img
-                class="login-card-logo logo-light"
-                src="assets/logo-branca.png"
-                alt="TI TECH Solutions"
-              />
-            </a>
+            <div class="login-card-header">
+              <a
+                class="logo-link"
+                href="https://www.titechsolutions.com.br/"
+                aria-label="Acessar site da TI TECH Solutions"
+              >
+                <img
+                  class="login-card-logo logo-dark"
+                  src="assets/logo.png"
+                  alt="TI TECH Solutions"
+                />
+                <img
+                  class="login-card-logo logo-light"
+                  src="assets/logo-branca.png"
+                  alt="TI TECH Solutions"
+                />
+              </a>
 
-            <h1>
-              <span
-                class="typewriter-heading"
-                style="--typewriter-min: 19ch"
-              >Acessar portal</span><span  aria-hidden="true"></span>
-            </h1>
+              <div class="login-heading">
+                <p class="card-kicker">Portal interno</p>
+                <h1>
+                  <span
+                    class="typewriter-heading"
+                    style="--typewriter-min: 19ch"
+                  >Acessar portal</span><span aria-hidden="true"></span>
+                </h1>
+                <p class="card-subtitle">Entre com seu e-mail corporativo para continuar.</p>
+              </div>
+            </div>
 
-            <div class="segment-control role-switch" aria-label="Tipo de acesso">
-              <button class="role-option active" data-role="Colaborador" type="button">
-                Colaborador
+            <div class="segment-control role-switch" role="radiogroup" aria-label="Tipo de acesso">
+              <button class="role-option active" data-role="Colaborador" type="button" role="radio" aria-checked="true" aria-controls="rolePanel">
+                <i class="bi bi-person-badge" aria-hidden="true"></i>
+                <span>Colaborador</span>
               </button>
-              <button class="role-option" data-role="Administrador" type="button">
-                Administrador
+              <button class="role-option" data-role="Administrador" type="button" role="radio" aria-checked="false" aria-controls="rolePanel">
+                <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                <span>Administrador</span>
               </button>
             </div>
 
@@ -128,10 +144,15 @@
             </div>
 
             <form id="loginForm" action="Backend/login-usuario.php" method="post" novalidate>
-              <div class="form-group">
-                <label class="form-label" for="email">E-mail corporativo</label>
+              <input id="roleInput" name="tipo_usuario" type="hidden" value="Colaborador" />
 
-                <div class="input-wrap">
+              <div class="form-group" data-field="email">
+                <label class="form-label" for="email">
+                  <span>E-mail corporativo</span>
+                </label>
+
+                <div class="input-wrap has-leading-icon">
+                  <i class="bi bi-envelope field-icon field-icon-leading" aria-hidden="true"></i>
                   <input
                     id="email"
                     name="email"
@@ -139,16 +160,21 @@
                     type="email"
                     placeholder="nome@titechsolutions.com.br"
                     autocomplete="email"
+                    required
+                    aria-describedby="emailError"
+                    aria-invalid="false"
                   />
-
-                  <i class="bi bi-envelope field-icon" aria-hidden="true"></i>
                 </div>
+                <p id="emailError" class="field-error" role="alert" hidden></p>
               </div>
 
-              <div class="form-group">
-                <label class="form-label" for="password">Senha</label>
+              <div class="form-group" data-field="password">
+                <label class="form-label" for="password">
+                  <span>Senha</span>
+                </label>
 
-                <div class="input-wrap">
+                <div class="input-wrap has-leading-icon">
+                  <i class="bi bi-key field-icon field-icon-leading" aria-hidden="true"></i>
                   <input
                     id="password"
                     name="senha"
@@ -156,24 +182,34 @@
                     type="password"
                     placeholder="Digite sua senha"
                     autocomplete="current-password"
+                    required
+                    minlength="4"
+                    aria-describedby="passwordError"
+                    aria-invalid="false"
                   />
 
                   <button
                     id="passwordToggle"
-                    class="password-toggle"
+                    class="password-toggle has-tooltip"
                     type="button"
                     aria-label="Mostrar senha"
+                    aria-pressed="false"
+                    data-tooltip="Mostrar ou ocultar senha"
                   >
-                    <i class="bi bi-eye"></i>
+                    <i class="bi bi-eye" aria-hidden="true"></i>
                   </button>
                 </div>
+                <p id="passwordError" class="field-error" role="alert" hidden></p>
               </div>
 
               <div class="remember-line">
-                <label class="d-flex align-items-center gap-2">
-                  <input id="rememberProfile" type="checkbox" />
+                <label class="remember-option" for="rememberProfile">
+                  <input id="rememberProfile" class="remember-checkbox" type="checkbox" />
+                  <span class="remember-control" aria-hidden="true">
+                    <i class="bi bi-check-lg"></i>
+                  </span>
                   <span class="remember-copy d-grid lh-sm">
-                    <span class="fw-semibold">Lembrar perfil</span>
+                    <span class="fw-semibold">Lembrar-me</span>
                     <small id="rememberProfileStatus" class="remember-status">
                       Perfil selecionado: Colaborador
                     </small>
@@ -182,8 +218,9 @@
 
                 <a
                   id="forgotPasswordLink"
-                  class="link-btn"
+                  class="link-btn has-tooltip"
                   href="#recuperar-senha"
+                  data-tooltip="Disponivel pelo administrador"
                 >
                   Esqueci minha senha
                 </a>
@@ -191,9 +228,9 @@
 
               <div id="loginError" class="login-error" aria-live="polite"></div>
 
-              <button id="loginButton" class="primary-btn" type="submit">
-                <i class="bi bi-lock"></i>
-                <span>Entrar</span>
+              <button id="loginButton" class="primary-btn" type="submit" data-default-label="Entrar com seguran&ccedil;a">
+                <i class="bi bi-lock" aria-hidden="true"></i>
+                <span>Entrar com seguran&ccedil;a</span>
               </button>
 
               <div class="register-callout">

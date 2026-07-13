@@ -2,13 +2,23 @@ const REDIRECT_DELAY_MS = 900;
 
 document.addEventListener("DOMContentLoaded", initPage);
 
+let preserveMessageOnNextReset = false;
+
 function initPage() {
-  startPageAnimation();
-  loadSavedTheme();
-  setupThemeToggle();
-  setupSidebar();
-  setupNavGroups();
+  runPageHelper("startPageAnimation");
+  runPageHelper("loadSavedTheme");
+  runPageHelper("setupThemeToggle");
+  runPageHelper("setupSidebar");
+  runPageHelper("setupNavGroups");
   setupAssetForm();
+}
+
+function runPageHelper(helperName) {
+  const helper = window[helperName];
+
+  if (typeof helper === "function") {
+    helper();
+  }
 }
 
 function setupAssetForm() {
@@ -18,6 +28,11 @@ function setupAssetForm() {
 
   form.addEventListener("submit", submitAssetForm);
   form.addEventListener("reset", () => {
+    if (preserveMessageOnNextReset) {
+      preserveMessageOnNextReset = false;
+      return;
+    }
+
     setTimeout(() => setFormMessage("", ""), 0);
   });
 }
@@ -60,6 +75,7 @@ async function submitAssetForm(event) {
 
     setFormMessage(result.message || "Ativo cadastrado com sucesso.", "success");
     prependRecentAsset(result.ativo);
+    preserveMessageOnNextReset = true;
     form.reset();
 
     setTimeout(() => {

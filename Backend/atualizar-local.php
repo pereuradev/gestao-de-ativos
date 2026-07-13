@@ -60,22 +60,7 @@ function csrfValido(): bool
 
 function garantirTabelaLocais(PDO $pdo): void
 {
-    // Garante compatibilidade com bancos onde a tabela ainda nao tem todas as colunas.
-    $pdo->exec("
-        create table if not exists public.locais (
-            id uuid primary key default gen_random_uuid(),
-            nome text not null,
-            endereco text,
-            status text not null default 'Ativo',
-            criado_em timestamptz not null default now(),
-            atualizado_em timestamptz not null default now()
-        )
-    ");
-
-    $pdo->exec("alter table public.locais add column if not exists endereco text");
-    $pdo->exec("alter table public.locais add column if not exists status text not null default 'Ativo'");
-    $pdo->exec("alter table public.locais add column if not exists criado_em timestamptz not null default now()");
-    $pdo->exec("alter table public.locais add column if not exists atualizado_em timestamptz not null default now()");
+    // Estrutura criada por migration. Mantido para compatibilidade.
 }
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
@@ -138,7 +123,7 @@ try {
     $duplicadoStmt = $pdo->prepare("
         select 1
           from public.locais
-         where lower(nome) = lower(:nome)
+         where lower(btrim(nome)) = lower(btrim(:nome))
            and id::text <> :id
          limit 1
     ");

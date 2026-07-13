@@ -18,6 +18,8 @@ const CONFIG = {
   toastDuration: 2200,
   toastRemoveDelay: 250,
   redirectDelay: 450,
+  invalidCredentialsMessage: "Credenciais invalidas. Confira e-mail, senha e perfil selecionado.",
+  serverUnavailableMessage: "Servidor indisponivel. Tente novamente em instantes.",
 };
 
 const ROLE_CONTENT = {
@@ -166,11 +168,13 @@ function toggleTheme() {
 }
 
 function buildToast(message, type) {
-  const toast = createElement("div", "toastx");
+  const toast = createElement("div", `toastx toastx-${type}`);
+  toast.setAttribute("role", type === "error" ? "alert" : "status");
   const icon = createElement(
     "i",
     type === "error" ? "bi bi-x-circle" : "bi bi-check-circle",
   );
+  icon.setAttribute("aria-hidden", "true");
   const text = createElement("span", "", message);
 
   toast.append(icon, text);
@@ -203,6 +207,8 @@ function showToast(message, type = "success") {
     if (text) {
       text.textContent = message;
     }
+
+    toast.className = `toastx toastx-${type}`;
   }
 
   toast.classList.remove("hide");
@@ -219,43 +225,114 @@ function showToast(message, type = "success") {
 }
 
 function validateLogin(email, password) {
-  if (!email || !password) {
-    return "Preencha e-mail e senha para continuar.";
+  if (!email) {
+    return {
+      ok: false,
+      field: "email",
+      message: "Informe seu e-mail corporativo.",
+    };
   }
 
   if (!email.includes("@")) {
-    return "Digite um e-mail v\u00e1lido.";
+    return {
+      ok: false,
+      field: "email",
+      message: "Digite um e-mail valido.",
+    };
   }
 
   if (!isCorporateEmail(email)) {
-    return "Use um e-mail corporativo autorizado.";
+    return {
+      ok: false,
+      field: "email",
+      message: "Use um e-mail corporativo autorizado.",
+    };
+  }
+
+  if (!password) {
+    return {
+      ok: false,
+      field: "password",
+      message: "Informe sua senha.",
+    };
   }
 
   if (password.length < 4) {
-    return "A senha precisa ter pelo menos 4 caracteres.";
+    return {
+      ok: false,
+      field: "password",
+      message: "A senha precisa ter pelo menos 4 caracteres.",
+    };
   }
 
-  return "";
+  return { ok: true, field: "", message: "" };
 }
 
 function isCorporateEmail(email) {
   return email.toLowerCase().endsWith("@titechsolutions.com.br");
 }
 
+function setFieldError(fieldId, message) {
+  const input = getEl(fieldId);
+  const error = getEl(`${fieldId}Error`);
+  const wrap = input?.closest(".input-wrap");
+
+  if (!input || !error || !wrap) return;
+
+  input.setAttribute("aria-invalid", "true");
+  wrap.classList.add("field-invalid");
+  error.textContent = message;
+  error.hidden = false;
+}
+
+function clearFieldError(fieldId) {
+  const input = getEl(fieldId);
+  const error = getEl(`${fieldId}Error`);
+  const wrap = input?.closest(".input-wrap");
+
+  if (!input || !error || !wrap) return;
+
+  input.setAttribute("aria-invalid", "false");
+  wrap.classList.remove("field-invalid");
+  error.textContent = "";
+  error.hidden = true;
+}
+
+function clearLoginValidation() {
+  clearFieldError("email");
+  clearFieldError("password");
+}
+
+function getLoginFailureMessage(response, data) {
+  if (response.status >= 500) {
+    return CONFIG.serverUnavailableMessage;
+  }
+
+  if (response.status === 401) {
+    return CONFIG.invalidCredentialsMessage;
+  }
+
+  return data.message || CONFIG.invalidCredentialsMessage;
+}
+
 function setLoginButtonLoading(button, isLoading) {
   if (!button) return;
 
   button.disabled = isLoading;
+  button.setAttribute("aria-busy", isLoading ? "true" : "false");
+  button.dataset.loading = isLoading ? "true" : "false";
 
   if (!isLoading) {
     const icon = createElement("i", "bi bi-lock");
-    const text = createElement("span", "", "Entrar");
+    icon.setAttribute("aria-hidden", "true");
+    const text = createElement("span", "", button.dataset.defaultLabel || "Entrar");
 
     button.replaceChildren(icon, text);
     return;
   }
 
-  const spinner = createElement("span", "spinner-border spinner-border-sm");
+  const spinner = createElement("i", "bi bi-arrow-repeat button-spinner");
+  spinner.setAttribute("aria-hidden", "true");
   const text = createElement("span", "", "Validando acesso...");
 
   button.replaceChildren(spinner, text);
@@ -353,11 +430,15 @@ async function handleLogin(event) {
 
   const email = emailInput.value.trim();
   const password = passwordInput.value;
-  const error = validateLogin(email, password);
+  const validation = validateLogin(email, password);
 
-  if (error) {
-    loginError.textContent = error;
-    showToast(error, "error");
+  clearLoginValidation();
+
+  if (!validation.ok) {
+    loginError.textContent = validation.message;
+    setFieldError(validation.field, validation.message);
+    getEl(validation.field)?.focus();
+    showToast(validation.message, "error");
     return;
   }
 
@@ -387,17 +468,20 @@ async function handleLogin(event) {
         return;
       }
 
-      throw new Error(data.message || "Nao foi possivel validar o acesso.");
+      throw new Error(getLoginFailureMessage(response, data));
     }
 
     saveProfilePreference(email, state.role, rememberProfile.checked);
-    showToast(data.message || `Login validado como ${state.role}.`);
+    showToast(data.message || "Login realizado com sucesso.");
 
     setTimeout(() => {
       navigateWithTransition(data.redirect || CONFIG.redirectUrl);
     }, CONFIG.redirectDelay);
   } catch (error) {
-    const message = error.message || "Nao foi possivel validar o acesso.";
+    const message =
+      error instanceof TypeError
+        ? CONFIG.serverUnavailableMessage
+        : error.message || CONFIG.serverUnavailableMessage;
 
     loginError.textContent = message;
     showToast(message, "error");
@@ -501,6 +585,23 @@ function updateRolePanelContent(role) {
   }
 }
 
+function syncRoleInput(role) {
+  const roleInput = getEl("roleInput");
+
+  if (roleInput) {
+    roleInput.value = role;
+  }
+}
+
+function updateRoleButtonState(buttons, selectedButton) {
+  buttons.forEach((button) => {
+    const isSelected = button === selectedButton;
+
+    button.classList.toggle("active", isSelected);
+    button.setAttribute("aria-checked", isSelected ? "true" : "false");
+  });
+}
+
 function animateRolePanelChange(role, direction, segmentControl) {
   const panel = getEl("rolePanel");
   const gsapInstance = window.gsap;
@@ -562,13 +663,12 @@ function setActiveRole(buttons, selectedButton, segmentControl) {
   const previousRole = state.role;
   const direction = selectedRole === "Administrador" ? "left" : "right";
 
-  buttons.forEach((button) => {
-    button.classList.toggle("active", button === selectedButton);
-  });
+  updateRoleButtonState(buttons, selectedButton);
 
   roleSwitchAnimating = true;
   segmentControl.dataset.switching = "true";
   state.role = selectedRole;
+  syncRoleInput(selectedRole);
   segmentControl.dataset.active = selectedRole;
   updateSecurityMeter(selectedRole);
 
@@ -613,9 +713,8 @@ function initRoleSelector() {
     state.role = selectedButton.dataset.role;
   }
 
-  buttons.forEach((button) => {
-    button.classList.toggle("active", button === selectedButton);
-  });
+  updateRoleButtonState(buttons, selectedButton);
+  syncRoleInput(state.role);
 
   segmentControl.dataset.active = state.role;
   updateSecurityMeter(state.role);
@@ -630,6 +729,22 @@ function initRoleSelector() {
       if (isAlreadyActive) return;
 
       setActiveRole(buttons, button, segmentControl);
+    });
+
+    button.addEventListener("keydown", (event) => {
+      const keys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"];
+
+      if (!keys.includes(event.key)) return;
+
+      event.preventDefault();
+
+      const currentIndex = buttons.indexOf(button);
+      const step = event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1;
+      const nextIndex = (currentIndex + step + buttons.length) % buttons.length;
+      const nextButton = buttons[nextIndex];
+
+      nextButton.focus();
+      setActiveRole(buttons, nextButton, segmentControl);
     });
   });
 }
@@ -654,6 +769,13 @@ function initPasswordToggle() {
       "aria-label",
       isHidden ? "Ocultar senha" : "Mostrar senha",
     );
+    passwordToggle.setAttribute("aria-pressed", isHidden ? "true" : "false");
+  });
+}
+
+function initFieldValidation() {
+  ["email", "password"].forEach((fieldId) => {
+    getEl(fieldId)?.addEventListener("input", () => clearFieldError(fieldId));
   });
 }
 
@@ -760,6 +882,7 @@ function init() {
   initRoleSelector();
   initSavedProfile();
   initPasswordToggle();
+  initFieldValidation();
   initSupportLinks();
   initRequestAccess();
   initBenefitCards();

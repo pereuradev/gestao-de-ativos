@@ -7,6 +7,9 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 
 require_once __DIR__ . "/permissoes-acesso.php";
+require_once __DIR__ . "/status-ativos.php";
+require_once __DIR__ . "/relatorio-ativos-pdf.php";
+require_once __DIR__ . "/exportar-ativos-csv.php";
 exigirPermissaoApi("visualizar_ativos", "Ativos");
 
 if ($_SERVER["REQUEST_METHOD"] !== "GET") {
@@ -215,70 +218,104 @@ try {
     ");
     $stmt->execute($params);
     $ativos = $stmt->fetchAll();
+
+    foreach ($ativos as &$ativo) {
+        $ativo["criado_em_formatado"] = formatarDataExportacao((string) ($ativo["criado_em"] ?? ""));
+    }
+    unset($ativo);
+
+    $totalAtivosStmt = $pdo->query("select count(*)::int from public.ativos");
+    $totalAtivos = (int) $totalAtivosStmt->fetchColumn();
+
+    $disponiveisStmt = $pdo->prepare("
+        select count(*)::int
+          from public.ativos
+         where status = :status
+    ");
+    $disponiveisStmt->execute([":status" => statusAtivoPadrao()]);
+    $ativosDisponiveis = (int) $disponiveisStmt->fetchColumn();
+
+    $filtrosRelatorio = [];
+
+    if ($busca !== "") {
+        $filtrosRelatorio["Busca"] = $busca;
+    }
+
+    if (filtroAtivo($status)) {
+        $filtrosRelatorio["Status"] = $status;
+    }
+
+    if (filtroAtivo($categoria)) {
+        $filtrosRelatorio["Categoria"] = $categoria;
+    }
+
+    if (filtroAtivo($marca)) {
+        $filtrosRelatorio["Marca"] = $marca;
+    }
+
+    if (filtroAtivo($localizacao)) {
+        $filtrosRelatorio["Local"] = $localizacao === "sem-localizacao" ? "Sem localização" : $localizacao;
+    }
+
+    if (filtroAtivo($responsavelFiltro)) {
+        $filtrosRelatorio["Responsável"] = $responsavelFiltro;
+    }
 } catch (Throwable) {
-    responderErroExportacao(500, "Nao foi possivel exportar os ativos agora.");
+    responderErroExportacao(500, "Nao foi possivel carregar os dados do relatorio agora.");
 }
 
-$filename = "ativos-titech-" . (new DateTimeImmutable("now", new DateTimeZone("America/Sao_Paulo")))->format("Y-m-d") . ".csv";
-$cabecalho = [
-    "ID",
-    "Nome",
-    "Descricao",
-    "Numero de serie",
-    "IMEI",
-    "Categoria",
-    "Marca",
-    "Propriedade",
-    "Localizacao",
-];
+$formato = strtolower(filtroExportacao("formato", "pdf"));
 
-if ($responsavel["disponivel"]) {
-    $cabecalho[] = "Responsavel";
+if (!in_array($formato, ["pdf", "csv"], true)) {
+    responderErroExportacao(400, "Formato de exportacao invalido.");
 }
 
-$cabecalho = array_merge($cabecalho, [
-    "Status",
-    "Datasheet",
-    "Data de cadastro",
-]);
+$geradoEm = new DateTimeImmutable("now", new DateTimeZone("America/Sao_Paulo"));
 
-header_remove("Content-Type");
-header("Content-Type: text/csv; charset=UTF-8");
-header("Content-Disposition: attachment; filename=\"{$filename}\"");
-header("Cache-Control: no-store, no-cache, must-revalidate");
-header("Pragma: no-cache");
+if ($formato === "csv") {
+    try {
+        $csv = gerarCsvAtivos($ativos, (bool) $responsavel["disponivel"]);
+    } catch (Throwable) {
+        responderErroExportacao(500, "Nao foi possivel gerar o CSV dos ativos agora.");
+    }
 
-$output = fopen("php://output", "wb");
+    $filename = "ativos-titech-" . $geradoEm->format("Y-m-d-His") . ".csv";
 
-if ($output === false) {
+    header_remove("Content-Type");
+    header("Content-Type: text/csv; charset=UTF-8");
+    header("Content-Disposition: attachment; filename=\"{$filename}\"");
+    header("Content-Length: " . strlen($csv));
+    header("Cache-Control: no-store, no-cache, must-revalidate");
+    header("Pragma: no-cache");
+    header("X-Content-Type-Options: nosniff");
+
+    echo $csv;
     exit;
 }
 
-fwrite($output, "\xEF\xBB\xBF");
-fputcsv($output, $cabecalho, ";");
+$filename = "relatorio-ativos-" . $geradoEm->format("Y-m-d-His") . ".pdf";
 
-foreach ($ativos as $ativo) {
-    $linha = [
-        (string) ($ativo["id"] ?? ""),
-        (string) ($ativo["nome"] ?? ""),
-        (string) ($ativo["descricao"] ?? ""),
-        (string) ($ativo["numero_serie"] ?? ""),
-        (string) ($ativo["imei"] ?? ""),
-        (string) ($ativo["categoria"] ?? ""),
-        (string) ($ativo["marca"] ?? ""),
-        (string) ($ativo["propriedade"] ?? ""),
-        (string) ($ativo["localizacao"] ?? ""),
-    ];
-
-    if ($responsavel["disponivel"]) {
-        $linha[] = (string) ($ativo["responsavel"] ?? "");
-    }
-
-    $linha[] = (string) ($ativo["status"] ?? "");
-    $linha[] = (string) ($ativo["datasheet"] ?? "");
-    $linha[] = formatarDataExportacao((string) ($ativo["criado_em"] ?? ""));
-
-    fputcsv($output, $linha, ";");
+try {
+    $pdf = (new RelatorioAtivosPdf())->generate(
+        $ativos,
+        [
+            "total" => $totalAtivos,
+            "disponiveis" => $ativosDisponiveis,
+            "filtrados" => count($ativos),
+        ],
+        $filtrosRelatorio,
+        $geradoEm
+    );
+} catch (Throwable) {
+    responderErroExportacao(500, "Nao foi possivel gerar o PDF do relatorio agora.");
 }
 
-fclose($output);
+header_remove("Content-Type");
+header("Content-Type: application/pdf");
+header("Content-Disposition: attachment; filename=\"{$filename}\"");
+header("Content-Length: " . strlen($pdf));
+header("Cache-Control: no-store, no-cache, must-revalidate");
+header("Pragma: no-cache");
+header("X-Content-Type-Options: nosniff");
+
+echo $pdf;

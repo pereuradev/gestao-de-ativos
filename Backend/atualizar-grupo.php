@@ -219,7 +219,7 @@ try {
     $duplicadoStmt = $pdo->prepare("
         select 1
           from public.grupos_acesso
-         where lower(nome) = lower(:nome)
+         where lower(btrim(nome)) = lower(btrim(:nome))
            and id <> cast(:id as uuid)
          limit 1
     ");

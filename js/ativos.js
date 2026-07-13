@@ -1,8 +1,7 @@
 document.addEventListener("DOMContentLoaded", initPage);
 
 let assetSearchTimer = null;
-let assetImportSubmitting = false;
-let assetImportLastTrigger = null;
+let assetExporting = false;
 
 function initPage() {
   startPageAnimation();
@@ -11,7 +10,7 @@ function initPage() {
   setupSidebar();
   setupNavGroups();
   setupAssetFilters();
-  setupAssetImportExport();
+  setupAssetExports();
 }
 
 function setupAssetFilters() {
@@ -63,223 +62,175 @@ function resetAssetPageAndSubmit(form) {
   form.submit();
 }
 
-function setupAssetImportExport() {
-  const openButton = document.getElementById("openAssetImportModal");
-  const modal = document.getElementById("assetImportModal");
-  const form = document.getElementById("assetImportForm");
-
-  if (!modal || !form) {
-    return;
-  }
-
-  openButton?.addEventListener("click", () => openAssetImportModal(openButton));
-
-  modal.querySelectorAll("[data-close-asset-import]").forEach((button) => {
-    button.addEventListener("click", closeAssetImportModal);
+function setupAssetExports() {
+  document.querySelectorAll("[data-asset-export]").forEach((button) => {
+    button.addEventListener("click", () => exportAssetsFile(button));
   });
-
-  modal.addEventListener("click", (event) => {
-    if (event.target === modal) {
-      closeAssetImportModal();
-    }
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !modal.hidden) {
-      closeAssetImportModal();
-    }
-  });
-
-  form.addEventListener("submit", submitAssetImport);
 }
 
-function openAssetImportModal(trigger) {
-  const modal = document.getElementById("assetImportModal");
-  const fileInput = document.getElementById("assetImportFile");
-
-  if (!modal) {
+async function exportAssetsFile(button) {
+  if (assetExporting) {
     return;
   }
 
-  assetImportLastTrigger = trigger || document.activeElement;
-  clearAssetImportResult();
-  modal.hidden = false;
-  document.body.classList.add("modal-open");
+  const exportUrl = button.dataset.exportUrl;
+  const config = getAssetExportConfig(button.dataset.exportFormat);
 
-  requestAnimationFrame(() => fileInput?.focus({ preventScroll: true }));
-}
-
-function closeAssetImportModal() {
-  if (assetImportSubmitting) {
+  if (!exportUrl || !config) {
+    notifyAssetExport("O endereco de exportacao nao esta disponivel.", true);
     return;
   }
 
-  const modal = document.getElementById("assetImportModal");
-
-  if (!modal) {
-    return;
-  }
-
-  modal.hidden = true;
-  document.body.classList.remove("modal-open");
-
-  if (assetImportLastTrigger?.isConnected) {
-    assetImportLastTrigger.focus({ preventScroll: true });
-  }
-}
-
-async function submitAssetImport(event) {
-  event.preventDefault();
-
-  if (assetImportSubmitting) {
-    return;
-  }
-
-  const form = event.currentTarget;
-  const fileInput = document.getElementById("assetImportFile");
-  const submitButton = document.getElementById("assetImportSubmit");
-
-  if (!fileInput?.files?.length) {
-    setAssetImportResult({
-      ok: false,
-      message: "Selecione um arquivo CSV para importar.",
-      importados: 0,
-      ignorados: 0,
-      erros: [],
-    }, true);
-    return;
-  }
-
-  assetImportSubmitting = true;
-  setAssetImportButtonLoading(submitButton, true);
-  clearAssetImportResult();
+  assetExporting = true;
+  setAssetExportButtonsLoading(button, true);
+  clearAssetExportStatus();
 
   try {
-    const response = await fetch(form.action, {
-      method: "POST",
-      body: new FormData(form),
-      headers: { Accept: "application/json" },
+    const response = await fetch(exportUrl, {
+      method: "GET",
+      credentials: "same-origin",
+      headers: { Accept: `${config.contentType}, application/json` },
     });
-    const result = await response.json().catch(() => ({
-      ok: false,
-      message: "Resposta invalida do servidor.",
-      importados: 0,
-      ignorados: 0,
-      erros: [],
-    }));
-    const hasError = !response.ok || !result.ok;
+    const contentType = response.headers.get("content-type") || "";
 
-    setAssetImportResult(result, hasError);
-
-    if (hasError) {
-      window.titechToast?.(result.message || "Nao foi possivel importar os ativos.", "error");
-      return;
+    if (!response.ok || !contentType.includes(config.contentType)) {
+      throw new Error(await readAssetExportError(response, config.label));
     }
 
-    window.titechToast?.(result.message || "Importacao concluida.", "success");
-    form.reset();
+    const fileBlob = await response.blob();
+
+    if (!fileBlob.size) {
+      throw new Error(`O servidor retornou um ${config.label} vazio. Tente novamente.`);
+    }
+
+    downloadAssetFile(fileBlob, getAssetExportFilename(response, config.fallbackFilename));
+    notifyAssetExport(`${config.label} gerado com sucesso.`, false);
   } catch (error) {
-    const message = error?.message || "Nao foi possivel importar os ativos.";
+    const message = error instanceof TypeError
+      ? `Servidor indisponivel. Nao foi possivel gerar o ${config.label} agora.`
+      : error?.message || `Nao foi possivel gerar o ${config.label} agora.`;
 
-    setAssetImportResult({
-      ok: false,
-      message,
-      importados: 0,
-      ignorados: 0,
-      erros: [],
-    }, true);
-    window.titechToast?.(message, "error");
+    notifyAssetExport(message, true);
   } finally {
-    assetImportSubmitting = false;
-    setAssetImportButtonLoading(submitButton, false);
+    assetExporting = false;
+    setAssetExportButtonsLoading(button, false);
   }
 }
 
-function setAssetImportButtonLoading(button, isLoading) {
-  if (!button) {
-    return;
+function getAssetExportConfig(format) {
+  if (format === "csv") {
+    return {
+      contentType: "text/csv",
+      fallbackFilename: "ativos-titech.csv",
+      label: "CSV",
+    };
   }
 
-  button.disabled = isLoading;
-
-  if (isLoading) {
-    button.replaceChildren(
-      createAssetElement("i", "bi bi-arrow-repeat"),
-      createAssetElement("span", "", "Importando..."),
-    );
-    return;
+  if (format === "pdf") {
+    return {
+      contentType: "application/pdf",
+      fallbackFilename: "relatorio-ativos.pdf",
+      label: "PDF",
+    };
   }
 
-  button.replaceChildren(
-    createAssetElement("i", "bi bi-upload"),
-    createAssetElement("span", "", "Importar ativos"),
-  );
+  return null;
 }
 
-function clearAssetImportResult() {
-  const result = document.getElementById("assetImportResult");
+async function readAssetExportError(response, formatLabel) {
+  const contentType = response.headers.get("content-type") || "";
 
-  if (!result) {
-    return;
+  if (contentType.includes("application/json")) {
+    const payload = await response.json().catch(() => null);
+
+    if (payload?.message) {
+      return payload.message;
+    }
   }
 
-  result.hidden = true;
-  result.classList.remove("is-error");
-  result.replaceChildren();
+  if (response.status === 401) {
+    return `Sua sessao expirou. Entre novamente antes de exportar o ${formatLabel}.`;
+  }
+
+  if (response.status === 403) {
+    return "Voce nao tem permissao para exportar este relatorio.";
+  }
+
+  return `Nao foi possivel gerar o ${formatLabel}. Atualize a pagina e tente novamente.`;
 }
 
-function setAssetImportResult(payload, isError) {
-  const result = document.getElementById("assetImportResult");
+function getAssetExportFilename(response, fallbackFilename) {
+  const disposition = response.headers.get("content-disposition") || "";
+  const encodedMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
 
-  if (!result) {
-    return;
+  if (encodedMatch?.[1]) {
+    return decodeURIComponent(encodedMatch[1]).replace(/[\\/:*?"<>|]/g, "-");
   }
 
-  const imported = Number(payload?.importados || 0);
-  const ignored = Number(payload?.ignorados || 0);
-  const errors = Array.isArray(payload?.erros) ? payload.erros : [];
-  const title = createAssetElement("strong", "", payload?.message || "Resultado da importacao.");
-  const summary = createAssetElement(
-    "p",
-    "",
-    `${imported} ativo(s) importado(s). ${ignored} linha(s) ignorada(s).`,
-  );
+  const filenameMatch = disposition.match(/filename="?([^";]+)"?/i);
 
-  result.hidden = false;
-  result.classList.toggle("is-error", Boolean(isError));
-  result.replaceChildren(title, summary);
+  return filenameMatch?.[1]?.replace(/[\\/:*?"<>|]/g, "-") || fallbackFilename;
+}
 
-  if (!errors.length) {
-    return;
-  }
+function downloadAssetFile(blob, filename) {
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
 
-  const list = document.createElement("ul");
-  const visibleErrors = errors.slice(0, 8);
+  link.href = objectUrl;
+  link.download = filename;
+  link.hidden = true;
+  document.body.append(link);
+  link.click();
+  link.remove();
 
-  visibleErrors.forEach((error) => {
-    const line = error?.linha ? `Linha ${error.linha}: ` : "";
-    const message = error?.mensagem || "Erro de validacao.";
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+}
 
-    list.append(createAssetElement("li", "", `${line}${message}`));
+function setAssetExportButtonsLoading(activeButton, isLoading) {
+  document.querySelectorAll("[data-asset-export]").forEach((button) => {
+    const icon = button.querySelector("i");
+    const label = button.querySelector("span");
+    const isActive = button === activeButton;
+
+    button.disabled = isLoading;
+    button.setAttribute("aria-busy", isLoading && isActive ? "true" : "false");
+
+    if (icon) {
+      icon.className = isLoading && isActive
+        ? "bi bi-arrow-repeat asset-export-spinner"
+        : button.dataset.defaultIcon || "bi bi-download";
+    }
+
+    if (label) {
+      label.textContent = isLoading && isActive
+        ? `Gerando ${getAssetExportConfig(button.dataset.exportFormat)?.label || "arquivo"}...`
+        : button.dataset.defaultLabel || "Exportar";
+    }
   });
-
-  if (errors.length > visibleErrors.length) {
-    list.append(createAssetElement("li", "", `Mais ${errors.length - visibleErrors.length} erro(s) no arquivo.`));
-  }
-
-  result.append(list);
 }
 
-function createAssetElement(tag, className = "", text = "") {
-  const element = document.createElement(tag);
+function clearAssetExportStatus() {
+  const status = document.getElementById("assetExportStatus");
 
-  if (className) {
-    element.className = className;
+  if (!status) {
+    return;
   }
 
-  if (text) {
-    element.textContent = text;
+  status.hidden = true;
+  status.classList.remove("is-error", "is-success");
+  status.textContent = "";
+}
+
+function notifyAssetExport(message, isError) {
+  const status = document.getElementById("assetExportStatus");
+  const type = isError ? "error" : "success";
+
+  if (status) {
+    status.hidden = false;
+    status.classList.toggle("is-error", isError);
+    status.classList.toggle("is-success", !isError);
+    status.textContent = message;
   }
 
-  return element;
+  window.titechToast?.(message, type);
 }

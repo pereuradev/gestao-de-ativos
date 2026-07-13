@@ -94,23 +94,6 @@ if (!in_array($status, ["Ativa", "Inativa"], true)) {
 try {
     require __DIR__ . "/Conexao.php";
 
-    // Garante a tabela antes de inserir, util em ambientes recem-configurados.
-    $pdo->exec("
-        create table if not exists public.marcas_ativos (
-            id uuid primary key default gen_random_uuid(),
-            nome text not null unique,
-            status text not null default 'Ativa'
-                check (status in ('Ativa', 'Inativa')),
-            criado_em timestamptz not null default now(),
-            atualizado_em timestamptz not null default now()
-        )
-    ");
-
-    $pdo->exec("
-        create unique index if not exists marcas_ativos_nome_lower_unique
-            on public.marcas_ativos (lower(nome))
-    ");
-
     // Insere e devolve a marca cadastrada para a tela atualizar a listagem.
     $stmt = $pdo->prepare("
         insert into public.marcas_ativos (

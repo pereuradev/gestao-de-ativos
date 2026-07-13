@@ -66,23 +66,6 @@ $erroBanco = "";
 try {
   require __DIR__ . "/Backend/Conexao.php";
 
-  $pdo->exec("
-        create table if not exists public.propriedade_ativos (
-            id uuid primary key default gen_random_uuid(),
-            nome text not null unique,
-            status text not null default 'Ativa'
-                check (status in ('Ativa', 'Inativa')),
-            criado_em timestamptz not null default now(),
-            atualizado_em timestamptz not null default now()
-        )
-    ");
-
-  $pdo->exec("
-        insert into public.propriedade_ativos (nome, status)
-        values ('TITECHSOLUTIONS', 'Ativa'), ('TSC', 'Ativa')
-        on conflict do nothing
-    ");
-
   $resumoStmt = $pdo->prepare("
         select
             count(*)::int as total,

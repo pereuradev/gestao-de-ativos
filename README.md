@@ -279,12 +279,32 @@ Tabelas principais utilizadas:
 - `grupos_acesso_membros`
 - `grupos_acesso_permissoes`
 
-Algumas rotas garantem tabelas auxiliares automaticamente quando necessario. Para producao ou instalacao em outro ambiente, o ideal e versionar scripts SQL em uma pasta como:
+As rotas PHP nao executam DDL em runtime. Mudancas de estrutura devem ser feitas por migrations versionadas em:
 
 ```text
-database/schema.sql
-database/seed.sql
+supabase/migrations/
 ```
+
+Baseline remoto e detalhes de validacao:
+
+```text
+supabase/README.md
+```
+
+Migration incremental de endurecimento:
+
+```text
+supabase/migrations/20260713120035_harden_schema_auth_rls_indexes.sql
+```
+
+Fluxo recomendado quando o Supabase CLI estiver instalado:
+
+```bash
+supabase migration list
+supabase db push
+```
+
+Para criar novas mudancas de schema, use `supabase migration new nome_da_mudanca` e versione o SQL gerado.
 
 ---
 
@@ -293,10 +313,10 @@ database/seed.sql
 O sistema usa credenciais locais em:
 
 ```text
-Backend/.env
+C:\xampp\private\site-gestao-de-ativos\Backend\.env
 ```
 
-Use `Backend/.env.example` como base:
+Use `Backend/.env.example` como base e copie o arquivo para esse caminho fora do `htdocs`:
 
 ```env
 DB_HOST=SEU_HOST_POOLER_SUPABASE
@@ -310,7 +330,10 @@ SUPABASE_URL=https://SEUIDDOPROJETO.supabase.co
 SUPABASE_ANON_KEY=SUA_CHAVE_PUBLICAVEL_DO_SUPABASE
 ```
 
-O arquivo `Backend/.env` nao deve ser enviado para o GitHub.
+Se precisar usar outro local, defina a variavel de ambiente `APP_ENV_FILE`
+apontando para o arquivo desejado.
+
+O arquivo `.env` nao deve ficar dentro do `htdocs` nem ser enviado para o GitHub.
 
 ---
 

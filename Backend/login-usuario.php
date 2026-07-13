@@ -117,7 +117,7 @@ function buscarPerfilPorEmail(PDO $pdo, string $email): ?array
     $stmt = $pdo->prepare("
         select *
           from public.perfis_usuarios
-         where lower(email) = lower(:email)
+         where lower(btrim(email)) = lower(btrim(:email))
          limit 1
     ");
     $stmt->execute([":email" => $email]);
@@ -134,7 +134,7 @@ function buscarPerfil(PDO $pdo, string $userId, string $email): ?array
         select *
           from public.perfis_usuarios
          where id = :id
-            or lower(email) = lower(:email)
+            or lower(btrim(email)) = lower(btrim(:email))
          limit 1
     ");
     $stmt->execute([

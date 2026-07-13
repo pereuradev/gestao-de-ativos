@@ -12,10 +12,6 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
 require_once __DIR__ . "/Backend/permissoes-acesso.php";
 exigirPermissaoPagina("visualizar_ativos", "Ativos");
 
-if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {
-  $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
-}
-
 function e(string $value): string
 {
   return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
@@ -54,9 +50,9 @@ function urlAtivosPaginada(int $pagina, array $overrides = []): string
   return "ativos.php" . ($params ? "?" . http_build_query($params) : "");
 }
 
-function urlExportarAtivosCsv(array $overrides = []): string
+function urlExportarAtivos(string $formato, array $overrides = []): string
 {
-  $params = array_merge($_GET, $overrides);
+  $params = array_merge($_GET, $overrides, ["formato" => $formato]);
 
   unset($params["pagina"], $params["por_pagina"]);
 
@@ -150,17 +146,6 @@ try {
     ");
   $categoriasStmt->execute();
   $categorias = $categoriasStmt->fetchAll();
-
-  $pdo->exec("
-        create table if not exists public.marcas_ativos (
-            id uuid primary key default gen_random_uuid(),
-            nome text not null unique,
-            status text not null default 'Ativa'
-                check (status in ('Ativa', 'Inativa')),
-            criado_em timestamptz not null default now(),
-            atualizado_em timestamptz not null default now()
-        )
-    ");
 
   $marcasStmt = $pdo->prepare("
         select nome
@@ -289,16 +274,14 @@ try {
   $erroBanco = "Nao foi possivel carregar os ativos do banco agora.";
 }
 
-$csrfToken = e((string) $_SESSION["csrf_token"]);
-$podeImportarAtivos = usuarioAtualTemPermissao("cadastrar_ativos");
-$exportarAtivosUrl = e(urlExportarAtivosCsv());
-$modeloImportacaoAtivosUrl = "Backend/modelo-importacao-ativos.php";
+$exportarAtivosPdfUrl = urlExportarAtivos("pdf");
+$exportarAtivosCsvUrl = urlExportarAtivos("csv");
 ?>
 <!doctype html>
 <html lang="pt-BR">
 
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ativos | TI TECH Solutions</title>
   <meta name="description" content="Consulta de ativos cadastrados no inventario da TI TECH Solutions" />
@@ -310,7 +293,7 @@ $modeloImportacaoAtivosUrl = "Backend/modelo-importacao-ativos.php";
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/ativos.css?v=20260707-import-export-csv" />
+  <link rel="stylesheet" href="css/ativos.css?v=20260710-export-files" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
@@ -318,7 +301,7 @@ $modeloImportacaoAtivosUrl = "Backend/modelo-importacao-ativos.php";
   <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
   <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
-  <script src="js/ativos.js?v=20260707-import-export-csv" defer></script>
+  <script src="js/ativos.js?v=20260710-export-files" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
@@ -348,17 +331,18 @@ $modeloImportacaoAtivosUrl = "Backend/modelo-importacao-ativos.php";
           <span>Dashboard</span>
         </a>
 
-<?php if ($sidebarIsAdmin): ?>
-        <a class="nav-link" href="funcionarios.php">
-          <i class="bi bi-people-fill"></i>
-          <span>Funcion&aacute;rios</span>
-        </a>
-<?php else: ?>
-        <span class="nav-link nav-link-disabled" aria-disabled="true" data-permission-resource="Funcionarios" title="Apenas administradores podem acessar funcionarios">
-          <i class="bi bi-people-fill"></i>
-          <span>Funcion&aacute;rios</span>
-        </span>
-<?php endif; ?>
+        <?php if ($sidebarIsAdmin): ?>
+          <a class="nav-link" href="funcionarios.php">
+            <i class="bi bi-people-fill"></i>
+            <span>Funcion&aacute;rios</span>
+          </a>
+        <?php else: ?>
+          <span class="nav-link nav-link-disabled" aria-disabled="true" data-permission-resource="Funcionarios"
+            title="Apenas administradores podem acessar funcionarios">
+            <i class="bi bi-people-fill"></i>
+            <span>Funcion&aacute;rios</span>
+          </span>
+        <?php endif; ?>
 
         <a class="nav-link" href="marcas-visualizacao.php">
           <i class="bi bi-tags-fill"></i>
@@ -386,15 +370,19 @@ $modeloImportacaoAtivosUrl = "Backend/modelo-importacao-ativos.php";
             <a href="cadastro-ativos.php">Ativos</a>
             <a href="marcas.php">Marcas</a>
             <a href="propriedades.php">Propriedades</a>
-<?php if ($sidebarIsAdmin): ?>
-            <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
-            <a href="cadastro-grupos.php">Grupos</a>
+            <?php if ($sidebarIsAdmin): ?>
+              <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
+              <a href="cadastro-grupos.php">Grupos</a>
 
-<?php else: ?>
-            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Cadastro de funcionarios" title="Apenas administradores podem cadastrar funcionarios">Funcion&aacute;rios</span>
-            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Cadastro de grupos" title="Apenas administradores podem criar grupos">Grupos</span>
+            <?php else: ?>
+              <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
+                data-permission-resource="Cadastro de funcionarios"
+                title="Apenas administradores podem cadastrar funcionarios">Funcion&aacute;rios</span>
+              <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
+                data-permission-resource="Cadastro de grupos"
+                title="Apenas administradores podem criar grupos">Grupos</span>
 
-<?php endif; ?>
+            <?php endif; ?>
             <a href="locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>
@@ -411,11 +399,15 @@ $modeloImportacaoAtivosUrl = "Backend/modelo-importacao-ativos.php";
             <a href="edicao-marcas.php">Marcas</a>
             <a href="edicao-propriedades.php">Propriedades</a>
             <?php if ($sidebarIsAdmin): ?>
-            <a href="edicao-funcionarios.php">Funcion&aacute;rios</a>
-            <a href="edicao-grupos.php">Grupos</a>
+              <a href="edicao-funcionarios.php">Funcion&aacute;rios</a>
+              <a href="edicao-grupos.php">Grupos</a>
             <?php else: ?>
-            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Edicao de funcionarios" title="Apenas administradores podem editar funcionarios">Funcion&aacute;rios</span>
-            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Edicao de grupos" title="Apenas administradores podem editar grupos">Grupos</span>
+              <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
+                data-permission-resource="Edicao de funcionarios"
+                title="Apenas administradores podem editar funcionarios">Funcion&aacute;rios</span>
+              <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
+                data-permission-resource="Edicao de grupos"
+                title="Apenas administradores podem editar grupos">Grupos</span>
             <?php endif; ?>
             <a href="edicao-locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
@@ -547,24 +539,23 @@ $modeloImportacaoAtivosUrl = "Backend/modelo-importacao-ativos.php";
               <?php echo $totalFiltradoAtivos === 1 ? "registro encontrado" : "registros encontrados"; ?>
             </span>
 
-            <div class="asset-csv-actions" aria-label="Importacao e exportacao de ativos">
-              <a class="asset-csv-button asset-csv-button-secondary" href="<?php echo $exportarAtivosUrl; ?>">
-                <i class="bi bi-download"></i>
+            <div class="asset-export-actions" aria-label="Exportacao de ativos">
+              <button class="asset-export-button" id="exportAssetsPdf" type="button" data-asset-export
+                data-export-format="pdf" data-export-url="<?php echo e($exportarAtivosPdfUrl); ?>"
+                data-default-label="Exportar PDF" data-default-icon="bi bi-file-earmark-pdf">
+                <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+                <span>Exportar PDF</span>
+              </button>
+
+              <button class="asset-export-button asset-export-button-secondary" id="exportAssetsCsv" type="button"
+                data-asset-export data-export-format="csv" data-export-url="<?php echo e($exportarAtivosCsvUrl); ?>"
+                data-default-label="Exportar CSV" data-default-icon="bi bi-filetype-csv">
+                <i class="bi bi-filetype-csv" aria-hidden="true"></i>
                 <span>Exportar CSV</span>
-              </a>
-
-              <?php if ($podeImportarAtivos): ?>
-                <button class="asset-csv-button asset-csv-button-primary" id="openAssetImportModal" type="button">
-                  <i class="bi bi-upload"></i>
-                  <span>Importar CSV</span>
-                </button>
-
-                <a class="asset-csv-button asset-csv-button-ghost" href="<?php echo e($modeloImportacaoAtivosUrl); ?>">
-                  <i class="bi bi-filetype-csv"></i>
-                  <span>Baixar modelo</span>
-                </a>
-              <?php endif; ?>
+              </button>
             </div>
+
+            <div id="assetExportStatus" class="asset-export-status" role="status" aria-live="polite" hidden></div>
           </div>
         </div>
 
@@ -781,12 +772,12 @@ $modeloImportacaoAtivosUrl = "Backend/modelo-importacao-ativos.php";
 
                 <?php if ($paginaAtual < $totalPaginas): ?>
                   <a class="pagination-button" href="<?php echo e(urlAtivosPaginada($paginaAtual + 1)); ?>">
-                    PrÃ³xima
+                    Próxima
                     <i class="bi bi-chevron-right"></i>
                   </a>
                 <?php else: ?>
                   <span class="pagination-button disabled" aria-disabled="true">
-                    PrÃ³xima
+                    Próxima
                     <i class="bi bi-chevron-right"></i>
                   </span>
                 <?php endif; ?>
@@ -798,62 +789,6 @@ $modeloImportacaoAtivosUrl = "Backend/modelo-importacao-ativos.php";
     </main>
   </div>
 
-  <?php if ($podeImportarAtivos): ?>
-    <div class="asset-import-backdrop" id="assetImportModal" hidden>
-      <section class="asset-import-modal" role="dialog" aria-modal="true" aria-labelledby="assetImportTitle"
-        aria-describedby="assetImportDescription">
-        <div class="asset-import-header">
-          <div>
-            <p class="section-tag">Importa&ccedil;&atilde;o</p>
-            <h3 id="assetImportTitle">Importar ativos por CSV</h3>
-          </div>
-
-          <button class="icon-button asset-import-close" type="button" aria-label="Fechar importacao"
-            data-close-asset-import>
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-
-        <p class="asset-import-description" id="assetImportDescription">
-          Use CSV separado por ponto e v&iacute;rgula. Linhas com erro n&atilde;o ser&atilde;o cadastradas.
-        </p>
-
-        <div class="asset-import-format">
-          <strong>Formato esperado</strong>
-          <code>nome;descricao;numero_serie;imei;categoria;marca;propriedade;localizacao;status;datasheet</code>
-        </div>
-
-        <form id="assetImportForm" class="asset-import-form" action="Backend/importar-ativos.php" method="post"
-          enctype="multipart/form-data" novalidate>
-          <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
-
-          <label class="asset-import-file">
-            <span>Arquivo CSV</span>
-            <input id="assetImportFile" name="arquivo_csv" type="file" accept=".csv,text/csv" required />
-          </label>
-
-          <div id="assetImportResult" class="asset-import-result" role="status" aria-live="polite" hidden></div>
-
-          <div class="asset-import-actions">
-            <a class="asset-csv-button asset-csv-button-ghost" href="<?php echo e($modeloImportacaoAtivosUrl); ?>">
-              <i class="bi bi-file-earmark-arrow-down"></i>
-              <span>Baixar modelo CSV</span>
-            </a>
-
-            <button class="asset-csv-button asset-csv-button-secondary" type="button" data-close-asset-import>
-              <i class="bi bi-x-lg"></i>
-              <span>Cancelar</span>
-            </button>
-
-            <button class="asset-csv-button asset-csv-button-primary" id="assetImportSubmit" type="submit">
-              <i class="bi bi-upload"></i>
-              <span>Importar ativos</span>
-            </button>
-          </div>
-        </form>
-      </section>
-    </div>
-  <?php endif; ?>
 </body>
 
 </html>

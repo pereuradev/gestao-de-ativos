@@ -4,46 +4,7 @@ declare(strict_types=1);
 
 function garantirTabelasGruposAcesso(PDO $pdo): void
 {
-    $pdo->exec("
-        create table if not exists public.grupos_acesso (
-            id uuid primary key,
-            nome varchar(90) not null,
-            descricao text,
-            status varchar(20) not null default 'Ativo',
-            criado_por uuid null,
-            criado_em timestamptz not null default now(),
-            atualizado_em timestamptz not null default now()
-        )
-    ");
-
-    $pdo->exec("alter table public.grupos_acesso add column if not exists descricao text");
-    $pdo->exec("alter table public.grupos_acesso add column if not exists status varchar(20) not null default 'Ativo'");
-    $pdo->exec("alter table public.grupos_acesso add column if not exists criado_por uuid null");
-    $pdo->exec("alter table public.grupos_acesso add column if not exists criado_em timestamptz not null default now()");
-    $pdo->exec("alter table public.grupos_acesso add column if not exists atualizado_em timestamptz not null default now()");
-
-    $pdo->exec("
-        create unique index if not exists grupos_acesso_nome_lower_unique
-            on public.grupos_acesso (lower(nome))
-    ");
-
-    $pdo->exec("
-        create table if not exists public.grupos_acesso_membros (
-            grupo_id uuid not null references public.grupos_acesso(id) on delete cascade,
-            usuario_id uuid not null references public.perfis_usuarios(id) on delete cascade,
-            criado_em timestamptz not null default now(),
-            primary key (grupo_id, usuario_id)
-        )
-    ");
-
-    $pdo->exec("
-        create table if not exists public.grupos_acesso_permissoes (
-            grupo_id uuid not null references public.grupos_acesso(id) on delete cascade,
-            permissao varchar(80) not null,
-            criado_em timestamptz not null default now(),
-            primary key (grupo_id, permissao)
-        )
-    ");
+    // Estrutura criada por migrations. Mantido para compatibilidade.
 }
 
 function permissoesGruposAcesso(): array
@@ -161,7 +122,7 @@ function permissoesUsuarioGrupoAcesso(PDO $pdo, ?array $usuario = null): array
     }
 
     if ($email !== "") {
-        $filtros[] = "lower(u.email) = lower(:email)";
+        $filtros[] = "lower(btrim(u.email)) = lower(btrim(:email))";
         $params[":email"] = $email;
     }
 

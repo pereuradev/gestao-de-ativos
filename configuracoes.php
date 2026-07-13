@@ -139,7 +139,7 @@ try {
             atualizado_em
           from public.perfis_usuarios
          where id = :id
-            or lower(email) = lower(:email)
+            or lower(btrim(email)) = lower(btrim(:email))
          limit 1
     ");
 

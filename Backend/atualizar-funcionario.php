@@ -176,7 +176,10 @@ try {
     $duplicadoStmt = $pdo->prepare("
         select cpf, rg
           from public.perfis_usuarios
-         where (cpf = :cpf or rg = :rg)
+         where (
+                   regexp_replace(cpf, '[^0-9]', '', 'g') = regexp_replace(:cpf, '[^0-9]', '', 'g')
+                or regexp_replace(rg, '[^0-9]', '', 'g') = regexp_replace(:rg, '[^0-9]', '', 'g')
+         )
            and id::text <> :id
          limit 1
     ");
@@ -189,11 +192,11 @@ try {
     $duplicado = $duplicadoStmt->fetch();
 
     if ($duplicado) {
-        if (($duplicado["cpf"] ?? "") === $cpf) {
+        if (apenasNumerosFuncionario((string) ($duplicado["cpf"] ?? "")) === apenasNumerosFuncionario($cpf)) {
             responderFuncionario(false, "Este CPF ja esta cadastrado para outro funcionario.", 409);
         }
 
-        if (($duplicado["rg"] ?? "") === $rg) {
+        if (apenasNumerosFuncionario((string) ($duplicado["rg"] ?? "")) === apenasNumerosFuncionario($rg)) {
             responderFuncionario(false, "Este RG ja esta cadastrado para outro funcionario.", 409);
         }
     }

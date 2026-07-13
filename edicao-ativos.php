@@ -140,21 +140,11 @@ try {
   $locaisStmt = $pdo->prepare("
         select id, nome
           from public.locais
+         where lower(coalesce(status, 'ativo')) = 'ativo'
       order by nome asc
     ");
   $locaisStmt->execute();
   $locais = $locaisStmt->fetchAll();
-
-  $pdo->exec("
-        create table if not exists public.marcas_ativos (
-            id uuid primary key default gen_random_uuid(),
-            nome text not null unique,
-            status text not null default 'Ativa'
-                check (status in ('Ativa', 'Inativa')),
-            criado_em timestamptz not null default now(),
-            atualizado_em timestamptz not null default now()
-        )
-    ");
 
   $marcasStmt = $pdo->prepare("
         select nome

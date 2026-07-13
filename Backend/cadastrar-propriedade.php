@@ -94,34 +94,6 @@ if (!in_array($status, ["Ativa", "Inativa"], true)) {
 try {
     require __DIR__ . "/Conexao.php";
 
-    // Cria a tabela caso o banco ainda nao tenha sido preparado.
-    $pdo->exec("
-        create table if not exists public.propriedade_ativos (
-            id uuid primary key default gen_random_uuid(),
-            nome text not null unique,
-            status text not null default 'Ativa'
-                check (status in ('Ativa', 'Inativa')),
-            criado_em timestamptz not null default now(),
-            atualizado_em timestamptz not null default now()
-        )
-    ");
-
-    $pdo->exec("
-        create unique index if not exists propriedade_ativos_nome_lower_unique
-            on public.propriedade_ativos (lower(nome))
-    ");
-    // Garante registros padrao usados pelo inventario.
-    $pdo->exec("
-        insert into public.propriedade_ativos (nome, status, atualizado_em)
-        select seed.nome, 'Ativa', now()
-          from (values ('TITECHSOLUTIONS'), ('TSC')) as seed(nome)
-         where not exists (
-               select 1
-                 from public.propriedade_ativos existente
-                where lower(existente.nome) = lower(seed.nome)
-         )
-    ");
-
     // Insere e retorna a propriedade pronta para o frontend.
     $stmt = $pdo->prepare("
         insert into public.propriedade_ativos (

@@ -222,7 +222,7 @@ function buscarUsuarioAuthPorEmail(PDO $pdo, string $email): ?string
     $stmt = $pdo->prepare("
         select id::text
           from auth.users
-         where lower(email) = lower(:email)
+         where lower(btrim(email)) = lower(btrim(:email))
          limit 1
     ");
     $stmt->execute([":email" => $email]);
@@ -230,16 +230,6 @@ function buscarUsuarioAuthPorEmail(PDO $pdo, string $email): ?string
     $id = $stmt->fetchColumn();
 
     return is_string($id) && $id !== "" ? $id : null;
-}
-
-function liberarPerfilLocalDoAuth(PDO $pdo): void
-{
-    // O login do portal valida primeiro a senha local do perfil.
-    // Por isso o cadastro interno nao pode depender da sincronizacao imediata do Supabase Auth.
-    $pdo->exec("
-        alter table public.perfis_usuarios
-        drop constraint if exists perfis_usuarios_id_fkey
-    ");
 }
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
@@ -332,15 +322,14 @@ $senhaHash = gerarHashSenha($senha);
 
 try {
     require_once __DIR__ . "/Conexao.php";
-    liberarPerfilLocalDoAuth($pdo);
 
     // Antes de chamar o Auth, verificamos duplicidade nos dados locais principais.
     $stmt = $pdo->prepare("
         select email, cpf, rg
         from public.perfis_usuarios
-        where email = :email
-           or cpf = :cpf
-           or rg = :rg
+        where lower(btrim(email)) = lower(btrim(:email))
+           or regexp_replace(cpf, '[^0-9]', '', 'g') = regexp_replace(:cpf, '[^0-9]', '', 'g')
+           or regexp_replace(rg, '[^0-9]', '', 'g') = regexp_replace(:rg, '[^0-9]', '', 'g')
         limit 1
     ");
     $stmt->execute([
@@ -352,15 +341,15 @@ try {
     $usuarioExistente = $stmt->fetch();
 
     if ($usuarioExistente) {
-        if (($usuarioExistente["email"] ?? "") === $email) {
+        if (strcasecmp(trim((string) ($usuarioExistente["email"] ?? "")), trim($email)) === 0) {
             responder(false, "Este e-mail ja esta cadastrado.", 409);
         }
 
-        if (($usuarioExistente["cpf"] ?? "") === $cpf) {
+        if (apenasNumeros((string) ($usuarioExistente["cpf"] ?? "")) === apenasNumeros($cpf)) {
             responder(false, "Este CPF ja esta cadastrado.", 409);
         }
 
-        if (($usuarioExistente["rg"] ?? "") === $rg) {
+        if (apenasNumeros((string) ($usuarioExistente["rg"] ?? "")) === apenasNumeros($rg)) {
             responder(false, "Este RG ja esta cadastrado.", 409);
         }
     }

@@ -66,17 +66,6 @@ $erroBanco = "";
 try {
   require __DIR__ . "/Backend/Conexao.php";
 
-  $pdo->exec("
-        create table if not exists public.marcas_ativos (
-            id uuid primary key default gen_random_uuid(),
-            nome text not null unique,
-            status text not null default 'Ativa'
-                check (status in ('Ativa', 'Inativa')),
-            criado_em timestamptz not null default now(),
-            atualizado_em timestamptz not null default now()
-        )
-    ");
-
   $resumoStmt = $pdo->prepare("
         select
             count(*)::int as total,

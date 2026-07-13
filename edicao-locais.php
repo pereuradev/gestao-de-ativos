@@ -38,21 +38,7 @@ function formatarDataLocal(?string $value): string
 
 function garantirTabelaLocais(PDO $pdo): void
 {
-  $pdo->exec("
-        create table if not exists public.locais (
-            id uuid primary key default gen_random_uuid(),
-            nome text not null,
-            endereco text,
-            status text not null default 'Ativo',
-            criado_em timestamptz not null default now(),
-            atualizado_em timestamptz not null default now()
-        )
-    ");
-
-  $pdo->exec("alter table public.locais add column if not exists endereco text");
-  $pdo->exec("alter table public.locais add column if not exists status text not null default 'Ativo'");
-  $pdo->exec("alter table public.locais add column if not exists criado_em timestamptz not null default now()");
-  $pdo->exec("alter table public.locais add column if not exists atualizado_em timestamptz not null default now()");
+  // Estrutura criada por migration. Mantido para compatibilidade.
 }
 
 $usuario = $_SESSION["usuario"];

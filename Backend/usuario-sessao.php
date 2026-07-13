@@ -57,7 +57,7 @@ try {
     $stmt = $pdo->prepare("
         select id, nome_completo, email, tipo_usuario, departamento, empresa, status
           from public.perfis_usuarios
-         where lower(email) = lower(:email)
+         where lower(btrim(email)) = lower(btrim(:email))
          limit 1
     ");
     $stmt->execute([":email" => $email]);

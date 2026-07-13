@@ -59,6 +59,15 @@ function uuidValido(?string $valor): bool
     );
 }
 
+function imeiValido(?string $valor): bool
+{
+    if ($valor === null) {
+        return true;
+    }
+
+    return preg_match("/^[0-9]{8,20}$/", $valor) === 1;
+}
+
 function statusPermitido(string $status): bool
 {
     // Lista historica de status; a validacao oficial acontece via status-ativos.php.
@@ -71,6 +80,82 @@ function statusPermitido(string $status): bool
         "Baixado",
         "Perdido",
     ], true);
+}
+
+function garantirIndicesUnicosAtivos(PDO $pdo): void
+{
+    // Indices criados por migration. Mantido para compatibilidade.
+}
+
+function categoriaExiste(PDO $pdo, string $categoriaId): bool
+{
+    $stmt = $pdo->prepare("
+        select 1
+          from public.categorias_ativos
+         where id = cast(:id as uuid)
+         limit 1
+    ");
+    $stmt->execute([":id" => $categoriaId]);
+
+    return $stmt->fetchColumn() !== false;
+}
+
+function localExiste(PDO $pdo, ?string $localId): bool
+{
+    if ($localId === null) {
+        return true;
+    }
+
+    $stmt = $pdo->prepare("
+        select 1
+          from public.locais
+         where id = cast(:id as uuid)
+           and lower(coalesce(status, 'ativo')) = 'ativo'
+         limit 1
+    ");
+    $stmt->execute([":id" => $localId]);
+
+    return $stmt->fetchColumn() !== false;
+}
+
+function mensagemDuplicidadeAtivo(PDO $pdo, string $id, ?string $numeroSerie, ?string $imei): ?string
+{
+    $where = [];
+    $params = [":id" => $id];
+
+    if ($numeroSerie !== null) {
+        $where[] = "lower(trim(numero_serie)) = lower(trim(:numero_serie))";
+        $params[":numero_serie"] = $numeroSerie;
+    }
+
+    if ($imei !== null) {
+        $where[] = "btrim(imei) ~ '^[0-9]{8,20}$' and btrim(imei) = btrim(:imei)";
+        $params[":imei"] = $imei;
+    }
+
+    if (!$where) {
+        return null;
+    }
+
+    $stmt = $pdo->prepare("
+        select numero_serie, imei
+          from public.ativos
+         where id <> cast(:id as uuid)
+           and (" . implode(" or ", $where) . ")
+         limit 1
+    ");
+    $stmt->execute($params);
+    $ativo = $stmt->fetch();
+
+    if (!$ativo) {
+        return null;
+    }
+
+    if ($numeroSerie !== null && strcasecmp(trim((string)($ativo["numero_serie"] ?? "")), $numeroSerie) === 0) {
+        return "Numero de serie ja cadastrado.";
+    }
+
+    return "IMEI ja cadastrado.";
 }
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
@@ -121,9 +206,15 @@ if (!uuidValido($categoriaId) || !uuidValido($localId)) {
     responder(false, "Categoria ou local invalido.", 422);
 }
 
+if (!imeiValido($imei)) {
+    responder(false, "IMEI deve conter apenas numeros, com 8 a 20 digitos.", 422);
+}
+
 try {
     require __DIR__ . "/Conexao.php";
     require __DIR__ . "/status-ativos.php";
+
+    garantirIndicesUnicosAtivos($pdo);
 
     // Normaliza o texto do status para o valor oficial usado no banco.
     $statusNormalizado = obterStatusAtivo($pdo, $status);
@@ -134,12 +225,20 @@ try {
 
     $status = $statusNormalizado;
 
+    if (!categoriaExiste($pdo, (string)$categoriaId)) {
+        responder(false, "Categoria nao encontrada. Atualize a pagina e tente novamente.", 422);
+    }
+
+    if (!localExiste($pdo, $localId)) {
+        responder(false, "Local nao encontrado. Atualize a pagina e tente novamente.", 422);
+    }
+
     if ($marca !== null) {
         // A marca precisa existir e estar ativa para nao salvar texto solto.
         $marcaStmt = $pdo->prepare("
             select nome
               from public.marcas_ativos
-             where lower(nome) = lower(:marca)
+             where lower(btrim(nome)) = lower(btrim(:marca))
                and status = :status
              limit 1
         ");
@@ -155,6 +254,12 @@ try {
         }
 
         $marca = (string)$marcaAtiva;
+    }
+
+    $duplicidade = mensagemDuplicidadeAtivo($pdo, $id, $numeroSerie, $imei);
+
+    if ($duplicidade !== null) {
+        responder(false, $duplicidade, 409);
     }
 
     // Atualiza o ativo e junta categoria/local para devolver a linha pronta ao frontend.
@@ -218,6 +323,16 @@ try {
     responder(true, "Ativo alterado com sucesso.", 200, [
         "ativo" => $ativo,
     ]);
+} catch (PDOException $erro) {
+    if ($erro->getCode() === "23505") {
+        responder(false, "Ja existe um ativo com esses dados de identificacao.", 409);
+    }
+
+    if ($erro->getCode() === "23503") {
+        responder(false, "Categoria, local ou status invalido para o ativo.", 422);
+    }
+
+    responder(false, "Nao foi possivel alterar o ativo agora.", 500);
 } catch (Throwable) {
     responder(false, "Nao foi possivel alterar o ativo agora.", 500);
 }

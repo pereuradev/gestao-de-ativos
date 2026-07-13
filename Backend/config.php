@@ -2,6 +2,22 @@
 
 declare(strict_types=1);
 
+function caminhoEnvLocal(): string
+{
+    $arquivoEnv = getenv("APP_ENV_FILE");
+
+    if (is_string($arquivoEnv) && trim($arquivoEnv) !== "") {
+        return trim($arquivoEnv, "\"'");
+    }
+
+    // Mantem credenciais fora do DocumentRoot do XAMPP.
+    return dirname(__DIR__, 3)
+        . DIRECTORY_SEPARATOR . "private"
+        . DIRECTORY_SEPARATOR . "site-gestao-de-ativos"
+        . DIRECTORY_SEPARATOR . "Backend"
+        . DIRECTORY_SEPARATOR . ".env";
+}
+
 // Carrega variaveis de ambiente locais uma unica vez. Em producao, essas
 // mesmas chaves podem vir direto do servidor.
 function carregarEnvLocal(): void
@@ -13,7 +29,7 @@ function carregarEnvLocal(): void
     }
 
     $carregado = true;
-    $arquivoEnv = __DIR__ . "/.env";
+    $arquivoEnv = caminhoEnvLocal();
 
     if (!is_file($arquivoEnv) || !is_readable($arquivoEnv)) {
         return;
