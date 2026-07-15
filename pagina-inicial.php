@@ -67,16 +67,16 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 <html lang="pt-BR">
 
 <head>
-  <!-- ConfiguraÃ§Ã£o bÃ¡sica de caracteres e responsividade -->
+  <!-- Configuração básica de caracteres e responsividade -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- TÃ­tulo e descriÃ§Ã£o da pÃ¡gina -->
+  <!-- Título e descrição da página -->
   <title>P&aacute;gina Inicial | TI TECH Solutions</title>
   <meta name="description"
     content="P&aacute;gina inicial do portal interno de gest&atilde;o de ativos da TI TECH Solutions" />
 
-  <!-- Ãcone exibido na aba do navegador -->
+  <!-- ícone exibido na aba do navegador -->
   <link rel="icon" type="image/png" href="assets/favicon.png?v=20260630-ti-favicon" />
 
   <!-- Otimiza a conexÃ£o com o Google Fonts antes de carregar a fonte -->
@@ -89,16 +89,16 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
   <!-- Bootstrap Icons: biblioteca usada para os Ã­cones da interface -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
-  <!-- Arquivos CSS da pÃ¡gina -->
+  <!-- Arquivos CSS da página -->
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
 
-  <!-- Chart.js usado para renderizar grÃ¡ficos no dashboard -->
+  <!-- Chart.js usado para renderizar gráficos no dashboard -->
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
 
-  <!-- Scripts da pÃ¡gina. O defer evita bloquear o carregamento do HTML. -->
+  <!-- Scripts da página. O defer evita bloquear o carregamento do HTML. -->
   <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
   <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
@@ -109,14 +109,14 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 </head>
 
 <body class="theme-dark page-loading" <?php echo $permissionDeniedResource !== "" ? 'data-permission-dialog-open="true" data-permission-resource="' . e($permissionDeniedResource) . '"' : ""; ?>>
-  <!-- Estrutura principal: menu lateral e conteÃºdo da pÃ¡gina -->
+  <!-- Estrutura principal: menu lateral e conteúdo da página -->
   <div class="app-shell">
 
-    <!-- Menu lateral fixo da aplicaÃ§Ã£o -->
+    <!-- Menu lateral fixo da aplicações -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
 
-        <!-- Logo da empresa com link para o site institucional -->
+        <!-- Logo da empresa com link para o site  -->
         <a href="https://www.titechsolutions.com.br/" class="brand-area" aria-label="Acessar site da TI TECH Solutions">
           <img class="brand-logo" src="assets/logo-branca.png" alt="TI TECH Solutions" />
         </a>
@@ -127,47 +127,48 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
         </button>
       </div>
 
-      <!-- NavegaÃ§Ã£o principal do sistema -->
+      <!-- Navegação principal do sistema -->
       <nav class="sidebar-nav" aria-label="Menu principal">
 
-        <!-- Link da pÃ¡gina atual. A classe active destaca o item no menu. -->
+        <!-- Link da página atual. A classe active destaca o item no menu. -->
         <a class="nav-link active" href="pagina-inicial.php">
           <i class="bi bi-house-door-fill"></i>
           <span>P&aacute;gina Inicial</span>
         </a>
+        <!-- Link para a tela de Dashboard -->
         <a class="nav-link" href="dashboard.php">
           <i class="bi bi-bar-chart-fill"></i>
           <span>Dashboard</span>
         </a>
-
-        <!-- Link para a tela de funcionÃ¡rios -->
-<?php if ($sidebarIsAdmin): ?>
-        <a class="nav-link" href="funcionarios.php">
-          <i class="bi bi-people-fill"></i>
-          <span>Funcion&aacute;rios</span>
-        </a>
-<?php else: ?>
-        <span class="nav-link nav-link-disabled" aria-disabled="true" data-permission-resource="Funcionarios" title="Apenas administradores podem acessar funcionarios">
-          <i class="bi bi-people-fill"></i>
-          <span>Funcion&aacute;rios</span>
-        </span>
-<?php endif; ?>
-
+        <!-- Link para a tela de funcionários -->
+        <?php if ($sidebarIsAdmin): ?>
+          <a class="nav-link" href="funcionarios.php">
+            <i class="bi bi-people-fill"></i>
+            <span>Funcion&aacute;rios</span>
+          </a>
+        <?php else: ?>
+          <span class="nav-link nav-link-disabled" aria-disabled="true" data-permission-resource="Funcionarios"
+            title="Apenas administradores podem acessar funcionarios">
+            <i class="bi bi-people-fill"></i>
+            <span>Funcion&aacute;rios</span>
+          </span>
+        <?php endif; ?>
+        <!-- Link para a tela de Marcas -->
         <a class="nav-link" href="marcas-visualizacao.php">
           <i class="bi bi-tags-fill"></i>
           <span>Marcas</span>
         </a>
-
+        <!-- Link para a tela de Propriedades -->
         <a class="nav-link" href="propriedades-visualizacao.php">
           <i class="bi bi-building-check"></i>
           <span>Propriedades</span>
         </a>
-
+        <!-- Link para a tela de Localizações -->
         <a class="nav-link" href="locais-visualizacao.php">
           <i class="bi bi-geo-alt-fill"></i>
           <span>Localiza&ccedil;&otilde;es</span>
         </a>
-        <!-- Grupo expansÃ­vel de cadastros -->
+        <!-- Grupo expansível de cadastros -->
         <div class="nav-group" data-nav-group>
           <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="registrationSubmenu">
             <i class="bi bi-folder-plus"></i>
@@ -180,15 +181,19 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
             <a href="cadastro-ativos.php">Ativos</a>
             <a href="marcas.php">Marcas</a>
             <a href="propriedades.php">Propriedades</a>
-<?php if ($sidebarIsAdmin): ?>
-            <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
-            <a href="cadastro-grupos.php">Grupos</a>
+            <?php if ($sidebarIsAdmin): ?>
+              <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
+              <a href="cadastro-grupos.php">Grupos</a>
 
-<?php else: ?>
-            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Cadastro de funcionarios" title="Apenas administradores podem cadastrar funcionarios">Funcion&aacute;rios</span>
-            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Cadastro de grupos" title="Apenas administradores podem criar grupos">Grupos</span>
+            <?php else: ?>
+              <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
+                data-permission-resource="Cadastro de funcionarios"
+                title="Apenas administradores podem cadastrar funcionarios">Funcion&aacute;rios</span>
+              <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
+                data-permission-resource="Cadastro de grupos"
+                title="Apenas administradores podem criar grupos">Grupos</span>
 
-<?php endif; ?>
+            <?php endif; ?>
             <a href="locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
         </div>
@@ -205,11 +210,15 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
             <a href="edicao-marcas.php">Marcas</a>
             <a href="edicao-propriedades.php">Propriedades</a>
             <?php if ($sidebarIsAdmin): ?>
-            <a href="edicao-funcionarios.php">Funcion&aacute;rios</a>
-            <a href="edicao-grupos.php">Grupos</a>
+              <a href="edicao-funcionarios.php">Funcion&aacute;rios</a>
+              <a href="edicao-grupos.php">Grupos</a>
             <?php else: ?>
-            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Edicao de funcionarios" title="Apenas administradores podem editar funcionarios">Funcion&aacute;rios</span>
-            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Edicao de grupos" title="Apenas administradores podem editar grupos">Grupos</span>
+              <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
+                data-permission-resource="Edicao de funcionarios"
+                title="Apenas administradores podem editar funcionarios">Funcion&aacute;rios</span>
+              <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
+                data-permission-resource="Edicao de grupos"
+                title="Apenas administradores podem editar grupos">Grupos</span>
             <?php endif; ?>
             <a href="edicao-locais.php">Localiza&ccedil;&otilde;es</a>
           </div>
@@ -220,14 +229,14 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
           <span>Ativos</span>
         </a>
 
-        <!-- Link para configuraÃ§Ãµes do sistema -->
+        <!-- Link para configurações do sistema -->
         <a class="nav-link" href="configuracoes.php">
           <i class="bi bi-gear-fill"></i>
           <span>Configura&ccedil;&otilde;es</span>
         </a>
       </nav>
 
-      <!-- RodapÃ© do menu com usuÃ¡rio logado e saÃ­da do sistema -->
+      <!-- Rodapé do menu com usuário logado e saída do sistema -->
       <div class="sidebar-footer">
         <div class="sidebar-summary user-summary-card">
           <div class="sidebar-avatar" aria-hidden="true"><?php echo $sidebarInitials; ?></div>
@@ -240,7 +249,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
           </div>
         </div>
 
-        <!-- Logout: encerra a sessÃ£o no backend e tira o usuÃ¡rio do sistema -->
+        <!-- Logout: encerra a sessão no backend e tira o usuário do sistema -->
         <a href="Backend/logout.php" class="logout-button">
           <i class="bi bi-box-arrow-left"></i>
           <span>Sair do sistema</span>
@@ -316,17 +325,18 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
               Ver ativos
             </a>
 
-<?php if ($sidebarIsAdmin): ?>
-            <a href="funcionarios.php" class="secondary-button">
-              <i class="bi bi-people-fill"></i>
-              Funcion&aacute;rios
-            </a>
-<?php else: ?>
-            <span class="secondary-button disabled-action" aria-disabled="true" data-permission-resource="Funcionarios" title="Apenas administradores podem acessar funcionarios">
-              <i class="bi bi-people-fill"></i>
-              Funcion&aacute;rios
-            </span>
-<?php endif; ?>
+            <?php if ($sidebarIsAdmin): ?>
+              <a href="funcionarios.php" class="secondary-button">
+                <i class="bi bi-people-fill"></i>
+                Funcion&aacute;rios
+              </a>
+            <?php else: ?>
+              <span class="secondary-button disabled-action" aria-disabled="true" data-permission-resource="Funcionarios"
+                title="Apenas administradores podem acessar funcionarios">
+                <i class="bi bi-people-fill"></i>
+                Funcion&aacute;rios
+              </span>
+            <?php endif; ?>
           </div>
         </div>
       </section>
