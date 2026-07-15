@@ -9,6 +9,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 require_once __DIR__ . "/permissoes-acesso.php";
 require_once __DIR__ . "/status-ativos.php";
 require_once __DIR__ . "/relatorio-ativos-pdf.php";
+require_once __DIR__ . "/relatorio-ativos-xlsx.php";
 require_once __DIR__ . "/exportar-ativos-csv.php";
 exigirPermissaoApi("visualizar_ativos", "Ativos");
 
@@ -266,15 +267,50 @@ try {
 
 $formato = strtolower(filtroExportacao("formato", "pdf"));
 
-if (!in_array($formato, ["pdf", "csv"], true)) {
+if (!in_array($formato, ["pdf", "xlsx", "csv"], true)) {
     responderErroExportacao(400, "Formato de exportacao invalido.");
 }
 
 $geradoEm = new DateTimeImmutable("now", new DateTimeZone("America/Sao_Paulo"));
+$metricasRelatorio = [
+    "total" => $totalAtivos,
+    "disponiveis" => $ativosDisponiveis,
+    "filtrados" => count($ativos),
+];
+
+if ($formato === "xlsx") {
+    try {
+        $xlsx = (new RelatorioAtivosXlsx())->generate(
+            $ativos,
+            $metricasRelatorio,
+            $filtrosRelatorio,
+            $geradoEm,
+            (bool) $responsavel["disponivel"]
+        );
+    } catch (Throwable) {
+        responderErroExportacao(500, "Nao foi possivel gerar a planilha Excel dos ativos agora.");
+    }
+
+    $filename = "relatorio-ativos-" . $geradoEm->format("Y-m-d-His") . ".xlsx";
+
+    header_remove("Content-Type");
+    header("Content-Type: " . RelatorioAtivosXlsx::CONTENT_TYPE);
+    header("Content-Disposition: attachment; filename=\"{$filename}\"");
+    header("Content-Length: " . strlen($xlsx));
+    header("Cache-Control: no-store, no-cache, must-revalidate");
+    header("Pragma: no-cache");
+    header("X-Content-Type-Options: nosniff");
+
+    echo $xlsx;
+    exit;
+}
 
 if ($formato === "csv") {
     try {
-        $csv = gerarCsvAtivos($ativos, (bool) $responsavel["disponivel"]);
+        $csv = gerarCsvAtivos(
+            $ativos,
+            (bool) $responsavel["disponivel"]
+        );
     } catch (Throwable) {
         responderErroExportacao(500, "Nao foi possivel gerar o CSV dos ativos agora.");
     }
@@ -298,11 +334,7 @@ $filename = "relatorio-ativos-" . $geradoEm->format("Y-m-d-His") . ".pdf";
 try {
     $pdf = (new RelatorioAtivosPdf())->generate(
         $ativos,
-        [
-            "total" => $totalAtivos,
-            "disponiveis" => $ativosDisponiveis,
-            "filtrados" => count($ativos),
-        ],
+        $metricasRelatorio,
         $filtrosRelatorio,
         $geradoEm
     );

@@ -118,6 +118,14 @@ async function exportAssetsFile(button) {
 }
 
 function getAssetExportConfig(format) {
+  if (format === "xlsx") {
+    return {
+      contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      fallbackFilename: "relatorio-ativos.xlsx",
+      label: "Excel",
+    };
+  }
+
   if (format === "csv") {
     return {
       contentType: "text/csv",

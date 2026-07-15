@@ -20,6 +20,15 @@ function sanitizarCelulaCsv(mixed $valor): string
     return $comecaComControle || $comecaComFormula ? "'" . $texto : $texto;
 }
 
+function escreverLinhaCsv($output, array $linha): void
+{
+    $linhaSegura = array_map("sanitizarCelulaCsv", $linha);
+
+    if (fputcsv($output, $linhaSegura, ";") === false) {
+        throw new RuntimeException("Nao foi possivel montar o arquivo CSV.");
+    }
+}
+
 function gerarCsvAtivos(array $ativos, bool $incluirResponsavel): string
 {
     $cabecalho = [
@@ -51,7 +60,7 @@ function gerarCsvAtivos(array $ativos, bool $incluirResponsavel): string
     }
 
     fwrite($output, "\xEF\xBB\xBF");
-    fputcsv($output, $cabecalho, ";");
+    escreverLinhaCsv($output, $cabecalho);
 
     foreach ($ativos as $ativo) {
         $linha = [
@@ -73,12 +82,7 @@ function gerarCsvAtivos(array $ativos, bool $incluirResponsavel): string
         $linha[] = $ativo["status"] ?? "";
         $linha[] = $ativo["datasheet"] ?? "";
         $linha[] = $ativo["criado_em_formatado"] ?? "";
-        $linha = array_map("sanitizarCelulaCsv", $linha);
-
-        if (fputcsv($output, $linha, ";") === false) {
-            fclose($output);
-            throw new RuntimeException("Nao foi possivel montar o arquivo CSV.");
-        }
+        escreverLinhaCsv($output, $linha);
     }
 
     rewind($output);

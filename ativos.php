@@ -275,7 +275,7 @@ try {
 }
 
 $exportarAtivosPdfUrl = urlExportarAtivos("pdf");
-$exportarAtivosCsvUrl = urlExportarAtivos("csv");
+$exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
 ?>
 <!doctype html>
 <html lang="pt-BR">
@@ -293,7 +293,7 @@ $exportarAtivosCsvUrl = urlExportarAtivos("csv");
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/ativos.css?v=20260710-export-files" />
+  <link rel="stylesheet" href="css/ativos.css?v=20260713-export-xlsx" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
@@ -301,7 +301,7 @@ $exportarAtivosCsvUrl = urlExportarAtivos("csv");
   <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
   <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
-  <script src="js/ativos.js?v=20260710-export-files" defer></script>
+  <script src="js/ativos.js?v=20260713-export-xlsx" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
@@ -540,18 +540,19 @@ $exportarAtivosCsvUrl = urlExportarAtivos("csv");
             </span>
 
             <div class="asset-export-actions" aria-label="Exportacao de ativos">
-              <button class="asset-export-button" id="exportAssetsPdf" type="button" data-asset-export
+              <button class="asset-export-button asset-export-button-pdf" id="exportAssetsPdf" type="button"
+                data-asset-export
                 data-export-format="pdf" data-export-url="<?php echo e($exportarAtivosPdfUrl); ?>"
                 data-default-label="Exportar PDF" data-default-icon="bi bi-file-earmark-pdf">
                 <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
                 <span>Exportar PDF</span>
               </button>
 
-              <button class="asset-export-button asset-export-button-secondary" id="exportAssetsCsv" type="button"
-                data-asset-export data-export-format="csv" data-export-url="<?php echo e($exportarAtivosCsvUrl); ?>"
-                data-default-label="Exportar CSV" data-default-icon="bi bi-filetype-csv">
-                <i class="bi bi-filetype-csv" aria-hidden="true"></i>
-                <span>Exportar CSV</span>
+              <button class="asset-export-button asset-export-button-excel" id="exportAssetsExcel" type="button"
+                data-asset-export data-export-format="xlsx" data-export-url="<?php echo e($exportarAtivosExcelUrl); ?>"
+                data-default-label="Exportar Excel" data-default-icon="bi bi-file-earmark-excel">
+                <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
+                <span>Exportar Excel</span>
               </button>
             </div>
 

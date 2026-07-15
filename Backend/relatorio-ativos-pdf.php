@@ -7,18 +7,19 @@ final class RelatorioAtivosPdf
     private const PAGE_WIDTH_MM = 297.0;
     private const PAGE_HEIGHT_MM = 210.0;
     private const MARGIN_X_MM = 10.0;
-    private const CONTENT_BOTTOM_MM = 196.0;
+    private const CONTENT_BOTTOM_MM = 195.5;
     private const MM_TO_PT = 72.0 / 25.4;
 
-    private const NAVY = [0.024, 0.094, 0.161];
-    private const NAVY_LIGHT = [0.055, 0.200, 0.306];
-    private const TEAL = [0.310, 0.780, 0.694];
+    // Paleta principal definida no manual de identidade visual da TI TECH.
+    private const NAVY = [0.082, 0.176, 0.267];
+    private const BLUE = [0.282, 0.541, 0.765];
+    private const MINT = [0.329, 0.769, 0.635];
     private const WHITE = [1.0, 1.0, 1.0];
-    private const TEXT = [0.075, 0.129, 0.180];
+    private const TEXT = [0.110, 0.157, 0.204];
     private const MUTED = [0.365, 0.431, 0.490];
-    private const BORDER = [0.827, 0.859, 0.886];
-    private const PANEL = [0.945, 0.969, 0.976];
-    private const ROW_ALT = [0.972, 0.980, 0.988];
+    private const BORDER = [0.804, 0.851, 0.890];
+    private const PANEL = [0.949, 0.969, 0.980];
+    private const ROW_ALT = [0.965, 0.976, 0.984];
 
     private const COLUMNS = [
         ["key" => "ativo", "title" => "Ativo", "width" => 53.0],
@@ -38,6 +39,7 @@ final class RelatorioAtivosPdf
     private DateTimeImmutable $generatedAt;
     private array $metrics = [];
     private array $filters = [];
+    private ?array $logoImage = null;
 
     public function generate(
         array $assets,
@@ -52,6 +54,7 @@ final class RelatorioAtivosPdf
         $this->metrics = $metrics;
         $this->filters = $filters;
         $this->generatedAt = $generatedAt;
+        $this->logoImage = $this->loadLogoImage();
 
         $this->startPage(true);
 
@@ -97,17 +100,17 @@ final class RelatorioAtivosPdf
 
     private function drawMainHeader(): void
     {
-        $this->rectangle(0.0, 0.0, self::PAGE_WIDTH_MM, 24.0, self::NAVY);
-        $this->rectangle(0.0, 23.0, self::PAGE_WIDTH_MM, 1.0, self::TEAL);
-        $this->text(10.0, 5.2, "TI TECH SOLUTIONS", 9.0, true, self::WHITE);
-        $this->text(10.0, 11.4, "Relatório de ativos", 17.0, true, self::WHITE);
-        $this->textRight(287.0, 6.0, "Gerado em", 7.2, false, self::TEAL);
-        $this->textRight(287.0, 11.6, $this->generatedAt->format("d/m/Y H:i"), 9.0, true, self::WHITE);
+        $this->drawLogo(10.0, 4.2, 42.0);
+        $this->text(59.0, 5.0, "RELATÓRIO DE ATIVOS", 16.0, true, self::NAVY);
+        $this->text(59.0, 12.8, "Inventário corporativo consolidado", 8.2, false, self::MUTED);
+        $this->textRight(287.0, 5.2, "GERADO EM", 7.2, true, self::BLUE);
+        $this->textRight(287.0, 10.8, $this->generatedAt->format("d/m/Y H:i"), 9.0, true, self::NAVY);
+        $this->drawBrandBar(26.0, 3.0);
 
-        $this->text(10.0, 29.0, "Inventário consolidado", 10.5, true, self::NAVY);
+        $this->text(10.0, 34.0, "Visão geral do inventário", 10.5, true, self::NAVY);
         $this->text(
             10.0,
-            34.0,
+            39.0,
             "Indicadores e registros correspondentes aos filtros aplicados.",
             8.2,
             false,
@@ -115,45 +118,61 @@ final class RelatorioAtivosPdf
         );
 
         $metricCards = [
-            ["label" => "Total de ativos", "value" => (string) ($this->metrics["total"] ?? 0)],
-            ["label" => "Em estoque", "value" => (string) ($this->metrics["disponiveis"] ?? 0)],
-            ["label" => "Registros no relatório", "value" => (string) ($this->metrics["filtrados"] ?? 0)],
+            [
+                "label" => "Total de ativos",
+                "value" => (string) ($this->metrics["total"] ?? 0),
+                "accent" => self::NAVY,
+            ],
+            [
+                "label" => "Em estoque",
+                "value" => (string) ($this->metrics["disponiveis"] ?? 0),
+                "accent" => self::BLUE,
+            ],
+            [
+                "label" => "Registros no relatório",
+                "value" => (string) ($this->metrics["filtrados"] ?? 0),
+                "accent" => self::MINT,
+            ],
         ];
 
         foreach ($metricCards as $index => $metric) {
             $x = self::MARGIN_X_MM + ($index * 94.0);
-            $this->rectangle($x, 41.0, 89.0, 20.0, self::PANEL, self::BORDER);
-            $this->rectangle($x, 41.0, 2.0, 20.0, self::TEAL);
-            $this->text($x + 5.0, 45.0, $metric["label"], 7.4, true, self::MUTED);
-            $this->text($x + 5.0, 51.0, $metric["value"], 16.0, true, self::NAVY);
+            $this->rectangle($x, 45.0, 89.0, 20.0, self::PANEL, self::BORDER);
+            $this->rectangle($x, 45.0, 2.2, 20.0, $metric["accent"]);
+            $this->rectangle($x + 2.2, 45.0, 86.8, 1.0, $metric["accent"]);
+            $this->text($x + 6.0, 49.0, $metric["label"], 7.4, true, self::MUTED);
+            $this->text($x + 6.0, 55.0, $metric["value"], 16.0, true, self::NAVY);
         }
 
         $filterText = $this->formatFilters();
         $filterLines = $this->wrapText($filterText, 265.0, 7.6, 3);
         $filterHeight = max(14.0, 9.0 + (count($filterLines) * 3.6));
 
-        $this->rectangle(10.0, 66.0, 277.0, $filterHeight, self::PANEL, self::BORDER);
-        $this->text(14.0, 69.0, "FILTROS DO RELATÓRIO", 7.0, true, self::NAVY_LIGHT);
-        $this->wrappedText(14.0, 74.0, $filterLines, 7.6, 3.6, false, self::TEXT);
+        $this->rectangle(10.0, 70.0, 277.0, $filterHeight, self::PANEL, self::BORDER);
+        $this->rectangle(10.0, 70.0, 2.0, $filterHeight, self::BLUE);
+        $this->text(15.0, 73.0, "FILTROS DO RELATÓRIO", 7.0, true, self::BLUE);
+        $this->wrappedText(15.0, 78.0, $filterLines, 7.6, 3.6, false, self::TEXT);
 
-        $tableTop = 66.0 + $filterHeight + 6.0;
+        $tableTop = 70.0 + $filterHeight + 6.0;
         $this->drawTableHeader($tableTop);
         $this->cursorY = $tableTop + 8.0;
     }
 
     private function drawContinuationHeader(): void
     {
-        $this->rectangle(0.0, 0.0, self::PAGE_WIDTH_MM, 18.0, self::NAVY);
-        $this->rectangle(0.0, 17.0, self::PAGE_WIDTH_MM, 1.0, self::TEAL);
-        $this->text(10.0, 5.0, "Relatório de ativos - continuação", 11.0, true, self::WHITE);
+        $this->drawLogo(10.0, 3.4, 28.0);
+        $this->text(44.0, 4.2, "RELATÓRIO DE ATIVOS", 11.0, true, self::NAVY);
+        $this->text(44.0, 10.0, "Inventário corporativo | Continuação", 7.2, false, self::MUTED);
+        $this->textRight(287.0, 4.0, "GERADO EM", 6.8, true, self::BLUE);
         $this->textRight(
             287.0,
-            5.4,
+            9.5,
             $this->generatedAt->format("d/m/Y H:i"),
             8.0,
-            false,
-            self::WHITE
+            true,
+            self::NAVY
         );
+        $this->drawBrandBar(18.0, 2.5);
 
         $this->drawTableHeader(24.0);
         $this->cursorY = 32.0;
@@ -165,7 +184,8 @@ final class RelatorioAtivosPdf
 
         foreach (self::COLUMNS as $column) {
             $width = (float) $column["width"];
-            $this->rectangle($x, $top, $width, 8.0, self::NAVY_LIGHT, self::WHITE);
+            $this->rectangle($x, $top, $width, 8.0, self::NAVY, self::WHITE);
+            $this->rectangle($x, $top, $width, 0.8, self::MINT);
             $this->text($x + 1.6, $top + 2.2, (string) $column["title"], 7.0, true, self::WHITE);
             $x += $width;
         }
@@ -270,15 +290,23 @@ final class RelatorioAtivosPdf
 
         foreach ($this->pages as $index => $page) {
             $this->commands = $page;
-            $this->line(10.0, 199.0, 287.0, 199.0, self::BORDER, 0.25);
-            $this->text(10.0, 202.0, "TI TECH Solutions | Inventário de ativos", 7.0, false, self::MUTED);
+            $this->line(10.0, 198.5, 287.0, 198.5, self::BORDER, 0.25);
+            $this->polygon(
+                [[238.0, 210.0], [248.0, 202.5], [297.0, 195.0], [297.0, 210.0]],
+                self::MINT
+            );
+            $this->polygon(
+                [[249.0, 210.0], [260.0, 204.0], [297.0, 198.5], [297.0, 210.0]],
+                self::NAVY
+            );
+            $this->text(10.0, 202.0, "TI TECH Solutions | Inventário de ativos", 7.0, true, self::NAVY);
             $this->textRight(
                 287.0,
                 202.0,
                 "Página " . ($index + 1) . " de " . $totalPages,
                 7.0,
                 true,
-                self::MUTED
+                self::WHITE
             );
             $this->pages[$index] = $this->commands;
         }
@@ -380,6 +408,75 @@ final class RelatorioAtivosPdf
         foreach ($lines as $index => $line) {
             $this->text($x, $top + ($index * $lineHeightMm), (string) $line, $fontSize, $bold, $color);
         }
+    }
+
+    private function drawBrandBar(float $top, float $height): void
+    {
+        $this->rectangle(0.0, $top, 170.0, $height, self::NAVY);
+        $this->rectangle(170.0, $top, 70.0, $height, self::BLUE);
+        $this->rectangle(240.0, $top, 57.0, $height, self::MINT);
+    }
+
+    private function drawLogo(float $x, float $top, float $width): void
+    {
+        if ($this->logoImage === null) {
+            return;
+        }
+
+        $height = $width * ((float) $this->logoImage["height"] / (float) $this->logoImage["width"]);
+        $xPt = $this->mm($x);
+        $yPt = $this->mm(self::PAGE_HEIGHT_MM - $top - $height);
+        $widthPt = $this->mm($width);
+        $heightPt = $this->mm($height);
+
+        $this->commands .= "q " . $this->number($widthPt) . " 0 0 " . $this->number($heightPt) . " "
+            . $this->number($xPt) . " " . $this->number($yPt) . " cm /Logo Do Q\n";
+    }
+
+    private function polygon(array $points, array $fill): void
+    {
+        if (count($points) < 3) {
+            return;
+        }
+
+        $command = $this->color($fill, "rg") . " ";
+
+        foreach ($points as $index => $point) {
+            $xPt = $this->mm((float) ($point[0] ?? 0.0));
+            $yPt = $this->mm(self::PAGE_HEIGHT_MM - (float) ($point[1] ?? 0.0));
+            $command .= $this->number($xPt) . " " . $this->number($yPt)
+                . ($index === 0 ? " m " : " l ");
+        }
+
+        $this->commands .= $command . "h f\n";
+    }
+
+    private function loadLogoImage(): array
+    {
+        // A versão opaca evita conversão de imagem em tempo de execução no XAMPP.
+        $path = dirname(__DIR__) . DIRECTORY_SEPARATOR . "assets"
+            . DIRECTORY_SEPARATOR . "logo-relatorio-pdf.jpg";
+
+        if (!is_readable($path)) {
+            throw new RuntimeException("O logotipo da TI TECH não está disponível para o relatório.");
+        }
+
+        $imageInfo = getimagesize($path);
+        $contents = file_get_contents($path);
+
+        if (
+            $imageInfo === false
+            || $contents === false
+            || ($imageInfo["mime"] ?? "") !== "image/jpeg"
+        ) {
+            throw new RuntimeException("O logotipo preparado para o PDF é inválido.");
+        }
+
+        return [
+            "width" => (int) $imageInfo[0],
+            "height" => (int) $imageInfo[1],
+            "data" => $contents,
+        ];
     }
 
     private function rectangle(
@@ -495,15 +592,31 @@ final class RelatorioAtivosPdf
             throw new RuntimeException("O relatório não possui páginas.");
         }
 
+        if ($this->logoImage === null) {
+            throw new RuntimeException("O relatório não possui um logotipo válido.");
+        }
+
         $objects = [
             1 => "<< /Type /Catalog /Pages 2 0 R >>",
             3 => "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
             4 => "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>",
         ];
+        $logoObjectId = 5;
+        $logoData = (string) ($this->logoImage["data"] ?? "");
+
+        if ($logoData === "") {
+            throw new RuntimeException("O logotipo preparado para o PDF está vazio.");
+        }
+
+        $objects[$logoObjectId] = "<< /Type /XObject /Subtype /Image /Width "
+            . (int) $this->logoImage["width"]
+            . " /Height " . (int) $this->logoImage["height"]
+            . " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " . strlen($logoData)
+            . " >>\nstream\n" . $logoData . "\nendstream";
         $pageReferences = [];
 
         foreach ($this->pages as $index => $content) {
-            $pageObjectId = 5 + ($index * 2);
+            $pageObjectId = 6 + ($index * 2);
             $contentObjectId = $pageObjectId + 1;
             $pageReferences[] = $pageObjectId . " 0 R";
             $stream = $content . "\n";
@@ -511,7 +624,8 @@ final class RelatorioAtivosPdf
             $objects[$pageObjectId] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "
                 . $this->number($this->mm(self::PAGE_WIDTH_MM)) . " "
                 . $this->number($this->mm(self::PAGE_HEIGHT_MM))
-                . "] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents {$contentObjectId} 0 R >>";
+                . "] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << /Logo {$logoObjectId} 0 R >> >>"
+                . " /Contents {$contentObjectId} 0 R >>";
             $objects[$contentObjectId] = "<< /Length " . strlen($stream) . " >>\nstream\n"
                 . $stream . "endstream";
         }
