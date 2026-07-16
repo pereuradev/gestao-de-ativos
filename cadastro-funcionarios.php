@@ -350,7 +350,7 @@ try {
               <div class="meter-track">
                 <span id="employeePasswordStrengthBar"></span>
               </div>
-              <small id="employeePasswordStrengthText">Forca da senha: aguardando</small>
+              <small id="employeePasswordStrengthText">Força da senha: aguardando</small>
             </div>
 
             <div id="employeeFormMessage" class="form-message employee-form-message" role="status" aria-live="polite">

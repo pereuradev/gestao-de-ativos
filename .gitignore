@@ -3,10 +3,4 @@ Backend/.env
 *.local.php
 *.log
 *.tmp
-outputs/edge-map-profile/
-outputs/~$apresentacao-gestao-de-ativos.pptx
-outputs/apresentacao-gestao-de-ativos.pptx
-outputs/analise-mapa-mental-miro.md
-outputs/mapa-mental-gestao-ativos.png
-outputs/mapa-mental-gestao-ativos.svg
-docs/mapa-mental-gestao-ativos-ti-tech.svg
+

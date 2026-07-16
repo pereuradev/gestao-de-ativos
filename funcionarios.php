@@ -91,13 +91,10 @@ $funcionariosInativos = 0;
 $ultimoMovimento = "--";
 $erroBanco = "";
 
-if ($accessDenied) {
-  http_response_code(403);
-} else {
-  try {
-    require __DIR__ . "/Backend/Conexao.php";
+try {
+  require __DIR__ . "/Backend/Conexao.php";
 
-    $resumoStmt = $pdo->prepare("
+  $resumoStmt = $pdo->prepare("
         select
             count(*)::int as total,
             count(*) filter (where lower(status) = 'ativo')::int as ativos,
@@ -105,15 +102,15 @@ if ($accessDenied) {
             max(greatest(criado_em, atualizado_em)) as ultimo_movimento
           from public.perfis_usuarios
     ");
-    $resumoStmt->execute();
-    $resumo = $resumoStmt->fetch() ?: [];
+  $resumoStmt->execute();
+  $resumo = $resumoStmt->fetch() ?: [];
 
-    $totalFuncionarios = (int) ($resumo["total"] ?? 0);
-    $funcionariosAtivos = (int) ($resumo["ativos"] ?? 0);
-    $funcionariosInativos = (int) ($resumo["inativos"] ?? 0);
-    $ultimoMovimento = formatarData((string) ($resumo["ultimo_movimento"] ?? ""));
+  $totalFuncionarios = (int) ($resumo["total"] ?? 0);
+  $funcionariosAtivos = (int) ($resumo["ativos"] ?? 0);
+  $funcionariosInativos = (int) ($resumo["inativos"] ?? 0);
+  $ultimoMovimento = formatarData((string) ($resumo["ultimo_movimento"] ?? ""));
 
-    $funcionariosStmt = $pdo->prepare("
+  $funcionariosStmt = $pdo->prepare("
         select
             id,
             nome_completo,
@@ -134,11 +131,10 @@ if ($accessDenied) {
             greatest(criado_em, atualizado_em) desc,
             nome_completo asc
     ");
-    $funcionariosStmt->execute();
-    $funcionarios = $funcionariosStmt->fetchAll();
-  } catch (Throwable) {
-    $erroBanco = "Nao foi possivel carregar os funcionarios agora.";
-  }
+  $funcionariosStmt->execute();
+  $funcionarios = $funcionariosStmt->fetchAll();
+} catch (Throwable) {
+  $erroBanco = "Nao foi possivel carregar os funcionarios agora.";
 }
 ?>
 <!doctype html>
@@ -170,7 +166,7 @@ if ($accessDenied) {
   <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
 </head>
 
-<body class="theme-dark page-loading" <?php echo $accessDenied ? 'data-permission-dialog-open="true" data-permission-resource="Funcionarios"' : ""; ?>>
+<body class="theme-dark page-loading">
   <div class="app-shell">
     <?php require __DIR__ . "/components/sidebar.php"; ?>
 
@@ -270,12 +266,6 @@ if ($accessDenied) {
       <?php if ($erroBanco !== ""): ?>
         <div class="dashboard-status error-status" role="status">
           <?php echo e($erroBanco); ?>
-        </div>
-      <?php endif; ?>
-
-      <?php if ($accessDenied): ?>
-        <div class="dashboard-status error-status" role="status">
-          Apenas administradores podem acessar a pagina de funcionarios.
         </div>
       <?php endif; ?>
 
