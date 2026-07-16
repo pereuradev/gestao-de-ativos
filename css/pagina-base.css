@@ -328,10 +328,15 @@ button {
   padding: 22px;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: rgba(4, 15, 29, 0.86);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: var(--shadow);
   backdrop-filter: blur(24px);
+  scrollbar-color: rgba(102, 213, 194, 0.55) transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
   transition:
     width var(--theme-transition),
     transform var(--transition),
@@ -343,6 +348,23 @@ button {
 .theme-light .sidebar {
   background: rgba(255, 255, 255, 0.88);
   border-right-color: rgba(11, 31, 48, 0.1);
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(102, 213, 194, 0.42);
+  border-radius: 999px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(102, 213, 194, 0.65);
 }
 
 .sidebar-resize-handle {
@@ -2346,6 +2368,11 @@ body.theme-dark .records-actions select option:checked {
 }
 
 @media (max-width: 920px) {
+  html.sidebar-open,
+  body.sidebar-open {
+    overflow: hidden;
+  }
+
   .sidebar {
     transform: translateX(-105%);
   }
