@@ -53,14 +53,6 @@ function iniciaisGrupoVisualizacao(string $nome): string
 }
 
 $usuario = $_SESSION["usuario"];
-$nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
-$sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
-$sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
-$sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
-$sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
-$sidebarEmail = e((string) ($usuario["email"] ?? ""));
-$sidebarDepartment = e((string) ($usuario["departamento"] ?? "Sem departamento"));
-$sidebarInitials = e(iniciaisGrupoVisualizacao((string) ($usuario["nome_completo"] ?? "Usuario")));
 
 $grupos = [];
 $membrosPorGrupo = [];
@@ -183,110 +175,7 @@ try {
 
 <body class="theme-dark page-loading">
   <div class="app-shell">
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <a href="https://www.titechsolutions.com.br/" class="brand-area" aria-label="Acessar site da TI TECH Solutions">
-          <img class="brand-logo" src="assets/logo-branca.png" alt="TI TECH Solutions" />
-        </a>
-
-        <button class="icon-button sidebar-close" id="closeSidebar" type="button" aria-label="Fechar menu">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-
-      <nav class="sidebar-nav" aria-label="Menu principal">
-        <a class="nav-link" href="pagina-inicial.php">
-          <i class="bi bi-house-door-fill"></i>
-          <span>P&aacute;gina Inicial</span>
-        </a>
-        <a class="nav-link" href="dashboard.php">
-          <i class="bi bi-bar-chart-fill"></i>
-          <span>Dashboard</span>
-        </a>
-        <a class="nav-link" href="funcionarios.php">
-          <i class="bi bi-people-fill"></i>
-          <span>Funcion&aacute;rios</span>
-        </a>
-        <a class="nav-link active" href="grupos-visualizacao.php">
-          <i class="bi bi-collection-fill"></i>
-          <span>Grupos</span>
-        </a>
-        <a class="nav-link" href="marcas-visualizacao.php">
-          <i class="bi bi-tags-fill"></i>
-          <span>Marcas</span>
-        </a>
-        <a class="nav-link" href="propriedades-visualizacao.php">
-          <i class="bi bi-building-check"></i>
-          <span>Propriedades</span>
-        </a>
-        <a class="nav-link" href="locais-visualizacao.php">
-          <i class="bi bi-geo-alt-fill"></i>
-          <span>Localiza&ccedil;&otilde;es</span>
-        </a>
-
-        <div class="nav-group" data-nav-group>
-          <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="registrationSubmenu">
-            <i class="bi bi-folder-plus"></i>
-            <span>Cadastros</span>
-            <i class="bi bi-chevron-down nav-chevron"></i>
-          </button>
-
-          <div class="nav-submenu" id="registrationSubmenu">
-            <a href="cadastro-ativos.php">Ativos</a>
-            <a href="marcas.php">Marcas</a>
-            <a href="propriedades.php">Propriedades</a>
-            <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
-            <a href="cadastro-grupos.php">Grupos</a>
-            <a href="locais.php">Localiza&ccedil;&otilde;es</a>
-          </div>
-        </div>
-
-        <div class="nav-group" data-nav-group>
-          <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="editingSubmenu">
-            <i class="bi bi-pencil-square"></i>
-            <span>Edi&ccedil;&atilde;o</span>
-            <i class="bi bi-chevron-down nav-chevron"></i>
-          </button>
-
-          <div class="nav-submenu" id="editingSubmenu">
-            <a href="edicao-ativos.php">Ativos</a>
-            <a href="edicao-marcas.php">Marcas</a>
-            <a href="edicao-propriedades.php">Propriedades</a>
-            <a href="edicao-funcionarios.php">Funcion&aacute;rios</a>
-            <a href="edicao-grupos.php">Grupos</a>
-            <a href="edicao-locais.php">Localiza&ccedil;&otilde;es</a>
-          </div>
-        </div>
-
-        <a class="nav-link" href="ativos.php">
-          <i class="bi bi-hdd-network-fill"></i>
-          <span>Ativos</span>
-        </a>
-
-        <a class="nav-link" href="configuracoes.php">
-          <i class="bi bi-gear-fill"></i>
-          <span>Configura&ccedil;&otilde;es</span>
-        </a>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="sidebar-summary user-summary-card">
-          <div class="sidebar-avatar" aria-hidden="true"><?php echo $sidebarInitials; ?></div>
-          <div class="sidebar-user-info">
-            <strong title="<?php echo $nomeUsuario; ?>"><?php echo $nomeUsuario; ?></strong>
-            <span class="sidebar-role <?php echo $sidebarRoleClass; ?>"><?php echo $sidebarRoleLabel; ?></span>
-            <small title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
-            <small title="<?php echo $sidebarDepartment; ?>"><?php echo $sidebarDepartment; ?></small>
-          </div>
-        </div>
-        <a href="Backend/logout.php" class="logout-button">
-          <i class="bi bi-box-arrow-left"></i>
-          <span>Sair do sistema</span>
-        </a>
-      </div>
-    </aside>
-
-    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <?php require __DIR__ . "/components/sidebar.php"; ?>
 
     <main class="main-area employee-registration-page group-registration-page group-edit-page group-view-page">
       <header class="topbar">

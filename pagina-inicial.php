@@ -36,32 +36,9 @@ function e(string $value): string
 // Dados bÃ¡sicos do usuÃ¡rio recuperados da sessÃ£o.
 $usuario = $_SESSION["usuario"];
 
-// Nome exibido na sidebar. Se nÃ£o vier da sessÃ£o, usa um valor padrÃ£o.
-$nomeUsuario = e((string) ($usuario["nome_completo"] ?? "Usuario"));
-
-// Tipo de usuÃ¡rio exibido na interface, como Administrador ou Colaborador.
-$tipoUsuario = e((string) ($usuario["tipo_usuario"] ?? ""));
+// Mantem o atalho de Funcionarios alinhado com o perfil administrativo.
 $sidebarRoleRaw = strtolower(trim((string) ($usuario["tipo_usuario"] ?? "")));
 $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], true);
-$sidebarRoleLabel = e($sidebarIsAdmin ? "ADM" : "Colaborador");
-$sidebarRoleClass = e($sidebarIsAdmin ? "is-admin" : "is-collaborator");
-$sidebarEmail = e((string) ($usuario["email"] ?? ""));
-$sidebarDepartment = e((string) ($usuario["departamento"] ?? "Sem departamento"));
-$sidebarNameText = (string) ($usuario["nome_completo"] ?? "Usuario");
-$sidebarNameParts = preg_split("/\s+/", trim($sidebarNameText)) ?: [];
-$sidebarInitialsText = "";
-foreach ($sidebarNameParts as $sidebarNamePart) {
-  if ($sidebarNamePart === "") {
-    continue;
-  }
-
-  $sidebarInitialsText .= strtoupper(substr($sidebarNamePart, 0, 1));
-
-  if (strlen($sidebarInitialsText) >= 2) {
-    break;
-  }
-}
-$sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
 ?>
 <!doctype html>
 <html lang="pt-BR">
@@ -113,143 +90,7 @@ $sidebarInitials = e($sidebarInitialsText !== "" ? $sidebarInitialsText : "TT");
   <div class="app-shell">
 
     <!-- Menu lateral fixo da aplicaÃ§Ã£o -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-
-        <!-- Logo da empresa com link para o site institucional -->
-        <a href="https://www.titechsolutions.com.br/" class="brand-area" aria-label="Acessar site da TI TECH Solutions">
-          <img class="brand-logo" src="assets/logo-branca.png" alt="TI TECH Solutions" />
-        </a>
-
-        <!-- Fecha o menu lateral em telas menores -->
-        <button class="icon-button sidebar-close" id="closeSidebar" type="button" aria-label="Fechar menu">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-
-      <!-- NavegaÃ§Ã£o principal do sistema -->
-      <nav class="sidebar-nav" aria-label="Menu principal">
-
-        <!-- Link da pÃ¡gina atual. A classe active destaca o item no menu. -->
-        <a class="nav-link active" href="pagina-inicial.php">
-          <i class="bi bi-house-door-fill"></i>
-          <span>P&aacute;gina Inicial</span>
-        </a>
-        <a class="nav-link" href="dashboard.php">
-          <i class="bi bi-bar-chart-fill"></i>
-          <span>Dashboard</span>
-        </a>
-
-        <!-- Link para a tela de funcionÃ¡rios -->
-<?php if ($sidebarIsAdmin): ?>
-        <a class="nav-link" href="funcionarios.php">
-          <i class="bi bi-people-fill"></i>
-          <span>Funcion&aacute;rios</span>
-        </a>
-<?php else: ?>
-        <span class="nav-link nav-link-disabled" aria-disabled="true" data-permission-resource="Funcionarios" title="Apenas administradores podem acessar funcionarios">
-          <i class="bi bi-people-fill"></i>
-          <span>Funcion&aacute;rios</span>
-        </span>
-<?php endif; ?>
-
-        <a class="nav-link" href="marcas-visualizacao.php">
-          <i class="bi bi-tags-fill"></i>
-          <span>Marcas</span>
-        </a>
-
-        <a class="nav-link" href="propriedades-visualizacao.php">
-          <i class="bi bi-building-check"></i>
-          <span>Propriedades</span>
-        </a>
-
-        <a class="nav-link" href="locais-visualizacao.php">
-          <i class="bi bi-geo-alt-fill"></i>
-          <span>Localiza&ccedil;&otilde;es</span>
-        </a>
-        <!-- Grupo expansÃ­vel de cadastros -->
-        <div class="nav-group" data-nav-group>
-          <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="registrationSubmenu">
-            <i class="bi bi-folder-plus"></i>
-            <span>Cadastros</span>
-            <i class="bi bi-chevron-down nav-chevron"></i>
-          </button>
-
-          <!-- Submenu controlado pelo JavaScript -->
-          <div class="nav-submenu" id="registrationSubmenu">
-            <a href="cadastro-ativos.php">Ativos</a>
-            <a href="marcas.php">Marcas</a>
-            <a href="propriedades.php">Propriedades</a>
-<?php if ($sidebarIsAdmin): ?>
-            <a href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
-            <a href="cadastro-grupos.php">Grupos</a>
-
-<?php else: ?>
-            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Cadastro de funcionarios" title="Apenas administradores podem cadastrar funcionarios">Funcion&aacute;rios</span>
-            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Cadastro de grupos" title="Apenas administradores podem criar grupos">Grupos</span>
-
-<?php endif; ?>
-            <a href="locais.php">Localiza&ccedil;&otilde;es</a>
-          </div>
-        </div>
-
-        <div class="nav-group" data-nav-group>
-          <button class="nav-link nav-toggle" type="button" aria-expanded="false" aria-controls="editingSubmenu">
-            <i class="bi bi-pencil-square"></i>
-            <span>Edi&ccedil;&atilde;o</span>
-            <i class="bi bi-chevron-down nav-chevron"></i>
-          </button>
-
-          <div class="nav-submenu" id="editingSubmenu">
-            <a href="edicao-ativos.php">Ativos</a>
-            <a href="edicao-marcas.php">Marcas</a>
-            <a href="edicao-propriedades.php">Propriedades</a>
-            <?php if ($sidebarIsAdmin): ?>
-            <a href="edicao-funcionarios.php">Funcion&aacute;rios</a>
-            <a href="edicao-grupos.php">Grupos</a>
-            <?php else: ?>
-            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Edicao de funcionarios" title="Apenas administradores podem editar funcionarios">Funcion&aacute;rios</span>
-            <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true" data-permission-resource="Edicao de grupos" title="Apenas administradores podem editar grupos">Grupos</span>
-            <?php endif; ?>
-            <a href="edicao-locais.php">Localiza&ccedil;&otilde;es</a>
-          </div>
-        </div>
-
-        <a class="nav-link" href="ativos.php">
-          <i class="bi bi-hdd-network-fill"></i>
-          <span>Ativos</span>
-        </a>
-
-        <!-- Link para configuraÃ§Ãµes do sistema -->
-        <a class="nav-link" href="configuracoes.php">
-          <i class="bi bi-gear-fill"></i>
-          <span>Configura&ccedil;&otilde;es</span>
-        </a>
-      </nav>
-
-      <!-- RodapÃ© do menu com usuÃ¡rio logado e saÃ­da do sistema -->
-      <div class="sidebar-footer">
-        <div class="sidebar-summary user-summary-card">
-          <div class="sidebar-avatar" aria-hidden="true"><?php echo $sidebarInitials; ?></div>
-          <div class="sidebar-user-info">
-            <strong title="<?php echo $nomeUsuario; ?>"><?php echo $nomeUsuario; ?></strong>
-            <span class="sidebar-role <?php echo $sidebarRoleClass; ?>"><?php echo $sidebarRoleLabel; ?></span>
-            <small
-              title="<?php echo $sidebarEmail; ?>"><?php echo $sidebarEmail !== "" ? $sidebarEmail : "Email nao informado"; ?></small>
-            <small title="<?php echo $sidebarDepartment; ?>"><?php echo $sidebarDepartment; ?></small>
-          </div>
-        </div>
-
-        <!-- Logout: encerra a sessÃ£o no backend e tira o usuÃ¡rio do sistema -->
-        <a href="Backend/logout.php" class="logout-button">
-          <i class="bi bi-box-arrow-left"></i>
-          <span>Sair do sistema</span>
-        </a>
-      </div>
-    </aside>
-
-    <!-- Fundo clicÃ¡vel usado para fechar a sidebar em telas menores -->
-    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <?php require __DIR__ . "/components/sidebar.php"; ?>
 
     <!-- ConteÃºdo principal da pÃ¡gina -->
     <main class="main-area">
