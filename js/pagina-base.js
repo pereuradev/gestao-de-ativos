@@ -288,6 +288,7 @@ function setupSidebar() {
  * Abre a sidebar adicionando a classe "sidebar-open" no body.
  */
 function openSidebar() {
+  document.documentElement.classList.add("sidebar-open");
   document.body.classList.add("sidebar-open");
 }
 
@@ -295,6 +296,7 @@ function openSidebar() {
  * Fecha a sidebar removendo a classe "sidebar-open" do body.
  */
 function closeSidebar() {
+  document.documentElement.classList.remove("sidebar-open");
   document.body.classList.remove("sidebar-open");
 }
 

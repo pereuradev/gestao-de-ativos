@@ -577,11 +577,13 @@ function setupSidebar() {
 
 function openSidebar() {
   // A classe no body permite que CSS mova a sidebar e mostre o backdrop.
+  document.documentElement.classList.add("sidebar-open");
   document.body.classList.add("sidebar-open");
 }
 
 function closeSidebar() {
   // Fecha a sidebar removendo o estado global.
+  document.documentElement.classList.remove("sidebar-open");
   document.body.classList.remove("sidebar-open");
 }
 
