@@ -2,14 +2,20 @@
 
 declare(strict_types=1);
 
+// Este componente centraliza a sidebar usada pelas paginas da raiz do sistema.
+// Ele espera que a pagina chamadora ja tenha iniciado a sessao e validado o login.
 $componentSidebarUsuario = is_array($_SESSION["usuario"] ?? null) ? $_SESSION["usuario"] : [];
 
+// Mantem o escape consistente com a pagina chamadora quando ela ja declara e().
+// O fallback deixa o componente seguro mesmo se for incluido por uma pagina nova.
 $componentSidebarEscape = static function (mixed $value): string {
   return function_exists("e")
     ? e((string) $value)
     : htmlspecialchars((string) $value, ENT_QUOTES, "UTF-8");
 };
 
+// Monta as iniciais do usuario para o avatar da sidebar.
+// O limite de duas letras preserva o layout do card em telas pequenas.
 $componentSidebarInitials = static function (string $name): string {
   $parts = preg_split("/\s+/", trim($name)) ?: [];
   $initials = "";
@@ -29,6 +35,8 @@ $componentSidebarInitials = static function (string $name): string {
   return $initials !== "" ? $initials : "TT";
 };
 
+// Verifica permissoes combinando a regra de admin com as permissoes dos grupos.
+// Isso permite que usuarios nao administradores vejam apenas os menus liberados.
 $componentSidebarHasPermission = static function (string $permission) use ($componentSidebarUsuario): bool {
   if (function_exists("usuarioGrupoAcessoAdmin") && usuarioGrupoAcessoAdmin($componentSidebarUsuario)) {
     return true;
@@ -45,24 +53,31 @@ $componentSidebarHasPermission = static function (string $permission) use ($comp
   return is_array($permissions) && in_array($permission, $permissions, true);
 };
 
+// Identifica a pagina atual para marcar o link ativo automaticamente.
+// Assim cada tela nao precisa informar manualmente qual item deve ficar destacado.
 $componentSidebarCurrentPage = basename((string) parse_url($_SERVER["SCRIPT_NAME"] ?? "", PHP_URL_PATH));
 
+// Compara o arquivo do link com o script atual.
 $componentSidebarIsActive = static function (string $href) use ($componentSidebarCurrentPage): bool {
   return basename($href) === $componentSidebarCurrentPage;
 };
 
+// Gera a classe CSS do link e adiciona active quando for a pagina atual.
 $componentSidebarLinkClass = static function (string $href, string $baseClass = "nav-link") use ($componentSidebarIsActive): string {
   return $baseClass . ($componentSidebarIsActive($href) ? " active" : "");
 };
 
+// Adiciona aria-current apenas no link ativo para melhorar a acessibilidade.
 $componentSidebarCurrentAttr = static function (string $href) use ($componentSidebarIsActive): string {
   return $componentSidebarIsActive($href) ? ' aria-current="page"' : "";
 };
 
+// Destaca itens dentro de submenus quando a tela atual pertence a eles.
 $componentSidebarSubmenuClass = static function (string $href) use ($componentSidebarIsActive): string {
   return $componentSidebarIsActive($href) ? ' class="active-submenu"' : "";
 };
 
+// Mantem o grupo de submenu aberto quando a pagina atual esta dentro dele.
 $componentSidebarSubmenuIsOpen = static function (array $hrefs) use ($componentSidebarIsActive): bool {
   foreach ($hrefs as $href) {
     if ($componentSidebarIsActive($href)) {
@@ -73,6 +88,8 @@ $componentSidebarSubmenuIsOpen = static function (array $hrefs) use ($componentS
   return false;
 };
 
+// Dados exibidos no rodape da sidebar.
+// Os fallbacks evitam que a interface quebre se algum campo da sessao vier vazio.
 $componentSidebarNameText = (string) (
   $componentSidebarUsuario["nome_completo"]
   ?? $componentSidebarUsuario["nome"]
@@ -89,6 +106,7 @@ $componentSidebarEmail = $componentSidebarEscape((string) ($componentSidebarUsua
 $componentSidebarDepartment = $componentSidebarEscape((string) ($componentSidebarUsuario["departamento"] ?? "Sem departamento"));
 $componentSidebarAvatar = $componentSidebarEscape($componentSidebarInitials($componentSidebarNameText));
 
+// Permissoes usadas para liberar ou bloquear itens especificos do menu.
 $componentSidebarCanViewEmployees = $componentSidebarHasPermission("visualizar_funcionarios");
 $componentSidebarCanViewGroups = $componentSidebarHasPermission("visualizar_grupos");
 $componentSidebarCanCreateEmployees = $componentSidebarHasPermission("cadastrar_funcionarios");
@@ -96,6 +114,8 @@ $componentSidebarCanCreateGroups = $componentSidebarHasPermission("cadastrar_gru
 $componentSidebarCanEditEmployees = $componentSidebarHasPermission("editar_funcionarios");
 $componentSidebarCanEditGroups = $componentSidebarHasPermission("editar_grupos");
 
+// Listas de telas que pertencem aos grupos expansivos da sidebar.
+// Elas controlam quando Cadastros ou Edicao devem iniciar abertos.
 $componentSidebarRegistrationPages = [
   "cadastro-ativos.php",
   "marcas.php",
@@ -116,6 +136,7 @@ $componentSidebarRegistrationOpen = $componentSidebarSubmenuIsOpen($componentSid
 $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarEditingPages);
 ?>
 <aside class="sidebar" id="sidebar">
+  <!-- Cabecalho fixo da sidebar com logo e botao de fechar no mobile. -->
   <div class="sidebar-header">
     <a href="https://www.titechsolutions.com.br/" class="brand-area" aria-label="Acessar site da TI TECH Solutions">
       <img class="brand-logo" src="assets/logo-branca.png" alt="TI TECH Solutions" />
@@ -126,7 +147,9 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
     </button>
   </div>
 
+  <!-- Navegacao principal. O scroll visual fica no CSS aplicado a .sidebar-nav. -->
   <nav class="sidebar-nav" aria-label="Menu principal">
+    <!-- Links principais sempre visiveis. A classe active e calculada pelo componente. -->
     <a class="<?php echo $componentSidebarLinkClass("pagina-inicial.php"); ?>" href="pagina-inicial.php" <?php echo $componentSidebarCurrentAttr("pagina-inicial.php"); ?>>
       <i class="bi bi-house-door-fill"></i>
       <span>P&aacute;gina Inicial</span>
@@ -137,6 +160,7 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
       <span>Dashboard</span>
     </a>
 
+    <!-- Funcionarios depende de permissao de visualizacao. Sem acesso, aparece bloqueado. -->
     <?php if ($componentSidebarCanViewEmployees): ?>
       <a class="<?php echo $componentSidebarLinkClass("funcionarios.php"); ?>" href="funcionarios.php" <?php echo $componentSidebarCurrentAttr("funcionarios.php"); ?>>
         <i class="bi bi-people-fill"></i>
@@ -150,6 +174,7 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
       </span>
     <?php endif; ?>
 
+    <!-- Grupos tambem respeita permissao de visualizacao independente. -->
     <?php if ($componentSidebarCanViewGroups): ?>
       <a class="<?php echo $componentSidebarLinkClass("grupos-visualizacao.php"); ?>" href="grupos-visualizacao.php" <?php echo $componentSidebarCurrentAttr("grupos-visualizacao.php"); ?>>
         <i class="bi bi-collection-fill"></i>
@@ -163,6 +188,7 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
       </span>
     <?php endif; ?>
 
+    <!-- Links de consulta que ficam disponiveis na navegacao principal. -->
     <a class="<?php echo $componentSidebarLinkClass("marcas-visualizacao.php"); ?>" href="marcas-visualizacao.php" <?php echo $componentSidebarCurrentAttr("marcas-visualizacao.php"); ?>>
       <i class="bi bi-tags-fill"></i>
       <span>Marcas</span>
@@ -179,6 +205,7 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
       <span>Localiza&ccedil;&otilde;es</span>
     </a>
 
+    <!-- Grupo expansivo de telas de cadastro. -->
     <div class="nav-group<?php echo $componentSidebarRegistrationOpen ? " open" : ""; ?>" data-nav-group>
       <button class="nav-link nav-toggle<?php echo $componentSidebarRegistrationOpen ? " active" : ""; ?>" type="button"
         aria-expanded="<?php echo $componentSidebarRegistrationOpen ? "true" : "false"; ?>"
@@ -192,6 +219,8 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
         <a<?php echo $componentSidebarSubmenuClass("cadastro-ativos.php"); ?> href="cadastro-ativos.php">Ativos</a>
         <a<?php echo $componentSidebarSubmenuClass("marcas.php"); ?> href="marcas.php">Marcas</a>
         <a<?php echo $componentSidebarSubmenuClass("propriedades.php"); ?> href="propriedades.php">Propriedades</a>
+
+        <!-- Cadastro de funcionarios aparece como bloqueado para quem nao tem permissao. -->
         <?php if ($componentSidebarCanCreateEmployees): ?>
           <a<?php echo $componentSidebarSubmenuClass("cadastro-funcionarios.php"); ?>
             href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
@@ -200,6 +229,8 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
             data-permission-resource="Cadastro de funcionarios"
             title="Apenas usuarios autorizados podem cadastrar funcionarios">Funcion&aacute;rios</span>
         <?php endif; ?>
+
+        <!-- Cadastro de grupos segue regra propria, separada da regra de funcionarios. -->
         <?php if ($componentSidebarCanCreateGroups): ?>
           <a<?php echo $componentSidebarSubmenuClass("cadastro-grupos.php"); ?> href="cadastro-grupos.php">
             Grupos</a>
@@ -213,6 +244,7 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
       </div>
     </div>
 
+    <!-- Grupo expansivo de telas de edicao. -->
     <div class="nav-group<?php echo $componentSidebarEditingOpen ? " open" : ""; ?>" data-nav-group>
       <button class="nav-link nav-toggle<?php echo $componentSidebarEditingOpen ? " active" : ""; ?>" type="button"
         aria-expanded="<?php echo $componentSidebarEditingOpen ? "true" : "false"; ?>" aria-controls="editingSubmenu">
@@ -226,6 +258,8 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
         <a<?php echo $componentSidebarSubmenuClass("edicao-marcas.php"); ?> href="edicao-marcas.php">Marcas</a>
         <a<?php echo $componentSidebarSubmenuClass("edicao-propriedades.php"); ?> href="edicao-propriedades.php">
           Propriedades</a>
+
+        <!-- Edicao de funcionarios respeita permissao especifica. -->
         <?php if ($componentSidebarCanEditEmployees): ?>
           <a<?php echo $componentSidebarSubmenuClass("edicao-funcionarios.php"); ?> href="edicao-funcionarios.php">
             Funcion&aacute;rios</a>
@@ -234,6 +268,8 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
             data-permission-resource="Edicao de funcionarios"
             title="Apenas usuarios autorizados podem editar funcionarios">Funcion&aacute;rios</span>
         <?php endif; ?>
+
+        <!-- Edicao de grupos segue a mesma estrategia de bloqueio visual. -->
         <?php if ($componentSidebarCanEditGroups): ?>
           <a<?php echo $componentSidebarSubmenuClass("edicao-grupos.php"); ?> href="edicao-grupos.php">Grupos</a>
         <?php else: ?>
@@ -246,6 +282,7 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
       </div>
     </div>
 
+    <!-- Links finais da navegacao principal. -->
     <a class="<?php echo $componentSidebarLinkClass("ativos.php"); ?>" href="ativos.php" <?php echo $componentSidebarCurrentAttr("ativos.php"); ?>>
       <i class="bi bi-hdd-network-fill"></i>
       <span>Ativos</span>
@@ -257,6 +294,7 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
     </a>
   </nav>
 
+  <!-- Rodape fixo com resumo do usuario e acao de logout. -->
   <div class="sidebar-footer">
     <div class="sidebar-summary user-summary-card">
       <div class="sidebar-avatar" aria-hidden="true"><?php echo $componentSidebarAvatar; ?></div>
@@ -277,4 +315,5 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
   </div>
 </aside>
 
+<!-- Backdrop usado pelo JavaScript para fechar a sidebar em telas menores. -->
 <div class="sidebar-backdrop" id="sidebarBackdrop"></div>

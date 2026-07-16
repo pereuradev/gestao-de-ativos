@@ -3,23 +3,25 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+    <!-- adiciona titulo na página -->
     <title>Login | TI TECH Assets</title>
     <meta
       name="description"
       content="P&aacute;gina inicial de login do portal interno da TI TECH Solutions"
     />
-
+    <!-- adiciona favicon na página -->
     <link rel="icon" type="image/png" href="assets/favicon.png" />
+    <!--adiciona estilos do Bootstrap -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+    <!-- adiciona ícones do Bootstrap -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
       rel="stylesheet"
     />
-
+    <!--adiciona estilos personalizados -->
     <link
       rel="stylesheet"
       href="css/pagina-login.css?v=20260713-workplace-badge-2026"
@@ -29,15 +31,19 @@
       rel="stylesheet"
       href="css/responsivo-global.css?v=20260626-react-responsive"
     />
+    <!--adciona a bilbioteca typewriter -->
     <script src="js/typewriter.js?v=20260619-stable" defer></script>
+    <!-- adiciona a biblioteca GSAP para animações -->
     <script
       src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"
       defer
     ></script>
+    <!--adiciona o script da página de login -->
     <script src="js/pagina-login.js?v=20260710-premium-login" defer></script>
   </head>
 
   <body class="theme-dark page-loading">
+    <!--conteúdo principal da página -->
     <main class="app-shell">
       <section
         id="loginView"
@@ -45,6 +51,7 @@
         aria-label="P&aacute;gina de login"
       >
         <div class="theme-floating">
+          <!-- Botão de alternância de tema -->
           <button
             id="themeToggleLogin"
             class="theme-toggle has-tooltip"
@@ -65,7 +72,9 @@
         </div>
 
         <aside class="login-brand">
+          <!--conteudo da página na esquerda-->
           <div class="brand-content">
+            <!--adiciona a logo da TI TECH Solutions e a função de link ao clicar-->
             <a
               class="logo-link"
               href="https://www.titechsolutions.com.br/"
@@ -80,14 +89,17 @@
 
             <div class="brand-text">
               <h1 class="brand-title">
+                <!-- Adiciona texto com efeito de digitação com a biblioteca typewriter -->
                 <span
                   class="typewriter-heading"
                   style="--typewriter-min: 24ch"
                   data-typewriter-loop
                   data-typewriter-phrases="Gest&atilde;o interna simples.|Segura e eficiente.|Controle com clareza."
-                  >Gest&atilde;o interna simples.</span
-                ><span aria-hidden="true"></span>
+                  >Gest&atilde;o interna simples.
+                </span>
+                <span aria-hidden="true"></span>
               </h1>
+              <!--adiciona a descrição do portal-->
               <p class="brand-lead">
                 Um portal interno desenvolvido para facilitar o controle de
                 ativos, melhorar a organiza&ccedil;&atilde;o dos dados e apoiar
@@ -98,6 +110,7 @@
           </div>
 
           <figure class="workplace-badge">
+            <!-- Adiciona o selo de certificação Great Place to Work com animação Hover-->
             <span class="workplace-badge-crop">
               <img
                 src="assets/great-place-to-work-certificada-2025-2026.png"
@@ -109,7 +122,6 @@
             </span>
           </figure>
         </aside>
-
         <section class="login-side">
           <div class="login-ambient" aria-hidden="true">
             <span></span>
@@ -119,19 +131,22 @@
             <span></span>
             <span></span>
           </div>
-
+          <!--adiciona o card de login com formulário de acesso-->
           <div class="login-card" aria-label="Formul&aacute;rio de acesso">
             <div class="login-card-header">
+              <!--adiciona a logo da TI TECH Solutions e a função de link ao clicar-->
               <a
                 class="logo-link"
                 href="https://www.titechsolutions.com.br/"
                 aria-label="Acessar site da TI TECH Solutions"
               >
+                <!--imagem da logo Branca-->
                 <img
                   class="login-card-logo logo-dark"
                   src="assets/logo.png"
                   alt="TI TECH Solutions"
                 />
+                <!--imagem da logo Normal-->
                 <img
                   class="login-card-logo logo-light"
                   src="assets/logo-branca.png"
@@ -140,6 +155,7 @@
               </a>
 
               <div class="login-heading">
+                <!--adiciona o cabeçalho do card de login-->
                 <p class="card-kicker">Portal interno</p>
                 <h1>
                   <span
@@ -153,12 +169,13 @@
                 </p>
               </div>
             </div>
-
+            <!--adiciona a opção do tipo de usuário -->
             <div
               class="segment-control role-switch"
               role="radiogroup"
               aria-label="Tipo de acesso"
             >
+              <!--adiciona o botão de colaborador-->
               <button
                 class="role-option active"
                 data-role="Colaborador"
@@ -170,6 +187,7 @@
                 <i class="bi bi-person-badge" aria-hidden="true"></i>
                 <span>Colaborador</span>
               </button>
+              <!--adiciona o botão de administrador-->
               <button
                 class="role-option"
                 data-role="Administrador"
@@ -182,7 +200,7 @@
                 <span>Administrador</span>
               </button>
             </div>
-
+            <!--adiciona o painel de informações do tipo de usuário-->
             <div id="rolePanel" class="role-panel" aria-live="polite">
               <span id="roleBadge" class="role-badge"
                 >Acesso operacional seguro</span
@@ -193,13 +211,14 @@
                 os recursos liberados para sua fun&ccedil;&atilde;o.
               </p>
             </div>
-
+            <!--adiciona o formulário de login-->
             <form
               id="loginForm"
               action="Backend/login-usuario.php"
               method="post"
               novalidate
             >
+              <!--adiciona o campo email para o usuário -->
               <input
                 id="roleInput"
                 name="tipo_usuario"
@@ -232,6 +251,7 @@
                 <p id="emailError" class="field-error" role="alert" hidden></p>
               </div>
 
+              <!--adiciona o campo senha para o usuário -->
               <div class="form-group" data-field="password">
                 <label class="form-label" for="password">
                   <span>Senha</span>
@@ -254,7 +274,7 @@
                     aria-describedby="passwordError"
                     aria-invalid="false"
                   />
-
+                  <!--adiciona o botão para mostrar/ocultar senha-->
                   <button
                     id="passwordToggle"
                     class="password-toggle has-tooltip"
@@ -291,7 +311,7 @@
                     </small>
                   </span>
                 </label>
-
+                <!--adiciona o link para recuperar senha que redireciona para outra página-->
                 <a
                   id="forgotPasswordLink"
                   class="link-btn has-tooltip"
@@ -311,7 +331,7 @@
                 data-default-label="Entrar com seguran&ccedil;a"
               >
                 <i class="bi bi-lock" aria-hidden="true"></i>
-                <span>Entrar com seguran&ccedil;a</span>
+                <span>Entrar </span>
               </button>
 
               <div class="register-callout">
@@ -325,6 +345,7 @@
         </section>
       </section>
     </main>
+    <!--adiciona o diálogo para contas inativas-->
     <div id="inactiveAccountDialog" class="login-dialog-backdrop" hidden>
       <section
         class="login-dialog-card"
@@ -365,6 +386,5 @@
     </div>
     <div id="toastStack" class="toast-stack" aria-live="polite"></div>
     <div class="custom-cursor" aria-hidden="true"></div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>
