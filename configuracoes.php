@@ -189,7 +189,6 @@ $cpfUsuarioTexto = campoPerfil($perfil, "cpf");
 $criadoEm = formatarDataPerfil((string) ($perfil["criado_em"] ?? ""));
 $atualizadoEm = formatarDataPerfil((string) ($perfil["atualizado_em"] ?? ""));
 $ultimoAcesso = date("d/m/Y H:i");
-$codigoInterno = "TT-USER-" . str_pad(substr(preg_replace("/\D/", "", (string) ($perfil["id"] ?? "")), 0, 3) ?: "001", 3, "0", STR_PAD_LEFT);
 
 $nomeUsuario = e($nomeUsuarioTexto);
 $tipoUsuario = e($tipoUsuarioTexto);
@@ -202,7 +201,6 @@ $rgUsuario = e($rgUsuarioTexto);
 $cpfUsuario = e($cpfUsuarioTexto);
 $iniciais = e(iniciaisUsuario($nomeUsuarioTexto));
 $statusClasse = e(statusClasseConfiguracao($statusUsuarioTexto));
-$codigoInternoEscapado = e($codigoInterno);
 $permissoesUsuario = array_values(array_unique(array_intersect($permissoesUsuario, array_keys($rotulosPermissoes))));
 $permissoesConcedidas = array_flip($permissoesUsuario);
 $totalPermissoesUsuario = count($permissoesUsuario);
@@ -328,7 +326,6 @@ $resumoPermissoes = $usuarioEhAdmin
         <article class="content-card digital-badge-card" id="conta">
           <div class="badge-topline">
             <span>Cracha digital</span>
-            <strong><?php echo $codigoInternoEscapado; ?></strong>
           </div>
 
           <div class="badge-main">

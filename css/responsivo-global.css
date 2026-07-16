@@ -56,52 +56,6 @@ button {
   width: 100%;
 }
 
-.react-mobile-dock {
-  position: fixed;
-  right: 14px;
-  bottom: 14px;
-  left: 14px;
-  z-index: 90;
-  display: none;
-  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-  gap: 10px;
-  padding: 10px;
-  border: 1px solid rgba(102, 213, 194, 0.22);
-  border-radius: 18px;
-  background:
-    linear-gradient(145deg, rgba(79, 199, 177, 0.16), transparent 42%),
-    rgba(5, 20, 34, 0.92);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
-  backdrop-filter: blur(16px);
-}
-
-.theme-light .react-mobile-dock {
-  border-color: rgba(11, 31, 48, 0.12);
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 18px 44px rgba(9, 31, 48, 0.14);
-}
-
-.react-mobile-dock button {
-  min-width: 0;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 1px solid var(--line, rgba(255, 255, 255, 0.14));
-  border-radius: 14px;
-  color: var(--text, #f6fbff);
-  background: var(--soft, rgba(255, 255, 255, 0.08));
-  font: inherit;
-  font-size: 0.78rem;
-  font-weight: 900;
-}
-
-.react-mobile-dock button:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--mint, #66d5c2) 54%, transparent);
-  outline-offset: 2px;
-}
-
 @media (max-width: 1180px) {
   .content-grid,
   .metrics-grid,
@@ -119,14 +73,6 @@ button {
 }
 
 @media (max-width: 920px) {
-  body {
-    padding-bottom: 78px;
-  }
-
-  .react-mobile-dock {
-    display: grid;
-  }
-
   .main-area {
     margin-left: 0 !important;
     padding: 16px !important;
@@ -257,18 +203,6 @@ button {
 }
 
 @media (max-width: 540px) {
-  .react-mobile-dock {
-    right: 10px;
-    bottom: 10px;
-    left: 10px;
-    gap: 8px;
-    padding: 8px;
-  }
-
-  .react-mobile-dock button span {
-    display: none;
-  }
-
   .main-area {
     padding: 10px !important;
   }

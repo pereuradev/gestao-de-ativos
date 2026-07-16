@@ -8,27 +8,6 @@
     callback();
   }
 
-  function toggleTheme() {
-    const toggle = document.getElementById("themeToggle") || document.getElementById("themeToggleLogin");
-
-    if (toggle) {
-      toggle.click();
-    }
-  }
-
-  function openMenu() {
-    if (typeof window.openSidebar === "function") {
-      window.openSidebar();
-      return;
-    }
-
-    document.body.classList.add("sidebar-open");
-  }
-
-  function scrollTop() {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
   function initReactWidgets() {
     if (!window.React || !window.ReactDOM) {
       return;
@@ -40,52 +19,7 @@
     document.body.appendChild(root);
 
     const h = window.React.createElement;
-    const { Fragment, useEffect, useRef, useState } = window.React;
-
-    function MobileDock() {
-      const hasSidebar = Boolean(document.getElementById("sidebar"));
-      const actions = [
-        hasSidebar && {
-          key: "menu",
-          icon: "bi bi-list",
-          label: "Menu",
-          action: openMenu,
-        },
-        {
-          key: "theme",
-          icon: "bi bi-circle-half",
-          label: "Tema",
-          action: toggleTheme,
-        },
-        {
-          key: "top",
-          icon: "bi bi-arrow-up",
-          label: "Topo",
-          action: scrollTop,
-        },
-      ].filter(Boolean);
-
-      return h(
-        "nav",
-        {
-          className: "react-mobile-dock",
-          "aria-label": "Acoes rapidas responsivas",
-        },
-        actions.map((item) =>
-          h(
-            "button",
-            {
-              key: item.key,
-              type: "button",
-              onClick: item.action,
-              "aria-label": item.label,
-            },
-            h("i", { className: item.icon, "aria-hidden": "true" }),
-            h("span", null, item.label)
-          )
-        )
-      );
-    }
+    const { useEffect, useRef, useState } = window.React;
 
     function HeadlessPermissionDialog() {
       const [isOpen, setIsOpen] = useState(false);
@@ -192,12 +126,7 @@
     }
 
     function ReactWidgetsApp() {
-      return h(
-        Fragment,
-        null,
-        h(MobileDock),
-        h(HeadlessPermissionDialog),
-      );
+      return h(HeadlessPermissionDialog);
     }
 
     window.ReactDOM.createRoot(root).render(h(ReactWidgetsApp));

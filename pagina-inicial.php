@@ -44,16 +44,16 @@ $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], t
 <html lang="pt-BR">
 
 <head>
-  <!-- ConfiguraÃ§Ã£o bÃ¡sica de caracteres e responsividade -->
+  <!-- Configuração básica de caracteres e responsividade -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- TÃ­tulo e descriÃ§Ã£o da pÃ¡gina -->
+  <!-- Título e descrição da página -->
   <title>P&aacute;gina Inicial | TI TECH Solutions</title>
   <meta name="description"
     content="P&aacute;gina inicial do portal interno de gest&atilde;o de ativos da TI TECH Solutions" />
 
-  <!-- Ãcone exibido na aba do navegador -->
+  <!-- ícone exibido na aba do navegador -->
   <link rel="icon" type="image/png" href="assets/favicon.png?v=20260630-ti-favicon" />
 
   <!-- Otimiza a conexÃ£o com o Google Fonts antes de carregar a fonte -->
@@ -66,16 +66,16 @@ $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], t
   <!-- Bootstrap Icons: biblioteca usada para os Ã­cones da interface -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
-  <!-- Arquivos CSS da pÃ¡gina -->
+  <!-- Arquivos CSS da página -->
   <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
 
-  <!-- Chart.js usado para renderizar grÃ¡ficos no dashboard -->
+  <!-- Chart.js usado para renderizar gráficos no dashboard -->
   <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
 
-  <!-- Scripts da pÃ¡gina. O defer evita bloquear o carregamento do HTML. -->
+  <!-- Scripts da página. O defer evita bloquear o carregamento do HTML. -->
   <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
   <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
@@ -86,7 +86,7 @@ $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], t
 </head>
 
 <body class="theme-dark page-loading" <?php echo $permissionDeniedResource !== "" ? 'data-permission-dialog-open="true" data-permission-resource="' . e($permissionDeniedResource) . '"' : ""; ?>>
-  <!-- Estrutura principal: menu lateral e conteÃºdo da pÃ¡gina -->
+  <!-- Estrutura principal: menu lateral e conteúdo da página -->
   <div class="app-shell">
 
     <!-- Menu lateral fixo da aplicaÃ§Ã£o -->
@@ -157,17 +157,18 @@ $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], t
               Ver ativos
             </a>
 
-<?php if ($sidebarIsAdmin): ?>
-            <a href="funcionarios.php" class="secondary-button">
-              <i class="bi bi-people-fill"></i>
-              Funcion&aacute;rios
-            </a>
-<?php else: ?>
-            <span class="secondary-button disabled-action" aria-disabled="true" data-permission-resource="Funcionarios" title="Apenas administradores podem acessar funcionarios">
-              <i class="bi bi-people-fill"></i>
-              Funcion&aacute;rios
-            </span>
-<?php endif; ?>
+            <?php if ($sidebarIsAdmin): ?>
+              <a href="funcionarios.php" class="secondary-button">
+                <i class="bi bi-people-fill"></i>
+                Funcion&aacute;rios
+              </a>
+            <?php else: ?>
+              <span class="secondary-button disabled-action" aria-disabled="true" data-permission-resource="Funcionarios"
+                title="Apenas administradores podem acessar funcionarios">
+                <i class="bi bi-people-fill"></i>
+                Funcion&aacute;rios
+              </span>
+            <?php endif; ?>
           </div>
         </div>
       </section>

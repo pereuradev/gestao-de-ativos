@@ -163,7 +163,11 @@ body.theme-dark {
   --line: rgba(255, 255, 255, 0.13);
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
   --page-bg:
-    radial-gradient(circle at 8% 8%, color-mix(in srgb, var(--mint) 18%, transparent), transparent 30%),
+    radial-gradient(
+      circle at 8% 8%,
+      color-mix(in srgb, var(--mint) 18%, transparent),
+      transparent 30%
+    ),
     radial-gradient(
       circle at 92% 18%,
       color-mix(in srgb, var(--cyan) 16%, transparent),
@@ -197,7 +201,11 @@ body.theme-light {
   --line: rgba(11, 31, 48, 0.12);
   --shadow: 0 22px 70px rgba(9, 31, 48, 0.13);
   --page-bg:
-    radial-gradient(circle at 8% 8%, color-mix(in srgb, var(--mint) 20%, transparent), transparent 30%),
+    radial-gradient(
+      circle at 8% 8%,
+      color-mix(in srgb, var(--mint) 20%, transparent),
+      transparent 30%
+    ),
     radial-gradient(
       circle at 92% 18%,
       color-mix(in srgb, var(--cyan) 20%, transparent),
@@ -328,6 +336,8 @@ button {
   padding: 22px;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: rgba(4, 15, 29, 0.86);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: var(--shadow);
@@ -343,6 +353,23 @@ button {
 .theme-light .sidebar {
   background: rgba(255, 255, 255, 0.88);
   border-right-color: rgba(11, 31, 48, 0.1);
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(102, 213, 194, 0.42);
+  border-radius: 999px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(102, 213, 194, 0.65);
 }
 
 .sidebar-resize-handle {
@@ -398,6 +425,7 @@ body.sidebar-resizing .sidebar-resize-handle::before {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 28px;
+  flex: 0 0 auto;
 }
 
 .brand-logo {
@@ -439,6 +467,9 @@ body.sidebar-resizing .sidebar-resize-handle::before {
 .sidebar-nav {
   display: grid;
   gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .nav-group {
@@ -587,6 +618,7 @@ body.sidebar-resizing .sidebar-resize-handle::before {
   margin-top: auto;
   display: grid;
   gap: 14px;
+  flex: 0 0 auto;
 }
 
 .sidebar-summary {
@@ -601,7 +633,11 @@ body.sidebar-resizing .sidebar-resize-handle::before {
   border-radius: 20px;
   background:
     linear-gradient(145deg, rgba(79, 199, 177, 0.16), transparent 42%),
-    linear-gradient(160deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.045));
+    linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.105),
+      rgba(255, 255, 255, 0.045)
+    );
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 16px 36px rgba(0, 0, 0, 0.14);
@@ -613,7 +649,11 @@ body.sidebar-resizing .sidebar-resize-handle::before {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle at 18% 18%, rgba(102, 213, 194, 0.24), transparent 28%),
+    radial-gradient(
+      circle at 18% 18%,
+      rgba(102, 213, 194, 0.24),
+      transparent 28%
+    ),
     linear-gradient(90deg, rgba(102, 213, 194, 0.12), transparent 48%);
   opacity: 0.72;
 }
@@ -632,7 +672,11 @@ body.sidebar-resizing .sidebar-resize-handle::before {
   letter-spacing: 0.02em;
   border: 1px solid rgba(255, 255, 255, 0.28);
   background:
-    radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.35), transparent 30%),
+    radial-gradient(
+      circle at 28% 22%,
+      rgba(255, 255, 255, 0.35),
+      transparent 30%
+    ),
     linear-gradient(135deg, var(--cyan), var(--teal));
   box-shadow:
     0 12px 28px rgba(82, 211, 211, 0.22),
@@ -2346,6 +2390,11 @@ body.theme-dark .records-actions select option:checked {
 }
 
 @media (max-width: 920px) {
+  html.sidebar-open,
+  body.sidebar-open {
+    overflow: hidden;
+  }
+
   .sidebar {
     transform: translateX(-105%);
   }
