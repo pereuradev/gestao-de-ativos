@@ -9,15 +9,15 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
   exit;
 }
 
-require_once __DIR__ . "/Backend/permissoes-acesso.php";
-exigirPermissaoPagina("visualizar_propriedades", "Propriedades");
+require_once __DIR__ . "/../Backend/permissoes-acesso.php";
+exigirPermissaoPagina("visualizar_marcas", "Marcas");
 
 function e(string $value): string
 {
   return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
 }
 
-function formatarDataPropriedade(?string $value): string
+function formatarDataMarca(?string $value): string
 {
   if (!$value) {
     return "--";
@@ -34,38 +34,38 @@ function formatarDataPropriedade(?string $value): string
 
 $usuario = $_SESSION["usuario"];
 
-$propriedades = [];
-$totalPropriedades = 0;
-$propriedadesAtivas = 0;
-$propriedadesInativas = 0;
+$marcas = [];
+$totalMarcas = 0;
+$marcasAtivas = 0;
+$marcasInativas = 0;
 $erroBanco = "";
 
 try {
-  require __DIR__ . "/Backend/Conexao.php";
+  require __DIR__ . "/../Backend/Conexao.php";
 
   $resumoStmt = $pdo->prepare("
         select
             count(*)::int as total,
             count(*) filter (where status = 'Ativa')::int as ativas,
             count(*) filter (where status = 'Inativa')::int as inativas
-          from public.propriedade_ativos
+          from public.marcas_ativos
     ");
   $resumoStmt->execute();
   $resumo = $resumoStmt->fetch() ?: [];
 
-  $totalPropriedades = (int) ($resumo["total"] ?? 0);
-  $propriedadesAtivas = (int) ($resumo["ativas"] ?? 0);
-  $propriedadesInativas = (int) ($resumo["inativas"] ?? 0);
+  $totalMarcas = (int) ($resumo["total"] ?? 0);
+  $marcasAtivas = (int) ($resumo["ativas"] ?? 0);
+  $marcasInativas = (int) ($resumo["inativas"] ?? 0);
 
-  $propriedadesStmt = $pdo->prepare("
+  $marcasStmt = $pdo->prepare("
         select id, nome, status, criado_em
-          from public.propriedade_ativos
+          from public.marcas_ativos
       order by nome asc
     ");
-  $propriedadesStmt->execute();
-  $propriedades = $propriedadesStmt->fetchAll();
+  $marcasStmt->execute();
+  $marcas = $marcasStmt->fetchAll();
 } catch (Throwable) {
-  $erroBanco = "Nao foi possivel carregar as propriedades do banco agora.";
+  $erroBanco = "Nao foi possivel carregar as marcas do banco agora.";
 }
 ?>
 <!doctype html>
@@ -75,31 +75,31 @@ try {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <title>Propriedades cadastradas | TI TECH Solutions</title>
-  <meta name="description" content="Visualizacao das propriedades cadastradas para ativos da TI TECH Solutions" />
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260630-ti-favicon" />
+  <title>Marcas cadastradas | TI TECH Solutions</title>
+  <meta name="description" content="Visualizacao das marcas cadastradas para ativos da TI TECH Solutions" />
+  <link rel="icon" type="image/png" href="../assets/favicon.png?v=20260630-ti-favicon" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
-  <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/propriedades.css?v=20260626-clear-button" />
-  <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
-  <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
-  <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
-  <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
-  <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
-  <script src="js/propriedades.js?v=20260626-properties" defer></script>
+  <link rel="stylesheet" href="../css/pagina-base.css?v=20260630-reduced-motion" />
+  <link rel="stylesheet" href="../css/marcas.css?v=20260626-clear-button" />
+  <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
+  <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
+  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
+  <script src="../js/typewriter.js?v=20260630-reduced-motion" defer></script>
+  <script src="../js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
+  <script src="../js/app-base.js?v=20260707-group-view-route" defer></script>
+  <script src="../js/marcas.js?v=20260625-view-only" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
-  <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
+  <script src="../js/react-widgets.js?v=20260626-react-responsive" defer></script>
 </head>
 
 <body class="theme-dark page-loading">
   <div class="app-shell">
-    <?php require __DIR__ . "/components/sidebar.php"; ?>
+    <?php require __DIR__ . "/../components/sidebar.php"; ?>
 
     <main class="main-area">
       <header class="topbar">
@@ -111,16 +111,16 @@ try {
           <div>
             <p class="eyebrow">Visualiza&ccedil;&atilde;o</p>
             <h1>
-              <span class="typewriter-heading" style="--typewriter-min: 18ch">Propriedades cadastradas</span><span
+              <span class="typewriter-heading" style="--typewriter-min: 18ch">Marcas cadastradas</span><span
                 aria-hidden="true"></span>
             </h1>
           </div>
         </div>
 
         <div class="topbar-actions">
-          <a class="secondary-button compact-button" href="propriedades.php">
+          <a class="secondary-button compact-button" href="marcas.php">
             <i class="bi bi-plus-circle"></i>
-            Nova propriedade
+            Nova marca
           </a>
 
           <button class="theme-toggle" id="themeToggle" type="button">
@@ -134,25 +134,25 @@ try {
         <div class="hero-content">
           <h2 id="brandsViewTitle">
             <span class="typewriter-heading" style="--typewriter-min: 21ch" data-typewriter-loop
-              data-typewriter-phrases="Consulta de propriedades.|Propriedades do inventario.|Base padronizada.">Consulta
-              de propriedades.</span><span aria-hidden="true"></span>
+              data-typewriter-phrases="Consulta de marcas.|Marcas do inventario.|Base padronizada.">Consulta de
+              marcas.</span><span aria-hidden="true"></span>
           </h2>
           <p>
-            Visualize as propriedades cadastradas, filtre por status e encontre propriedades rapidamente
+            Visualize as marcas cadastradas, filtre por status e encontre fabricantes rapidamente
             para manter o invent&aacute;rio consistente.
           </p>
         </div>
       </section>
 
-      <section class="metrics-grid" aria-label="Resumo das propriedades">
+      <section class="metrics-grid" aria-label="Resumo das marcas">
         <article class="metric-card">
           <div class="metric-icon">
             <i class="bi bi-tags-fill"></i>
           </div>
 
           <div>
-            <span>Total de propriedades</span>
-            <strong id="totalBrandsMetric"><?php echo e((string) $totalPropriedades); ?></strong>
+            <span>Total de marcas</span>
+            <strong id="totalBrandsMetric"><?php echo e((string) $totalMarcas); ?></strong>
           </div>
         </article>
 
@@ -163,7 +163,7 @@ try {
 
           <div>
             <span>Ativas</span>
-            <strong id="activeBrandsMetric"><?php echo e((string) $propriedadesAtivas); ?></strong>
+            <strong id="activeBrandsMetric"><?php echo e((string) $marcasAtivas); ?></strong>
           </div>
         </article>
 
@@ -174,7 +174,7 @@ try {
 
           <div>
             <span>Inativas</span>
-            <strong id="inactiveBrandsMetric"><?php echo e((string) $propriedadesInativas); ?></strong>
+            <strong id="inactiveBrandsMetric"><?php echo e((string) $marcasInativas); ?></strong>
           </div>
         </article>
       </section>
@@ -185,26 +185,26 @@ try {
         </div>
       <?php endif; ?>
 
-      <section class="content-card records-card asset-view-card brand-view-card" aria-label="Tabela de propriedades">
+      <section class="content-card records-card asset-view-card brand-view-card" aria-label="Tabela de marcas">
         <div class="card-header records-header">
           <div>
             <p class="section-tag">Visualiza&ccedil;&atilde;o</p>
-            <h3>Propriedades cadastradas</h3>
+            <h3>Marcas cadastradas</h3>
           </div>
 
           <div class="records-actions">
-            <span id="brandResultCount"><?php echo e((string) count($propriedades)); ?> registros</span>
+            <span id="brandResultCount"><?php echo e((string) count($marcas)); ?> registros</span>
           </div>
         </div>
 
-        <div class="asset-filter-bar brand-filter-bar" aria-label="Filtros das propriedades">
+        <div class="asset-filter-bar brand-filter-bar" aria-label="Filtros das marcas">
           <div class="search-box brand-search">
             <i class="bi bi-search"></i>
-            <input id="brandSearch" type="search" placeholder="Buscar propriedade" aria-label="Buscar propriedade"
+            <input id="brandSearch" type="search" placeholder="Buscar marca" aria-label="Buscar marca"
               autocomplete="off" />
           </div>
 
-          <select id="brandStatusFilter" aria-label="Filtrar propriedades por status">
+          <select id="brandStatusFilter" aria-label="Filtrar marcas por status">
             <option value="todos">Todos os status</option>
             <option value="ativa">Ativas</option>
             <option value="inativa">Inativas</option>
@@ -220,20 +220,20 @@ try {
           <table class="records-table brand-table">
             <thead>
               <tr>
-                <th>Propriedade</th>
+                <th>Marca</th>
                 <th>Status</th>
                 <th>Criada em</th>
               </tr>
             </thead>
             <tbody id="brandTableBody">
-              <?php foreach ($propriedades as $propriedade): ?>
+              <?php foreach ($marcas as $marca): ?>
                 <?php
-                $nome = (string) ($propriedade["nome"] ?? "");
-                $status = (string) ($propriedade["status"] ?? "");
+                $nome = (string) ($marca["nome"] ?? "");
+                $status = (string) ($marca["status"] ?? "");
                 ?>
                 <tr class="registration-row brand-row" data-status="<?php echo e(strtolower($status)); ?>"
                   data-search="<?php echo e(strtolower($nome)); ?>">
-                  <td data-label="Propriedade">
+                  <td data-label="Marca">
                     <strong><?php echo e($nome); ?></strong>
                   </td>
                   <td data-label="Status">
@@ -241,17 +241,17 @@ try {
                       <?php echo e($status); ?>
                     </span>
                   </td>
-                  <td data-label="Criada em">
-                    <?php echo e(formatarDataPropriedade((string) ($propriedade["criado_em"] ?? ""))); ?></td>
+                  <td data-label="Criada em"><?php echo e(formatarDataMarca((string) ($marca["criado_em"] ?? ""))); ?>
+                  </td>
                 </tr>
               <?php endforeach; ?>
             </tbody>
           </table>
         </div>
 
-        <div id="brandEmptyState" class="empty-state records-empty" <?php echo $propriedades ? "hidden" : ""; ?>>
+        <div id="brandEmptyState" class="empty-state records-empty" <?php echo $marcas ? "hidden" : ""; ?>>
           <i class="bi bi-info-circle"></i>
-          <span>Nenhuma propriedade encontrada.</span>
+          <span>Nenhuma marca encontrada.</span>
         </div>
       </section>
     </main>

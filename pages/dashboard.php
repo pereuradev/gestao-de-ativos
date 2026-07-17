@@ -12,7 +12,7 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     exit;
 }
 
-require_once __DIR__ . "/Backend/permissoes-acesso.php";
+require_once __DIR__ . "/../Backend/permissoes-acesso.php";
 exigirPermissaoPagina("visualizar_dashboard", "Dashboard");
 
 // Escapa qualquer texto vindo da sessao antes de mostrar no HTML.
@@ -35,7 +35,7 @@ $usuario = $_SESSION["usuario"];
     <meta name="description"
         content="Dashboard operacional de ativos, categorias, status, marcas, localizacoes e evolucao do inventario da TI TECH Solutions" />
 
-    <link rel="icon" type="image/png" href="assets/favicon.png?v=20260630-ti-favicon" />
+    <link rel="icon" type="image/png" href="../assets/favicon.png?v=20260630-ti-favicon" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" />
@@ -44,26 +44,26 @@ $usuario = $_SESSION["usuario"];
         rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
-    <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
-    <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
-    <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
-    <link rel="stylesheet" href="css/dashboard-produtos.css?v=20260702-loading-spinner-fix" />
-    <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
+    <link rel="stylesheet" href="../css/pagina-base.css?v=20260630-reduced-motion" />
+    <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
+    <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
+    <link rel="stylesheet" href="../css/dashboard-produtos.css?v=20260702-loading-spinner-fix" />
+    <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
-    <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
-    <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
-    <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
-    <script src="js/dashboard-produtos.js?v=20260702-filter-loading-feedback" defer></script>
+    <script src="../js/typewriter.js?v=20260630-reduced-motion" defer></script>
+    <script src="../js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
+    <script src="../js/app-base.js?v=20260707-group-view-route" defer></script>
+    <script src="../js/dashboard-produtos.js?v=20260702-filter-loading-feedback" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
     <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
-    <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
+    <script src="../js/react-widgets.js?v=20260626-react-responsive" defer></script>
 </head>
 
 <body class="theme-dark page-loading dashboard-products-page" data-accent="teal">
     <div class="app-shell">
         <!-- Sidebar padrao do sistema. Os links seguem a mesma ordem das outras paginas. -->
-        <?php require __DIR__ . "/components/sidebar.php"; ?>
+        <?php require __DIR__ . "/../components/sidebar.php"; ?>
 
         <main class="main-area app-main">
             <!-- Topbar fixa com titulo da pagina e botao de tema controlado pelo app-base.js. -->

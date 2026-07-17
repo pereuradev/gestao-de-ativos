@@ -1,7 +1,7 @@
 (function () {
 // Mantemos o dashboard dentro de uma funcao anonima para nao misturar variaveis
 // desta tela com os scripts globais usados nas outras paginas.
-const DASHBOARD_PRODUCTS_ENDPOINT = "Backend/dashboard-produtos.php";
+const DASHBOARD_PRODUCTS_ENDPOINT = "../Backend/dashboard-produtos.php";
 const THEME_STORAGE_KEY = "titech-theme";
 const ACCENT_STORAGE_KEY = "titech-accent";
 const THEME_TRANSITION_MS = 660;
@@ -226,7 +226,7 @@ function applyTheme(theme) {
   document.body.classList.toggle("theme-light", !isDark);
 
   document.querySelectorAll(".brand-logo").forEach((logo) => {
-    logo.src = isDark ? "assets/logo-branca.png" : "assets/Logo.png";
+    logo.src = isDark ? "../assets/logo-branca.png" : "../assets/Logo.png";
   });
 
   if (!themeToggle) {

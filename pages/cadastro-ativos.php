@@ -9,7 +9,7 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
   exit;
 }
 
-require_once __DIR__ . "/Backend/permissoes-acesso.php";
+require_once __DIR__ . "/../Backend/permissoes-acesso.php";
 exigirPermissaoPagina("cadastrar_ativos", "Cadastro de ativos");
 
 if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {
@@ -55,8 +55,8 @@ $statusOptions = [
 ];
 
 try {
-  require __DIR__ . "/Backend/Conexao.php";
-  require __DIR__ . "/Backend/status-ativos.php";
+  require __DIR__ . "/../Backend/Conexao.php";
+  require __DIR__ . "/../Backend/status-ativos.php";
 
   $statusOptions = nomesStatusAtivos($pdo);
   $statusPadrao = statusAtivoPadrao();
@@ -130,29 +130,29 @@ try {
 
   <title>Cadastro de ativos | TI TECH Solutions</title>
   <meta name="description" content="Cadastro de novos ativos em estoque conectado ao banco da TI TECH Solutions" />
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260630-ti-favicon" />
+  <link rel="icon" type="image/png" href="../assets/favicon.png?v=20260630-ti-favicon" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
-  <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260630-clean-form-card" />
-  <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
-  <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
-  <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
-  <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
-  <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
-  <script src="js/cadastro-ativos.js?v=20260702-confirm-dialogs" defer></script>
+  <link rel="stylesheet" href="../css/pagina-base.css?v=20260630-reduced-motion" />
+  <link rel="stylesheet" href="../css/cadastro-ativos.css?v=20260630-clean-form-card" />
+  <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
+  <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
+  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
+  <script src="../js/typewriter.js?v=20260630-reduced-motion" defer></script>
+  <script src="../js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
+  <script src="../js/app-base.js?v=20260707-group-view-route" defer></script>
+  <script src="../js/cadastro-ativos.js?v=20260702-confirm-dialogs" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
-  <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
+  <script src="../js/react-widgets.js?v=20260626-react-responsive" defer></script>
 </head>
 
 <body class="theme-dark page-loading">
   <div class="app-shell">
-    <?php require __DIR__ . "/components/sidebar.php"; ?>
+    <?php require __DIR__ . "/../components/sidebar.php"; ?>
 
     <main class="main-area">
       <header class="topbar">
@@ -254,7 +254,7 @@ try {
             </div>
           </div>
 
-          <form id="assetForm" class="asset-form enhanced-asset-form" action="Backend/cadastrar-ativo.php" method="post"
+          <form id="assetForm" class="asset-form enhanced-asset-form" action="../Backend/cadastrar-ativo.php" method="post"
             novalidate>
             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
 

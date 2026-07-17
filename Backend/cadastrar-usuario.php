@@ -238,7 +238,7 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     responder(false, "Sessao expirada. Entre novamente no portal.", 401, [
-        "redirect" => "../Pagina-login.html?sessao=expirada",
+        "redirect" => "../pages/Pagina-login.html?sessao=expirada",
     ]);
 }
 
@@ -515,6 +515,6 @@ $usuarioResposta = is_array($usuarioCriado ?? null) ? [
 ] : [];
 
 responder(true, "Usuario cadastrado com sucesso.", 201, [
-    "redirect" => "../cadastro-funcionarios.php",
+    "redirect" => "../pages/cadastro-funcionarios.php",
     "usuario" => $usuarioResposta,
 ]);

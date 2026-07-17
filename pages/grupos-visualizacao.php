@@ -9,7 +9,7 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
   exit;
 }
 
-require_once __DIR__ . "/Backend/permissoes-acesso.php";
+require_once __DIR__ . "/../Backend/permissoes-acesso.php";
 exigirPermissaoPagina("visualizar_grupos", "Grupos");
 
 function e(string $value): string
@@ -65,8 +65,8 @@ $totalMembros = 0;
 $erroBanco = "";
 
 try {
-  require_once __DIR__ . "/Backend/Conexao.php";
-  require_once __DIR__ . "/Backend/grupos-acesso-util.php";
+  require_once __DIR__ . "/../Backend/Conexao.php";
+  require_once __DIR__ . "/../Backend/grupos-acesso-util.php";
 
   garantirTabelasGruposAcesso($pdo);
   $permissoesDisponiveis = permissoesGruposAcesso();
@@ -150,32 +150,32 @@ try {
 
   <title>Grupos cadastrados | TI TECH Solutions</title>
   <meta name="description" content="Visualizacao dos grupos de acesso cadastrados no portal." />
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260630-ti-favicon" />
+  <link rel="icon" type="image/png" href="../assets/favicon.png?v=20260630-ti-favicon" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
-  <link rel="stylesheet" href="css/pagina-base.css?v=20260701-admin-employee-register-v2" />
-  <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260701-admin-employee-register-v2" />
-  <link rel="stylesheet" href="css/cadastro-funcionarios.css?v=20260702-employee-hero-gradient" />
-  <link rel="stylesheet" href="css/cadastro-grupos.css?v=20260707-permission-icons" />
-  <link rel="stylesheet" href="css/edicao-grupos.css?v=20260707-group-view" />
-  <link rel="stylesheet" href="css/typewriter.css?v=20260701-admin-employee-register-v2" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
-  <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
-  <script src="js/typewriter.js?v=20260701-admin-employee-register-v2" defer></script>
-  <script src="js/ux-profissional.js?v=20260701-admin-employee-register-v2" defer></script>
-  <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
-  <script src="js/grupos-visualizacao.js?v=20260707-group-view" defer></script>
+  <link rel="stylesheet" href="../css/pagina-base.css?v=20260701-admin-employee-register-v2" />
+  <link rel="stylesheet" href="../css/cadastro-ativos.css?v=20260701-admin-employee-register-v2" />
+  <link rel="stylesheet" href="../css/cadastro-funcionarios.css?v=20260702-employee-hero-gradient" />
+  <link rel="stylesheet" href="../css/cadastro-grupos.css?v=20260707-permission-icons" />
+  <link rel="stylesheet" href="../css/edicao-grupos.css?v=20260707-group-view" />
+  <link rel="stylesheet" href="../css/typewriter.css?v=20260701-admin-employee-register-v2" />
+  <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
+  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
+  <script src="../js/typewriter.js?v=20260701-admin-employee-register-v2" defer></script>
+  <script src="../js/ux-profissional.js?v=20260701-admin-employee-register-v2" defer></script>
+  <script src="../js/app-base.js?v=20260707-group-view-route" defer></script>
+  <script src="../js/grupos-visualizacao.js?v=20260707-group-view" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
-  <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
+  <script src="../js/react-widgets.js?v=20260626-react-responsive" defer></script>
 </head>
 
 <body class="theme-dark page-loading">
   <div class="app-shell">
-    <?php require __DIR__ . "/components/sidebar.php"; ?>
+    <?php require __DIR__ . "/../components/sidebar.php"; ?>
 
     <main class="main-area employee-registration-page group-registration-page group-edit-page group-view-page">
       <header class="topbar">

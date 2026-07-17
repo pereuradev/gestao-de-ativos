@@ -26,5 +26,5 @@ if (ini_get("session.use_cookies")) {
 session_destroy();
 
 // Redireciona com um parametro para a tela mostrar a mensagem correta.
-header("Location: ../Pagina-login.html?sessao=encerrada");
+header("Location: ../pages/Pagina-login.html?sessao=encerrada");
 exit;

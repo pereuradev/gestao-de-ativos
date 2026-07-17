@@ -139,7 +139,7 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
   <!-- Cabecalho fixo da sidebar com logo e botao de fechar no mobile. -->
   <div class="sidebar-header">
     <a href="https://www.titechsolutions.com.br/" class="brand-area" aria-label="Acessar site da TI TECH Solutions">
-      <img class="brand-logo" src="assets/logo-branca.png" alt="TI TECH Solutions" />
+      <img class="brand-logo" src="../assets/logo-branca.png" alt="TI TECH Solutions" />
     </a>
 
     <button class="icon-button sidebar-close" id="closeSidebar" type="button" aria-label="Fechar menu">
@@ -308,7 +308,7 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
       </div>
     </div>
 
-    <a href="Backend/logout.php" class="logout-button">
+    <a href="../Backend/logout.php" class="logout-button">
       <i class="bi bi-box-arrow-left"></i>
       <span>Sair do sistema</span>
     </a>

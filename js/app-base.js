@@ -126,7 +126,7 @@ async function hydrateSidebarProfile() {
   }
 
   try {
-    const response = await fetch("Backend/usuario-sessao.php", {
+    const response = await fetch("../Backend/usuario-sessao.php", {
       method: "GET",
       credentials: "same-origin",
       headers: { Accept: "application/json" },
@@ -290,7 +290,7 @@ function disableNavigationLink(link, resource) {
 function updateBrandLogo(isDark) {
   // Troca o logo para manter contraste correto no modo claro e escuro.
   document.querySelectorAll(".brand-logo").forEach((logo) => {
-    logo.src = isDark ? "assets/logo-branca.png" : "assets/Logo.png";
+    logo.src = isDark ? "../assets/logo-branca.png" : "../assets/Logo.png";
   });
 }
 

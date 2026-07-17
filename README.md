@@ -198,17 +198,20 @@ SIte-Gestao_de_Ativos/
 │   ├── edicao-grupos.js
 │   └── scripts das demais paginas
 │
-├── Pagina-login.html
-├── pagina-inicial.php
-├── dashboard.php
-├── ativos.php
-├── cadastro-ativos.php
-├── edicao-ativos.php
-├── cadastro-funcionarios.php
-├── funcionarios.php
-├── cadastro-grupos.php
-├── edicao-grupos.php
-├── configuracoes.php
+├── pages/
+│   ├── Pagina-login.html
+│   ├── pagina-inicial.php
+│   ├── dashboard.php
+│   ├── ativos.php
+│   ├── cadastro-ativos.php
+│   ├── edicao-ativos.php
+│   ├── cadastro-funcionarios.php
+│   ├── funcionarios.php
+│   ├── cadastro-grupos.php
+│   ├── edicao-grupos.php
+│   ├── configuracoes.php
+│   └── demais paginas da interface
+├── index.php
 └── README.md
 ```
 
@@ -218,26 +221,26 @@ SIte-Gestao_de_Ativos/
 
 | Pagina                          | Funcao                                                |
 | ------------------------------- | ----------------------------------------------------- |
-| `Pagina-login.html`             | Tela de login do sistema.                             |
-| `pagina-inicial.php`            | Pagina inicial interna apos login.                    |
-| `dashboard.php`                 | Dashboard visual de produtos e inventario.            |
-| `ativos.php`                    | Visualizacao e filtros de ativos.                     |
-| `cadastro-ativos.php`           | Cadastro de ativos.                                   |
-| `edicao-ativos.php`             | Edicao e exclusao de ativos.                          |
-| `funcionarios.php`              | Listagem de funcionarios.                             |
-| `cadastro-funcionarios.php`     | Cadastro de funcionarios, restrito a administradores. |
-| `cadastro-grupos.php`           | Criacao de grupos e permissoes.                       |
-| `edicao-grupos.php`             | Remocao de membros e exclusao de grupos.              |
-| `marcas.php`                    | Cadastro de marcas.                                   |
-| `marcas-visualizacao.php`       | Visualizacao de marcas.                               |
-| `edicao-marcas.php`             | Edicao e exclusao de marcas.                          |
-| `locais.php`                    | Cadastro de localizacoes.                             |
-| `locais-visualizacao.php`       | Visualizacao de localizacoes.                         |
-| `edicao-locais.php`             | Edicao e exclusao de localizacoes.                    |
-| `propriedades.php`              | Cadastro de propriedades.                             |
-| `propriedades-visualizacao.php` | Visualizacao de propriedades.                         |
-| `edicao-propriedades.php`       | Edicao e exclusao de propriedades.                    |
-| `configuracoes.php`             | Preferencias, seguranca e ajustes do usuario.         |
+| `pages/Pagina-login.html`             | Tela de login do sistema.                             |
+| `pages/pagina-inicial.php`            | Pagina inicial interna apos login.                    |
+| `pages/dashboard.php`                 | Dashboard visual de produtos e inventario.            |
+| `pages/ativos.php`                    | Visualizacao e filtros de ativos.                     |
+| `pages/cadastro-ativos.php`           | Cadastro de ativos.                                   |
+| `pages/edicao-ativos.php`             | Edicao e exclusao de ativos.                          |
+| `pages/funcionarios.php`              | Listagem de funcionarios.                             |
+| `pages/cadastro-funcionarios.php`     | Cadastro de funcionarios, restrito a administradores. |
+| `pages/cadastro-grupos.php`           | Criacao de grupos e permissoes.                       |
+| `pages/edicao-grupos.php`             | Remocao de membros e exclusao de grupos.              |
+| `pages/marcas.php`                    | Cadastro de marcas.                                   |
+| `pages/marcas-visualizacao.php`       | Visualizacao de marcas.                               |
+| `pages/edicao-marcas.php`             | Edicao e exclusao de marcas.                          |
+| `pages/locais.php`                    | Cadastro de localizacoes.                             |
+| `pages/locais-visualizacao.php`       | Visualizacao de localizacoes.                         |
+| `pages/edicao-locais.php`             | Edicao e exclusao de localizacoes.                    |
+| `pages/propriedades.php`              | Cadastro de propriedades.                             |
+| `pages/propriedades-visualizacao.php` | Visualizacao de propriedades.                         |
+| `pages/edicao-propriedades.php`       | Edicao e exclusao de propriedades.                    |
+| `pages/configuracoes.php`             | Preferencias, seguranca e ajustes do usuario.         |
 
 ---
 
@@ -259,7 +262,6 @@ SIte-Gestao_de_Ativos/
 | `Backend/grupos-acesso-util.php`   | Garante tabelas e lista permissoes de grupos.  |
 | `Backend/dashboard-produtos.php`   | Retorna dados do dashboard de produtos.        |
 | `Backend/status-ativos.php`        | Centraliza status de ativos.                   |
-| `Backend/marcas-ativos.php`        | Fornece marcas para telas e formularios.       |
 
 ---
 

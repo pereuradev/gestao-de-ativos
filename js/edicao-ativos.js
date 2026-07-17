@@ -250,7 +250,7 @@ async function deleteAsset(row, button) {
   clearPageMessage();
 
   try {
-    const response = await fetch("Backend/excluir-ativo.php", {
+    const response = await fetch("../Backend/excluir-ativo.php", {
       method: "POST",
       body,
       headers: { Accept: "application/json" },

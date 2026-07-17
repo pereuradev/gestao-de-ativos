@@ -13,7 +13,7 @@ if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {
   $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
 }
 
-require_once __DIR__ . "/Backend/permissoes-acesso.php";
+require_once __DIR__ . "/../Backend/permissoes-acesso.php";
 
 $podeVisualizarGrupos = usuarioAtualTemPermissao("visualizar_grupos");
 $podeEditarGrupos = usuarioAtualTemPermissao("editar_grupos");
@@ -81,8 +81,8 @@ $totalPermissoes = 0;
 $erroBanco = "";
 
 try {
-  require_once __DIR__ . "/Backend/Conexao.php";
-  require_once __DIR__ . "/Backend/grupos-acesso-util.php";
+  require_once __DIR__ . "/../Backend/Conexao.php";
+  require_once __DIR__ . "/../Backend/grupos-acesso-util.php";
 
   garantirTabelasGruposAcesso($pdo);
   $permissoesDisponiveis = permissoesGruposAcesso();
@@ -176,32 +176,32 @@ try {
 
   <title>Edi&ccedil;&atilde;o de grupos | TI TECH Solutions</title>
   <meta name="description" content="Edicao de grupos de acesso e membros dos colaboradores." />
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260630-ti-favicon" />
+  <link rel="icon" type="image/png" href="../assets/favicon.png?v=20260630-ti-favicon" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
-  <link rel="stylesheet" href="css/pagina-base.css?v=20260701-admin-employee-register-v2" />
-  <link rel="stylesheet" href="css/cadastro-ativos.css?v=20260701-admin-employee-register-v2" />
-  <link rel="stylesheet" href="css/cadastro-funcionarios.css?v=20260702-employee-hero-gradient" />
-  <link rel="stylesheet" href="css/cadastro-grupos.css?v=20260707-permission-icons" />
-  <link rel="stylesheet" href="css/edicao-grupos.css?v=20260703-permission-sections" />
-  <link rel="stylesheet" href="css/typewriter.css?v=20260701-admin-employee-register-v2" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
-  <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
-  <script src="js/typewriter.js?v=20260701-admin-employee-register-v2" defer></script>
-  <script src="js/ux-profissional.js?v=20260701-admin-employee-register-v2" defer></script>
-  <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
-  <script src="js/edicao-grupos.js?v=20260707-group-status" defer></script>
+  <link rel="stylesheet" href="../css/pagina-base.css?v=20260701-admin-employee-register-v2" />
+  <link rel="stylesheet" href="../css/cadastro-ativos.css?v=20260701-admin-employee-register-v2" />
+  <link rel="stylesheet" href="../css/cadastro-funcionarios.css?v=20260702-employee-hero-gradient" />
+  <link rel="stylesheet" href="../css/cadastro-grupos.css?v=20260707-permission-icons" />
+  <link rel="stylesheet" href="../css/edicao-grupos.css?v=20260703-permission-sections" />
+  <link rel="stylesheet" href="../css/typewriter.css?v=20260701-admin-employee-register-v2" />
+  <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
+  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
+  <script src="../js/typewriter.js?v=20260701-admin-employee-register-v2" defer></script>
+  <script src="../js/ux-profissional.js?v=20260701-admin-employee-register-v2" defer></script>
+  <script src="../js/app-base.js?v=20260707-group-view-route" defer></script>
+  <script src="../js/edicao-grupos.js?v=20260707-group-status" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
-  <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
+  <script src="../js/react-widgets.js?v=20260626-react-responsive" defer></script>
 </head>
 
 <body class="theme-dark page-loading">
   <div class="app-shell">
-    <?php require __DIR__ . "/components/sidebar.php"; ?>
+    <?php require __DIR__ . "/../components/sidebar.php"; ?>
 
     <main class="main-area employee-registration-page group-registration-page group-edit-page">
       <header class="topbar">
@@ -417,7 +417,7 @@ try {
         </button>
       </div>
 
-      <form id="groupModalForm" class="enhanced-asset-form" action="Backend/atualizar-grupo.php" method="post"
+      <form id="groupModalForm" class="enhanced-asset-form" action="../Backend/atualizar-grupo.php" method="post"
         novalidate>
         <input id="editGroupId" type="hidden" name="id" />
         <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />

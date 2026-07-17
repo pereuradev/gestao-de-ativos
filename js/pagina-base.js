@@ -1,6 +1,6 @@
 // Endpoint responsável por buscar as métricas do dashboard no backend.
 // Esse arquivo PHP deve retornar dados em JSON.
-const DASHBOARD_ENDPOINT = "Backend/dashboard-metricas.php";
+const DASHBOARD_ENDPOINT = "../Backend/dashboard-metricas.php";
 
 // Tempo, em milissegundos, usado para controlar a animação de troca de tema.
 const THEME_TRANSITION_MS = 660;
@@ -115,7 +115,7 @@ function isReducedMotionEnabled() {
 
 function updateBrandLogo(isDark) {
   document.querySelectorAll(".brand-logo").forEach((logo) => {
-    logo.src = isDark ? "assets/logo-branca.png" : "assets/Logo.png";
+    logo.src = isDark ? "../assets/logo-branca.png" : "../assets/Logo.png";
   });
 }
 

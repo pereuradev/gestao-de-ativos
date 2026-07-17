@@ -165,7 +165,7 @@ async function deleteBrand(row, button) {
   clearPageMessage();
 
   try {
-    const response = await fetch("Backend/excluir-propriedade.php", {
+    const response = await fetch("../Backend/excluir-propriedade.php", {
       method: "POST",
       body,
       headers: { Accept: "application/json" },

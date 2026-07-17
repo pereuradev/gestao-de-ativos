@@ -91,7 +91,7 @@ function statusClasseConfiguracao(string $status): string
 
 // ComeÃ§amos usando os dados que jÃ¡ estÃ£o salvos na sessÃ£o.
 // Se o banco responder, esses dados serÃ£o complementados logo abaixo.
-require_once __DIR__ . "/Backend/grupos-acesso-util.php";
+require_once __DIR__ . "/../Backend/grupos-acesso-util.php";
 
 $usuario = $_SESSION["usuario"];
 $perfil = $usuario;
@@ -118,7 +118,7 @@ $permissoesUsuario = $usuarioEhAdmin
 try {
   // Carrega a conexÃ£o com o banco.
   // O __DIR__ evita problema de caminho quando o arquivo Ã© chamado de lugares diferentes.
-  require __DIR__ . "/Backend/Conexao.php";
+  require __DIR__ . "/../Backend/Conexao.php";
 
   // Consulta os dados completos do usuÃ¡rio no Supabase/PostgreSQL.
   // A busca usa id ou email para funcionar mesmo se algum desses dados estiver ausente na sessÃ£o.
@@ -239,7 +239,7 @@ $resumoPermissoes = $usuarioEhAdmin
   <meta name="description"
     content="Painel de configura&ccedil;&otilde;es de conta, seguran&ccedil;a e prefer&ecirc;ncias do portal TI TECH Solutions" />
   <!-- Ãcone da aba do navegador. -->
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260630-ti-favicon" />
+  <link rel="icon" type="image/png" href="../assets/favicon.png?v=20260630-ti-favicon" />
 
   <!-- PrÃ©-conexÃ£o e fonte principal usada na interface. -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -249,28 +249,28 @@ $resumoPermissoes = $usuarioEhAdmin
 
 
   <!-- CSS separado por responsabilidade: base do sistema, efeitos gerais e ajustes especÃ­ficos desta pÃ¡gina. -->
-  <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
-  <link rel="stylesheet" href="css/configuracoes.css?v=20260707-user-permissions" />
+  <link rel="stylesheet" href="../css/pagina-base.css?v=20260630-reduced-motion" />
+  <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
+  <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
+  <link rel="stylesheet" href="../css/configuracoes.css?v=20260707-user-permissions" />
 
 
   <!-- Scripts carregados com defer para nÃ£o bloquear a montagem do HTML. -->
-  <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
-  <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
-  <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
-  <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
-  <script src="js/configuracoes.js?v=20260630-system-cursor" defer></script>
+  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
+  <script src="../js/typewriter.js?v=20260630-reduced-motion" defer></script>
+  <script src="../js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
+  <script src="../js/app-base.js?v=20260707-group-view-route" defer></script>
+  <script src="../js/configuracoes.js?v=20260630-system-cursor" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
-  <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
+  <script src="../js/react-widgets.js?v=20260626-react-responsive" defer></script>
 </head>
 
 <body class="theme-dark page-loading">
   <!-- Estrutura principal da aplicaÃ§Ã£o: menu lateral + Ã¡rea de conteÃºdo. -->
   <div class="app-shell">
     <!-- Menu lateral usado para navegar entre as Ã¡reas do sistema. -->
-    <?php require __DIR__ . "/components/sidebar.php"; ?>
+    <?php require __DIR__ . "/../components/sidebar.php"; ?>
 
     <!-- ConteÃºdo principal da pÃ¡gina. O data-user-role permite que o JavaScript/CSS adaptem comportamentos pelo cargo. -->
     <main class="main-area settings-page" data-user-role="<?php echo e(strtolower($tipoUsuarioTexto)); ?>">

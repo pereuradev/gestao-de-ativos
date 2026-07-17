@@ -9,7 +9,7 @@ const STORAGE_KEYS = {
 };
 
 const CONFIG = {
-  loginUrl: "Backend/login-usuario.php",
+  loginUrl: "../Backend/login-usuario.php",
   redirectUrl: "pagina-inicial.php",
   inactiveAccountMessage:
     "Sua conta est\u00e1 inativa. Solicite ajuda a um administrador para reativar o acesso.",

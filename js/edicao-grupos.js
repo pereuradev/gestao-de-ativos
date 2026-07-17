@@ -172,7 +172,7 @@ async function removeGroupMember(button) {
   clearGroupEditMessage();
 
   try {
-    const result = await postGroupEdit("Backend/remover-membro-grupo.php", body);
+    const result = await postGroupEdit("../Backend/remover-membro-grupo.php", body);
 
     row.remove();
     updateGroupMemberCount(card, -1);
@@ -212,7 +212,7 @@ async function deleteGroup(button) {
   clearGroupEditMessage();
 
   try {
-    const result = await postGroupEdit("Backend/excluir-grupo.php", body);
+    const result = await postGroupEdit("../Backend/excluir-grupo.php", body);
     const removedMembers = Number(card.dataset.members || result.grupo?.total_membros || 0);
     const removedPermissions = Number(card.dataset.permissions || result.grupo?.total_permissoes || 0);
 

@@ -54,7 +54,7 @@ $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], t
     content="P&aacute;gina inicial do portal interno de gest&atilde;o de ativos da TI TECH Solutions" />
 
   <!-- ícone exibido na aba do navegador -->
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260630-ti-favicon" />
+  <link rel="icon" type="image/png" href="../assets/favicon.png?v=20260630-ti-favicon" />
 
   <!-- Otimiza a conexÃ£o com o Google Fonts antes de carregar a fonte -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -67,22 +67,22 @@ $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], t
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <!-- Arquivos CSS da página -->
-  <link rel="stylesheet" href="css/pagina-base.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/typewriter.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="css/ux-profissional.css?v=20260706-record-counts" />
+  <link rel="stylesheet" href="../css/pagina-base.css?v=20260630-reduced-motion" />
+  <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
+  <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
 
   <!-- Chart.js usado para renderizar gráficos no dashboard -->
-  <link rel="stylesheet" href="css/responsivo-global.css?v=20260626-react-responsive" />
+  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
 
   <!-- Scripts da página. O defer evita bloquear o carregamento do HTML. -->
-  <script src="js/typewriter.js?v=20260630-reduced-motion" defer></script>
-  <script src="js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
-  <script src="js/app-base.js?v=20260707-group-view-route" defer></script>
-  <script src="js/pagina-base.js?v=20260630-reduced-motion" defer></script>
+  <script src="../js/typewriter.js?v=20260630-reduced-motion" defer></script>
+  <script src="../js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
+  <script src="../js/app-base.js?v=20260707-group-view-route" defer></script>
+  <script src="../js/pagina-base.js?v=20260630-reduced-motion" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
-  <script src="js/react-widgets.js?v=20260626-react-responsive" defer></script>
+  <script src="../js/react-widgets.js?v=20260626-react-responsive" defer></script>
 </head>
 
 <body class="theme-dark page-loading" <?php echo $permissionDeniedResource !== "" ? 'data-permission-dialog-open="true" data-permission-resource="' . e($permissionDeniedResource) . '"' : ""; ?>>
@@ -90,7 +90,7 @@ $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], t
   <div class="app-shell">
 
     <!-- Menu lateral fixo da aplicaÃ§Ã£o -->
-    <?php require __DIR__ . "/components/sidebar.php"; ?>
+    <?php require __DIR__ . "/../components/sidebar.php"; ?>
 
     <!-- ConteÃºdo principal da pÃ¡gina -->
     <main class="main-area">

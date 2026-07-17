@@ -343,7 +343,7 @@ try {
     }
 
     responder(true, "Login realizado com sucesso.", 200, [
-        "redirect" => caminhoAplicacao("pagina-inicial.php"),
+        "redirect" => caminhoAplicacao("pages/pagina-inicial.php"),
     ]);
 } catch (Throwable $erro) {
     responder(false, "Nao foi possivel validar o acesso agora.", 500);

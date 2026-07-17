@@ -172,7 +172,7 @@ async function deleteLocation(row, button) {
   clearPageMessage();
 
   try {
-    const response = await fetch("Backend/excluir-local.php", {
+    const response = await fetch("../Backend/excluir-local.php", {
       method: "POST",
       body,
       headers: { Accept: "application/json" },
