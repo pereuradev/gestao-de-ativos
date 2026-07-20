@@ -1,3 +1,5 @@
+/* Estilos específicos da consulta, filtros, exportação e paginação de ativos. */
+
 :root {
   --font-main: "Inter", system-ui, sans-serif;
   --navy-950: #03101d;
@@ -15,6 +17,7 @@
   --theme-transition: 0.62s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Estrutura dos filtros e do cartão principal da consulta. */
 .asset-view-card {
   margin-top: 22px;
 }
@@ -60,6 +63,7 @@
   background: rgba(255, 255, 255, 0.82);
 }
 
+/* Botões e feedback visual da geração de relatórios. */
 .asset-export-actions {
   display: flex;
   align-items: center;
@@ -200,6 +204,7 @@
   transform: translateY(-2px);
 }
 
+/* Apresentação dos dados e links de datasheet. */
 .asset-view-table {
   min-width: 1320px;
 }
@@ -243,6 +248,7 @@
   white-space: nowrap;
 }
 
+/* Navegação entre páginas calculadas pelo servidor. */
 .asset-pagination {
   margin-top: 18px;
   padding-top: 16px;

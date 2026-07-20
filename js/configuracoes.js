@@ -1,3 +1,6 @@
+// Gerencia preferências locais, segurança visual e diagnósticos exibidos na página de configurações.
+// As preferências persistem no navegador e não substituem configurações salvas no servidor.
+
 document.addEventListener("DOMContentLoaded", initSettingsPage);
 
 const SETTINGS_PREFIX = "titech-settings:";
@@ -20,6 +23,7 @@ function initSettingsPage() {
   setupDiagnostics();
 }
 
+// Preferências visuais são aplicadas imediatamente e persistidas somente no navegador.
 function setupPreferenceControls() {
   syncPreferenceForm();
 
@@ -139,6 +143,7 @@ function setupWorkModes() {
   });
 }
 
+// A análise de senha nesta página é informativa e não substitui a validação do backend.
 function setupPasswordValidation() {
   const form = document.getElementById("passwordForm");
   const newPassword = document.getElementById("newPassword");
@@ -200,6 +205,7 @@ function setupSecurityActions() {
   updateSecurityScore();
 }
 
+// Os diagnósticos exibem apenas informações disponíveis no navegador do usuário.
 function setupDiagnostics() {
   updateDiagnostics();
   window.addEventListener("resize", updateDiagnostics);
@@ -403,6 +409,7 @@ function showToast(message) {
   }, TOAST_TIMEOUT_MS);
 }
 
+// Usa o diálogo global quando disponível e mantém confirm() como fallback progressivo.
 function confirmSettingsAction(title, text) {
   return new Promise((resolve) => {
     const overlay = document.createElement("div");

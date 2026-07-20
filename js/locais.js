@@ -1,3 +1,6 @@
+// Valida e cadastra locais, atualizando métricas e filtros no navegador.
+// Os helpers globais de interface são carregados antes deste módulo.
+
 const MESSAGE_HIDE_DELAY_MS = 2700;
 
 document.addEventListener("DOMContentLoaded", initPage);
@@ -23,6 +26,7 @@ function setupLocationForm() {
   });
 }
 
+// A interface só inclui o novo local após confirmação do cadastro pelo backend.
 async function submitLocationForm(event) {
   event.preventDefault();
 
@@ -148,6 +152,7 @@ function clearLocationFilters() {
   search?.focus();
 }
 
+// Os filtros atuam nas linhas existentes e atualizam contador e estado vazio juntos.
 function filterLocations() {
   const rows = Array.from(document.querySelectorAll(".location-row"));
   const search = normalizeText(document.getElementById("locationSearch")?.value || "");

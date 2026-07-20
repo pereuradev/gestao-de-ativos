@@ -1,3 +1,6 @@
+// Gerencia filtros e o modal de atualização dos dados de funcionários.
+// O cartão editado é sincronizado no DOM após a confirmação do backend.
+
 const EMPLOYEE_EDIT_MESSAGE_HIDE_DELAY_MS = 2800;
 
 document.addEventListener("DOMContentLoaded", initEmployeeEditPage);
@@ -53,6 +56,7 @@ function setupEmployeeEditModal() {
   });
 }
 
+// A filtragem ocorre sobre os cartões já renderizados e mantém o estado vazio sincronizado.
 function filterEmployees() {
   const cards = Array.from(document.querySelectorAll(".employee-row"));
   const search = normalizeText(document.getElementById("employeeSearch")?.value || "");
@@ -88,6 +92,7 @@ function filterEmployees() {
   updateFilteredEmptyState(cards.length > 0 && visibleCount === 0);
 }
 
+// O modal é preenchido a partir dos atributos do cartão selecionado.
 function openEmployeeEditModal(card) {
   const modal = document.getElementById("employeeEditModal");
 
@@ -134,6 +139,7 @@ function closeEmployeeEditModal() {
   trigger?.focus();
 }
 
+// Os dados visuais só são atualizados depois da confirmação do backend.
 async function submitEmployeeEditForm(event) {
   event.preventDefault();
 
@@ -231,6 +237,7 @@ function validateEmployeeEditForm(form) {
   return "";
 }
 
+// Sincroniza o cartão existente para evitar recarregar toda a listagem.
 function updateEmployeeCard(employee) {
   if (!employee?.id) {
     return;

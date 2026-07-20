@@ -1,3 +1,6 @@
+/* Estilos dos cartões, membros, permissões e modal de edição de grupos. */
+
+/* Área principal de busca e manutenção dos grupos. */
 .group-edit-card {
   margin-top: 22px;
 }
@@ -44,6 +47,7 @@ body.ux-enhanced .group-edit-page .group-edit-card .records-actions span,
   background: rgba(224, 93, 93, 0.84);
 }
 
+/* Cartões com resumo de membros e permissões de cada grupo. */
 .group-edit-list {
   display: grid;
   gap: 18px;
@@ -122,6 +126,7 @@ body.ux-enhanced .group-edit-page .group-edit-card .records-actions span,
   gap: 8px;
 }
 
+/* Relação de funcionários vinculados ao grupo. */
 .group-member-list {
   display: grid;
   gap: 10px;
@@ -183,6 +188,7 @@ body.ux-enhanced .group-edit-page .group-edit-card .records-actions span,
   font-weight: 750;
 }
 
+/* Ações de editar, remover membro e excluir grupo. */
 .table-action {
   min-height: 38px;
   padding: 0 13px;

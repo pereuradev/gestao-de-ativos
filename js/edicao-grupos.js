@@ -1,3 +1,6 @@
+// Coordena edição, remoção de membros e exclusão de grupos de acesso.
+// As mudanças confirmadas pelo backend são refletidas nos cartões e métricas da página.
+
 const GROUP_EDIT_MESSAGE_HIDE_DELAY_MS = 2800;
 
 document.addEventListener("DOMContentLoaded", initGroupEditPage);
@@ -66,6 +69,7 @@ function setupGroupEditModal() {
   });
 }
 
+// O modal recebe membros e permissões serializados no cartão selecionado.
 function openGroupEditModal(card) {
   const modal = document.getElementById("groupEditModal");
 
@@ -105,6 +109,7 @@ function closeGroupEditModal() {
   }
 }
 
+// O backend persiste o conjunto completo antes da atualização visual.
 async function submitGroupModal(event) {
   event.preventDefault();
 
@@ -142,6 +147,7 @@ async function submitGroupModal(event) {
   }
 }
 
+// A remoção individual exige confirmação e preserva a consistência das métricas.
 async function removeGroupMember(button) {
   const row = button.closest(".group-member-row");
   const card = button.closest(".group-edit-item");
@@ -185,6 +191,7 @@ async function removeGroupMember(button) {
   }
 }
 
+// A exclusão só remove o cartão após resposta bem-sucedida do servidor.
 async function deleteGroup(button) {
   const card = button.closest(".group-edit-item");
 
@@ -327,6 +334,7 @@ function renderGroupPermissions(card, permissions) {
   });
 }
 
+// A lista usa elementos de DOM para manter o conteúdo da resposta como texto.
 function renderGroupMembers(card, members) {
   const list = card.querySelector("[data-member-list]");
 

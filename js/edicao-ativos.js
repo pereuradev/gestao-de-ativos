@@ -1,3 +1,6 @@
+// Controla filtros, modal, atualização e exclusão de ativos.
+// Mensagens entre recarregamentos usam sessionStorage para preservar o retorno da operação.
+
 const MESSAGE_HIDE_DELAY_MS = 2800;
 const PAGE_MESSAGE_STORAGE_KEY = "titech-edicao-ativos-message";
 
@@ -17,6 +20,7 @@ function initPage() {
   restorePendingPageMessage();
 }
 
+// Filtros e paginação são processados pelo servidor; a busca é enviada após um pequeno debounce.
 function setupAssetFilters() {
   const form = document.getElementById("assetFiltersForm");
   const searchInput = document.getElementById("assetSearch");
@@ -120,6 +124,7 @@ function setupEditModal() {
   });
 }
 
+// Os atributos data-* da linha abastecem o formulário sem uma consulta adicional.
 function openEditModal(row) {
   const modal = document.getElementById("assetEditModal");
 
@@ -151,6 +156,7 @@ function closeEditModal() {
   }
 }
 
+// A página só é recarregada depois que o backend confirma a atualização.
 async function submitEditForm(event) {
   event.preventDefault();
 
@@ -229,6 +235,7 @@ function validateAssetForm(form) {
   return "";
 }
 
+// A exclusão exige confirmação e token CSRF antes de remover o registro.
 async function deleteAsset(row, button) {
   const name = row.dataset.name || "este ativo";
   const confirmed = window.titechConfirm
@@ -272,6 +279,7 @@ async function deleteAsset(row, button) {
   }
 }
 
+// A mensagem fica na sessão do navegador para sobreviver ao recarregamento.
 function reloadAssetPageWithMessage(message, type) {
   try {
     sessionStorage.setItem(PAGE_MESSAGE_STORAGE_KEY, JSON.stringify({ message, type }));

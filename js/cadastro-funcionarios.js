@@ -1,3 +1,6 @@
+// Coordena perfil, máscaras, validações e envio do formulário de novos funcionários.
+// Os helpers globais de interface são carregados pela página antes deste módulo.
+
 const employeeSignupState = {
   role: "Colaborador",
 };
@@ -36,6 +39,7 @@ function createEmployeeElement(tag, className = "", text = "") {
   return element;
 }
 
+// O seletor visual e o campo enviado ao backend precisam permanecer sincronizados.
 function setupEmployeeRoleSelector() {
   const roleControl = getEmployeeElement("employeeRoleControl");
   const buttons = roleControl
@@ -240,6 +244,7 @@ function formatEmployeeCellphone(value) {
     .replace(/(\d{5})(\d{1,4})$/, "$1-$2");
 }
 
+// As máscaras ajudam na digitação; a validade real também é conferida antes do envio.
 function setupEmployeeDocumentMasks() {
   const masks = [
     { input: getEmployeeElement("employeeRg"), formatter: formatEmployeeRg },
@@ -257,6 +262,7 @@ function setupEmployeeDocumentMasks() {
   });
 }
 
+// Concentra as regras do formulário para impedir validações divergentes entre os eventos.
 function validateEmployeeSignup(data) {
   if (
     !data.nomeCompleto ||
@@ -363,6 +369,7 @@ function buildEmployeePayload() {
   };
 }
 
+// O cadastro só altera a interface após uma resposta JSON bem-sucedida do servidor.
 async function handleEmployeeSignup(event) {
   event.preventDefault();
 
@@ -482,6 +489,7 @@ function resetEmployeeSignupFormState() {
   updateEmployeePasswordStrength();
 }
 
+// Mantém métricas e lista recente coerentes com o funcionário recém-cadastrado.
 function updateEmployeeSummary(usuario) {
   if (!usuario || typeof usuario !== "object") {
     return;

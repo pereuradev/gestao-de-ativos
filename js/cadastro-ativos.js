@@ -1,3 +1,6 @@
+// Valida e envia o cadastro de ativos, atualizando a lista recente sem recarregar a página.
+// Usa os diálogos e avisos globais fornecidos pelos módulos compartilhados da interface.
+
 const REDIRECT_DELAY_MS = 900;
 
 document.addEventListener("DOMContentLoaded", initPage);
@@ -21,6 +24,7 @@ function runPageHelper(helperName) {
   }
 }
 
+// O formulário mantém o envio tradicional como fallback, mas usa AJAX quando o JavaScript está ativo.
 function setupAssetForm() {
   const form = document.getElementById("assetForm");
 
@@ -37,6 +41,7 @@ function setupAssetForm() {
   });
 }
 
+// Só atualiza métricas e registros recentes depois de receber confirmação do backend.
 async function submitAssetForm(event) {
   event.preventDefault();
 
@@ -88,6 +93,7 @@ async function submitAssetForm(event) {
   }
 }
 
+// A confirmação compartilhada evita cadastros acidentais antes do envio dos dados.
 async function confirmAssetRegistration(form) {
   const data = new FormData(form);
   const assetName = String(data.get("nome") || "este ativo").trim() || "este ativo";

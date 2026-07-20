@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Apresenta grupos de acesso, membros vinculados e permissões concedidas.
 session_start();
 
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
@@ -9,6 +10,7 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
   exit;
 }
 
+// Importa a camada compartilhada de autorização antes de executar esta rota.
 require_once __DIR__ . "/../Backend/permissoes-acesso.php";
 exigirPermissaoPagina("visualizar_grupos", "Grupos");
 
@@ -65,6 +67,7 @@ $totalMembros = 0;
 $erroBanco = "";
 
 try {
+  // Carrega a conexão e as regras compartilhadas de grupos e permissões.
   require_once __DIR__ . "/../Backend/Conexao.php";
   require_once __DIR__ . "/../Backend/grupos-acesso-util.php";
 
@@ -150,12 +153,14 @@ try {
 
   <title>Grupos cadastrados | TI TECH Solutions</title>
   <meta name="description" content="Visualizacao dos grupos de acesso cadastrados no portal." />
+  <!-- Identidade visual, tipografia e ícones usados pela página. -->
   <link rel="icon" type="image/png" href="../assets/favicon.png?v=20260630-ti-favicon" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
+  <!-- Estilos compartilhados e regras específicas deste fluxo. -->
   <link rel="stylesheet" href="../css/pagina-base.css?v=20260701-admin-employee-register-v2" />
   <link rel="stylesheet" href="../css/cadastro-ativos.css?v=20260701-admin-employee-register-v2" />
   <link rel="stylesheet" href="../css/cadastro-funcionarios.css?v=20260702-employee-hero-gradient" />
@@ -164,6 +169,7 @@ try {
   <link rel="stylesheet" href="../css/typewriter.css?v=20260701-admin-employee-register-v2" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
   <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
+  <!-- Scripts da interface; os módulos compartilhados devem carregar antes do script da página. -->
   <script src="../js/typewriter.js?v=20260701-admin-employee-register-v2" defer></script>
   <script src="../js/ux-profissional.js?v=20260701-admin-employee-register-v2" defer></script>
   <script src="../js/app-base.js?v=20260707-group-view-route" defer></script>
@@ -175,6 +181,7 @@ try {
 
 <body class="theme-dark page-loading">
   <div class="app-shell">
+    <!-- Navegação compartilhada entre as áreas autenticadas. -->
     <?php require __DIR__ . "/../components/sidebar.php"; ?>
 
     <main class="main-area employee-registration-page group-registration-page group-edit-page group-view-page">
@@ -200,6 +207,7 @@ try {
         </div>
       </header>
 
+      <!-- Contextualiza a consulta de grupos e permissões. -->
       <section class="hero-panel compact-hero employee-register-hero group-register-hero" aria-labelledby="groupViewTitle">
         <div class="hero-content">
           <p class="section-tag">Controle de acesso</p>
@@ -211,6 +219,7 @@ try {
         </div>
       </section>
 
+      <!-- Indicadores gerais dos vínculos de acesso. -->
       <section class="metrics-grid employee-registration-metrics" aria-label="Resumo dos grupos">
         <article class="metric-card">
           <div class="metric-icon"><i class="bi bi-collection-fill"></i></div>
@@ -253,6 +262,7 @@ try {
         <div class="dashboard-status error-status" role="status"><?php echo e($erroBanco); ?></div>
       <?php endif; ?>
 
+      <!-- Cartões pesquisáveis com membros e permissões de cada grupo. -->
       <section class="content-card group-edit-card" aria-label="Visualizacao dos grupos">
         <div class="card-header records-header">
           <div>

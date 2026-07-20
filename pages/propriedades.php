@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Prepara as métricas, a listagem e o formulário de cadastro de propriedades.
 session_start();
 
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
@@ -9,9 +10,11 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
   exit;
 }
 
+// Importa a camada compartilhada de autorização antes de executar esta rota.
 require_once __DIR__ . "/../Backend/permissoes-acesso.php";
 exigirPermissaoPagina("cadastrar_propriedades", "Cadastro de propriedades");
 
+// Reutiliza um token por sessão para proteger formulários e operações de alteração contra CSRF.
 if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {
   $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
 }
@@ -46,6 +49,7 @@ $propriedadesInativas = 0;
 $erroBanco = "";
 
 try {
+  // Abre a conexão compartilhada somente quando esta etapa precisa acessar o banco.
   require __DIR__ . "/../Backend/Conexao.php";
 
   $totalStmt = $pdo->prepare("select count(*)::int from public.propriedade_ativos");
@@ -89,18 +93,21 @@ try {
   <title>Cadastro de propriedades | TI TECH Solutions</title>
   <meta name="description"
     content="Cadastro de propriedades para padronizar o cadastro de ativos da TI TECH Solutions" />
+  <!-- Identidade visual, tipografia e ícones usados pela página. -->
   <link rel="icon" type="image/png" href="../assets/favicon.png?v=20260630-ti-favicon" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
+  <!-- Estilos compartilhados e regras específicas deste fluxo. -->
   <link rel="stylesheet" href="../css/pagina-base.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/cadastro-ativos.css?v=20260630-clean-form-card" />
   <link rel="stylesheet" href="../css/propriedades.css?v=20260626-clear-button" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
   <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
+  <!-- Scripts da interface; os módulos compartilhados devem carregar antes do script da página. -->
   <script src="../js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="../js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
   <script src="../js/app-base.js?v=20260707-group-view-route" defer></script>
@@ -112,6 +119,7 @@ try {
 
 <body class="theme-dark page-loading">
   <div class="app-shell">
+    <!-- Navegação compartilhada entre as áreas autenticadas. -->
     <?php require __DIR__ . "/../components/sidebar.php"; ?>
 
     <main class="main-area">
@@ -142,6 +150,7 @@ try {
         </div>
       </header>
 
+      <!-- Apresenta o papel das propriedades na classificação dos ativos. -->
       <section class="hero-panel compact-hero brand-partners-hero" aria-labelledby="brandsRegistrationTitle">
         <div class="hero-content">
           <h2 id="brandsRegistrationTitle">
@@ -156,6 +165,7 @@ try {
         </div>
       </section>
 
+      <!-- Indicadores gerais calculados no servidor. -->
       <section class="metrics-grid" aria-label="Resumo das propriedades">
         <article class="metric-card">
           <div class="metric-icon">
@@ -197,6 +207,7 @@ try {
         </div>
       <?php endif; ?>
 
+      <!-- Formulário protegido por CSRF e listagem filtrável das propriedades. -->
       <section class="brands-layout" aria-label="Cadastro de propriedades">
         <article class="content-card asset-form-card asset-form-card-enhanced brand-form-card">
           <div class="card-header asset-card-header">

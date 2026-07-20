@@ -12,6 +12,7 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     exit;
 }
 
+// Importa a camada compartilhada de autorização antes de executar esta rota.
 require_once __DIR__ . "/../Backend/permissoes-acesso.php";
 exigirPermissaoPagina("visualizar_dashboard", "Dashboard");
 
@@ -35,6 +36,7 @@ $usuario = $_SESSION["usuario"];
     <meta name="description"
         content="Dashboard operacional de ativos, categorias, status, marcas, localizacoes e evolucao do inventario da TI TECH Solutions" />
 
+    <!-- Identidade visual, tipografia e ícones usados pela página. -->
     <link rel="icon" type="image/png" href="../assets/favicon.png?v=20260630-ti-favicon" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -44,6 +46,7 @@ $usuario = $_SESSION["usuario"];
         rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
+    <!-- Estilos compartilhados e regras específicas deste fluxo. -->
     <link rel="stylesheet" href="../css/pagina-base.css?v=20260630-reduced-motion" />
     <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
     <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
@@ -51,6 +54,7 @@ $usuario = $_SESSION["usuario"];
     <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+    <!-- Scripts da interface; os módulos compartilhados devem carregar antes do script da página. -->
     <script src="../js/typewriter.js?v=20260630-reduced-motion" defer></script>
     <script src="../js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
     <script src="../js/app-base.js?v=20260707-group-view-route" defer></script>

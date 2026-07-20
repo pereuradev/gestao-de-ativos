@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Endpoint responsável por remover com segurança um funcionário de um grupo de acesso.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -48,6 +49,7 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     responderRemocaoMembroGrupo(false, "Sessao expirada. Faca login novamente.", 401);
 }
 
+// Importa a camada compartilhada de autorização antes de executar esta rota.
 require_once __DIR__ . "/permissoes-acesso.php";
 exigirPermissaoApi("editar_grupos", "Edicao de grupos");
 
@@ -63,6 +65,7 @@ if (!uuidRemocaoMembroGrupoValido($grupoId) || !uuidRemocaoMembroGrupoValido($us
 }
 
 try {
+    // Carrega a conexão e as regras compartilhadas de grupos e permissões.
     require_once __DIR__ . "/Conexao.php";
     require_once __DIR__ . "/grupos-acesso-util.php";
 
@@ -85,6 +88,7 @@ try {
         responderRemocaoMembroGrupo(false, "Membro nao encontrado neste grupo.", 404);
     }
 
+    // Atualiza o grupo para que a alteração de composição apareça nas ordenações e auditorias visuais.
     $atualizarStmt = $pdo->prepare("
         update public.grupos_acesso
            set atualizado_em = now()

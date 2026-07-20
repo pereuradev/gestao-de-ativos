@@ -1,3 +1,6 @@
+/* Animação compartilhada dos títulos com respeito à preferência de movimento reduzido. */
+
+/* Reserva espaço para o texto animado sem deslocar o layout. */
 .typewriter-heading {
   display: inline-block;
   max-width: 100%;
@@ -22,6 +25,7 @@ body[data-motion="reduced"] .typewriter-heading-cursor {
   display: none;
 }
 
+/* Cursor visual controlado pelo estado do módulo typewriter.js. */
 .typewriter-heading-cursor {
   display: inline-block;
   width: 2px;
@@ -47,6 +51,7 @@ body[data-motion="reduced"] .typewriter-heading-cursor {
   }
 }
 
+/* Remove a animação quando o sistema solicita menos movimento. */
 @media (prefers-reduced-motion: reduce) {
   .typewriter-heading-cursor {
     animation: none;

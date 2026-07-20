@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+// Orquestra a consulta filtrada e encaminha os dados ao gerador do formato solicitado.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
+// Carrega autorização, regras de status e os geradores dos formatos de exportação suportados.
 require_once __DIR__ . "/permissoes-acesso.php";
 require_once __DIR__ . "/status-ativos.php";
 require_once __DIR__ . "/relatorio-ativos-pdf.php";
@@ -78,6 +80,7 @@ function colunaExportacaoExiste(PDO $pdo, string $tabela, string $coluna): bool
     return $stmt->fetchColumn() !== false;
 }
 
+// Mantém compatibilidade com versões do schema que armazenam o responsável de formas diferentes.
 function contextoResponsavelExportacao(PDO $pdo): array
 {
     if (colunaExportacaoExiste($pdo, "ativos", "responsavel_id") && tabelaExportacaoExiste($pdo, "perfis_usuarios")) {
@@ -127,6 +130,7 @@ function formatarDataExportacao(?string $value): string
 try {
     global $pdo;
 
+    // Os filtros são convertidos em condições parametrizadas compartilhadas por todos os formatos.
     $responsavel = contextoResponsavelExportacao($pdo);
     $where = [];
     $params = [];
@@ -265,6 +269,7 @@ try {
     responderErroExportacao(500, "Nao foi possivel carregar os dados do relatorio agora.");
 }
 
+// A lista permitida impede que um formato arbitrário escolha um fluxo de geração inesperado.
 $formato = strtolower(filtroExportacao("formato", "pdf"));
 
 if (!in_array($formato, ["pdf", "xlsx", "csv"], true)) {
@@ -278,6 +283,7 @@ $metricasRelatorio = [
     "filtrados" => count($ativos),
 ];
 
+// Cada gerador devolve bytes prontos; este endpoint define os cabeçalhos e encerra a resposta.
 if ($formato === "xlsx") {
     try {
         $xlsx = (new RelatorioAtivosXlsx())->generate(
@@ -305,6 +311,7 @@ if ($formato === "xlsx") {
     exit;
 }
 
+// O CSV segue o mesmo conjunto filtrado usado nos relatórios PDF e Excel.
 if ($formato === "csv") {
     try {
         $csv = gerarCsvAtivos(

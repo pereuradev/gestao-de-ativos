@@ -4,19 +4,23 @@ declare(strict_types=1);
 
 session_start();
 
+// Interrompe o fluxo antes de carregar permissões ou dados quando a sessão não é válida.
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
   header("Location: Pagina-login.html?sessao=expirada");
   exit;
 }
 
+// Importa a camada compartilhada de autorização antes de executar esta rota.
 require_once __DIR__ . "/../Backend/permissoes-acesso.php";
 exigirPermissaoPagina("visualizar_marcas", "Marcas");
 
+// Centraliza o escape dos valores dinâmicos antes de inseri-los no HTML.
 function e(string $value): string
 {
   return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
 }
 
+// Padroniza as datas no fuso da interface e usa um valor seguro para entradas ausentes ou inválidas.
 function formatarDataMarca(?string $value): string
 {
   if (!$value) {
@@ -34,6 +38,7 @@ function formatarDataMarca(?string $value): string
 
 $usuario = $_SESSION["usuario"];
 
+// Os valores neutros permitem renderizar a página mesmo quando a consulta ao banco falha.
 $marcas = [];
 $totalMarcas = 0;
 $marcasAtivas = 0;
@@ -41,8 +46,10 @@ $marcasInativas = 0;
 $erroBanco = "";
 
 try {
+  // Abre a conexão compartilhada somente quando esta etapa precisa acessar o banco.
   require __DIR__ . "/../Backend/Conexao.php";
 
+  // Calcula o resumo no banco para que as métricas não dependam dos filtros aplicados no navegador.
   $resumoStmt = $pdo->prepare("
         select
             count(*)::int as total,
@@ -57,6 +64,7 @@ try {
   $marcasAtivas = (int) ($resumo["ativas"] ?? 0);
   $marcasInativas = (int) ($resumo["inativas"] ?? 0);
 
+  // A ordenação no banco mantém a listagem previsível antes da filtragem no cliente.
   $marcasStmt = $pdo->prepare("
         select id, nome, status, criado_em
           from public.marcas_ativos
@@ -65,6 +73,7 @@ try {
   $marcasStmt->execute();
   $marcas = $marcasStmt->fetchAll();
 } catch (Throwable) {
+  // Evita expor detalhes internos da conexão ou da consulta para o usuário final.
   $erroBanco = "Nao foi possivel carregar as marcas do banco agora.";
 }
 ?>
@@ -77,17 +86,20 @@ try {
 
   <title>Marcas cadastradas | TI TECH Solutions</title>
   <meta name="description" content="Visualizacao das marcas cadastradas para ativos da TI TECH Solutions" />
+  <!-- Identidade visual, tipografia e ícones usados pela página. -->
   <link rel="icon" type="image/png" href="../assets/favicon.png?v=20260630-ti-favicon" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
+  <!-- Estilos compartilhados e regras específicas deste fluxo. -->
   <link rel="stylesheet" href="../css/pagina-base.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/marcas.css?v=20260626-clear-button" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
   <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
+  <!-- Scripts da interface; os módulos compartilhados devem carregar antes do script da página. -->
   <script src="../js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="../js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
   <script src="../js/app-base.js?v=20260707-group-view-route" defer></script>
@@ -99,6 +111,7 @@ try {
 
 <body class="theme-dark page-loading">
   <div class="app-shell">
+    <!-- Navegação compartilhada entre as áreas autenticadas. -->
     <?php require __DIR__ . "/../components/sidebar.php"; ?>
 
     <main class="main-area">
@@ -130,6 +143,7 @@ try {
         </div>
       </header>
 
+      <!-- Contextualiza a consulta das marcas cadastradas. -->
       <section class="hero-panel compact-hero brand-partners-hero" aria-labelledby="brandsViewTitle">
         <div class="hero-content">
           <h2 id="brandsViewTitle">
@@ -144,6 +158,7 @@ try {
         </div>
       </section>
 
+      <!-- Indicadores gerais calculados no servidor. -->
       <section class="metrics-grid" aria-label="Resumo das marcas">
         <article class="metric-card">
           <div class="metric-icon">
@@ -185,6 +200,7 @@ try {
         </div>
       <?php endif; ?>
 
+      <!-- Filtros locais e tabela de consulta sem ações de edição. -->
       <section class="content-card records-card asset-view-card brand-view-card" aria-label="Tabela de marcas">
         <div class="card-header records-header">
           <div>
@@ -228,6 +244,7 @@ try {
             <tbody id="brandTableBody">
               <?php foreach ($marcas as $marca): ?>
                 <?php
+                // Estes valores também alimentam os atributos usados por marcas.js na busca e no filtro local.
                 $nome = (string) ($marca["nome"] ?? "");
                 $status = (string) ($marca["status"] ?? "");
                 ?>

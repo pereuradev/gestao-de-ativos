@@ -67,6 +67,7 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     responder(false, "Sessao expirada. Faca login novamente.", 401);
 }
 
+// Importa a camada compartilhada de autorização antes de executar esta rota.
 require_once __DIR__ . "/permissoes-acesso.php";
 exigirPermissaoApi("editar_propriedades", "Edicao de propriedades");
 
@@ -106,6 +107,7 @@ if (!in_array($status, ["Ativa", "Inativa"], true)) {
 }
 
 try {
+    // Abre a conexão compartilhada somente quando esta etapa precisa acessar o banco.
     require __DIR__ . "/Conexao.php";
 
     // Atualiza e devolve a propriedade para a interface substituir a linha.

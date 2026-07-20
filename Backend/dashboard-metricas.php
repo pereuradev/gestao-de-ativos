@@ -21,6 +21,7 @@ if (empty($_SESSION['usuario']) || !is_array($_SESSION['usuario'])) {
     exit;
 }
 
+// Importa a camada compartilhada de autorização antes de executar esta rota.
 require_once __DIR__ . "/permissoes-acesso.php";
 exigirPermissaoApi("visualizar_dashboard", "Dashboard");
 

@@ -1,3 +1,6 @@
+// Controla busca, edição e exclusão de locais cadastrados.
+// As ações dependem do token CSRF renderizado pela página e da resposta JSON do backend.
+
 const MESSAGE_HIDE_DELAY_MS = 2800;
 
 document.addEventListener("DOMContentLoaded", initPage);
@@ -58,6 +61,7 @@ function setupEditModal() {
   });
 }
 
+// O formulário recebe os dados da linha selecionada por meio de atributos data-*.
 function openEditModal(row) {
   const modal = document.getElementById("locationEditModal");
   const idInput = document.getElementById("editLocationId");
@@ -85,6 +89,7 @@ function closeEditModal() {
   }
 }
 
+// A linha é atualizada somente após a confirmação do backend.
 async function submitEditForm(event) {
   event.preventDefault();
 
@@ -151,6 +156,7 @@ function validateLocationForm(form) {
   return "";
 }
 
+// A exclusão combina confirmação do usuário, CSRF e resposta JSON válida.
 async function deleteLocation(row, button) {
   const name = row.dataset.name || "este local";
   const confirmed = window.titechConfirm
@@ -236,6 +242,7 @@ function updateLocationRow(local) {
   }
 }
 
+// A busca e o status filtram localmente os registros já renderizados.
 function filterLocations() {
   const rows = Array.from(document.querySelectorAll(".location-row"));
   const search = normalizeText(document.getElementById("locationSearch")?.value || "");

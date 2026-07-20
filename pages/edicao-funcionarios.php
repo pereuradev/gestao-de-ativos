@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Lista funcionários e fornece os dados necessários ao fluxo de edição administrativa.
 session_start();
 
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
@@ -9,10 +10,12 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
   exit;
 }
 
+// Reutiliza um token por sessão para proteger formulários e operações de alteração contra CSRF.
 if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {
   $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
 }
 
+// Importa a camada compartilhada de autorização antes de executar esta rota.
 require_once __DIR__ . "/../Backend/permissoes-acesso.php";
 exigirPermissaoPagina("editar_funcionarios", "Edicao de funcionarios");
 
@@ -98,6 +101,7 @@ $csrfToken = e((string) $_SESSION["csrf_token"]);
 $departamentos = ["TI", "Operacao", "Financeiro", "Administrativo", "Gestao"];
 
 try {
+  // Abre a conexão compartilhada somente quando esta etapa precisa acessar o banco.
   require_once __DIR__ . "/../Backend/Conexao.php";
 
   $resumoStmt = $pdo->prepare("
@@ -153,17 +157,20 @@ try {
   <title>Edi&ccedil;&atilde;o de funcion&aacute;rios | TI TECH Solutions</title>
   <meta name="description" content="Edi&ccedil;&atilde;o de funcion&aacute;rios cadastrados no portal interno da TI TECH Solutions" />
   <meta name="csrf-token" content="<?php echo $csrfToken; ?>" />
+  <!-- Identidade visual, tipografia e ícones usados pela página. -->
   <link rel="icon" type="image/png" href="../assets/favicon.png?v=20260630-ti-favicon" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
+  <!-- Estilos compartilhados e regras específicas deste fluxo. -->
   <link rel="stylesheet" href="../css/pagina-base.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/funcionarios.css?v=20260706-employee-edit-page" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-search-box-reset" />
   <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
+  <!-- Scripts da interface; os módulos compartilhados devem carregar antes do script da página. -->
   <script src="../js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="../js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
   <script src="../js/app-base.js?v=20260707-group-view-route" defer></script>
@@ -175,6 +182,7 @@ try {
 
 <body class="theme-dark page-loading">
   <div class="app-shell">
+    <!-- Navegação compartilhada entre as áreas autenticadas. -->
     <?php require __DIR__ . "/../components/sidebar.php"; ?>
 
     <main class="main-area funcionarios-page">
@@ -206,6 +214,7 @@ try {
         </div>
       </header>
 
+      <!-- Contextualiza a manutenção administrativa dos perfis. -->
       <section class="hero-panel compact-hero employees-hero" aria-labelledby="employeesTitle">
         <div class="hero-content">
           <h2 id="employeesTitle">
@@ -220,6 +229,7 @@ try {
         </div>
       </section>
 
+      <!-- Indicadores gerais calculados a partir dos perfis cadastrados. -->
       <section class="metrics-grid" aria-label="Resumo de funcion&aacute;rios">
         <article class="metric-card">
           <div class="metric-icon">
@@ -278,6 +288,7 @@ try {
 
       <div id="employeeEditPageMessage" class="form-message employee-form-message" role="status" aria-live="polite"></div>
 
+      <!-- Filtros e cartões usados para localizar o funcionário que será editado. -->
       <section class="content-card records-card employees-records-card" aria-labelledby="employeesListTitle">
         <div class="card-header records-header">
           <div>
@@ -400,6 +411,7 @@ try {
       </section>
 
       <div id="employeeEditModal" class="employee-modal-backdrop" hidden>
+        <!-- Modal de edição abastecido pelos dados do cartão selecionado. -->
         <section class="employee-modal-card employee-edit-modal-card" role="dialog" aria-modal="true"
           aria-labelledby="employeeEditModalTitle">
           <form id="employeeEditForm" class="enhanced-asset-form employee-edit-form" action="../Backend/atualizar-funcionario.php"

@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+// Gera o relatório XLSX diretamente no padrão Open XML, sem depender de biblioteca externa.
 final class RelatorioAtivosXlsx
 {
     public const CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
+    // Os índices precisam acompanhar a ordem dos estilos declarados em styles.xml.
     private const STYLE_DEFAULT = 0;
     private const STYLE_TITLE = 1;
     private const STYLE_SUBTITLE = 2;
@@ -33,6 +35,7 @@ final class RelatorioAtivosXlsx
     private const STYLE_STATUS_AVAILABLE = 24;
     private const STYLE_EMPTY = 25;
 
+    // Monta as partes Open XML em arquivo temporário e sempre remove o artefato ao terminar.
     public function generate(
         array $assets,
         array $metrics,
@@ -154,6 +157,7 @@ final class RelatorioAtivosXlsx
         ]);
     }
 
+    // A primeira planilha reúne identidade visual, métricas e filtros aplicados.
     private function buildSummarySheet(
         array $metrics,
         array $filters,
@@ -313,6 +317,7 @@ final class RelatorioAtivosXlsx
         return ["xml" => $xml, "lastRow" => $lastRow];
     }
 
+    // A segunda planilha contém os ativos e relacionamentos de hyperlinks externos.
     private function buildDetailsSheet(
         array $assets,
         array $columns,
@@ -452,6 +457,7 @@ final class RelatorioAtivosXlsx
         ];
     }
 
+    // Escolhe tipo e estilo da célula sem permitir XML não escapado nos valores.
     private function dataCell(
         int $columnIndex,
         int $row,

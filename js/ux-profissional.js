@@ -1,3 +1,6 @@
+// Aplica melhorias compartilhadas de animação, avisos, diálogos e acessibilidade.
+// As funções públicas são expostas em window para reutilização pelos scripts de cada página.
+
 (function () {
   const REVEAL_SELECTOR = [
     ".hero-panel",
@@ -45,6 +48,7 @@
     setupDialogFocusManagement();
   }
 
+  // Animações são desativadas quando o usuário prefere movimento reduzido.
   function setupReveals() {
     const elements = Array.from(document.querySelectorAll(REVEAL_SELECTOR));
 
@@ -158,6 +162,7 @@
     });
   }
 
+  // Observa mensagens existentes para gerar avisos sem alterar cada módulo de página.
   function setupMessageToasts() {
     const elements = Array.from(document.querySelectorAll(MESSAGE_SELECTOR));
 
@@ -248,6 +253,7 @@
     setTimeout(() => dismissToast(toast), type === "error" ? 5200 : 3200);
   }
 
+  // O diálogo resolve uma Promise e devolve o foco ao elemento que iniciou a ação.
   async function confirmAction(options = {}) {
     const title = options.title || "Confirmar acao?";
     const text = options.text || "";
@@ -334,6 +340,7 @@
     });
   }
 
+  // Completa informações semânticas ausentes sem duplicar marcação em todas as páginas.
   function setupTableAccessibility() {
     document.querySelectorAll(".records-table").forEach((table) => {
       table.querySelectorAll("th").forEach((header) => {
@@ -353,6 +360,7 @@
     });
   }
 
+  // Centraliza o foco dos modais legados e dos diálogos criados dinamicamente.
   function setupDialogFocusManagement() {
     document.querySelectorAll("[role='dialog'][aria-modal='true']").forEach((dialog) => {
       const container = dialog.closest("[hidden], .edit-modal-backdrop") || dialog;

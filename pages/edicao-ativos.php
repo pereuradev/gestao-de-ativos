@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Lista ativos com filtros e paginação para permitir edição e exclusão controladas.
 session_start();
 
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
@@ -9,9 +10,11 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
   exit;
 }
 
+// Importa a camada compartilhada de autorização antes de executar esta rota.
 require_once __DIR__ . "/../Backend/permissoes-acesso.php";
 exigirPermissaoPagina("editar_ativos", "Edicao de ativos");
 
+// Reutiliza um token por sessão para proteger formulários e operações de alteração contra CSRF.
 if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {
   $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
 }
@@ -100,6 +103,7 @@ $statusOptions = [
 $statusPadrao = "DisponÃƒÂ­vel";
 
 try {
+  // Carrega a conexão e as regras centralizadas de status usadas nesta operação.
   require __DIR__ . "/../Backend/Conexao.php";
   require __DIR__ . "/../Backend/status-ativos.php";
 
@@ -261,18 +265,21 @@ try {
 
   <title>Edi&ccedil;&atilde;o de ativos | TI TECH Solutions</title>
   <meta name="description" content="Listagem de ativos cadastrados na TI TECH Solutions" />
+  <!-- Identidade visual, tipografia e ícones usados pela página. -->
   <link rel="icon" type="image/png" href="../assets/favicon.png?v=20260630-ti-favicon" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
+  <!-- Estilos compartilhados e regras específicas deste fluxo. -->
   <link rel="stylesheet" href="../css/pagina-base.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/cadastro-ativos.css?v=20260619-select-options" />
   <link rel="stylesheet" href="../css/edicao-ativos.css?v=20260629-pagination" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
   <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
+  <!-- Scripts da interface; os módulos compartilhados devem carregar antes do script da página. -->
   <script src="../js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="../js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
   <script src="../js/app-base.js?v=20260707-group-view-route" defer></script>
@@ -284,6 +291,7 @@ try {
 
 <body class="theme-dark page-loading">
   <div class="app-shell">
+    <!-- Navegação compartilhada entre as áreas autenticadas. -->
     <?php require __DIR__ . "/../components/sidebar.php"; ?>
 
     <main class="main-area">
@@ -315,6 +323,7 @@ try {
         </div>
       </header>
 
+      <!-- Contextualiza o fluxo de manutenção do inventário. -->
       <section class="hero-panel compact-hero asset-inventory-hero" aria-labelledby="assetEditTitle">
         <div class="hero-content">
           <h2 id="assetEditTitle">
@@ -330,6 +339,7 @@ try {
         </div>
       </section>
 
+      <!-- Métricas gerais independentes dos filtros da tabela. -->
       <section class="metrics-grid" aria-label="Resumo dos ativos">
         <article class="metric-card">
           <div class="metric-icon">
@@ -372,6 +382,7 @@ try {
         </div>
       <?php endif; ?>
 
+      <!-- Filtros e tabela paginada usados para selecionar o ativo. -->
       <section class="content-card records-card asset-edit-card" aria-label="Tabela de ativos">
         <div class="card-header records-header">
           <div>
@@ -602,6 +613,7 @@ try {
   </div>
 
   <div class="edit-modal-backdrop" id="assetEditModal" hidden>
+    <!-- Modal preenchido pelo JavaScript e enviado ao endpoint protegido por CSRF. -->
     <section class="edit-modal-card asset-modal-card" role="dialog" aria-modal="true"
       aria-labelledby="assetEditModalTitle">
       <div class="edit-modal-header">

@@ -1,3 +1,6 @@
+// Valida e cadastra marcas, atualizando métricas e filtros no navegador.
+// O mesmo módulo também atende a página de visualização, onde o formulário pode não existir.
+
 const MESSAGE_HIDE_DELAY_MS = 2700;
 
 document.addEventListener("DOMContentLoaded", initPage);
@@ -23,6 +26,7 @@ function setupBrandForm() {
   });
 }
 
+// A interface só inclui a nova marca após confirmação do cadastro pelo backend.
 async function submitBrandForm(event) {
   event.preventDefault();
 
@@ -143,6 +147,7 @@ function clearBrandFilters() {
   search?.focus();
 }
 
+// Os filtros atuam nas linhas existentes e atualizam contador e estado vazio juntos.
 function filterBrands() {
   const rows = Array.from(document.querySelectorAll(".brand-row"));
   const search = normalizeText(document.getElementById("brandSearch")?.value || "");

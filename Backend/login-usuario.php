@@ -8,6 +8,7 @@ session_start();
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
+// Carrega a configuração da aplicação antes de inicializar esta dependência.
 require_once __DIR__ . "/config.php";
 
 // Credenciais publicas do Supabase Auth usadas para validar a senha do usuario.
@@ -260,6 +261,7 @@ if (!tipoUsuarioValido($tipoUsuario)) {
 }
 
 try {
+    // Carrega a conexão e as regras compartilhadas de grupos e permissões.
     require_once __DIR__ . "/Conexao.php";
     require_once __DIR__ . "/grupos-acesso-util.php";
 

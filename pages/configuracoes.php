@@ -1,31 +1,31 @@
 <?php
 
-// Esta pÃ¡gina concentra as configuraÃ§Ãµes do usuÃ¡rio logado.
-// Primeiro validamos a sessÃ£o, depois buscamos os dados no banco
-// e, por fim, usamos essas informaÃ§Ãµes para montar a interface.
+// Esta página concentra as configurações do usuário logado.
+// Primeiro validamos a sessão, depois buscamos os dados no banco
+// e, por fim, usamos essas informações para montar a interface.
 
 declare(strict_types=1);
 
-// Inicia a sessÃ£o para conseguir acessar os dados do usuÃ¡rio autenticado.
+// Inicia a sessão para conseguir acessar os dados do usuário autenticado.
 session_start();
 
-// Se nÃ£o existir usuÃ¡rio vÃ¡lido na sessÃ£o, nÃ£o deixa acessar a pÃ¡gina direto pela URL.
-// Nesse caso, o usuÃ¡rio Ã© mandado de volta para a tela de login.
+// Se não existir usuário válido na sessão, não deixa acessar a página direto pela URL.
+// Nesse caso, o usuário é mandado de volta para a tela de login.
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
   header("Location: Pagina-login.html?sessao=expirada");
   exit;
 }
 
 // Atalho para escapar textos antes de jogar no HTML.
-// Isso evita que algum valor vindo do banco ou da sessÃ£o quebre a pÃ¡gina
-// ou abra brecha para injeÃ§Ã£o de cÃ³digo no navegador.
+// Isso evita que algum valor vindo do banco ou da sessão quebre a página
+// ou abra brecha para injeção de código no navegador.
 function e(string $value): string
 {
   return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
 }
 
-// Busca um campo dentro do perfil e devolve um valor padrÃ£o quando ele estÃ¡ vazio.
-// Ajuda a evitar vÃ¡rios ifs espalhados no HTML sÃ³ para mostrar "--".
+// Busca um campo dentro do perfil e devolve um valor padrão quando ele está vazio.
+// Ajuda a evitar vários ifs espalhados no HTML só para mostrar "--".
 function campoPerfil(array $perfil, string $campo, string $padrao = "--"): string
 {
   $valor = trim((string) ($perfil[$campo] ?? ""));
@@ -33,8 +33,8 @@ function campoPerfil(array $perfil, string $campo, string $padrao = "--"): strin
   return $valor !== "" ? $valor : $padrao;
 }
 
-// Formata datas vindas do banco para o padrÃ£o brasileiro.
-// Se a data vier invÃ¡lida, a tela continua funcionando e mostra apenas "--".
+// Formata datas vindas do banco para o padrão brasileiro.
+// Se a data vier inválida, a tela continua funcionando e mostra apenas "--".
 function formatarDataPerfil(?string $value): string
 {
   if (!$value) {
@@ -50,7 +50,7 @@ function formatarDataPerfil(?string $value): string
   }
 }
 
-// Monta as iniciais do usuÃ¡rio para usar no avatar do crachÃ¡ digital.
+// Monta as iniciais do usuário para usar no avatar do crachá digital.
 // Exemplo: "Pietro Pereira" vira "PP".
 function iniciaisUsuario(string $nome): string
 {
@@ -72,7 +72,7 @@ function iniciaisUsuario(string $nome): string
   return $iniciais !== "" ? $iniciais : "TT";
 }
 
-// Converte o status do usuÃ¡rio em uma classe CSS.
+// Converte o status do usuário em uma classe CSS.
 // Assim o PHP decide o estado e o CSS cuida do visual.
 function statusClasseConfiguracao(string $status): string
 {
@@ -89,8 +89,8 @@ function statusClasseConfiguracao(string $status): string
   return "status-neutral";
 }
 
-// ComeÃ§amos usando os dados que jÃ¡ estÃ£o salvos na sessÃ£o.
-// Se o banco responder, esses dados serÃ£o complementados logo abaixo.
+// Começamos usando os dados que já estãos salvos na sessão.
+// Se o banco responder, esses dados serão complementados logo abaixo.
 require_once __DIR__ . "/../Backend/grupos-acesso-util.php";
 
 $usuario = $_SESSION["usuario"];
@@ -116,12 +116,12 @@ $permissoesUsuario = $usuarioEhAdmin
   : array_values(array_intersect((array) ($usuario["permissoes_grupos"] ?? []), array_keys($rotulosPermissoes)));
 
 try {
-  // Carrega a conexÃ£o com o banco.
-  // O __DIR__ evita problema de caminho quando o arquivo Ã© chamado de lugares diferentes.
+  // Carrega a conexão com o banco.
+  // O __DIR__ evita problema de caminho quando o arquivo é chamado de lugares diferentes.
   require __DIR__ . "/../Backend/Conexao.php";
 
-  // Consulta os dados completos do usuÃ¡rio no Supabase/PostgreSQL.
-  // A busca usa id ou email para funcionar mesmo se algum desses dados estiver ausente na sessÃ£o.
+  // Consulta os dados completos do usuário no Supabase/PostgreSQL.
+  // A busca usa id ou email para funcionar mesmo se algum desses dados estiver ausente na sessão.
   $stmt = $pdo->prepare("
         select
             id,
@@ -151,7 +151,7 @@ try {
 
   $perfilBanco = $stmt->fetch();
 
-  // Se encontrou o usuÃ¡rio no banco, junta os dados da sessÃ£o com os dados mais completos.
+  // Se encontrou o usuário no banco, junta os dados da sessão com os dados mais completos.
   // O banco fica com prioridade quando houver campos repetidos.
   if (is_array($perfilBanco)) {
     $perfil = array_merge($usuario, $perfilBanco);
@@ -163,13 +163,13 @@ try {
     $_SESSION["usuario"]["permissoes_grupos"] = $permissoesUsuario;
   }
 } catch (Throwable) {
-  // NÃ£o travamos a pÃ¡gina se o banco falhar.
-  // A tela ainda abre com os dados da sessÃ£o e mostra um aviso discreto ao usuÃ¡rio.
+  // Não travamos a página se o banco falhar.
+  // A tela ainda abre com os dados da sessão e mostra um aviso discreto ao usuário.
   $erroBanco = "Nao foi possivel carregar todos os dados do banco. Mostrando informacoes da sessao.";
 }
 
-// A partir daqui, os dados sÃ£o tratados para exibiÃ§Ã£o.
-// Separar essa preparaÃ§Ã£o do HTML deixa a tela mais organizada.
+// A partir daqui, os dados são tratados para exibição.
+// Separar essa preparação do HTML deixa a tela mais organizada.
 $usuarioTipoRaw = strtolower(trim((string) ($perfil["tipo_usuario"] ?? ($usuario["tipo_usuario"] ?? ""))));
 $usuarioEhAdmin = in_array($usuarioTipoRaw, ["adm", "admin", "administrador"], true);
 
@@ -231,31 +231,31 @@ $resumoPermissoes = $usuarioEhAdmin
 <html lang="pt-BR">
 
 <head>
-  <!-- ConfiguraÃ§Ãµes bÃ¡sicas da pÃ¡gina e responsividade. -->
+  <!-- Configurações básicas da página e responsividade. -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <title>Configura&ccedil;&otilde;es | TI TECH Solutions</title>
   <meta name="description"
     content="Painel de configura&ccedil;&otilde;es de conta, seguran&ccedil;a e prefer&ecirc;ncias do portal TI TECH Solutions" />
-  <!-- Ãcone da aba do navegador. -->
+  <!-- ícone da aba do navegador. -->
   <link rel="icon" type="image/png" href="../assets/favicon.png?v=20260630-ti-favicon" />
 
-  <!-- PrÃ©-conexÃ£o e fonte principal usada na interface. -->
+  <!-- Pré-conexão e fonte principal usada na interface. -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
 
-  <!-- CSS separado por responsabilidade: base do sistema, efeitos gerais e ajustes especÃ­ficos desta pÃ¡gina. -->
+  <!-- CSS separado por responsabilidade: base do sistema, efeitos gerais e ajustes especi­ficos desta página. -->
   <link rel="stylesheet" href="../css/pagina-base.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
   <link rel="stylesheet" href="../css/configuracoes.css?v=20260707-user-permissions" />
 
 
-  <!-- Scripts carregados com defer para nÃ£o bloquear a montagem do HTML. -->
+  <!-- Scripts carregados com defer para não bloquear a montagem do HTML. -->
   <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="../js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="../js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
@@ -267,14 +267,14 @@ $resumoPermissoes = $usuarioEhAdmin
 </head>
 
 <body class="theme-dark page-loading">
-  <!-- Estrutura principal da aplicaÃ§Ã£o: menu lateral + Ã¡rea de conteÃºdo. -->
+  <!-- Estrutura principal da aplicação: menu lateral + área de conteúdo. -->
   <div class="app-shell">
-    <!-- Menu lateral usado para navegar entre as Ã¡reas do sistema. -->
+    <!-- Menu lateral usado para navegar entre as áreas do sistema. -->
     <?php require __DIR__ . "/../components/sidebar.php"; ?>
 
-    <!-- ConteÃºdo principal da pÃ¡gina. O data-user-role permite que o JavaScript/CSS adaptem comportamentos pelo cargo. -->
+    <!-- Conteúdo principal da página. O data-user-role permite que o JavaScript/CSS adaptem comportamentos pelo cargo. -->
     <main class="main-area settings-page" data-user-role="<?php echo e(strtolower($tipoUsuarioTexto)); ?>">
-      <!-- Barra superior com tÃ­tulo da pÃ¡gina e atalho para alternar tema. -->
+      <!-- Barra superior com título da página e atalho para alternar tema. -->
       <header class="topbar">
         <div class="topbar-left">
           <button class="icon-button menu-button" id="openSidebar" type="button" aria-label="Abrir menu">
@@ -298,7 +298,7 @@ $resumoPermissoes = $usuarioEhAdmin
         </div>
       </header>
 
-      <!-- Bloco de apresentaÃ§Ã£o da pÃ¡gina, dando contexto ao usuÃ¡rio sobre o que ele pode configurar. -->
+      <!-- Bloco de apresentação, da página, dando contexto ao usuário sobre o que ele pode configurar. -->
       <section class="hero-panel settings-hero" aria-labelledby="settingsTitle">
         <div class="hero-content">
           <p class="section-tag">Central do usu&aacute;rio</p>
@@ -320,9 +320,9 @@ $resumoPermissoes = $usuarioEhAdmin
         </div>
       <?php endif; ?>
 
-      <!-- Resumo rÃ¡pido da conta antes das configuraÃ§Ãµes detalhadas. -->
+      <!-- Resumo rápido da conta antes das configurações detalhadas. -->
       <section class="settings-overview" aria-label="Resumo das configura&ccedil;&otilde;es">
-        <!-- CrachÃ¡ digital com os principais dados do usuÃ¡rio logado. -->
+        <!-- Crachá digital com os principais dados do usuário logado. -->
         <article class="content-card digital-badge-card" id="conta">
           <div class="badge-topline">
             <span>Cracha digital</span>
@@ -358,7 +358,7 @@ $resumoPermissoes = $usuarioEhAdmin
 
       </section>
 
-      <!-- Grade principal de cards. Cada article representa uma Ã¡rea de configuraÃ§Ã£o. -->
+      <!-- Grade principal de cards. Cada article representa uma área de configuração. -->
       <section class="settings-grid" aria-label="Painel de configura&ccedil;&otilde;es">
         <!-- Dados operacionais do perfil, exibidos de forma somente leitura. -->
         <article class="content-card profile-card" aria-labelledby="profileTitle">
@@ -417,7 +417,7 @@ $resumoPermissoes = $usuarioEhAdmin
           </div>
         </article>
 
-        <!-- PreferÃªncias visuais salvas pelo JavaScript, como tema, cor e densidade da interface. -->
+        <!-- Preferências visuais salvas pelo JavaScript, como tema, cor e densidade da interface. -->
         <article class="content-card preferences-card" id="interface" aria-labelledby="interfaceTitle">
           <div class="card-header">
             <div>
@@ -432,7 +432,7 @@ $resumoPermissoes = $usuarioEhAdmin
           </div>
 
           <form class="preferences-form" id="preferencesForm">
-            <!-- Cores de destaque da interface. O JS lÃª o radio selecionado e aplica a classe/variÃ¡vel correspondente. -->
+            <!-- Cores de destaque da interface. O JS  o radio selecionado e aplica a classe/variavel correspondente. -->
             <fieldset class="preference-group">
               <legend>Prefer&ecirc;ncia de cor</legend>
               <div class="accent-options" role="radiogroup" aria-label="Prefer&ecirc;ncia de cor">
@@ -447,7 +447,7 @@ $resumoPermissoes = $usuarioEhAdmin
               </div>
             </fieldset>
 
-            <!-- Escolha do tema visual: escuro, claro ou automÃ¡tico pelo sistema. -->
+            <!-- Escolha do tema visual: escuro, claro ou automático pelo sistema. -->
             <fieldset class="preference-group">
               <legend>Modo de tela</legend>
               <div class="segmented-control three-options" role="radiogroup" aria-label="Modo de tela">
@@ -476,7 +476,7 @@ $resumoPermissoes = $usuarioEhAdmin
               </div>
             </fieldset>
 
-            <!-- Ajustes finos de experiÃªncia para adaptar a tela ao jeito de trabalho do usuÃ¡rio. -->
+            <!-- Ajustes finos de experiência para adaptar a tela ao jeito de trabalho do usuário. -->
             <fieldset class="preference-group">
               <legend>Ajustes de UX</legend>
               <div class="toggle-list">
@@ -501,7 +501,7 @@ $resumoPermissoes = $usuarioEhAdmin
           <div class="form-message success" id="preferencesMessage" role="status"></div>
         </article>
 
-        <!-- Ãrea de seguranÃ§a. A validaÃ§Ã£o visual da senha fica no JS; a troca real precisa ser feita no backend. -->
+        <!-- área  de segurança. A validação visual da senha fica no JS; a troca real precisa ser feita no backend. -->
         <article class="content-card security-card wide-card" id="seguranca" aria-labelledby="securityTitle">
           <div class="card-header">
             <div>
@@ -511,7 +511,7 @@ $resumoPermissoes = $usuarioEhAdmin
           </div>
 
           <div class="security-layout">
-            <!-- FormulÃ¡rio de senha preparado para receber integraÃ§Ã£o real depois. -->
+            <!-- Formulário de senha preparado para receber integração real depois. -->
             <form class="password-form" id="passwordForm">
               <label class="asset-field">
                 <span>Senha atual</span>
@@ -551,7 +551,7 @@ $resumoPermissoes = $usuarioEhAdmin
           </div>
         </article>
 
-        <!-- DiagnÃ³stico do ambiente do usuÃ¡rio. Os dados com id sÃ£o preenchidos pelo JavaScript no navegador. -->
+        <!-- Diagnóstico do ambiente do usuário. Os dados com id são preenchidos pelo JavaScript no navegador. -->
         <article class="content-card diagnostics-card wide-card" id="sistema" aria-labelledby="systemTitle">
           <div class="card-header">
             <div>
@@ -573,7 +573,7 @@ $resumoPermissoes = $usuarioEhAdmin
         </article>
       </section>
 
-      <!-- Toast usado para mensagens rÃ¡pidas sem interromper a navegaÃ§Ã£o. -->
+      <!-- Toast usado para mensagens rápidas sem interromper a navegação. -->
       <div class="settings-toast" id="settingsToast" role="status" aria-live="polite"></div>
     </main>
   </div>

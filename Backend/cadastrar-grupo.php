@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Endpoint responsável por validar e cadastrar grupos com seus membros e permissões.
 session_start();
 
 header("Content-Type: application/json; charset=utf-8");
@@ -30,6 +31,7 @@ function campoGrupo(string $nome): string
     return trim((string) ($_POST[$nome] ?? ""));
 }
 
+// Normaliza listas do formulário e elimina valores vazios ou repetidos antes da validação.
 function listaGrupoPost(string $nome): array
 {
     $valor = $_POST[$nome] ?? [];
@@ -61,6 +63,7 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     ]);
 }
 
+// Importa a camada compartilhada de autorização antes de executar esta rota.
 require_once __DIR__ . "/permissoes-acesso.php";
 exigirPermissaoApi("cadastrar_grupos", "Cadastro de grupos");
 
@@ -92,6 +95,7 @@ foreach ($membros as $membroId) {
 }
 
 try {
+    // Carrega a conexão e as regras compartilhadas de grupos e permissões.
     require_once __DIR__ . "/Conexao.php";
     require_once __DIR__ . "/grupos-acesso-util.php";
 
@@ -129,6 +133,7 @@ try {
     $criadorId = (string) ($_SESSION["usuario"]["id"] ?? "");
     $criadorId = uuidGrupoValido($criadorId) ? $criadorId : null;
 
+    // O grupo e seus vínculos são gravados na mesma transação para evitar cadastros parciais.
     $pdo->beginTransaction();
 
     $grupoStmt = $pdo->prepare("

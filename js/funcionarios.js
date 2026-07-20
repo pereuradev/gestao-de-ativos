@@ -1,3 +1,6 @@
+// Filtra os cartões de funcionários e apresenta detalhes no modal de visualização.
+// O módulo altera apenas a interface; os dados de origem são renderizados pelo PHP.
+
 document.addEventListener("DOMContentLoaded", initPage);
 
 function initPage() {
@@ -21,6 +24,7 @@ function setupEmployeeFilters() {
   filterEmployees();
 }
 
+// A busca combina os campos normalizados de cada cartão sem consultar novamente o servidor.
 function filterEmployees() {
   const cards = Array.from(document.querySelectorAll(".employee-row"));
   const search = normalizeText(document.getElementById("employeeSearch")?.value || "");
@@ -91,6 +95,7 @@ function setupEmployeeModal() {
   });
 }
 
+// O modal usa os dados já presentes no cartão e devolve o foco ao fechar.
 function openEmployeeModal(card) {
   const modal = document.getElementById("employeeDetailsModal");
 

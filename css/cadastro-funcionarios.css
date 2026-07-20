@@ -1,3 +1,6 @@
+/* Estilos do cadastro de funcionários e dos indicadores de validação do formulário. */
+
+/* Identidade visual do cabeçalho de cadastro. */
 .employee-registration-page .employee-register-hero {
   position: relative;
   isolation: isolate;
@@ -114,6 +117,7 @@
   margin-top: 22px;
 }
 
+/* Seletor visual do tipo de usuário enviado pelo formulário. */
 .employee-form-card .segment-control {
   position: relative;
   isolation: isolate;
@@ -239,6 +243,7 @@
   box-shadow: 0 0 0 1000px var(--asset-field-bg-focus) inset !important;
 }
 
+/* Indicador de força da senha atualizado pelo JavaScript. */
 .password-meter {
   display: grid;
   gap: 8px;
@@ -321,6 +326,7 @@
   color: var(--muted);
 }
 
+/* Resumo dos funcionários cadastrados mais recentemente. */
 .recent-employee-list {
   display: grid;
   gap: 12px;

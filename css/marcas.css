@@ -1,3 +1,6 @@
+/* Estilos específicos do cadastro e da visualização de marcas. */
+
+/* Organização entre formulário e listagem de marcas. */
 .brands-layout {
   margin-top: 20px;
   display: block;
@@ -21,6 +24,7 @@
   margin-top: 20px;
 }
 
+/* Busca e filtro local controlados pelo JavaScript. */
 .asset-filter-bar {
   margin-bottom: 16px;
   display: grid;
@@ -86,6 +90,7 @@
   width: 100%;
 }
 
+/* Tabela compartilhada pelas telas de cadastro e visualização. */
 .brand-table {
   min-width: 780px;
 }

@@ -1,3 +1,6 @@
+// Monta widgets React isolados usados como melhorias progressivas da interface.
+// React e ReactDOM são dependências globais; sem elas, o módulo encerra sem afetar a página.
+
 (function () {
   function onReady(callback) {
     if (document.readyState === "loading") {
@@ -9,6 +12,7 @@
   }
 
   function initReactWidgets() {
+    // O widget é progressivo: a página continua funcional quando React não está disponível.
     if (!window.React || !window.ReactDOM) {
       return;
     }
@@ -30,6 +34,7 @@
         setIsOpen(false);
       }
 
+      // Escuta o evento global usado pelas rotas para abrir o aviso de permissão.
       useEffect(() => {
         function openDialog(event) {
           event.preventDefault?.();
@@ -52,6 +57,7 @@
         return () => window.removeEventListener("titech:permission-denied", openDialog);
       }, []);
 
+      // Ao abrir, controla Escape e restaura o foco no elemento anterior ao fechar.
       useEffect(() => {
         if (!isOpen) {
           return undefined;

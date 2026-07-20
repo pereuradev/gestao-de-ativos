@@ -1,3 +1,6 @@
+/* Estilos específicos do cadastro e da visualização de locais. */
+
+/* Cabeçalho visual das páginas de locais. */
 .locations-hero {
   position: relative;
   overflow: hidden;
@@ -90,6 +93,7 @@
   text-shadow: 0 10px 28px rgba(255, 255, 255, 0.62);
 }
 
+/* Organização entre formulário e listagem. */
 .locations-layout {
   margin-top: 22px;
   display: block;
@@ -121,6 +125,7 @@
   width: 100%;
 }
 
+/* Busca e filtro local controlados pelo JavaScript. */
 .location-filter-bar {
   margin-bottom: 16px;
   display: grid;
@@ -179,6 +184,7 @@
   transform: translateY(-2px);
 }
 
+/* Tabela compartilhada pelas telas de cadastro e visualização. */
 .location-table {
   width: 100%;
   min-width: 720px;

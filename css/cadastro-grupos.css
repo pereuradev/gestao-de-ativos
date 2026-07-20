@@ -1,3 +1,6 @@
+/* Estilos do cadastro de grupos, seleção de membros e organização de permissões. */
+
+/* Estrutura geral do fluxo de criação de grupos. */
 .group-registration-page {
   --group-accent: var(--accent, var(--asset-teal));
   --group-accent-soft: color-mix(in srgb, var(--group-accent) 16%, transparent);
@@ -39,6 +42,7 @@
   gap: 20px;
 }
 
+/* Seleção pesquisável de funcionários participantes. */
 .group-selector {
   display: grid;
   gap: 16px;
@@ -243,6 +247,7 @@
   gap: 12px;
 }
 
+/* Permissões organizadas por área para reduzir a carga visual. */
 .permission-sections {
   display: grid;
   gap: 12px;
@@ -499,6 +504,7 @@
     linear-gradient(135deg, color-mix(in srgb, var(--group-accent) 46%, var(--asset-navy)), var(--asset-navy));
 }
 
+/* Cartões dos grupos criados recentemente. */
 .group-recent-card {
   border-color: color-mix(in srgb, var(--group-accent) 18%, var(--line));
   background:

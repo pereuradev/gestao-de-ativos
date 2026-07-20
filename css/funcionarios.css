@@ -1,3 +1,6 @@
+/* Estilos do diretório, filtros, cartões e modal de funcionários. */
+
+/* Identidade visual do diretório de funcionários. */
 .funcionarios-page .employees-hero {
   isolation: isolate;
   min-height: 240px;
@@ -95,6 +98,7 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+/* Filtros e ações da listagem. */
 .employees-records-card {
   overflow: hidden;
 }
@@ -176,6 +180,7 @@
   margin-top: 16px;
 }
 
+/* Cartões responsivos usados na visualização dos perfis. */
 .employee-cards-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -380,6 +385,7 @@
   box-shadow: none;
 }
 
+/* Modal de detalhes e edição com bloqueio visual do conteúdo de fundo. */
 .employee-modal-backdrop {
   position: fixed;
   inset: 0;

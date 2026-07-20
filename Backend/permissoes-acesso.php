@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Centraliza as regras de autorização usadas por páginas e endpoints da aplicação.
 require_once __DIR__ . "/Conexao.php";
 require_once __DIR__ . "/grupos-acesso-util.php";
 
@@ -12,6 +13,7 @@ function recursoPermissaoAcesso(string $permissao): string
     return $rotulos[$permissao] ?? "esta area";
 }
 
+// Consulta permissões efetivas do usuário autenticado sem alterar o fluxo da página.
 function usuarioAtualTemPermissao(string $permissao): bool
 {
     global $pdo;
@@ -23,6 +25,7 @@ function usuarioAtualTemPermissao(string $permissao): bool
     return usuarioTemPermissaoGrupoAcesso($pdo, $permissao, $_SESSION["usuario"]);
 }
 
+// Páginas redirecionam para uma rota visual quando a sessão ou a permissão não é válida.
 function exigirPermissaoPagina(string $permissao, ?string $recurso = null): void
 {
     global $pdo;
@@ -42,6 +45,7 @@ function exigirPermissaoPagina(string $permissao, ?string $recurso = null): void
     exit;
 }
 
+// APIs devolvem JSON e códigos HTTP para que o JavaScript trate a falha corretamente.
 function exigirPermissaoApi(string $permissao, ?string $recurso = null): void
 {
     global $pdo;
@@ -72,6 +76,7 @@ function exigirPermissaoApi(string $permissao, ?string $recurso = null): void
     exit;
 }
 
+// Áreas estritamente administrativas mantêm uma verificação separada das permissões por recurso.
 function exigirAdministradorPagina(?string $recurso = null): void
 {
     if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {

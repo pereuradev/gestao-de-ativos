@@ -1,3 +1,6 @@
+// Controla busca, edição e exclusão de propriedades de ativos.
+// As ações dependem do token CSRF renderizado pela página e da resposta JSON do backend.
+
 const MESSAGE_HIDE_DELAY_MS = 2800;
 
 document.addEventListener("DOMContentLoaded", initPage);
@@ -58,6 +61,7 @@ function setupEditModal() {
   });
 }
 
+// O formulário recebe os dados da linha selecionada por meio de atributos data-*.
 function openEditModal(row) {
   const modal = document.getElementById("brandEditModal");
   const idInput = document.getElementById("editBrandId");
@@ -83,6 +87,7 @@ function closeEditModal() {
   }
 }
 
+// A linha é atualizada somente após a confirmação do backend.
 async function submitEditForm(event) {
   event.preventDefault();
 
@@ -144,6 +149,7 @@ function validateBrandForm(form) {
   return "";
 }
 
+// A exclusão combina confirmação do usuário, CSRF e resposta JSON válida.
 async function deleteBrand(row, button) {
   const name = row.dataset.name || "esta propriedade";
   const confirmed = window.titechConfirm
@@ -222,6 +228,7 @@ function updateBrandRow(brand) {
   }
 }
 
+// A busca e o status filtram localmente os registros já renderizados.
 function filterBrands() {
   const rows = Array.from(document.querySelectorAll(".brand-row"));
   const search = normalizeText(document.getElementById("brandSearch")?.value || "");

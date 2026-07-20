@@ -166,6 +166,7 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     responder(false, "Sessao expirada. Faca login novamente.", 401);
 }
 
+// Importa a camada compartilhada de autorização antes de executar esta rota.
 require_once __DIR__ . "/permissoes-acesso.php";
 exigirPermissaoApi("editar_ativos", "Edicao de ativos");
 
@@ -211,6 +212,7 @@ if (!imeiValido($imei)) {
 }
 
 try {
+    // Carrega a conexão e as regras centralizadas de status usadas nesta operação.
     require __DIR__ . "/Conexao.php";
     require __DIR__ . "/status-ativos.php";
 

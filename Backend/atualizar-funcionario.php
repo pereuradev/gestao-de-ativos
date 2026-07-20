@@ -96,6 +96,7 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     responderFuncionario(false, "Sessao expirada. Entre novamente no portal.", 401);
 }
 
+// Importa a camada compartilhada de autorização antes de executar esta rota.
 require_once __DIR__ . "/permissoes-acesso.php";
 exigirPermissaoApi("editar_funcionarios", "Edicao de funcionarios");
 
@@ -171,6 +172,7 @@ if ($usuarioSessaoId === $id && ($status !== "Ativo" || $tipoUsuario !== "Admini
 }
 
 try {
+    // Abre a conexão compartilhada somente quando esta etapa precisa acessar o banco.
     require_once __DIR__ . "/Conexao.php";
 
     $duplicadoStmt = $pdo->prepare("

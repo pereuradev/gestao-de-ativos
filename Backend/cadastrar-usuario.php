@@ -8,6 +8,7 @@ session_start();
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
+// Carrega a configuração da aplicação antes de inicializar esta dependência.
 require_once __DIR__ . "/config.php";
 
 // Chaves usadas para chamar o endpoint de signup do Supabase.
@@ -242,6 +243,7 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     ]);
 }
 
+// Importa a camada compartilhada de autorização antes de executar esta rota.
 require_once __DIR__ . "/permissoes-acesso.php";
 exigirPermissaoApi("cadastrar_funcionarios", "Cadastro de funcionarios");
 
@@ -321,6 +323,7 @@ if (strlen($senha) < 6) {
 $senhaHash = gerarHashSenha($senha);
 
 try {
+    // Abre a conexão compartilhada somente quando esta etapa precisa acessar o banco.
     require_once __DIR__ . "/Conexao.php";
 
     // Antes de chamar o Auth, verificamos duplicidade nos dados locais principais.

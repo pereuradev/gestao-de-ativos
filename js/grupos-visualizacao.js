@@ -1,3 +1,6 @@
+// Filtra grupos já renderizados e mantém contador e estado vazio sincronizados.
+// A normalização permite buscar por nomes, membros e permissões sem nova consulta ao servidor.
+
 document.addEventListener("DOMContentLoaded", initGroupViewPage);
 
 function initGroupViewPage() {
@@ -20,6 +23,7 @@ function setupGroupViewSearch() {
   filterGroupViewItems();
 }
 
+// A busca considera o texto agregado de grupo, membros e permissões renderizado pelo PHP.
 function filterGroupViewItems() {
   const search = normalizeGroupViewText(document.getElementById("groupViewSearch")?.value || "");
   const cards = Array.from(document.querySelectorAll("#groupViewList .group-edit-item"));

@@ -1,3 +1,6 @@
+// Controla os filtros enviados ao servidor e o download dos relatórios de ativos.
+// Depende dos helpers globais de interface carregados por app-base.js e ux-profissional.js.
+
 document.addEventListener("DOMContentLoaded", initPage);
 
 let assetSearchTimer = null;
@@ -13,6 +16,7 @@ function initPage() {
   setupAssetExports();
 }
 
+// Os filtros são enviados ao servidor; a busca usa atraso curto para evitar requisições a cada tecla.
 function setupAssetFilters() {
   const form = document.getElementById("assetFiltersForm");
 
@@ -62,6 +66,7 @@ function resetAssetPageAndSubmit(form) {
   form.submit();
 }
 
+// A exportação reutiliza a URL filtrada renderizada pelo PHP e bloqueia downloads concorrentes.
 function setupAssetExports() {
   document.querySelectorAll("[data-asset-export]").forEach((button) => {
     button.addEventListener("click", () => exportAssetsFile(button));
@@ -180,6 +185,7 @@ function getAssetExportFilename(response, fallbackFilename) {
   return filenameMatch?.[1]?.replace(/[\\/:*?"<>|]/g, "-") || fallbackFilename;
 }
 
+// O arquivo recebido vira uma URL temporária, revogada logo após iniciar o download.
 function downloadAssetFile(blob, filename) {
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");

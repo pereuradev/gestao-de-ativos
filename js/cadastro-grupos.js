@@ -1,3 +1,6 @@
+// Gerencia seleção de membros e permissões durante o cadastro de grupos de acesso.
+// Usa confirmações e avisos globais definidos pelos módulos compartilhados.
+
 document.addEventListener("DOMContentLoaded", initGroupRegistrationPage);
 
 function initGroupRegistrationPage() {
@@ -35,6 +38,7 @@ function createGroupElement(tag, className = "", text = "") {
   return element;
 }
 
+// A busca atua apenas sobre os funcionários já carregados pelo PHP.
 function setupGroupEmployeeSearch() {
   const search = getGroupElement("groupEmployeeSearch");
   const clearButton = getGroupElement("clearGroupEmployees");
@@ -98,6 +102,7 @@ function setupGroupFormReset() {
   });
 }
 
+// Membros e permissões são enviados juntos para o backend gravar o grupo de forma atômica.
 async function handleGroupSubmit(event) {
   event.preventDefault();
 
@@ -254,6 +259,7 @@ function incrementGroupMetric(id, amount) {
   element.textContent = String(current + amount);
 }
 
+// O novo cartão usa APIs de DOM para manter os valores da resposta como texto.
 function prependRecentGroup(group) {
   if (!group || typeof group !== "object") {
     return;

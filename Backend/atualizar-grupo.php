@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Endpoint responsável por validar e atualizar o grupo, seus membros e suas permissões.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -24,6 +25,7 @@ function campoAtualizacaoGrupo(string $nome): string
     return trim((string) ($_POST[$nome] ?? ""));
 }
 
+// Normaliza listas do formulário e elimina valores vazios ou repetidos antes da validação.
 function listaAtualizacaoGrupo(string $nome): array
 {
     $valor = $_POST[$nome] ?? [];
@@ -73,6 +75,7 @@ function iniciaisAtualizacaoGrupo(string $nome): string
     return $iniciais !== "" ? $iniciais : "TT";
 }
 
+// Reconstrói o estado completo devolvido ao navegador após a atualização.
 function buscarGrupoAtualizado(PDO $pdo, string $grupoId, array $rotulosPermissoes): array
 {
     $grupoStmt = $pdo->prepare("
@@ -148,6 +151,7 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     responderAtualizacaoGrupo(false, "Sessao expirada. Faca login novamente.", 401);
 }
 
+// Importa a camada compartilhada de autorização antes de executar esta rota.
 require_once __DIR__ . "/permissoes-acesso.php";
 exigirPermissaoApi("editar_grupos", "Edicao de grupos");
 
@@ -181,6 +185,7 @@ foreach ($membros as $membroId) {
 }
 
 try {
+    // Carrega a conexão e as regras compartilhadas de grupos e permissões.
     require_once __DIR__ . "/Conexao.php";
     require_once __DIR__ . "/grupos-acesso-util.php";
 
@@ -232,6 +237,7 @@ try {
         responderAtualizacaoGrupo(false, "Ja existe outro grupo com este nome.", 409);
     }
 
+    // Grupo, membros e permissões formam uma única alteração e devem confirmar ou falhar juntos.
     $pdo->beginTransaction();
 
     $grupoStmt = $pdo->prepare("

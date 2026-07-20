@@ -4,19 +4,23 @@ declare(strict_types=1);
 
 session_start();
 
+// Impede que a página carregue permissões ou consulte dados sem uma sessão válida.
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
   header("Location: Pagina-login.html?sessao=expirada");
   exit;
 }
 
+// A autorização da página fica centralizada para manter a mesma regra usada no restante do sistema.
 require_once __DIR__ . "/../Backend/permissoes-acesso.php";
 exigirPermissaoPagina("visualizar_ativos", "Ativos");
 
+// Centraliza o escape dos valores dinâmicos antes de inseri-los no HTML.
 function e(string $value): string
 {
   return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
 }
 
+// Padroniza as datas no fuso da interface e preserva a renderização caso o valor seja inválido.
 function formatarDataAtivo(?string $value): string
 {
   if (!$value) {
@@ -32,6 +36,7 @@ function formatarDataAtivo(?string $value): string
   }
 }
 
+// Mantém os filtros atuais entre as páginas e remove parâmetros que representam valores padrão.
 function urlAtivosPaginada(int $pagina, array $overrides = []): string
 {
   $params = array_merge($_GET, $overrides, ["pagina" => $pagina]);
@@ -50,6 +55,7 @@ function urlAtivosPaginada(int $pagina, array $overrides = []): string
   return "ativos.php" . ($params ? "?" . http_build_query($params) : "");
 }
 
+// Reaproveita os filtros da tela na exportação, descartando controles exclusivos da paginação visual.
 function urlExportarAtivos(string $formato, array $overrides = []): string
 {
   $params = array_merge($_GET, $overrides, ["formato" => $formato]);
@@ -67,7 +73,7 @@ function urlExportarAtivos(string $formato, array $overrides = []): string
 
 $usuario = $_SESSION["usuario"];
 
-
+// Os filtros chegam pela URL para permitir recarregamento, paginação e compartilhamento da mesma consulta.
 $categoriaFiltro = trim((string) ($_GET["categoria"] ?? ""));
 $buscaFiltro = trim((string) ($_GET["busca"] ?? ""));
 $statusFiltro = trim((string) ($_GET["status"] ?? "todos"));
@@ -77,6 +83,7 @@ $localizacaoFiltro = trim((string) ($_GET["localizacao"] ?? "todos"));
 $porPaginaOpcoes = [10, 25, 50, 100];
 $porPagina = (int) ($_GET["por_pagina"] ?? 10);
 
+// Aceita somente tamanhos previstos para evitar consultas com limites arbitrários.
 if (!in_array($porPagina, $porPaginaOpcoes, true)) {
   $porPagina = 10;
 }
@@ -97,6 +104,7 @@ $ativosDisponiveis = 0;
 
 $erroBanco = "";
 
+// Estes valores funcionam como fallback; o cadastro central de status os substitui quando o banco está disponível.
 $statusPadrao = "DisponÃ­vel";
 $statusOptions = [
   "DisponÃ­vel",
@@ -106,12 +114,14 @@ $statusOptions = [
 ];
 
 try {
+  // A conexão e as regras de status são compartilhadas com o backend para evitar definições divergentes.
   require __DIR__ . "/../Backend/Conexao.php";
   require __DIR__ . "/../Backend/status-ativos.php";
 
   $statusOptions = nomesStatusAtivos($pdo);
   $statusPadrao = statusAtivoPadrao();
 
+  // Carrega as opções usadas nos filtros antes de montar a consulta principal.
   $categoriasStmt = $pdo->prepare("
         select id, nome
         from public.categorias_ativos
@@ -137,6 +147,7 @@ try {
   $locaisStmt->execute();
   $locais = $locaisStmt->fetchAll();
 
+  // As métricas globais não mudam conforme os filtros da tabela.
   $totalStmt = $pdo->prepare("select count(*)::int from public.ativos");
   $totalStmt->execute();
   $totalAtivos = (int) $totalStmt->fetchColumn();
@@ -152,6 +163,7 @@ try {
   $where = [];
   $params = [];
 
+  // Cada filtro adiciona uma condição parametrizada, mantendo os valores fora da SQL montada dinamicamente.
   if ($buscaFiltro !== "") {
     $where[] = "(
             lower(coalesce(a.nome, '')) like lower(:busca)
@@ -188,6 +200,7 @@ try {
 
   $whereSql = $where ? " where " . implode(" and ", $where) : "";
 
+  // A contagem usa exatamente as mesmas condições da listagem para calcular a paginação corretamente.
   $totalFiltradoStmt = $pdo->prepare("
         select count(*)::int
         from public.ativos a
@@ -205,12 +218,14 @@ try {
 
   $totalPaginas = max(1, (int) ceil($totalFiltradoAtivos / $porPagina));
 
+  // Corrige URLs com uma página maior que o total disponível após a aplicação dos filtros.
   if ($paginaAtual > $totalPaginas) {
     $paginaAtual = $totalPaginas;
   }
 
   $offset = ($paginaAtual - 1) * $porPagina;
 
+  // A consulta retorna apenas o recorte da página atual; limite e deslocamento são vinculados como inteiros.
   $ativosStmt = $pdo->prepare("
         select
             a.id,
@@ -244,9 +259,11 @@ try {
   $inicioRegistro = $totalFiltradoAtivos > 0 ? $offset + 1 : 0;
   $fimRegistro = min($offset + count($ativos), $totalFiltradoAtivos);
 } catch (Throwable) {
+  // Não expõe detalhes internos da conexão ou da consulta para o usuário final.
   $erroBanco = "Nao foi possivel carregar os ativos do banco agora.";
 }
 
+// Os botões recebem URLs prontas com os mesmos filtros aplicados à listagem.
 $exportarAtivosPdfUrl = urlExportarAtivos("pdf");
 $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
 ?>
@@ -259,18 +276,21 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
   <title>Ativos | TI TECH Solutions</title>
   <meta name="description" content="Consulta de ativos cadastrados no inventario da TI TECH Solutions" />
 
+  <!-- Identidade da página, tipografia e biblioteca externa de ícones. -->
   <link rel="icon" type="image/png" href="../assets/favicon.png?v=20260630-ti-favicon" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
+  <!-- Estilos compartilhados do sistema e ajustes específicos da consulta de ativos. -->
   <link rel="stylesheet" href="../css/pagina-base.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ativos.css?v=20260713-export-xlsx" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
   <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
 
+  <!-- Scripts locais controlam a interface; React é carregado para os widgets reutilizáveis. -->
   <script src="../js/typewriter.js?v=20260630-reduced-motion" defer></script>
   <script src="../js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
   <script src="../js/app-base.js?v=20260707-group-view-route" defer></script>
@@ -282,6 +302,7 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
 
 <body class="theme-dark page-loading">
   <div class="app-shell">
+    <!-- A navegação lateral é compartilhada pelas páginas autenticadas. -->
     <?php require __DIR__ . "/../components/sidebar.php"; ?>
 
     <main class="main-area">
@@ -308,6 +329,7 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
         </div>
       </header>
 
+      <!-- Contextualiza a consulta e os filtros disponíveis para o inventário. -->
       <section class="hero-panel compact-hero asset-inventory-hero" aria-labelledby="assetViewTitle">
         <div class="hero-content">
           <h2 id="assetViewTitle">
@@ -323,6 +345,7 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
         </div>
       </section>
 
+      <!-- Métricas gerais do inventário, independentes dos filtros da listagem. -->
       <section class="metrics-grid" aria-label="Resumo dos ativos">
         <article class="metric-card">
           <div class="metric-icon">
@@ -364,6 +387,7 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
         </div>
       <?php endif; ?>
 
+      <!-- Exportações, filtros e tabela paginada usam o mesmo conjunto de parâmetros. -->
       <section class="content-card records-card asset-view-card" aria-label="Tabela de ativos">
         <div class="card-header records-header">
           <div>
@@ -377,6 +401,7 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
               <?php echo $totalFiltradoAtivos === 1 ? "registro encontrado" : "registros encontrados"; ?>
             </span>
 
+            <!-- O JavaScript usa os atributos data-* para solicitar e baixar o formato escolhido. -->
             <div class="asset-export-actions" aria-label="Exportacao de ativos">
               <button class="asset-export-button asset-export-button-pdf" id="exportAssetsPdf" type="button"
                 data-asset-export
@@ -398,6 +423,7 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
           </div>
         </div>
 
+        <!-- O envio por GET preserva os filtros na URL; qualquer alteração reinicia a consulta na primeira página. -->
         <form id="assetFiltersForm" class="asset-filter-bar" method="get" action="ativos.php"
           aria-label="Filtros dos ativos">
           <input type="hidden" name="pagina" value="1" />
@@ -487,12 +513,14 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
             <tbody id="assetTableBody">
               <?php foreach ($ativos as $ativo): ?>
                 <?php
+                // Normaliza os dados uma vez para manter a marcação abaixo simples e sempre escapada na saída.
                 $nome = (string) ($ativo["nome"] ?? "");
                 $numeroSerie = (string) ($ativo["numero_serie"] ?? "");
                 $status = (string) ($ativo["status"] ?? "--");
                 $marca = (string) ($ativo["marca"] ?? "");
                 $propriedade = (string) ($ativo["propriedade"] ?? "");
                 $datasheet = trim((string) ($ativo["datasheet"] ?? ""));
+                // Somente URLs HTTP(S) viram links clicáveis; outros valores continuam sendo exibidos como texto.
                 $datasheetEhUrl = filter_var($datasheet, FILTER_VALIDATE_URL)
                   && preg_match("#^https?://#i", $datasheet);
                 $categoria = (string) ($ativo["categoria"] ?? "Sem categoria");
@@ -550,6 +578,7 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
           <span>Nenhum ativo encontrado.</span>
         </div>
 
+        <!-- A paginação é processada no servidor e conserva todos os filtros ativos. -->
         <?php if ($totalFiltradoAtivos > 0): ?>
           <nav class="asset-pagination" aria-label="Pagina&ccedil;&atilde;o de ativos">
             <div class="asset-pagination-info">

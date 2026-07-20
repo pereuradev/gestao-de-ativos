@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Atualiza os dados e as permissões do usuário mantidos na sessão ativa.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -51,9 +52,11 @@ if ($email === "") {
 }
 
 try {
+    // Carrega a conexão e as regras compartilhadas de grupos e permissões.
     require __DIR__ . "/Conexao.php";
     require __DIR__ . "/grupos-acesso-util.php";
 
+    // Recarrega o perfil pelo e-mail da sessão para refletir mudanças administrativas recentes.
     $stmt = $pdo->prepare("
         select id, nome_completo, email, tipo_usuario, departamento, empresa, status
           from public.perfis_usuarios
@@ -67,6 +70,7 @@ try {
         responderUsuarioSessao(false, "Perfil nao encontrado.", 404);
     }
 
+    // Preserva campos complementares da sessão e substitui apenas os dados canônicos do perfil.
     $_SESSION["usuario"] = array_merge($usuarioSessao, [
         "id" => (string) ($perfil["id"] ?? ($usuarioSessao["id"] ?? "")),
         "nome_completo" => (string) ($perfil["nome_completo"] ?? ($usuarioSessao["nome_completo"] ?? "")),
@@ -79,6 +83,7 @@ try {
 
     $usuarioAtualizado = $_SESSION["usuario"];
     $nome = (string) ($usuarioAtualizado["nome_completo"] ?? "");
+    // As permissões são recalculadas junto com o perfil para manter sidebar e rotas coerentes.
     $permissoes = sincronizarPermissoesUsuarioSessao($pdo);
 
     responderUsuarioSessao(true, "Perfil carregado.", 200, [

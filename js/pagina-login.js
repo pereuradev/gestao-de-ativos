@@ -1,3 +1,6 @@
+// Controla autenticação, tema, perfil lembrado e estados acessíveis da página de login.
+// Dados sensíveis não são persistidos; o armazenamento local guarda apenas preferências de interface.
+
 const state = {
   role: "Colaborador",
 };
@@ -49,6 +52,7 @@ function getEl(id) {
   return document.getElementById(id);
 }
 
+// O acesso ao armazenamento é protegido porque o navegador pode bloqueá-lo por privacidade.
 function getSavedItem(key) {
   try {
     return localStorage.getItem(key);
@@ -106,6 +110,7 @@ function startPageEntrance() {
   });
 }
 
+// A transição respeita a preferência de movimento reduzido antes de navegar.
 function navigateWithTransition(url) {
   if (!url) return;
 
@@ -385,6 +390,7 @@ function closeInactiveAccountDialog() {
   inactiveDialogLastFocus = null;
 }
 
+// O diálogo controla foco e tecla Escape para manter a navegação acessível.
 function initInactiveAccountDialog() {
   const dialog = getEl("inactiveAccountDialog");
 
@@ -409,6 +415,7 @@ function initInactiveAccountDialog() {
   });
 }
 
+// A navegação para o portal ocorre somente após autenticação confirmada pelo backend.
 async function handleLogin(event) {
   event.preventDefault();
 
@@ -694,6 +701,7 @@ function setActiveRole(buttons, selectedButton, segmentControl) {
   }
 }
 
+// A troca de perfil mantém botão, campo enviado e conteúdo explicativo sincronizados.
 function initRoleSelector() {
   const segmentControl = document.querySelector(".segment-control");
   const buttons = [...document.querySelectorAll(".segment-control button")];
@@ -876,6 +884,7 @@ function initCustomCursor() {
   });
 }
 
+// A inicialização restaura preferências antes de ativar as interações da página.
 function init() {
   initTheme();
   initInactiveAccountDialog();

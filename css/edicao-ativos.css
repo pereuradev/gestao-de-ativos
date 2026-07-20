@@ -1,3 +1,6 @@
+/* Estilos da listagem editável, paginação e modal de manutenção de ativos. */
+
+/* Filtros e tabela usados para localizar o ativo que será alterado. */
 .asset-edit-card {
   margin-top: 22px;
 }
@@ -78,6 +81,7 @@
   min-width: 210px;
 }
 
+/* Paginação processada pelo PHP para limitar o volume da tabela. */
 .asset-pagination {
   margin-top: 18px;
   padding-top: 16px;
@@ -158,6 +162,7 @@
   width: 210px;
 }
 
+/* Ações destrutivas e de edição disponíveis por registro. */
 .row-actions {
   display: flex;
   align-items: center;
@@ -229,6 +234,7 @@
   background: rgba(224, 93, 93, 0.78);
 }
 
+/* Camada do modal preenchido pelo JavaScript com os dados da linha. */
 .edit-modal-backdrop {
   position: fixed;
   inset: 0;

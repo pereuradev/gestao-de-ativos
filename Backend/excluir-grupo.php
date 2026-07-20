@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// Endpoint responsável por excluir um grupo e informar o impacto da remoção.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -48,6 +49,7 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     responderExclusaoGrupo(false, "Sessao expirada. Faca login novamente.", 401);
 }
 
+// Importa a camada compartilhada de autorização antes de executar esta rota.
 require_once __DIR__ . "/permissoes-acesso.php";
 exigirPermissaoApi("editar_grupos", "Edicao de grupos");
 
@@ -62,11 +64,13 @@ if (!uuidExclusaoGrupoValido($grupoId)) {
 }
 
 try {
+    // Carrega a conexão e as regras compartilhadas de grupos e permissões.
     require_once __DIR__ . "/Conexao.php";
     require_once __DIR__ . "/grupos-acesso-util.php";
 
     garantirTabelasGruposAcesso($pdo);
 
+    // Registra o impacto antes da exclusão para devolver um resumo útil à interface.
     $resumoStmt = $pdo->prepare("
         select
             (select count(*)::int from public.grupos_acesso_membros where grupo_id = cast(:id_membros as uuid)) as membros,

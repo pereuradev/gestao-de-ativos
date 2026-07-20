@@ -1,7 +1,10 @@
+/* Estilos dos painéis de preferências, segurança e diagnóstico da página de configurações. */
+
 .settings-page {
   --settings-card-gap: 16px;
 }
 
+/* Cabeçalho e identidade visual da central de configurações. */
 .settings-page .settings-hero {
   position: relative;
   overflow: hidden;
@@ -76,6 +79,7 @@
 }
 
 .settings-overview,
+/* Grade principal dos cartões de perfil, preferências e diagnóstico. */
 .settings-grid {
   margin-top: 22px;
   display: grid;
@@ -309,6 +313,7 @@
   color: var(--text);
 }
 
+/* Resumo das permissões efetivas da conta autenticada. */
 .account-permissions-panel {
   margin-top: 16px;
   padding: 16px;
@@ -486,6 +491,7 @@
   gap: 12px;
 }
 
+/* Controles persistidos localmente para personalizar a interface. */
 .preferences-form {
   gap: 18px;
 }
