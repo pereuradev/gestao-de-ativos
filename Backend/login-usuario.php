@@ -44,6 +44,26 @@ function emailCorporativoValido(string $email): bool
     return str_ends_with(strtolower($email), "@titechsolutions.com.br");
 }
 
+function preferenciaUsuario(array $perfil, string $campo, array $permitidos, string $padrao): string
+{
+    $valor = trim((string)($perfil[$campo] ?? ""));
+
+    return in_array($valor, $permitidos, true) ? $valor : $padrao;
+}
+
+function preferenciasUsuario(array $perfil): array
+{
+    // Estes nomes sao os mesmos usados pelo JavaScript para aplicar a interface.
+    return [
+        "theme" => preferenciaUsuario($perfil, "preferencia_tema", ["dark", "light", "auto"], "dark"),
+        "accent" => preferenciaUsuario($perfil, "preferencia_cor", ["teal", "green", "blue", "violet"], "teal"),
+        "fontSize" => preferenciaUsuario($perfil, "preferencia_tamanho_fonte", ["small", "default", "large", "extra"], "default"),
+        "density" => preferenciaUsuario($perfil, "preferencia_densidade", ["comfortable", "compact"], "comfortable"),
+        "motion" => preferenciaUsuario($perfil, "preferencia_movimento", ["normal", "reduced"], "normal"),
+        "cursor" => preferenciaUsuario($perfil, "preferencia_cursor", ["enhanced", "normal"], "enhanced"),
+    ];
+}
+
 function caminhoAplicacao(string $arquivo): string
 {
     // Monta o redirect respeitando a pasta onde o XAMPP serviu o projeto.
@@ -320,6 +340,8 @@ try {
     // Regenera a sessao para reduzir risco de fixacao de sessao apos login.
     session_regenerate_id(true);
 
+    $preferencias = preferenciasUsuario($perfil);
+
     // Dados minimos usados pelas paginas protegidas e pela sidebar.
     $_SESSION["usuario"] = [
         "id" => (string)$perfil["id"],
@@ -329,6 +351,12 @@ try {
         "departamento" => (string)($perfil["departamento"] ?? ""),
         "empresa" => (string)($perfil["empresa"] ?? ""),
         "status" => (string)$perfil["status"],
+        "preferencia_tema" => $preferencias["theme"],
+        "preferencia_cor" => $preferencias["accent"],
+        "preferencia_tamanho_fonte" => $preferencias["fontSize"],
+        "preferencia_densidade" => $preferencias["density"],
+        "preferencia_movimento" => $preferencias["motion"],
+        "preferencia_cursor" => $preferencias["cursor"],
     ];
     $_SESSION["usuario"]["permissoes_grupos"] = permissoesUsuarioGrupoAcesso($pdo, $_SESSION["usuario"]);
 
@@ -346,6 +374,7 @@ try {
 
     responder(true, "Login realizado com sucesso.", 200, [
         "redirect" => caminhoAplicacao("pages/pagina-inicial.php"),
+        "preferences" => $preferencias,
     ]);
 } catch (Throwable $erro) {
     responder(false, "Nao foi possivel validar o acesso agora.", 500);

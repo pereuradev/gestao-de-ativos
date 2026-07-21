@@ -273,7 +273,7 @@ try {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <!-- Estilos compartilhados e regras específicas deste fluxo. -->
-  <link rel="stylesheet" href="../css/pagina-base.css?v=20260630-reduced-motion" />
+  <link rel="stylesheet" href="../css/pagina-base.css?v=20260720-sidebar-role-accent" />
   <link rel="stylesheet" href="../css/cadastro-ativos.css?v=20260619-select-options" />
   <link rel="stylesheet" href="../css/edicao-ativos.css?v=20260629-pagination" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />

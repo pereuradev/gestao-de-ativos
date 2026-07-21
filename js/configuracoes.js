@@ -1,11 +1,19 @@
-// Gerencia preferências locais, segurança visual e diagnósticos exibidos na página de configurações.
-// As preferências persistem no navegador e não substituem configurações salvas no servidor.
+// Gerencia preferencias do usuario, seguranca visual e diagnosticos da pagina de configuracoes.
+// O navegador fica como cache; a fonte principal das preferencias e o perfil salvo no servidor.
 
 document.addEventListener("DOMContentLoaded", initSettingsPage);
 
 const SETTINGS_PREFIX = "titech-settings:";
 const PREFERENCE_MESSAGE_TIMEOUT_MS = 2400;
 const TOAST_TIMEOUT_MS = 3200;
+const DEFAULT_INTERFACE_PREFERENCES = {
+  theme: "dark",
+  accent: "teal",
+  fontSize: "default",
+  density: "comfortable",
+  motion: "normal",
+  cursor: "enhanced",
+};
 
 let preferenceMessageTimer = null;
 let toastTimer = null;
@@ -35,10 +43,11 @@ function setupPreferenceControls() {
     input.addEventListener("change", () => {
       if (!input.checked) return;
 
-      setSavedItem("titech-accent", input.value);
-      applyAccent(input.value);
-      showPreferenceMessage("Preferencia de cor aplicada.");
-      showToast("Preferencia visual salva neste navegador.");
+      void savePreferenceChange(
+        { accent: input.value },
+        "Preferencia de cor aplicada.",
+        "Preferencia visual salva para seu usuario.",
+      );
     });
   });
 
@@ -46,10 +55,11 @@ function setupPreferenceControls() {
     input.addEventListener("change", () => {
       if (!input.checked) return;
 
-      setSavedItem("titech-theme", input.value);
-      applyTheme(input.value);
-      showPreferenceMessage("Modo de tela atualizado.");
-      showToast(input.value === "auto" ? "Tema automatico ativado." : "Tema atualizado.");
+      void savePreferenceChange(
+        { theme: input.value },
+        "Modo de tela atualizado.",
+        input.value === "auto" ? "Tema automatico salvo para seu usuario." : "Tema salvo para seu usuario.",
+      );
     });
   });
 
@@ -57,47 +67,127 @@ function setupPreferenceControls() {
     input.addEventListener("change", () => {
       if (!input.checked) return;
 
-      setSavedItem("titech-font-size", input.value);
-      applyFontSizePreference(input.value);
-      showPreferenceMessage("Tamanho da fonte atualizado.");
-      showToast("Preferencia de leitura salva neste navegador.");
+      void savePreferenceChange(
+        { fontSize: input.value },
+        "Tamanho da fonte atualizado.",
+        "Preferencia de leitura salva para seu usuario.",
+      );
     });
   });
 
   document.getElementById("densityToggle")?.addEventListener("change", (event) => {
     const density = event.currentTarget.checked ? "compact" : "comfortable";
 
-    setSavedItem("titech-density", density);
-    applyDensity(density);
-    showPreferenceMessage("Ajuste de densidade salvo.");
+    void savePreferenceChange(
+      { density },
+      "Ajuste de densidade salvo.",
+      "Densidade salva para seu usuario.",
+    );
   });
 
   document.getElementById("motionToggle")?.addEventListener("change", (event) => {
     const motion = event.currentTarget.checked ? "reduced" : "normal";
 
-    setSavedItem("titech-motion", motion);
-    applyMotionPreference(motion);
-    showPreferenceMessage("Preferencia de animacao salva.");
+    void savePreferenceChange(
+      { motion },
+      "Preferencia de animacao salva.",
+      "Preferencia de animacao salva para seu usuario.",
+    );
   });
 
   document.getElementById("cursorToggle")?.addEventListener("change", (event) => {
     const cursor = event.currentTarget.checked ? "enhanced" : "normal";
 
-    setSavedItem("titech-cursor", cursor);
-    applyCursorPreference(cursor);
-    showPreferenceMessage("Realce de cursor atualizado.");
+    void savePreferenceChange(
+      { cursor },
+      "Realce de cursor atualizado.",
+      "Cursor salvo para seu usuario.",
+    );
   });
 
   document.getElementById("resetPreferences")?.addEventListener("click", async () => {
     const confirmed = await confirmSettingsAction(
       "Restaurar preferencias?",
-      "As escolhas visuais deste navegador voltarao para o padrao TI TECH."
+      "As escolhas visuais do seu usuario voltarao para o padrao TI TECH."
     );
 
     if (confirmed) {
-      resetPreferences();
+      void resetPreferences();
     }
   });
+}
+
+function getPreferenceState() {
+  if (typeof window.getCurrentUserPreferences === "function") {
+    return window.getCurrentUserPreferences();
+  }
+
+  return {
+    theme: getSavedItem("titech-theme") || DEFAULT_INTERFACE_PREFERENCES.theme,
+    accent: getSavedItem("titech-accent") || DEFAULT_INTERFACE_PREFERENCES.accent,
+    fontSize: getSavedItem("titech-font-size") || DEFAULT_INTERFACE_PREFERENCES.fontSize,
+    density: getSavedItem("titech-density") || DEFAULT_INTERFACE_PREFERENCES.density,
+    motion: getSavedItem("titech-motion") || DEFAULT_INTERFACE_PREFERENCES.motion,
+    cursor: getSavedItem("titech-cursor") || DEFAULT_INTERFACE_PREFERENCES.cursor,
+  };
+}
+
+function normalizePreferenceState(preferences) {
+  if (typeof window.normalizeUserPreferences === "function") {
+    return window.normalizeUserPreferences(preferences);
+  }
+
+  return { ...DEFAULT_INTERFACE_PREFERENCES, ...preferences };
+}
+
+function applyPreferenceState(preferences) {
+  const normalized = normalizePreferenceState(preferences);
+
+  if (typeof window.applyUserPreferences === "function") {
+    return window.applyUserPreferences(normalized);
+  }
+
+  setSavedItem("titech-accent", normalized.accent);
+  setSavedItem("titech-theme", normalized.theme);
+  setSavedItem("titech-font-size", normalized.fontSize);
+  setSavedItem("titech-density", normalized.density);
+  setSavedItem("titech-motion", normalized.motion);
+  setSavedItem("titech-cursor", normalized.cursor);
+  applyTheme(normalized.theme);
+  applyAccent(normalized.accent);
+  applyFontSizePreference(normalized.fontSize);
+  applyDensity(normalized.density);
+  applyMotionPreference(normalized.motion);
+  applyCursorPreference(normalized.cursor);
+
+  return normalized;
+}
+
+async function savePreferenceChange(partialPreferences, message, successToast) {
+  const nextPreferences = applyPreferenceState({
+    ...getPreferenceState(),
+    ...partialPreferences,
+  });
+
+  syncPreferenceForm();
+  showPreferenceMessage(message);
+
+  const result = typeof window.saveUserPreferences === "function"
+    ? await window.saveUserPreferences(nextPreferences)
+    : { ok: true, preferences: nextPreferences };
+
+  if (result.ok) {
+    if (result.preferences) {
+      applyPreferenceState(result.preferences);
+      syncPreferenceForm();
+    }
+
+    showToast(successToast || "Preferencias salvas para seu usuario.");
+  } else {
+    showToast("Preferencia aplicada nesta sessao, mas nao foi salva no usuario.");
+  }
+
+  updateSecurityScore();
 }
 
 function setupLocalSettings() {
@@ -237,20 +327,15 @@ function setupDiagnostics() {
 }
 
 function syncPreferenceForm() {
-  const accent = getSavedItem("titech-accent") || "teal";
-  const theme = getSavedItem("titech-theme") || (document.body.classList.contains("theme-light") ? "light" : "dark");
-  const fontSize = getSavedItem("titech-font-size") || "default";
-  const density = getSavedItem("titech-density") || "comfortable";
-  const motion = getSavedItem("titech-motion") || "normal";
-  const cursor = getSavedItem("titech-cursor") || "enhanced";
+  const preferences = getPreferenceState();
 
-  setCheckedValue("accent", accent);
-  setCheckedValue("theme", theme);
-  setCheckedValue("fontSize", fontSize);
+  setCheckedValue("accent", preferences.accent);
+  setCheckedValue("theme", preferences.theme);
+  setCheckedValue("fontSize", preferences.fontSize);
 
-  setChecked("densityToggle", density === "compact");
-  setChecked("motionToggle", motion === "reduced");
-  setChecked("cursorToggle", cursor === "enhanced");
+  setChecked("densityToggle", preferences.density === "compact");
+  setChecked("motionToggle", preferences.motion === "reduced");
+  setChecked("cursorToggle", preferences.cursor === "enhanced");
 }
 
 function setCheckedValue(name, value) {
@@ -269,23 +354,12 @@ function setChecked(id, checked) {
   }
 }
 
-function resetPreferences() {
-  setSavedItem("titech-accent", "teal");
-  setSavedItem("titech-theme", "dark");
-  setSavedItem("titech-font-size", "default");
-  setSavedItem("titech-density", "comfortable");
-  setSavedItem("titech-motion", "normal");
-  setSavedItem("titech-cursor", "enhanced");
-
-  applyTheme("dark");
-  applyAccent("teal");
-  applyFontSizePreference("default");
-  applyDensity("comfortable");
-  applyMotionPreference("normal");
-  applyCursorPreference("enhanced");
-  syncPreferenceForm();
-  showPreferenceMessage("Preferencias restauradas para o padrao do sistema.");
-  showToast("Preferencias restauradas.");
+async function resetPreferences() {
+  await savePreferenceChange(
+    DEFAULT_INTERFACE_PREFERENCES,
+    "Preferencias restauradas para o padrao do sistema.",
+    "Preferencias restauradas para seu usuario.",
+  );
 }
 
 function updatePasswordStrength() {
@@ -338,7 +412,8 @@ function updateSecurityScore(passwordResult = null) {
   const passwordScore = passwordResult ? passwordResult.score * 10 : 0;
   const suspiciousLogin = getSavedItem(getSettingKey("notify-suspicious-login")) === "true" ? 15 : 0;
   const reviewedSessions = 12;
-  const preferencesComplete = getSavedItem("titech-theme") && getSavedItem("titech-accent") ? 13 : 8;
+  const currentPreferences = getPreferenceState();
+  const preferencesComplete = currentPreferences.theme && currentPreferences.accent ? 13 : 8;
   const score = Math.min(100, 42 + passwordScore + suspiciousLogin + reviewedSessions + preferencesComplete);
 
   scoreElement.textContent = String(score);

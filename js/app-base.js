@@ -13,6 +13,23 @@ const FONT_SIZE_OPTIONS = {
   large: 17,
   extra: 18,
 };
+const USER_PREFERENCE_DEFAULTS = {
+  theme: "dark",
+  accent: "teal",
+  fontSize: "default",
+  density: "comfortable",
+  motion: "normal",
+  cursor: "enhanced",
+};
+const USER_PREFERENCE_STORAGE_KEYS = {
+  theme: "titech-theme",
+  accent: "titech-accent",
+  fontSize: "titech-font-size",
+  density: "titech-density",
+  motion: "titech-motion",
+  cursor: "titech-cursor",
+};
+const USER_PREFERENCE_ENDPOINT = "../Backend/preferencias-usuario.php";
 const CUSTOM_CURSOR_INTERACTIVE_SELECTOR = [
   "a",
   "button",
@@ -96,7 +113,7 @@ let permissionDialogElement = null;
 let permissionDialogPreviousFocus = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-  applyCursorPreference(getSavedItem("titech-cursor") || "enhanced");
+  applyUserPreferences(getCurrentUserPreferences());
   hydrateSidebarProfile();
   setupPermissionDeniedTriggers();
 });
@@ -116,6 +133,138 @@ function setSavedItem(key, value) {
     localStorage.setItem(key, value);
   } catch {
     return;
+  }
+}
+
+function normalizeChoice(value, allowedValues, fallback) {
+  const normalized = String(value ?? "").trim();
+
+  return allowedValues.includes(normalized) ? normalized : fallback;
+}
+
+function normalizeUserPreferences(preferences = {}) {
+  // Aceita tanto nomes usados no JavaScript quanto nomes vindos das colunas do banco.
+  const source = preferences && typeof preferences === "object" ? preferences : {};
+
+  return {
+    theme: normalizeChoice(
+      source.theme ?? source.preferencia_tema,
+      ["dark", "light", "auto"],
+      USER_PREFERENCE_DEFAULTS.theme,
+    ),
+    accent: normalizeChoice(
+      source.accent ?? source.preferencia_cor,
+      Object.keys(ACCENT_THEMES),
+      USER_PREFERENCE_DEFAULTS.accent,
+    ),
+    fontSize: normalizeChoice(
+      source.fontSize ?? source.font_size ?? source.preferencia_tamanho_fonte,
+      Object.keys(FONT_SIZE_OPTIONS),
+      USER_PREFERENCE_DEFAULTS.fontSize,
+    ),
+    density: normalizeChoice(
+      source.density ?? source.preferencia_densidade,
+      ["comfortable", "compact"],
+      USER_PREFERENCE_DEFAULTS.density,
+    ),
+    motion: normalizeChoice(
+      source.motion ?? source.preferencia_movimento,
+      ["normal", "reduced"],
+      USER_PREFERENCE_DEFAULTS.motion,
+    ),
+    cursor: normalizeChoice(
+      source.cursor ?? source.preferencia_cursor,
+      ["enhanced", "normal"],
+      USER_PREFERENCE_DEFAULTS.cursor,
+    ),
+  };
+}
+
+function getServerUserPreferences() {
+  return window.TITECH_USER_PREFERENCES && typeof window.TITECH_USER_PREFERENCES === "object"
+    ? window.TITECH_USER_PREFERENCES
+    : {};
+}
+
+function getStoredUserPreferences() {
+  const preferences = {};
+
+  Object.entries(USER_PREFERENCE_STORAGE_KEYS).forEach(([name, key]) => {
+    const value = getSavedItem(key);
+
+    if (value !== null) {
+      preferences[name] = value;
+    }
+  });
+
+  return preferences;
+}
+
+function getCurrentUserPreferences() {
+  // A sessao PHP tem prioridade para evitar que usuarios diferentes herdem o mesmo navegador.
+  return normalizeUserPreferences({
+    ...getStoredUserPreferences(),
+    ...getServerUserPreferences(),
+  });
+}
+
+function cacheUserPreferences(preferences) {
+  const normalized = normalizeUserPreferences(preferences);
+
+  window.TITECH_USER_PREFERENCES = normalized;
+  Object.entries(USER_PREFERENCE_STORAGE_KEYS).forEach(([name, key]) => {
+    setSavedItem(key, normalized[name]);
+  });
+
+  return normalized;
+}
+
+function applyUserPreferences(preferences) {
+  const normalized = cacheUserPreferences(preferences);
+
+  applyTheme(normalized.theme);
+  applyAccent(normalized.accent);
+  applyFontSizePreference(normalized.fontSize);
+  applyDensity(normalized.density);
+  applyMotionPreference(normalized.motion);
+  applyCursorPreference(normalized.cursor);
+  applySavedSidebarWidth();
+
+  return normalized;
+}
+
+async function saveUserPreferences(preferences) {
+  const normalized = cacheUserPreferences({
+    ...getCurrentUserPreferences(),
+    ...preferences,
+  });
+
+  try {
+    const response = await fetch(USER_PREFERENCE_ENDPOINT, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(normalized),
+    });
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok || !result?.ok) {
+      throw new Error(result?.message || "Nao foi possivel salvar as preferencias.");
+    }
+
+    return {
+      ok: true,
+      preferences: cacheUserPreferences(result.preferences || normalized),
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error,
+      preferences: normalized,
+    };
   }
 }
 
@@ -139,6 +288,10 @@ async function hydrateSidebarProfile() {
 
     updateSidebarProfile(result.usuario);
     applyNavigationPermissions(result.usuario);
+
+    if (result.usuario.preferencias) {
+      applyUserPreferences(result.usuario.preferencias);
+    }
   } catch {
     return;
   }
@@ -303,8 +456,7 @@ function startPageAnimation() {
 
 function loadSavedTheme() {
   // Restaura tema e preferencias antes de configurar os controles da pagina.
-  applyTheme(getSavedItem("titech-theme") || "dark");
-  loadInterfacePreferences();
+  applyUserPreferences(getCurrentUserPreferences());
   setupSystemThemeListener();
 }
 
@@ -321,7 +473,7 @@ function setupThemeToggle() {
     clearTimeout(themeTimer);
     document.body.classList.add("theme-switching");
     applyTheme(nextTheme);
-    setSavedItem("titech-theme", nextTheme);
+    void saveUserPreferences({ theme: nextTheme });
 
     if (typeof window.onThemeChanged === "function") {
       window.onThemeChanged(nextTheme);
@@ -373,7 +525,7 @@ function setupSystemThemeListener() {
 
   const mediaQuery = window.matchMedia("(prefers-color-scheme: light)");
   const updateAutoTheme = () => {
-    if (getSavedItem("titech-theme") === "auto") {
+    if (getCurrentUserPreferences().theme === "auto") {
       applyTheme("auto");
     }
   };
@@ -384,11 +536,13 @@ function setupSystemThemeListener() {
 
 function loadInterfacePreferences() {
   // Preferencias salvas deixam as paginas com a mesma aparencia escolhida pelo usuario.
-  applyAccent(getSavedItem("titech-accent") || "teal");
-  applyFontSizePreference(getSavedItem("titech-font-size") || "default");
-  applyDensity(getSavedItem("titech-density") || "comfortable");
-  applyMotionPreference(getSavedItem("titech-motion") || "normal");
-  applyCursorPreference(getSavedItem("titech-cursor") || "enhanced");
+  const preferences = getCurrentUserPreferences();
+
+  applyAccent(preferences.accent);
+  applyFontSizePreference(preferences.fontSize);
+  applyDensity(preferences.density);
+  applyMotionPreference(preferences.motion);
+  applyCursorPreference(preferences.cursor);
   applySavedSidebarWidth();
 }
 
@@ -904,6 +1058,11 @@ Object.assign(window, {
   // Expomos os helpers no window porque as paginas antigas ainda chamam essas funcoes.
   getSavedItem,
   setSavedItem,
+  normalizeUserPreferences,
+  getCurrentUserPreferences,
+  cacheUserPreferences,
+  applyUserPreferences,
+  saveUserPreferences,
   updateBrandLogo,
   startPageAnimation,
   loadSavedTheme,

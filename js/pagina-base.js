@@ -162,9 +162,21 @@ function startPageAnimation() {
  * Caso não exista tema salvo, o sistema assume o tema escuro como padrão.
  */
 function loadSavedTheme() {
-  const savedTheme = getSavedItem("titech-theme") || "dark";
-  applyTheme(savedTheme);
-  applyAccent(getSavedItem("titech-accent") || "teal");
+  const preferences = window.getCurrentUserPreferences?.() || {
+    theme: getSavedItem("titech-theme") || "dark",
+    accent: getSavedItem("titech-accent") || "teal",
+    fontSize: getSavedItem("titech-font-size") || "default",
+    density: getSavedItem("titech-density") || "comfortable",
+    motion: getSavedItem("titech-motion") || "normal",
+    cursor: getSavedItem("titech-cursor") || "enhanced",
+  };
+
+  applyTheme(preferences.theme);
+  applyAccent(preferences.accent);
+  window.applyFontSizePreference?.(preferences.fontSize);
+  window.applyDensity?.(preferences.density);
+  window.applyMotionPreference?.(preferences.motion);
+  window.applyCursorPreference?.(preferences.cursor);
 }
 
 /**
@@ -203,7 +215,11 @@ function setupThemeToggle() {
     applyTheme(nextTheme);
 
     // Salva a preferência do usuário no navegador.
-    setSavedItem("titech-theme", nextTheme);
+    if (typeof window.saveUserPreferences === "function") {
+      void window.saveUserPreferences({ theme: nextTheme });
+    } else {
+      setSavedItem("titech-theme", nextTheme);
+    }
 
     // Recria os gráficos para atualizar as cores conforme o novo tema.
     renderProductHealthChart(dashboardData.status_ativos || [], dashboardData.total_ativos);
@@ -225,11 +241,16 @@ function setupThemeToggle() {
  */
 function applyTheme(theme) {
   const themeToggle = document.getElementById("themeToggle");
-  const isDark = theme !== "light";
+  const nextTheme = ["dark", "light", "auto"].includes(theme) ? theme : "dark";
+  const resolvedTheme = typeof window.resolveThemeMode === "function"
+    ? window.resolveThemeMode(nextTheme)
+    : (nextTheme === "light" ? "light" : "dark");
+  const isDark = resolvedTheme === "dark";
 
   // Alterna as classes principais de tema no body.
   document.body.classList.toggle("theme-dark", isDark);
   document.body.classList.toggle("theme-light", !isDark);
+  document.body.dataset.themePreference = nextTheme;
   updateBrandLogo(isDark);
 
   // Se o botão de tema não existir, não há mais nada para atualizar.

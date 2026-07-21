@@ -284,7 +284,7 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <!-- Estilos compartilhados do sistema e ajustes específicos da consulta de ativos. -->
-  <link rel="stylesheet" href="../css/pagina-base.css?v=20260630-reduced-motion" />
+  <link rel="stylesheet" href="../css/pagina-base.css?v=20260720-sidebar-role-accent" />
   <link rel="stylesheet" href="../css/ativos.css?v=20260713-export-xlsx" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />

@@ -136,7 +136,13 @@ try {
             data_nascimento,
             status,
             criado_em,
-            atualizado_em
+            atualizado_em,
+            preferencia_tema,
+            preferencia_cor,
+            preferencia_tamanho_fonte,
+            preferencia_densidade,
+            preferencia_movimento,
+            preferencia_cursor
           from public.perfis_usuarios
          where id = :id
             or lower(btrim(email)) = lower(btrim(:email))
@@ -160,7 +166,15 @@ try {
   $permissoesUsuario = permissoesUsuarioGrupoAcesso($pdo, $perfil);
 
   if (!empty($_SESSION["usuario"]) && is_array($_SESSION["usuario"])) {
-    $_SESSION["usuario"]["permissoes_grupos"] = $permissoesUsuario;
+    $_SESSION["usuario"] = array_merge($_SESSION["usuario"], [
+      "permissoes_grupos" => $permissoesUsuario,
+      "preferencia_tema" => (string) ($perfil["preferencia_tema"] ?? "dark"),
+      "preferencia_cor" => (string) ($perfil["preferencia_cor"] ?? "teal"),
+      "preferencia_tamanho_fonte" => (string) ($perfil["preferencia_tamanho_fonte"] ?? "default"),
+      "preferencia_densidade" => (string) ($perfil["preferencia_densidade"] ?? "comfortable"),
+      "preferencia_movimento" => (string) ($perfil["preferencia_movimento"] ?? "normal"),
+      "preferencia_cursor" => (string) ($perfil["preferencia_cursor"] ?? "enhanced"),
+    ]);
   }
 } catch (Throwable) {
   // Não travamos a página se o banco falhar.
@@ -249,7 +263,7 @@ $resumoPermissoes = $usuarioEhAdmin
 
 
   <!-- CSS separado por responsabilidade: base do sistema, efeitos gerais e ajustes especi­ficos desta página. -->
-  <link rel="stylesheet" href="../css/pagina-base.css?v=20260630-reduced-motion" />
+  <link rel="stylesheet" href="../css/pagina-base.css?v=20260720-sidebar-role-accent" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
   <link rel="stylesheet" href="../css/configuracoes.css?v=20260707-user-permissions" />

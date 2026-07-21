@@ -7,6 +7,11 @@ const state = {
 
 const STORAGE_KEYS = {
   theme: "titech-theme",
+  accent: "titech-accent",
+  fontSize: "titech-font-size",
+  density: "titech-density",
+  motion: "titech-motion",
+  cursor: "titech-cursor",
   email: "titech-email",
   profile: "titech-profile",
 };
@@ -67,6 +72,43 @@ function setSavedItem(key, value) {
   } catch {
     return;
   }
+}
+
+function normalizeLoginPreference(value, allowedValues, fallback) {
+  const normalized = String(value ?? "").trim();
+
+  return allowedValues.includes(normalized) ? normalized : fallback;
+}
+
+function saveInterfacePreferencesFromLogin(preferences) {
+  if (!preferences || typeof preferences !== "object") {
+    return;
+  }
+
+  setSavedItem(
+    STORAGE_KEYS.theme,
+    normalizeLoginPreference(preferences.theme, ["dark", "light", "auto"], "dark"),
+  );
+  setSavedItem(
+    STORAGE_KEYS.accent,
+    normalizeLoginPreference(preferences.accent, ["teal", "green", "blue", "violet"], "teal"),
+  );
+  setSavedItem(
+    STORAGE_KEYS.fontSize,
+    normalizeLoginPreference(preferences.fontSize, ["small", "default", "large", "extra"], "default"),
+  );
+  setSavedItem(
+    STORAGE_KEYS.density,
+    normalizeLoginPreference(preferences.density, ["comfortable", "compact"], "comfortable"),
+  );
+  setSavedItem(
+    STORAGE_KEYS.motion,
+    normalizeLoginPreference(preferences.motion, ["normal", "reduced"], "normal"),
+  );
+  setSavedItem(
+    STORAGE_KEYS.cursor,
+    normalizeLoginPreference(preferences.cursor, ["enhanced", "normal"], "enhanced"),
+  );
 }
 
 function removeSavedItem(key) {
@@ -144,9 +186,17 @@ function updateThemeButton(button, isDark) {
   );
 }
 
+function resolveLoginTheme(theme) {
+  if (theme === "auto") {
+    return window.matchMedia?.("(prefers-color-scheme: light)")?.matches ? "light" : "dark";
+  }
+
+  return theme === "light" ? "light" : "dark";
+}
+
 function setTheme(theme) {
-  const selectedTheme = theme === "light" ? "light" : "dark";
-  const isDark = selectedTheme === "dark";
+  const selectedTheme = ["dark", "light", "auto"].includes(theme) ? theme : "dark";
+  const isDark = resolveLoginTheme(selectedTheme) === "dark";
 
   document.body.classList.toggle("theme-dark", isDark);
   setSavedItem(STORAGE_KEYS.theme, selectedTheme);
@@ -479,6 +529,7 @@ async function handleLogin(event) {
     }
 
     saveProfilePreference(email, state.role, rememberProfile.checked);
+    saveInterfacePreferencesFromLogin(data.preferences);
     showToast(data.message || "Login realizado com sucesso.");
 
     setTimeout(() => {

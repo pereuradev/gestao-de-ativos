@@ -47,7 +47,7 @@ $usuario = $_SESSION["usuario"];
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
     <!-- Estilos compartilhados e regras específicas deste fluxo. -->
-    <link rel="stylesheet" href="../css/pagina-base.css?v=20260630-reduced-motion" />
+    <link rel="stylesheet" href="../css/pagina-base.css?v=20260720-sidebar-role-accent" />
     <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
     <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
     <link rel="stylesheet" href="../css/dashboard-produtos.css?v=20260702-loading-spinner-fix" />

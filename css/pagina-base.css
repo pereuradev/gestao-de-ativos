@@ -8,6 +8,7 @@
   --cyan: #4aa3c7;
   --teal: #4fc7b1;
   --mint: #66d5c2;
+  --accent: #66d5c2;
   --danger: #e05d5d;
   --white: #ffffff;
   --radius: 18px;
@@ -219,24 +220,28 @@ body[data-accent="teal"] {
   --cyan: #4aa3c7;
   --teal: #4fc7b1;
   --mint: #66d5c2;
+  --accent: #66d5c2;
 }
 
 body[data-accent="green"] {
   --cyan: #22c55e;
   --teal: #16a34a;
   --mint: #86efac;
+  --accent: #22c55e;
 }
 
 body[data-accent="blue"] {
   --cyan: #38bdf8;
   --teal: #2563eb;
   --mint: #7dd3fc;
+  --accent: #38bdf8;
 }
 
 body[data-accent="violet"] {
   --cyan: #a78bfa;
   --teal: #7c3aed;
   --mint: #c4b5fd;
+  --accent: #a78bfa;
 }
 
 body[data-density="compact"] {
@@ -739,16 +744,16 @@ body.sidebar-resizing .sidebar-resize-handle::before {
   font-weight: 900;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
-}
-
-.sidebar-role.is-collaborator {
-  background: linear-gradient(135deg, #22c55e, #12823d);
-}
-
-.sidebar-role.is-admin {
-  background: linear-gradient(135deg, #8b5cf6, #4f46e5);
+  border: 1px solid color-mix(in srgb, var(--accent, var(--teal)) 74%, #ffffff);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent, var(--teal)) 88%, #ffffff),
+      color-mix(in srgb, var(--accent, var(--teal)) 72%, #071a2b)
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 8px 18px color-mix(in srgb, var(--accent, var(--teal)) 24%, transparent);
 }
 
 body.theme-light .sidebar-summary {

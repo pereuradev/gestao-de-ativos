@@ -106,6 +106,28 @@ $componentSidebarEmail = $componentSidebarEscape((string) ($componentSidebarUsua
 $componentSidebarDepartment = $componentSidebarEscape((string) ($componentSidebarUsuario["departamento"] ?? "Sem departamento"));
 $componentSidebarAvatar = $componentSidebarEscape($componentSidebarInitials($componentSidebarNameText));
 
+// Normaliza preferencias visuais antes de envia-las ao JavaScript global.
+$componentSidebarPreferenceChoice = static function (mixed $value, array $allowed, string $fallback): string {
+  $normalized = trim((string) $value);
+
+  return in_array($normalized, $allowed, true) ? $normalized : $fallback;
+};
+$componentSidebarPreferences = [
+  "theme" => $componentSidebarPreferenceChoice($componentSidebarUsuario["preferencia_tema"] ?? null, ["dark", "light", "auto"], "dark"),
+  "accent" => $componentSidebarPreferenceChoice($componentSidebarUsuario["preferencia_cor"] ?? null, ["teal", "green", "blue", "violet"], "teal"),
+  "fontSize" => $componentSidebarPreferenceChoice($componentSidebarUsuario["preferencia_tamanho_fonte"] ?? null, ["small", "default", "large", "extra"], "default"),
+  "density" => $componentSidebarPreferenceChoice($componentSidebarUsuario["preferencia_densidade"] ?? null, ["comfortable", "compact"], "comfortable"),
+  "motion" => $componentSidebarPreferenceChoice($componentSidebarUsuario["preferencia_movimento"] ?? null, ["normal", "reduced"], "normal"),
+  "cursor" => $componentSidebarPreferenceChoice($componentSidebarUsuario["preferencia_cursor"] ?? null, ["enhanced", "normal"], "enhanced"),
+];
+$componentSidebarPreferencesJson = json_encode(
+  $componentSidebarPreferences,
+  JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+);
+$componentSidebarPreferencesJson = $componentSidebarPreferencesJson !== false
+  ? $componentSidebarPreferencesJson
+  : "{}";
+
 // Permissoes usadas para liberar ou bloquear itens especificos do menu.
 $componentSidebarCanViewEmployees = $componentSidebarHasPermission("visualizar_funcionarios");
 $componentSidebarCanViewGroups = $componentSidebarHasPermission("visualizar_grupos");
@@ -135,6 +157,9 @@ $componentSidebarEditingPages = [
 $componentSidebarRegistrationOpen = $componentSidebarSubmenuIsOpen($componentSidebarRegistrationPages);
 $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarEditingPages);
 ?>
+<script>
+  window.TITECH_USER_PREFERENCES = <?php echo $componentSidebarPreferencesJson; ?>;
+</script>
 <aside class="sidebar" id="sidebar">
   <!-- Cabecalho fixo da sidebar com logo e botao de fechar no mobile. -->
   <div class="sidebar-header">
