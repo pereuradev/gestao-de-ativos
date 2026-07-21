@@ -1,3 +1,4 @@
+(function () {
 // Endpoint responsável por buscar as métricas do dashboard no backend.
 // Esse arquivo PHP deve retornar dados em JSON.
 const DASHBOARD_ENDPOINT = "../Backend/dashboard-metricas.php";
@@ -126,12 +127,13 @@ function updateBrandLogo(isDark) {
  * animação inicial, tema, sidebar, menus, busca e carregamento dos dados.
  */
 function initPage() {
-  startPageAnimation();
-  loadSavedTheme();
+  window.onThemeChanged = renderDashboardCharts;
+  (window.startPageAnimation || startPageAnimation)();
+  (window.loadSavedTheme || loadSavedTheme)();
   window.addEventListener("titech:motion-change", renderDashboardCharts);
-  setupThemeToggle();
-  setupSidebar();
-  setupAssetMenu();
+  (window.setupThemeToggle || setupThemeToggle)();
+  (window.setupSidebar || setupSidebar)();
+  (window.setupNavGroups || setupAssetMenu)();
   setupCategorySearch();
   setupStockPeriodFilter();
   loadDashboardData();
@@ -1176,4 +1178,6 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+})();
 

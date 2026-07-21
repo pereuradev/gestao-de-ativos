@@ -1,5 +1,5 @@
 // Controla os filtros enviados ao servidor e o download dos relatórios de ativos.
-// Depende dos helpers globais de interface carregados por app-base.js e ux-profissional.js.
+// Depende dos helpers globais de interface carregados por base-interface.js e feedback-interface.js.
 
 document.addEventListener("DOMContentLoaded", initPage);
 

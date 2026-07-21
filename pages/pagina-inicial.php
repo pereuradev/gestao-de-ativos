@@ -76,13 +76,16 @@ $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], t
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
 
   <!-- Scripts da página. O defer evita bloquear o carregamento do HTML. -->
-  <script src="../js/typewriter.js?v=20260630-reduced-motion" defer></script>
-  <script src="../js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
-  <script src="../js/app-base.js?v=20260707-group-view-route" defer></script>
-  <script src="../js/pagina-base.js?v=20260630-reduced-motion" defer></script>
+  <script src="../js/animations/efeito-digitacao.js?v=20260630-reduced-motion" defer></script>
+  <script src="../js/ui/feedback-interface.js?v=20260630-reduced-motion" defer></script>
+  <script src="../js/core/armazenamento-local.js?v=20260721-js-structure" defer></script>
+  <script src="../js/animations/entrada-pagina.js?v=20260721-js-structure" defer></script>
+  <script src="../js/ui/menu-lateral.js?v=20260721-js-structure" defer></script>
+  <script src="../js/base-interface.js?v=20260721-js-structure" defer></script>
+  <script src="../js/pages/pagina-inicial.js?v=20260630-reduced-motion" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
-  <script src="../js/react-widgets.js?v=20260626-react-responsive" defer></script>
+  <script src="../js/ui/widgets-react.js?v=20260626-react-responsive" defer></script>
 </head>
 
 <body class="theme-dark page-loading" <?php echo $permissionDeniedResource !== "" ? 'data-permission-dialog-open="true" data-permission-resource="' . e($permissionDeniedResource) . '"' : ""; ?>>
@@ -137,7 +140,7 @@ $sidebarIsAdmin = in_array($sidebarRoleRaw, ["adm", "admin", "administrador"], t
         <div class="hero-content">
           <p class="section-tag">P&aacute;gina inicial operacional</p>
 
-          <!-- TÃ­tulo com frases alternadas pelo typewriter.js -->
+          <!-- TÃ­tulo com frases alternadas pelo efeito-digitacao.js -->
           <h2 id="dashboardTitle">
             <span class="typewriter-heading" style="--typewriter-min: 30ch" data-typewriter-loop
               data-typewriter-phrases="Controle de ativos conectado.|Invent&aacute;rio sincronizado.|Decis&otilde;es mais r&aacute;pidas.">Controle

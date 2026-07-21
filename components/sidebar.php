@@ -242,30 +242,30 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
 
       <div class="nav-submenu" id="registrationSubmenu">
         <a<?php echo $componentSidebarSubmenuClass("cadastro-ativos.php"); ?> href="cadastro-ativos.php">Ativos</a>
-        <a<?php echo $componentSidebarSubmenuClass("marcas.php"); ?> href="marcas.php">Marcas</a>
-        <a<?php echo $componentSidebarSubmenuClass("propriedades.php"); ?> href="propriedades.php">Propriedades</a>
+          <a<?php echo $componentSidebarSubmenuClass("marcas.php"); ?> href="marcas.php">Marcas</a>
+            <a<?php echo $componentSidebarSubmenuClass("propriedades.php"); ?> href="propriedades.php">Propriedades</a>
 
-        <!-- Cadastro de funcionarios aparece como bloqueado para quem nao tem permissao. -->
-        <?php if ($componentSidebarCanCreateEmployees): ?>
-          <a<?php echo $componentSidebarSubmenuClass("cadastro-funcionarios.php"); ?>
-            href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
-        <?php else: ?>
-          <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
-            data-permission-resource="Cadastro de funcionarios"
-            title="Apenas usuarios autorizados podem cadastrar funcionarios">Funcion&aacute;rios</span>
-        <?php endif; ?>
+              <!-- Cadastro de funcionarios aparece como bloqueado para quem nao tem permissao. -->
+              <?php if ($componentSidebarCanCreateEmployees): ?>
+                <a<?php echo $componentSidebarSubmenuClass("cadastro-funcionarios.php"); ?>
+                  href="cadastro-funcionarios.php">Funcion&aacute;rios</a>
+                <?php else: ?>
+                  <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
+                    data-permission-resource="Cadastro de funcionarios"
+                    title="Apenas usuarios autorizados podem cadastrar funcionarios">Funcion&aacute;rios</span>
+                <?php endif; ?>
 
-        <!-- Cadastro de grupos segue regra propria, separada da regra de funcionarios. -->
-        <?php if ($componentSidebarCanCreateGroups): ?>
-          <a<?php echo $componentSidebarSubmenuClass("cadastro-grupos.php"); ?> href="cadastro-grupos.php">
-            Grupos</a>
-        <?php else: ?>
-          <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
-            data-permission-resource="Cadastro de grupos"
-            title="Apenas usuarios autorizados podem criar grupos">Grupos</span>
-        <?php endif; ?>
-        <a<?php echo $componentSidebarSubmenuClass("locais.php"); ?> href="locais.php">
-          Localiza&ccedil;&otilde;es</a>
+                <!-- Cadastro de grupos segue regra propria, separada da regra de funcionarios. -->
+                <?php if ($componentSidebarCanCreateGroups): ?>
+                  <a<?php echo $componentSidebarSubmenuClass("cadastro-grupos.php"); ?> href="cadastro-grupos.php">
+                    Grupos</a>
+                  <?php else: ?>
+                    <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
+                      data-permission-resource="Cadastro de grupos"
+                      title="Apenas usuarios autorizados podem criar grupos">Grupos</span>
+                  <?php endif; ?>
+                  <a<?php echo $componentSidebarSubmenuClass("locais.php"); ?> href="locais.php">
+                    Localiza&ccedil;&otilde;es</a>
       </div>
     </div>
 
@@ -280,30 +280,30 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
 
       <div class="nav-submenu" id="editingSubmenu">
         <a<?php echo $componentSidebarSubmenuClass("edicao-ativos.php"); ?> href="edicao-ativos.php">Ativos</a>
-        <a<?php echo $componentSidebarSubmenuClass("edicao-marcas.php"); ?> href="edicao-marcas.php">Marcas</a>
-        <a<?php echo $componentSidebarSubmenuClass("edicao-propriedades.php"); ?> href="edicao-propriedades.php">
-          Propriedades</a>
+          <a<?php echo $componentSidebarSubmenuClass("edicao-marcas.php"); ?> href="edicao-marcas.php">Marcas</a>
+            <a<?php echo $componentSidebarSubmenuClass("edicao-propriedades.php"); ?> href="edicao-propriedades.php">
+              Propriedades</a>
 
-        <!-- Edicao de funcionarios respeita permissao especifica. -->
-        <?php if ($componentSidebarCanEditEmployees): ?>
-          <a<?php echo $componentSidebarSubmenuClass("edicao-funcionarios.php"); ?> href="edicao-funcionarios.php">
-            Funcion&aacute;rios</a>
-        <?php else: ?>
-          <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
-            data-permission-resource="Edicao de funcionarios"
-            title="Apenas usuarios autorizados podem editar funcionarios">Funcion&aacute;rios</span>
-        <?php endif; ?>
+              <!-- Edicao de funcionarios respeita permissao especifica. -->
+              <?php if ($componentSidebarCanEditEmployees): ?>
+                <a<?php echo $componentSidebarSubmenuClass("edicao-funcionarios.php"); ?> href="edicao-funcionarios.php">
+                  Funcion&aacute;rios</a>
+                <?php else: ?>
+                  <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
+                    data-permission-resource="Edicao de funcionarios"
+                    title="Apenas usuarios autorizados podem editar funcionarios">Funcion&aacute;rios</span>
+                <?php endif; ?>
 
-        <!-- Edicao de grupos segue a mesma estrategia de bloqueio visual. -->
-        <?php if ($componentSidebarCanEditGroups): ?>
-          <a<?php echo $componentSidebarSubmenuClass("edicao-grupos.php"); ?> href="edicao-grupos.php">Grupos</a>
-        <?php else: ?>
-          <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
-            data-permission-resource="Edicao de grupos"
-            title="Apenas usuarios autorizados podem editar grupos">Grupos</span>
-        <?php endif; ?>
-        <a<?php echo $componentSidebarSubmenuClass("edicao-locais.php"); ?> href="edicao-locais.php">
-          Localiza&ccedil;&otilde;es</a>
+                <!-- Edicao de grupos segue a mesma estrategia de bloqueio visual. -->
+                <?php if ($componentSidebarCanEditGroups): ?>
+                  <a<?php echo $componentSidebarSubmenuClass("edicao-grupos.php"); ?> href="edicao-grupos.php">Grupos</a>
+                  <?php else: ?>
+                    <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
+                      data-permission-resource="Edicao de grupos"
+                      title="Apenas usuarios autorizados podem editar grupos">Grupos</span>
+                  <?php endif; ?>
+                  <a<?php echo $componentSidebarSubmenuClass("edicao-locais.php"); ?> href="edicao-locais.php">
+                    Localiza&ccedil;&otilde;es</a>
       </div>
     </div>
 

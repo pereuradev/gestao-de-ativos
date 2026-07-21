@@ -126,7 +126,7 @@ const state = {
 document.addEventListener("DOMContentLoaded", initDashboardProductsPage);
 
 function initDashboardProductsPage() {
-  // O tema e a sidebar seguem o app-base.js; aqui so reagimos para redesenhar o grafico.
+  // O tema e a sidebar seguem o base-interface.js; aqui so reagimos para redesenhar o grafico.
   window.onThemeChanged = () => renderCurrentChart();
   window.addEventListener("titech:motion-change", renderCurrentChart);
   (window.startPageAnimation || startPageAnimation)();
@@ -174,7 +174,7 @@ function isReducedMotionEnabled() {
 }
 
 function loadSavedTheme() {
-  // Fallback local caso o app-base.js nao esteja disponivel por algum motivo.
+  // Fallback local caso o base-interface.js nao esteja disponivel por algum motivo.
   applyAccent(getSavedItem(ACCENT_STORAGE_KEY) || "teal");
   applyTheme(getSavedItem(THEME_STORAGE_KEY) || "dark");
   window.applyFontSizePreference?.(getSavedItem("titech-font-size") || "default");

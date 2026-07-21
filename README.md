@@ -191,12 +191,21 @@ SIte-Gestao_de_Ativos/
 │   └── estilos das demais paginas
 │
 ├── js/
-│   ├── app-base.js
-│   ├── pagina-login.js
-│   ├── dashboard-produtos.js
-│   ├── cadastro-grupos.js
-│   ├── edicao-grupos.js
-│   └── scripts das demais paginas
+│   ├── base-interface.js
+│   ├── core/
+│   │   └── armazenamento-local.js
+│   ├── animations/
+│   │   ├── efeito-digitacao.js
+│   │   └── entrada-pagina.js
+│   ├── ui/
+│   │   ├── feedback-interface.js
+│   │   ├── menu-lateral.js
+│   │   └── widgets-react.js
+│   └── pages/
+│       ├── pagina-login.js
+│       ├── pagina-inicial.js
+│       ├── dashboard-produtos.js
+│       └── scripts especificos das demais paginas
 │
 ├── pages/
 │   ├── Pagina-login.html

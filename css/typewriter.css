@@ -25,7 +25,7 @@ body[data-motion="reduced"] .typewriter-heading-cursor {
   display: none;
 }
 
-/* Cursor visual controlado pelo estado do módulo typewriter.js. */
+/* Cursor visual controlado pelo estado do módulo efeito-digitacao.js. */
 .typewriter-heading-cursor {
   display: inline-block;
   width: 2px;

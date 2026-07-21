@@ -114,13 +114,16 @@ try {
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
   <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
   <!-- Scripts da interface; os módulos compartilhados devem carregar antes do script da página. -->
-  <script src="../js/typewriter.js?v=20260630-reduced-motion" defer></script>
-  <script src="../js/ux-profissional.js?v=20260630-reduced-motion" defer></script>
-  <script src="../js/app-base.js?v=20260707-group-view-route" defer></script>
-  <script src="../js/locais.js?v=20260624-common-ui" defer></script>
+  <script src="../js/animations/efeito-digitacao.js?v=20260630-reduced-motion" defer></script>
+  <script src="../js/ui/feedback-interface.js?v=20260630-reduced-motion" defer></script>
+  <script src="../js/core/armazenamento-local.js?v=20260721-js-structure" defer></script>
+  <script src="../js/animations/entrada-pagina.js?v=20260721-js-structure" defer></script>
+  <script src="../js/ui/menu-lateral.js?v=20260721-js-structure" defer></script>
+  <script src="../js/base-interface.js?v=20260721-js-structure" defer></script>
+  <script src="../js/pages/gerenciamento-locais.js?v=20260624-common-ui" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
-  <script src="../js/react-widgets.js?v=20260626-react-responsive" defer></script>
+  <script src="../js/ui/widgets-react.js?v=20260626-react-responsive" defer></script>
 </head>
 
 <body class="theme-dark page-loading">
