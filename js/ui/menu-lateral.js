@@ -246,6 +246,7 @@ Object.assign(window, {
   openSidebar,
   closeSidebar,
   applySidebarWidth,
+  applySavedSidebarWidth,
   setupSidebarResize,
   setupNavGroups,
 });

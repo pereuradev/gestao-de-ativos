@@ -107,6 +107,7 @@ try {
         select
             a.nome,
             a.numero_serie,
+            a.part_number,
             a.status,
             a.marca,
             a.propriedade,
@@ -353,6 +354,35 @@ try {
                 <span>Identifica&ccedil;&atilde;o e rastreio</span>
               </div>
 
+              <!-- A rastreabilidade decide quais identificadores aparecem e quais chegam ao backend. -->
+              <fieldset class="traceability-fieldset wide-field" data-traceability-group>
+                <legend>Rastreabilidade</legend>
+
+                <div class="traceability-options">
+                  <label class="traceability-option">
+                    <input type="radio" name="rastreabilidade" value="nao_possui" checked />
+                    <span>N&atilde;o possui</span>
+                  </label>
+
+                  <label class="traceability-option">
+                    <input type="radio" name="rastreabilidade" value="somente_pn" />
+                    <span>Somente PN</span>
+                  </label>
+
+                  <label class="traceability-option">
+                    <input type="radio" name="rastreabilidade" value="somente_sn" />
+                    <span>Somente SN</span>
+                  </label>
+
+                  <label class="traceability-option">
+                    <input type="radio" name="rastreabilidade" value="ambos" />
+                    <span>Ambos</span>
+                  </label>
+                </div>
+
+                <small class="field-hint">A escolha controla quais identificadores aparecem e ser&atilde;o salvos.</small>
+              </fieldset>
+
               <label class="asset-field">
                 <span>Propriedade</span>
                 <div class="input-shell">
@@ -366,11 +396,22 @@ try {
                 </datalist>
               </label>
 
-              <label class="asset-field">
-                <span>N&uacute;mero de s&eacute;rie</span>
+              <label class="asset-field" data-traceability-field="pn" hidden>
+                <span>PN</span>
+                <div class="input-shell">
+                  <i class="bi bi-upc"></i>
+                  <input name="part_number" type="text" placeholder="Part number do produto" autocomplete="off"
+                    maxlength="120" data-traceability-input="pn" disabled />
+                </div>
+                <small class="field-hint">Pode se repetir entre unidades do mesmo modelo.</small>
+              </label>
+
+              <label class="asset-field" data-traceability-field="sn" hidden>
+                <span>SN</span>
                 <div class="input-shell">
                   <i class="bi bi-123"></i>
-                  <input name="numero_serie" type="text" placeholder="Serial do equipamento" autocomplete="off" />
+                  <input name="numero_serie" type="text" placeholder="Serial do equipamento" autocomplete="off"
+                    data-traceability-input="sn" disabled />
                 </div>
               </label>
 
@@ -434,6 +475,7 @@ try {
             <?php endif; ?>
 
             <?php foreach ($ultimosAtivos as $ativo): ?>
+              <?php $partNumberRecente = trim((string) ($ativo["part_number"] ?? "")); ?>
               <div class="recent-asset-item">
                 <div>
                   <strong><?php echo e((string) ($ativo["nome"] ?? "--")); ?></strong>
@@ -441,6 +483,9 @@ try {
                     <?php echo e((string) ($ativo["categoria"] ?? "Sem categoria")); ?>
                     &middot;
                     <?php echo e((string) ($ativo["status"] ?? "--")); ?>
+                    <?php if ($partNumberRecente !== ""): ?>
+                      &middot; PN <?php echo e($partNumberRecente); ?>
+                    <?php endif; ?>
                   </span>
                 </div>
 

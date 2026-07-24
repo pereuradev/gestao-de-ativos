@@ -3,6 +3,13 @@
 
 const MESSAGE_HIDE_DELAY_MS = 2800;
 const PAGE_MESSAGE_STORAGE_KEY = "titech-edicao-ativos-message";
+// Cada modo informa quais campos de identificacao devem ficar disponiveis no modal.
+const TRACEABILITY_CONFIG = {
+  nao_possui: { pn: false, sn: false },
+  somente_pn: { pn: true, sn: false },
+  somente_sn: { pn: false, sn: true },
+  ambos: { pn: true, sn: true },
+};
 
 let assetSearchTimer = null;
 
@@ -112,6 +119,9 @@ function setupEditModal() {
   const modal = document.getElementById("assetEditModal");
 
   form?.addEventListener("submit", submitEditForm);
+  if (form) {
+    setupTraceabilityControls(form);
+  }
 
   document.querySelectorAll("[data-close-asset-modal]").forEach((button) => {
     button.addEventListener("click", closeEditModal);
@@ -127,8 +137,12 @@ function setupEditModal() {
 // Os atributos data-* da linha abastecem o formulário sem uma consulta adicional.
 function openEditModal(row) {
   const modal = document.getElementById("assetEditModal");
+  const form = document.getElementById("assetEditForm");
 
   if (!modal) return;
+
+  const serial = row.dataset.serial || "";
+  const partNumber = row.dataset.partNumber || "";
 
   setInputValue("editAssetId", row.dataset.id || "");
   setInputValue("editAssetName", row.dataset.name || "");
@@ -136,11 +150,14 @@ function openEditModal(row) {
   setSelectValue("editAssetStatus", row.dataset.statusRaw || "");
   setSelectValue("editAssetBrand", row.dataset.brandRaw || "");
   setInputValue("editAssetLocation", row.dataset.locationId || "");
-  setInputValue("editAssetSerial", row.dataset.serial || "");
+  setInputValue("editAssetSerial", serial);
+  setInputValue("editAssetPartNumber", partNumber);
   setInputValue("editAssetProperty", row.dataset.property || "");
   setInputValue("editAssetImei", row.dataset.imei || "");
   setInputValue("editAssetDatasheet", row.dataset.datasheet || "");
   setInputValue("editAssetDescription", row.dataset.description || "");
+  setSelectedTraceability(form, getTraceabilityFromValues(partNumber, serial));
+  updateTraceabilityFields(form);
 
   clearEditMessage();
   window.titechRememberDialogTrigger?.();
@@ -223,6 +240,10 @@ function validateAssetForm(form) {
   const nome = String(data.get("nome") || "").trim();
   const categoria = String(data.get("categoria_id") || "").trim();
   const status = String(data.get("status") || "").trim();
+  const traceability = getSelectedTraceability(form);
+  const config = TRACEABILITY_CONFIG[traceability];
+  const partNumber = String(data.get("part_number") || "").trim();
+  const serial = String(data.get("numero_serie") || "").trim();
 
   if (!nome || !categoria || !status) {
     return "Preencha nome, categoria e status do ativo.";
@@ -232,7 +253,81 @@ function validateAssetForm(form) {
     return "O nome do ativo precisa ter pelo menos 2 caracteres.";
   }
 
+  if (!config) {
+    return "Selecione uma opcao de rastreabilidade valida.";
+  }
+
+  if (config.pn && !partNumber) {
+    return "Informe o PN para a rastreabilidade escolhida.";
+  }
+
+  if (config.sn && !serial) {
+    return "Informe o numero de serie para a rastreabilidade escolhida.";
+  }
+
   return "";
+}
+
+// A rastreabilidade alterna os campos visiveis sem permitir envio de valores escondidos.
+function setupTraceabilityControls(form) {
+  form.querySelectorAll('input[name="rastreabilidade"]').forEach((option) => {
+    option.addEventListener("change", () => updateTraceabilityFields(form));
+  });
+
+  updateTraceabilityFields(form);
+}
+
+function getTraceabilityFromValues(partNumber, serial) {
+  const hasPartNumber = String(partNumber || "").trim() !== "";
+  const hasSerial = String(serial || "").trim() !== "";
+
+  if (hasPartNumber && hasSerial) {
+    return "ambos";
+  }
+
+  if (hasPartNumber) {
+    return "somente_pn";
+  }
+
+  if (hasSerial) {
+    return "somente_sn";
+  }
+
+  return "nao_possui";
+}
+
+function setSelectedTraceability(form, value) {
+  form?.querySelector(`input[name="rastreabilidade"][value="${value}"]`)?.click();
+}
+
+function getSelectedTraceability(form) {
+  return form?.querySelector('input[name="rastreabilidade"]:checked')?.value || "nao_possui";
+}
+
+function updateTraceabilityFields(form) {
+  if (!form) return;
+
+  const config = TRACEABILITY_CONFIG[getSelectedTraceability(form)] || TRACEABILITY_CONFIG.nao_possui;
+
+  // Campos ocultos ficam desabilitados para o backend receber somente a escolha atual.
+  toggleTraceabilityField(form, "pn", config.pn);
+  toggleTraceabilityField(form, "sn", config.sn);
+}
+
+function toggleTraceabilityField(form, field, shouldShow) {
+  const wrapper = form.querySelector(`[data-traceability-field="${field}"]`);
+  const input = form.querySelector(`[data-traceability-input="${field}"]`);
+
+  if (wrapper) {
+    wrapper.hidden = !shouldShow;
+  }
+
+  if (!input) {
+    return;
+  }
+
+  input.disabled = !shouldShow;
+  input.required = shouldShow;
 }
 
 // A exclusão exige confirmação e token CSRF antes de remover o registro.

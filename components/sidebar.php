@@ -131,15 +131,19 @@ $componentSidebarPreferencesJson = $componentSidebarPreferencesJson !== false
 // Permissoes usadas para liberar ou bloquear itens especificos do menu.
 $componentSidebarCanViewEmployees = $componentSidebarHasPermission("visualizar_funcionarios");
 $componentSidebarCanViewGroups = $componentSidebarHasPermission("visualizar_grupos");
+$componentSidebarCanViewCategories = $componentSidebarHasPermission("visualizar_categorias");
 $componentSidebarCanCreateEmployees = $componentSidebarHasPermission("cadastrar_funcionarios");
 $componentSidebarCanCreateGroups = $componentSidebarHasPermission("cadastrar_grupos");
+$componentSidebarCanCreateCategories = $componentSidebarHasPermission("cadastrar_categorias");
 $componentSidebarCanEditEmployees = $componentSidebarHasPermission("editar_funcionarios");
 $componentSidebarCanEditGroups = $componentSidebarHasPermission("editar_grupos");
+$componentSidebarCanEditCategories = $componentSidebarHasPermission("editar_categorias");
 
 // Listas de telas que pertencem aos grupos expansivos da sidebar.
 // Elas controlam quando Cadastros ou Edicao devem iniciar abertos.
 $componentSidebarRegistrationPages = [
   "cadastro-ativos.php",
+  "categorias.php",
   "marcas.php",
   "propriedades.php",
   "cadastro-funcionarios.php",
@@ -148,6 +152,7 @@ $componentSidebarRegistrationPages = [
 ];
 $componentSidebarEditingPages = [
   "edicao-ativos.php",
+  "edicao-categorias.php",
   "edicao-marcas.php",
   "edicao-propriedades.php",
   "edicao-funcionarios.php",
@@ -214,6 +219,20 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
     <?php endif; ?>
 
     <!-- Links de consulta que ficam disponiveis na navegacao principal. -->
+    <?php if ($componentSidebarCanViewCategories): ?>
+      <a class="<?php echo $componentSidebarLinkClass("categorias-visualizacao.php"); ?>"
+        href="categorias-visualizacao.php" <?php echo $componentSidebarCurrentAttr("categorias-visualizacao.php"); ?>>
+        <i class="bi bi-diagram-3-fill"></i>
+        <span>Categorias</span>
+      </a>
+    <?php else: ?>
+      <span class="nav-link nav-link-disabled" aria-disabled="true" data-permission-resource="Categorias"
+        title="Apenas usuarios autorizados podem acessar categorias">
+        <i class="bi bi-diagram-3-fill"></i>
+        <span>Categorias</span>
+      </span>
+    <?php endif; ?>
+
     <a class="<?php echo $componentSidebarLinkClass("marcas-visualizacao.php"); ?>" href="marcas-visualizacao.php" <?php echo $componentSidebarCurrentAttr("marcas-visualizacao.php"); ?>>
       <i class="bi bi-tags-fill"></i>
       <span>Marcas</span>
@@ -242,6 +261,13 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
 
       <div class="nav-submenu" id="registrationSubmenu">
         <a<?php echo $componentSidebarSubmenuClass("cadastro-ativos.php"); ?> href="cadastro-ativos.php">Ativos</a>
+          <?php if ($componentSidebarCanCreateCategories): ?>
+            <a<?php echo $componentSidebarSubmenuClass("categorias.php"); ?> href="categorias.php">Categorias</a>
+            <?php else: ?>
+              <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
+                data-permission-resource="Cadastro de categorias"
+                title="Apenas usuarios autorizados podem cadastrar categorias">Categorias</span>
+            <?php endif; ?>
           <a<?php echo $componentSidebarSubmenuClass("marcas.php"); ?> href="marcas.php">Marcas</a>
             <a<?php echo $componentSidebarSubmenuClass("propriedades.php"); ?> href="propriedades.php">Propriedades</a>
 
@@ -280,6 +306,14 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
 
       <div class="nav-submenu" id="editingSubmenu">
         <a<?php echo $componentSidebarSubmenuClass("edicao-ativos.php"); ?> href="edicao-ativos.php">Ativos</a>
+          <?php if ($componentSidebarCanEditCategories): ?>
+            <a<?php echo $componentSidebarSubmenuClass("edicao-categorias.php"); ?> href="edicao-categorias.php">
+              Categorias</a>
+            <?php else: ?>
+              <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
+                data-permission-resource="Edicao de categorias"
+                title="Apenas usuarios autorizados podem editar categorias">Categorias</span>
+            <?php endif; ?>
           <a<?php echo $componentSidebarSubmenuClass("edicao-marcas.php"); ?> href="edicao-marcas.php">Marcas</a>
             <a<?php echo $componentSidebarSubmenuClass("edicao-propriedades.php"); ?> href="edicao-propriedades.php">
               Propriedades</a>

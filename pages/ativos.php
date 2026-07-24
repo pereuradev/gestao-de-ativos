@@ -168,6 +168,7 @@ try {
     $where[] = "(
             lower(coalesce(a.nome, '')) like lower(:busca)
             or lower(coalesce(a.numero_serie, '')) like lower(:busca)
+            or lower(coalesce(a.part_number, '')) like lower(:busca)
             or lower(coalesce(a.status, '')) like lower(:busca)
             or lower(coalesce(a.marca, '')) like lower(:busca)
             or lower(coalesce(a.propriedade, '')) like lower(:busca)
@@ -231,6 +232,7 @@ try {
             a.id,
             a.nome,
             a.numero_serie,
+            a.part_number,
             a.status,
             a.marca,
             a.propriedade,
@@ -434,8 +436,8 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
           <div class="search-box asset-view-search">
             <i class="bi bi-search"></i>
             <input id="assetSearch" name="busca" type="search" value="<?php echo e($buscaFiltro); ?>"
-              placeholder="Buscar ativo, s&eacute;rie, marca ou local"
-              aria-label="Buscar ativo, s&eacute;rie, marca ou local" autocomplete="off" />
+              placeholder="Buscar ativo, s&eacute;rie, PN, marca ou local"
+              aria-label="Buscar ativo, s&eacute;rie, PN, marca ou local" autocomplete="off" />
           </div>
 
           <select id="assetStatusFilter" name="status" aria-label="Filtrar por status">
@@ -505,6 +507,7 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
                 <th>Ativo</th>
                 <th>Categoria</th>
                 <th>Marca</th>
+                <th>PN</th>
                 <th>N&ordm; de s&eacute;rie</th>
                 <th>Status</th>
                 <th>Local</th>
@@ -519,6 +522,7 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
                 // Normaliza os dados uma vez para manter a marcação abaixo simples e sempre escapada na saída.
                 $nome = (string) ($ativo["nome"] ?? "");
                 $numeroSerie = (string) ($ativo["numero_serie"] ?? "");
+                $partNumber = (string) ($ativo["part_number"] ?? "");
                 $status = (string) ($ativo["status"] ?? "--");
                 $marca = (string) ($ativo["marca"] ?? "");
                 $propriedade = (string) ($ativo["propriedade"] ?? "");
@@ -529,7 +533,7 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
                 $categoria = (string) ($ativo["categoria"] ?? "Sem categoria");
                 $local = (string) ($ativo["local"] ?? "");
                 $criadoEm = formatarDataAtivo((string) ($ativo["criado_em"] ?? ""));
-                $searchData = strtolower(trim($nome . " " . $numeroSerie . " " . $status . " " . $marca . " " . $propriedade . " " . $datasheet . " " . $categoria . " " . $local));
+                $searchData = strtolower(trim($nome . " " . $numeroSerie . " " . $partNumber . " " . $status . " " . $marca . " " . $propriedade . " " . $datasheet . " " . $categoria . " " . $local));
                 ?>
 
                 <tr class="registration-row asset-row" data-status="<?php echo e(strtolower($status)); ?>"
@@ -544,6 +548,7 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
 
                   <td data-label="Categoria"><?php echo e($categoria); ?></td>
                   <td data-label="Marca"><?php echo e($marca !== "" ? $marca : "--"); ?></td>
+                  <td data-label="PN"><?php echo e($partNumber !== "" ? $partNumber : "--"); ?></td>
                   <td data-label="N&ordm; de s&eacute;rie"><?php echo e($numeroSerie !== "" ? $numeroSerie : "--"); ?>
                   </td>
 

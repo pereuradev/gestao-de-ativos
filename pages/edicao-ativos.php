@@ -164,6 +164,7 @@ try {
             lower(coalesce(a.nome, '')) like lower(:busca)
             or lower(coalesce(a.descricao, '')) like lower(:busca)
             or lower(coalesce(a.numero_serie, '')) like lower(:busca)
+            or lower(coalesce(a.part_number, '')) like lower(:busca)
             or lower(coalesce(a.status, '')) like lower(:busca)
             or lower(coalesce(a.marca, '')) like lower(:busca)
             or lower(coalesce(a.propriedade, '')) like lower(:busca)
@@ -221,6 +222,7 @@ try {
             a.nome,
             a.descricao,
             a.numero_serie,
+            a.part_number,
             a.status,
             a.marca,
             a.propriedade,
@@ -409,8 +411,8 @@ try {
           <input id="assetSearchValue" type="hidden" name="busca" value="<?php echo e($buscaFiltro); ?>" />
           <div class="search-box asset-edit-search">
             <i class="bi bi-search"></i>
-            <input id="assetSearch" type="search" placeholder="Buscar ativo, s&eacute;rie, marca ou local"
-              aria-label="Buscar ativo, s&eacute;rie, marca ou local" autocomplete="off" />
+            <input id="assetSearch" type="search" placeholder="Buscar ativo, s&eacute;rie, PN, marca ou local"
+              aria-label="Buscar ativo, s&eacute;rie, PN, marca ou local" autocomplete="off" />
           </div>
 
           <select id="assetStatusFilter" name="status" aria-label="Filtrar por status">
@@ -463,6 +465,7 @@ try {
                 <th>Ativo</th>
                 <th>Categoria</th>
                 <th>Marca</th>
+                <th>PN</th>
                 <th>N&ordm; de s&eacute;rie</th>
                 <th>Status</th>
                 <th>Local</th>
@@ -477,6 +480,7 @@ try {
                 $nome = (string) ($ativo["nome"] ?? "");
                 $descricao = (string) ($ativo["descricao"] ?? "");
                 $numeroSerie = (string) ($ativo["numero_serie"] ?? "");
+                $partNumber = (string) ($ativo["part_number"] ?? "");
                 $status = (string) ($ativo["status"] ?? "--");
                 $marca = (string) ($ativo["marca"] ?? "");
                 $propriedade = (string) ($ativo["propriedade"] ?? "");
@@ -486,10 +490,11 @@ try {
                 $localId = (string) ($ativo["local_id"] ?? "");
                 $categoria = (string) ($ativo["categoria"] ?? "Sem categoria");
                 $local = (string) ($ativo["local"] ?? "");
-                $searchData = strtolower(trim($nome . " " . $numeroSerie . " " . $status . " " . $marca . " " . $propriedade . " " . $categoria . " " . $local));
+                $searchData = strtolower(trim($nome . " " . $numeroSerie . " " . $partNumber . " " . $status . " " . $marca . " " . $propriedade . " " . $categoria . " " . $local));
                 ?>
                 <tr class="registration-row asset-row" data-id="<?php echo e($id); ?>" data-name="<?php echo e($nome); ?>"
                   data-description="<?php echo e($descricao); ?>" data-serial="<?php echo e($numeroSerie); ?>"
+                  data-part-number="<?php echo e($partNumber); ?>"
                   data-status="<?php echo e(strtolower($status)); ?>" data-status-raw="<?php echo e($status); ?>"
                   data-brand="<?php echo e(strtolower($marca)); ?>" data-brand-raw="<?php echo e($marca); ?>"
                   data-property="<?php echo e($propriedade); ?>" data-imei="<?php echo e($imei); ?>"
@@ -505,6 +510,7 @@ try {
                   </td>
                   <td data-label="Categoria" data-asset-category><?php echo e($categoria); ?></td>
                   <td data-label="Marca" data-asset-brand><?php echo e($marca !== "" ? $marca : "--"); ?></td>
+                  <td data-label="PN" data-asset-part-number><?php echo e($partNumber !== "" ? $partNumber : "--"); ?></td>
                   <td data-label="N&ordm; de s&eacute;rie" data-asset-serial>
                     <?php echo e($numeroSerie !== "" ? $numeroSerie : "--"); ?></td>
                   <td data-label="Status">
@@ -701,11 +707,50 @@ try {
             </div>
           </label>
 
-          <label class="asset-field">
-            <span>N&ordm; de s&eacute;rie</span>
+          <!-- A rastreabilidade do modal segue a mesma regra do cadastro para evitar campos ocultos salvos. -->
+          <fieldset class="traceability-fieldset wide-field" data-traceability-group>
+            <legend>Rastreabilidade</legend>
+
+            <div class="traceability-options">
+              <label class="traceability-option">
+                <input type="radio" name="rastreabilidade" value="nao_possui" checked />
+                <span>N&atilde;o possui</span>
+              </label>
+
+              <label class="traceability-option">
+                <input type="radio" name="rastreabilidade" value="somente_pn" />
+                <span>Somente PN</span>
+              </label>
+
+              <label class="traceability-option">
+                <input type="radio" name="rastreabilidade" value="somente_sn" />
+                <span>Somente SN</span>
+              </label>
+
+              <label class="traceability-option">
+                <input type="radio" name="rastreabilidade" value="ambos" />
+                <span>Ambos</span>
+              </label>
+            </div>
+
+            <small class="field-hint">A escolha controla quais identificadores aparecem e ser&atilde;o salvos.</small>
+          </fieldset>
+
+          <label class="asset-field" data-traceability-field="sn" hidden>
+            <span>SN</span>
             <div class="input-shell">
               <i class="bi bi-123"></i>
-              <input id="editAssetSerial" name="numero_serie" type="text" autocomplete="off" />
+              <input id="editAssetSerial" name="numero_serie" type="text" autocomplete="off"
+                data-traceability-input="sn" disabled />
+            </div>
+          </label>
+
+          <label class="asset-field" data-traceability-field="pn" hidden>
+            <span>PN</span>
+            <div class="input-shell">
+              <i class="bi bi-upc"></i>
+              <input id="editAssetPartNumber" name="part_number" type="text" maxlength="120" autocomplete="off"
+                data-traceability-input="pn" disabled />
             </div>
           </label>
 

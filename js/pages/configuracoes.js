@@ -39,6 +39,8 @@ function setupPreferenceControls() {
     window.setTimeout(syncPreferenceForm, 0);
   });
 
+  window.addEventListener("titech:theme-change", syncPreferenceForm);
+
   document.querySelectorAll('input[name="accent"]').forEach((input) => {
     input.addEventListener("change", () => {
       if (!input.checked) return;

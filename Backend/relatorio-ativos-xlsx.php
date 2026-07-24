@@ -134,6 +134,7 @@ final class RelatorioAtivosXlsx
             ["key" => "nome", "title" => "Nome", "width" => 30.0, "kind" => "wrap"],
             ["key" => "descricao", "title" => "Descri\xc3\xa7\xc3\xa3o", "width" => 42.0, "kind" => "wrap"],
             ["key" => "numero_serie", "title" => "N\xc3\xbamero de s\xc3\xa9rie", "width" => 22.0, "kind" => "text"],
+            ["key" => "part_number", "title" => "PN", "width" => 20.0, "kind" => "text"],
             ["key" => "imei", "title" => "IMEI", "width" => 22.0, "kind" => "text"],
             ["key" => "categoria", "title" => "Categoria", "width" => 20.0, "kind" => "text"],
             ["key" => "marca", "title" => "Marca", "width" => 18.0, "kind" => "text"],
@@ -431,7 +432,7 @@ final class RelatorioAtivosXlsx
             : '<hyperlinks>' . implode("", $hyperlinks) . '</hyperlinks>';
         $ignoredErrorsXml = $assets === []
             ? ""
-            : '<ignoredErrors><ignoredError sqref="A6:E' . $lastRow
+            : '<ignoredErrors><ignoredError sqref="A6:F' . $lastRow
                 . '" numberStoredAsText="1"/></ignoredErrors>';
         $xml = $this->worksheetOpenXml(
             "A1:{$lastColumn}{$lastRow}",

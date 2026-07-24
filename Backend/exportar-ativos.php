@@ -150,6 +150,7 @@ try {
             lower(coalesce(a.nome, '')) like lower(:busca)
             or lower(coalesce(a.descricao, '')) like lower(:busca)
             or lower(coalesce(a.numero_serie, '')) like lower(:busca)
+            or lower(coalesce(a.part_number, '')) like lower(:busca)
             or lower(coalesce(a.imei, '')) like lower(:busca)
             or lower(coalesce(a.status, '')) like lower(:busca)
             or lower(coalesce(a.marca, '')) like lower(:busca)
@@ -205,6 +206,7 @@ try {
             a.nome,
             a.descricao,
             a.numero_serie,
+            a.part_number,
             a.imei,
             c.nome as categoria,
             a.marca,

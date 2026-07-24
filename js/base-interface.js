@@ -16,6 +16,11 @@ const USER_PREFERENCE_DEFAULTS = {
   motion: "normal",
   cursor: "enhanced",
 };
+const THEME_MODE_OPTIONS = {
+  light: { label: "Claro", icon: "bi-sun-fill" },
+  dark: { label: "Escuro", icon: "bi-moon-stars-fill" },
+  auto: { label: "Sistema", icon: "bi-display" },
+};
 const USER_PREFERENCE_STORAGE_KEYS = {
   theme: "titech-theme",
   accent: "titech-accent",
@@ -47,6 +52,9 @@ const PAGE_PERMISSION_RULES = {
   "ativos.php": { permission: "visualizar_ativos", resource: "Ativos" },
   "cadastro-ativos.php": { permission: "cadastrar_ativos", resource: "Cadastro de ativos" },
   "edicao-ativos.php": { permission: "editar_ativos", resource: "Edicao de ativos" },
+  "categorias-visualizacao.php": { permission: "visualizar_categorias", resource: "Categorias" },
+  "categorias.php": { permission: "cadastrar_categorias", resource: "Cadastro de categorias" },
+  "edicao-categorias.php": { permission: "editar_categorias", resource: "Edicao de categorias" },
   "marcas-visualizacao.php": { permission: "visualizar_marcas", resource: "Marcas" },
   "marcas.php": { permission: "cadastrar_marcas", resource: "Cadastro de marcas" },
   "edicao-marcas.php": { permission: "editar_marcas", resource: "Edicao de marcas" },
@@ -66,8 +74,11 @@ const PAGE_PERMISSION_RULES = {
 const DISABLED_PERMISSION_LINKS = {
   Funcionarios: { permission: "visualizar_funcionarios", href: "funcionarios.php" },
   Grupos: { permission: "visualizar_grupos", href: "grupos-visualizacao.php" },
+  Categorias: { permission: "visualizar_categorias", href: "categorias-visualizacao.php" },
   "Cadastro de funcionarios": { permission: "cadastrar_funcionarios", href: "cadastro-funcionarios.php" },
+  "Cadastro de categorias": { permission: "cadastrar_categorias", href: "categorias.php" },
   "Edicao de funcionarios": { permission: "editar_funcionarios", href: "edicao-funcionarios.php" },
+  "Edicao de categorias": { permission: "editar_categorias", href: "edicao-categorias.php" },
   "Cadastro de grupos": { permission: "cadastrar_grupos", href: "cadastro-grupos.php" },
   "Edicao de grupos": { permission: "editar_grupos", href: "edicao-grupos.php" },
 };
@@ -133,12 +144,15 @@ const openSidebar = typeof window.openSidebar === "function" ? window.openSideba
 const closeSidebar = typeof window.closeSidebar === "function" ? window.closeSidebar : () => undefined;
 const applySidebarWidth =
   typeof window.applySidebarWidth === "function" ? window.applySidebarWidth : () => undefined;
+const applySavedSidebarWidth =
+  typeof window.applySavedSidebarWidth === "function" ? window.applySavedSidebarWidth : () => undefined;
 const setupSidebarResize =
   typeof window.setupSidebarResize === "function" ? window.setupSidebarResize : () => undefined;
 const setupNavGroups = typeof window.setupNavGroups === "function" ? window.setupNavGroups : () => undefined;
 
 document.addEventListener("DOMContentLoaded", () => {
   applyUserPreferences(getCurrentUserPreferences());
+  setupThemeToggle();
   hydrateSidebarProfile();
   setupPermissionDeniedTriggers();
 });
@@ -455,28 +469,192 @@ function loadSavedTheme() {
 }
 
 function setupThemeToggle() {
-  // Liga o botao de tema, quando ele existe na pagina atual.
   const themeToggle = document.getElementById("themeToggle");
 
   if (!themeToggle) return;
+  if (themeToggle.dataset.themeMenuReady === "true") return;
 
-  themeToggle.addEventListener("click", () => {
-    const isDark = document.body.classList.contains("theme-dark");
-    const nextTheme = isDark ? "light" : "dark";
+  const picker = createThemePicker(themeToggle);
+  const themeMenu = picker.querySelector(".theme-menu");
 
-    clearTimeout(themeTimer);
-    document.body.classList.add("theme-switching");
-    applyTheme(nextTheme);
-    void saveUserPreferences({ theme: nextTheme });
+  themeToggle.dataset.themeMenuReady = "true";
+  themeToggle.classList.add("theme-toggle-menu-button");
+  themeToggle.setAttribute("aria-haspopup", "menu");
+  themeToggle.setAttribute("aria-expanded", "false");
+  themeToggle.setAttribute("aria-label", "Selecionar tema da interface");
+  ensureThemeToggleCaret(themeToggle);
 
-    if (typeof window.onThemeChanged === "function") {
-      window.onThemeChanged(nextTheme);
+  themeToggle.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleThemeMenu(picker);
+  });
+
+  themeToggle.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      openThemeMenu(picker);
+      focusActiveThemeOption(themeMenu);
     }
 
-    themeTimer = setTimeout(() => {
-      document.body.classList.remove("theme-switching");
-    }, THEME_TRANSITION_MS);
+    if (event.key === "Escape") {
+      closeThemeMenu(picker);
+    }
   });
+
+  themeMenu.querySelectorAll("[data-theme-value]").forEach((option) => {
+    option.addEventListener("click", () => {
+      closeThemeMenu(picker);
+      selectThemePreference(option.dataset.themeValue);
+      themeToggle.focus();
+    });
+  });
+
+  themeMenu.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeThemeMenu(picker);
+      themeToggle.focus();
+    }
+
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      focusAdjacentThemeOption(themeMenu, event.key === "ArrowDown" ? 1 : -1);
+    }
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!picker.contains(event.target)) {
+      closeThemeMenu(picker);
+    }
+  });
+
+  updateThemeMenuState(getCurrentUserPreferences().theme);
+}
+
+function createThemePicker(themeToggle) {
+  const existingPicker = themeToggle.closest(".theme-picker");
+
+  if (existingPicker) {
+    if (!existingPicker.querySelector(".theme-menu")) {
+      existingPicker.appendChild(createThemeMenu());
+    }
+
+    return existingPicker;
+  }
+
+  const picker = document.createElement("div");
+  picker.className = "theme-picker";
+
+  themeToggle.parentNode.insertBefore(picker, themeToggle);
+  picker.appendChild(themeToggle);
+  picker.appendChild(createThemeMenu());
+
+  return picker;
+}
+
+function createThemeMenu() {
+  const menu = document.createElement("div");
+
+  menu.className = "theme-menu";
+  menu.setAttribute("role", "menu");
+  menu.setAttribute("aria-label", "Opcoes de tema");
+  menu.hidden = true;
+
+  Object.entries(THEME_MODE_OPTIONS).forEach(([value, option]) => {
+    const button = document.createElement("button");
+    const icon = document.createElement("i");
+    const label = document.createElement("span");
+    const check = document.createElement("i");
+
+    button.type = "button";
+    button.className = "theme-menu-option";
+    button.dataset.themeValue = value;
+    button.setAttribute("role", "menuitemradio");
+    button.setAttribute("aria-checked", "false");
+
+    icon.className = `bi ${option.icon}`;
+    icon.setAttribute("aria-hidden", "true");
+
+    label.textContent = option.label;
+
+    check.className = "bi bi-check-lg theme-menu-check";
+    check.setAttribute("aria-hidden", "true");
+
+    button.append(icon, label, check);
+    menu.appendChild(button);
+  });
+
+  return menu;
+}
+
+function ensureThemeToggleCaret(themeToggle) {
+  if (themeToggle.querySelector(".theme-toggle-caret")) return;
+
+  const caret = document.createElement("i");
+  caret.className = "bi bi-chevron-down theme-toggle-caret";
+  caret.setAttribute("aria-hidden", "true");
+  themeToggle.appendChild(caret);
+}
+
+function toggleThemeMenu(picker) {
+  const isOpen = picker.classList.contains("is-open");
+
+  if (isOpen) {
+    closeThemeMenu(picker);
+    return;
+  }
+
+  openThemeMenu(picker);
+}
+
+function openThemeMenu(picker) {
+  const themeToggle = picker.querySelector("#themeToggle");
+  const themeMenu = picker.querySelector(".theme-menu");
+
+  picker.classList.add("is-open");
+  themeMenu.hidden = false;
+  themeToggle.setAttribute("aria-expanded", "true");
+  updateThemeMenuState(getCurrentUserPreferences().theme);
+}
+
+function closeThemeMenu(picker) {
+  const themeToggle = picker.querySelector("#themeToggle");
+  const themeMenu = picker.querySelector(".theme-menu");
+
+  picker.classList.remove("is-open");
+  themeMenu.hidden = true;
+  themeToggle.setAttribute("aria-expanded", "false");
+}
+
+function selectThemePreference(theme) {
+  const nextTheme = normalizeChoice(theme, Object.keys(THEME_MODE_OPTIONS), USER_PREFERENCE_DEFAULTS.theme);
+
+  clearTimeout(themeTimer);
+  document.body.classList.add("theme-switching");
+  applyTheme(nextTheme);
+  void saveUserPreferences({ theme: nextTheme });
+  notifyThemeChanged(nextTheme);
+
+  themeTimer = setTimeout(() => {
+    document.body.classList.remove("theme-switching");
+  }, THEME_TRANSITION_MS);
+}
+
+function focusAdjacentThemeOption(themeMenu, direction) {
+  const options = Array.from(themeMenu.querySelectorAll(".theme-menu-option"));
+  const currentIndex = options.indexOf(document.activeElement);
+  const nextIndex = currentIndex === -1
+    ? 0
+    : (currentIndex + direction + options.length) % options.length;
+
+  options[nextIndex]?.focus();
+}
+
+function focusActiveThemeOption(themeMenu) {
+  const activeOption = themeMenu.querySelector(".theme-menu-option.active")
+    || themeMenu.querySelector(".theme-menu-option");
+
+  activeOption?.focus();
 }
 
 function applyTheme(theme) {
@@ -484,6 +662,7 @@ function applyTheme(theme) {
   const themeToggle = document.getElementById("themeToggle");
   const nextTheme = ["dark", "light", "auto"].includes(theme) ? theme : "dark";
   const isDark = resolveThemeMode(nextTheme) === "dark";
+  const themeOption = THEME_MODE_OPTIONS[nextTheme];
 
   document.body.classList.toggle("theme-dark", isDark);
   document.body.classList.toggle("theme-light", !isDark);
@@ -496,11 +675,37 @@ function applyTheme(theme) {
   const label = themeToggle.querySelector("span");
 
   if (icon) {
-    icon.className = isDark ? "bi bi-sun-fill" : "bi bi-moon-stars-fill";
+    icon.className = `bi ${themeOption.icon}`;
   }
 
   if (label) {
-    label.textContent = isDark ? "Modo claro" : "Modo escuro";
+    label.textContent = themeOption.label;
+  }
+
+  themeToggle.title = `Tema: ${themeOption.label}`;
+  updateThemeMenuState(nextTheme);
+}
+
+function updateThemeMenuState(theme) {
+  const activeTheme = normalizeChoice(theme, Object.keys(THEME_MODE_OPTIONS), USER_PREFERENCE_DEFAULTS.theme);
+
+  document.querySelectorAll(".theme-menu-option").forEach((option) => {
+    const isActive = option.dataset.themeValue === activeTheme;
+
+    option.classList.toggle("active", isActive);
+    option.setAttribute("aria-checked", String(isActive));
+  });
+}
+
+function notifyThemeChanged(theme) {
+  const resolvedTheme = resolveThemeMode(theme);
+
+  window.dispatchEvent(new CustomEvent("titech:theme-change", {
+    detail: { theme, resolvedTheme },
+  }));
+
+  if (typeof window.onThemeChanged === "function") {
+    window.onThemeChanged(theme);
   }
 }
 
@@ -521,6 +726,7 @@ function setupSystemThemeListener() {
   const updateAutoTheme = () => {
     if (getCurrentUserPreferences().theme === "auto") {
       applyTheme("auto");
+      notifyThemeChanged("auto");
     }
   };
 
@@ -859,6 +1065,7 @@ Object.assign(window, {
   openSidebar,
   closeSidebar,
   applySidebarWidth,
+  applySavedSidebarWidth,
   setupSidebarResize,
   setupNavGroups,
   setupPermissionDeniedTriggers,

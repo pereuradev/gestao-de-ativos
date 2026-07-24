@@ -22,14 +22,15 @@ final class RelatorioAtivosPdf
     private const ROW_ALT = [0.965, 0.976, 0.984];
 
     private const COLUMNS = [
-        ["key" => "ativo", "title" => "Ativo", "width" => 53.0],
-        ["key" => "categoria", "title" => "Categoria", "width" => 31.0],
-        ["key" => "marca", "title" => "Marca", "width" => 27.0],
-        ["key" => "numero_serie", "title" => "Nº de série", "width" => 37.0],
-        ["key" => "status", "title" => "Status", "width" => 28.0],
-        ["key" => "localizacao", "title" => "Local", "width" => 39.0],
-        ["key" => "datasheet", "title" => "Datasheet", "width" => 27.0],
-        ["key" => "criado_em", "title" => "Criado em", "width" => 35.0],
+        ["key" => "ativo", "title" => "Ativo", "width" => 47.0],
+        ["key" => "categoria", "title" => "Categoria", "width" => 28.0],
+        ["key" => "marca", "title" => "Marca", "width" => 24.0],
+        ["key" => "part_number", "title" => "PN", "width" => 31.0],
+        ["key" => "numero_serie", "title" => "Nº de série", "width" => 32.0],
+        ["key" => "status", "title" => "Status", "width" => 25.0],
+        ["key" => "localizacao", "title" => "Local", "width" => 34.0],
+        ["key" => "datasheet", "title" => "Datasheet", "width" => 24.0],
+        ["key" => "criado_em", "title" => "Criado em", "width" => 32.0],
     ];
 
     private array $pages = [];
@@ -205,6 +206,7 @@ final class RelatorioAtivosPdf
             "ativo" => $assetLabel,
             "categoria" => $this->valueOrFallback($asset["categoria"] ?? null, "Sem categoria"),
             "marca" => $this->valueOrFallback($asset["marca"] ?? null),
+            "part_number" => $this->valueOrFallback($asset["part_number"] ?? null),
             "numero_serie" => $this->valueOrFallback($asset["numero_serie"] ?? null),
             "status" => $this->valueOrFallback($asset["status"] ?? null),
             "localizacao" => $this->valueOrFallback($asset["localizacao"] ?? null),

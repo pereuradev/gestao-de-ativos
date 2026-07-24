@@ -35,6 +35,36 @@ function campoNulo(string $nome): ?string
     return $valor !== "" ? $valor : null;
 }
 
+function rastreabilidadePermitida(string $valor): bool
+{
+    return in_array($valor, ["nao_possui", "somente_pn", "somente_sn", "ambos"], true);
+}
+
+function mensagemRastreabilidadeAtivo(string $rastreabilidade, ?string $numeroSerie, ?string $partNumber): ?string
+{
+    // A edicao usa a mesma regra do cadastro para nao salvar identificadores escondidos no modal.
+    if (in_array($rastreabilidade, ["somente_pn", "ambos"], true) && $partNumber === null) {
+        return "Informe o PN para a rastreabilidade escolhida.";
+    }
+
+    if (in_array($rastreabilidade, ["somente_sn", "ambos"], true) && $numeroSerie === null) {
+        return "Informe o numero de serie para a rastreabilidade escolhida.";
+    }
+
+    return null;
+}
+
+function normalizarRastreabilidadeAtivo(string $rastreabilidade, ?string $numeroSerie, ?string $partNumber): array
+{
+    // Mantem somente os campos compativeis com a opcao marcada pelo usuario.
+    return match ($rastreabilidade) {
+        "somente_pn" => [null, $partNumber],
+        "somente_sn" => [$numeroSerie, null],
+        "ambos" => [$numeroSerie, $partNumber],
+        default => [null, null],
+    };
+}
+
 function csrfValido(): bool
 {
     // Protege a alteracao contra envio fora da pagina autenticada.
@@ -178,7 +208,9 @@ if (!csrfValido()) {
 $id = campo("id");
 $nome = campo("nome");
 $descricao = campoNulo("descricao");
-$numeroSerie = campoNulo("numero_serie");
+$rastreabilidade = campo("rastreabilidade") ?: "nao_possui";
+$numeroSerieEnviado = campoNulo("numero_serie");
+$partNumberEnviado = campoNulo("part_number");
 $categoriaId = campoNulo("categoria_id");
 $localId = campoNulo("local_id");
 $status = campo("status") ?: "Disponível";
@@ -197,6 +229,26 @@ if ($nome === "") {
 
 if (strlen($nome) < 2) {
     responder(false, "O nome do ativo precisa ter pelo menos 2 caracteres.", 422);
+}
+
+if (!rastreabilidadePermitida($rastreabilidade)) {
+    responder(false, "Selecione uma opcao de rastreabilidade valida.", 422);
+}
+
+$mensagemRastreabilidade = mensagemRastreabilidadeAtivo($rastreabilidade, $numeroSerieEnviado, $partNumberEnviado);
+
+if ($mensagemRastreabilidade !== null) {
+    responder(false, $mensagemRastreabilidade, 422);
+}
+
+[$numeroSerie, $partNumber] = normalizarRastreabilidadeAtivo(
+    $rastreabilidade,
+    $numeroSerieEnviado,
+    $partNumberEnviado
+);
+
+if ($partNumber !== null && strlen($partNumber) > 120) {
+    responder(false, "PN deve ter no maximo 120 caracteres.", 422);
 }
 
 if ($categoriaId === null) {
@@ -271,6 +323,7 @@ try {
                set nome = :nome,
                    descricao = :descricao,
                    numero_serie = :numero_serie,
+                   part_number = :part_number,
                    categoria_id = :categoria_id,
                    local_id = :local_id,
                    status = :status,
@@ -284,6 +337,7 @@ try {
                    nome,
                    descricao,
                    numero_serie,
+                   part_number,
                    categoria_id,
                    local_id,
                    status,
@@ -307,6 +361,7 @@ try {
         ":nome" => $nome,
         ":descricao" => $descricao,
         ":numero_serie" => $numeroSerie,
+        ":part_number" => $partNumber,
         ":categoria_id" => $categoriaId,
         ":local_id" => $localId,
         ":status" => $status,
