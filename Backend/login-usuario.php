@@ -351,6 +351,7 @@ try {
         "departamento" => (string)($perfil["departamento"] ?? ""),
         "empresa" => (string)($perfil["empresa"] ?? ""),
         "status" => (string)$perfil["status"],
+        "foto_cracha" => (string)($perfil["foto_cracha"] ?? ""),
         "preferencia_tema" => $preferencias["theme"],
         "preferencia_cor" => $preferencias["accent"],
         "preferencia_tamanho_fonte" => $preferencias["fontSize"],

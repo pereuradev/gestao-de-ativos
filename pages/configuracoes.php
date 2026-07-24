@@ -16,6 +16,10 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
   exit;
 }
 
+if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {
+  $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+}
+
 // Atalho para escapar textos antes de jogar no HTML.
 // Isso evita que algum valor vindo do banco ou da sessão quebre a página
 // ou abra brecha para injeção de código no navegador.
@@ -70,6 +74,30 @@ function iniciaisUsuario(string $nome): string
   }
 
   return $iniciais !== "" ? $iniciais : "TT";
+}
+
+function nomeFotoCrachaSeguro(?string $nome): bool
+{
+  if ($nome === null || $nome === "") {
+    return false;
+  }
+
+  return (bool) preg_match('/^cracha-[A-Za-z0-9_-]+-[a-f0-9]{16}\.(jpg|png|webp)$/', $nome);
+}
+
+function urlFotoCracha(?string $nome): string
+{
+  if (!nomeFotoCrachaSeguro($nome)) {
+    return "";
+  }
+
+  $caminho = __DIR__ . "/../uploads/crachas/" . $nome;
+
+  if (!is_file($caminho)) {
+    return "";
+  }
+
+  return "../uploads/crachas/" . rawurlencode($nome);
 }
 
 // Converte o status do usuário em uma classe CSS.
@@ -142,7 +170,8 @@ try {
             preferencia_tamanho_fonte,
             preferencia_densidade,
             preferencia_movimento,
-            preferencia_cursor
+            preferencia_cursor,
+            foto_cracha
           from public.perfis_usuarios
          where id = :id
             or lower(btrim(email)) = lower(btrim(:email))
@@ -174,6 +203,7 @@ try {
       "preferencia_densidade" => (string) ($perfil["preferencia_densidade"] ?? "comfortable"),
       "preferencia_movimento" => (string) ($perfil["preferencia_movimento"] ?? "normal"),
       "preferencia_cursor" => (string) ($perfil["preferencia_cursor"] ?? "enhanced"),
+      "foto_cracha" => (string) ($perfil["foto_cracha"] ?? ""),
     ]);
   }
 } catch (Throwable) {
@@ -200,10 +230,13 @@ $empresaUsuarioTexto = campoPerfil($perfil, "empresa");
 $celularUsuarioTexto = campoPerfil($perfil, "celular");
 $rgUsuarioTexto = campoPerfil($perfil, "rg");
 $cpfUsuarioTexto = campoPerfil($perfil, "cpf");
+$fotoCrachaNome = trim((string) ($perfil["foto_cracha"] ?? ""));
+$fotoCrachaUrl = urlFotoCracha($fotoCrachaNome);
 $criadoEm = formatarDataPerfil((string) ($perfil["criado_em"] ?? ""));
 $atualizadoEm = formatarDataPerfil((string) ($perfil["atualizado_em"] ?? ""));
 $ultimoAcesso = date("d/m/Y H:i");
 
+$csrfToken = e((string) $_SESSION["csrf_token"]);
 $nomeUsuario = e($nomeUsuarioTexto);
 $tipoUsuario = e($tipoUsuarioTexto);
 $emailUsuario = e($emailUsuarioTexto);
@@ -265,8 +298,8 @@ $resumoPermissoes = $usuarioEhAdmin
   <!-- CSS separado por responsabilidade: base do sistema, efeitos gerais e ajustes especi­ficos desta página. -->
   <link rel="stylesheet" href="../css/pagina-base.css?v=20260720-sidebar-role-accent" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
-  <link rel="stylesheet" href="../css/configuracoes.css?v=20260707-user-permissions" />
+  <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
+  <link rel="stylesheet" href="../css/configuracoes.css?v=20260724-accent-palette" />
 
 
   <!-- Scripts carregados com defer para não bloquear a montagem do HTML. -->
@@ -346,7 +379,15 @@ $resumoPermissoes = $usuarioEhAdmin
           </div>
 
           <div class="badge-main">
-            <div class="profile-avatar large-avatar" aria-hidden="true"><?php echo $iniciais; ?></div>
+            <?php if ($fotoCrachaUrl !== ""): ?>
+              <div class="profile-avatar large-avatar has-photo" data-badge-photo-preview
+                data-initials="<?php echo $iniciais; ?>">
+                <img src="<?php echo e($fotoCrachaUrl); ?>" alt="Foto do crach&aacute; de <?php echo $nomeUsuario; ?>" />
+              </div>
+            <?php else: ?>
+              <div class="profile-avatar large-avatar" aria-hidden="true" data-badge-photo-preview
+                data-initials="<?php echo $iniciais; ?>"><?php echo $iniciais; ?></div>
+            <?php endif; ?>
             <div>
               <h2><?php echo $nomeUsuario; ?></h2>
               <p><?php echo $emailUsuario; ?></p>
@@ -371,6 +412,25 @@ $resumoPermissoes = $usuarioEhAdmin
               <strong><?php echo e($ultimoAcesso); ?></strong>
             </div>
           </div>
+
+          <form class="badge-photo-form" id="badgePhotoForm" action="../Backend/atualizar-foto-cracha.php"
+            method="post" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
+
+            <label class="badge-photo-picker">
+              <input id="badgePhotoInput" name="foto_cracha" type="file" accept="image/jpeg,image/png,image/webp" />
+              <span><i class="bi bi-image"></i>Selecionar foto</span>
+            </label>
+
+            <button class="secondary-button compact-button" id="saveBadgePhotoButton" type="submit" disabled>
+              <i class="bi bi-cloud-arrow-up"></i>
+              Salvar foto
+            </button>
+
+            <small>JPG, PNG ou WebP ate 2 MB.</small>
+          </form>
+
+          <div id="badgePhotoMessage" class="form-message" role="status" aria-live="polite"></div>
         </article>
 
       </section>
@@ -453,14 +513,38 @@ $resumoPermissoes = $usuarioEhAdmin
             <fieldset class="preference-group">
               <legend>Prefer&ecirc;ncia de cor</legend>
               <div class="accent-options" role="radiogroup" aria-label="Prefer&ecirc;ncia de cor">
-                <label class="accent-option accent-teal"><input type="radio" name="accent"
-                    value="teal" /><span></span>TI TECH</label>
-                <label class="accent-option accent-green"><input type="radio" name="accent"
-                    value="green" /><span></span>Verde positivo</label>
-                <label class="accent-option accent-blue"><input type="radio" name="accent"
-                    value="blue" /><span></span>Azul tecnologia</label>
-                <label class="accent-option accent-violet"><input type="radio" name="accent"
-                    value="violet" /><span></span>Violeta</label>
+                <label class="accent-option accent-teal">
+                  <input type="radio" name="accent" value="teal" />
+                  <span class="accent-palette" aria-hidden="true">
+                    <span></span><span></span><span></span><span></span>
+                  </span>
+                  <strong>TI TECH</strong>
+                  <small>Ciano, menta e oceano</small>
+                </label>
+                <label class="accent-option accent-green">
+                  <input type="radio" name="accent" value="green" />
+                  <span class="accent-palette" aria-hidden="true">
+                    <span></span><span></span><span></span><span></span>
+                  </span>
+                  <strong>Verde positivo</strong>
+                  <small>Energia, status e sucesso</small>
+                </label>
+                <label class="accent-option accent-blue">
+                  <input type="radio" name="accent" value="blue" />
+                  <span class="accent-palette" aria-hidden="true">
+                    <span></span><span></span><span></span><span></span>
+                  </span>
+                  <strong>Azul tecnologia</strong>
+                  <small>Foco, dados e suporte</small>
+                </label>
+                <label class="accent-option accent-violet">
+                  <input type="radio" name="accent" value="violet" />
+                  <span class="accent-palette" aria-hidden="true">
+                    <span></span><span></span><span></span><span></span>
+                  </span>
+                  <strong>Violeta</strong>
+                  <small>Contraste, premium e destaque</small>
+                </label>
               </div>
             </fieldset>
 

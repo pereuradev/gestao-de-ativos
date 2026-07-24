@@ -96,7 +96,7 @@ try {
   <link rel="stylesheet" href="../css/categorias.css?v=20260721-categorias" />
   <link rel="stylesheet" href="../css/edicao-categorias.css?v=20260721-categorias" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
+  <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
   <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
   <script src="../js/animations/efeito-digitacao.js?v=20260630-reduced-motion" defer></script>
   <script src="../js/ui/feedback-interface.js?v=20260630-reduced-motion" defer></script>

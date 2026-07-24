@@ -1,0 +1,18 @@
+# Impede que o Apache mostre listas como "Index of /Backend".
+
+# Impede a listagem dos arquivos de uma pasta
+
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+# Bloqueia arquivos e diretórios ocultos, incluindo .git.
+
+    RewriteRule (^|/)\. - [F,L]
+
+# A pasta do Supabase contém migrations e não precisa ser pública.
+
+    RewriteRule ^supabase(?:/|$) - [F,L,NC]
+
+</IfModule>

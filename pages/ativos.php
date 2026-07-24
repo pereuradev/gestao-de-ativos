@@ -289,7 +289,7 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
   <link rel="stylesheet" href="../css/pagina-base.css?v=20260720-sidebar-role-accent" />
   <link rel="stylesheet" href="../css/ativos.css?v=20260713-export-xlsx" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
-  <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
+  <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
   <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
 
   <!-- Scripts locais controlam a interface; React é carregado para os widgets reutilizáveis. -->

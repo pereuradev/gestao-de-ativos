@@ -59,6 +59,27 @@ function preferenciasUsuarioSessao(array $perfil): array
     ];
 }
 
+function fotoCrachaSeguraSessao(string $nome): bool
+{
+    return $nome !== ""
+        && (bool) preg_match('/^cracha-[A-Za-z0-9_-]+-[a-f0-9]{16}\.(jpg|png|webp)$/', $nome);
+}
+
+function urlFotoCrachaSessao(string $nome): string
+{
+    if (!fotoCrachaSeguraSessao($nome)) {
+        return "";
+    }
+
+    $caminho = __DIR__ . "/../uploads/crachas/" . $nome;
+
+    if (!is_file($caminho)) {
+        return "";
+    }
+
+    return "../uploads/crachas/" . rawurlencode($nome);
+}
+
 if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
     responderUsuarioSessao(false, "Sessao expirada.", 401);
 }
@@ -85,6 +106,7 @@ try {
             departamento,
             empresa,
             status,
+            foto_cracha,
             preferencia_tema,
             preferencia_cor,
             preferencia_tamanho_fonte,
@@ -113,6 +135,7 @@ try {
         "departamento" => (string) ($perfil["departamento"] ?? ""),
         "empresa" => (string) ($perfil["empresa"] ?? ""),
         "status" => (string) ($perfil["status"] ?? ($usuarioSessao["status"] ?? "")),
+        "foto_cracha" => (string) ($perfil["foto_cracha"] ?? ""),
         "preferencia_tema" => $preferencias["theme"],
         "preferencia_cor" => $preferencias["accent"],
         "preferencia_tamanho_fonte" => $preferencias["fontSize"],
@@ -134,6 +157,8 @@ try {
             "departamento" => (string) ($usuarioAtualizado["departamento"] ?? ""),
             "empresa" => (string) ($usuarioAtualizado["empresa"] ?? ""),
             "status" => (string) ($usuarioAtualizado["status"] ?? ""),
+            "foto_cracha" => (string) ($usuarioAtualizado["foto_cracha"] ?? ""),
+            "foto_cracha_url" => urlFotoCrachaSessao((string) ($usuarioAtualizado["foto_cracha"] ?? "")),
             "iniciais" => iniciaisUsuarioSessao($nome),
             "permissoes" => $permissoes,
             "is_admin" => usuarioGrupoAcessoAdmin($usuarioAtualizado),

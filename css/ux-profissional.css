@@ -478,10 +478,22 @@ body.ux-enhanced .form-message.success {
   color: #bbf7d0;
 }
 
+body.ux-enhanced.theme-light .form-message.success {
+  border-color: rgba(22, 163, 74, 0.34);
+  background: rgba(22, 163, 74, 0.12);
+  color: #075b52;
+}
+
 body.ux-enhanced .form-message.error {
   border-color: rgba(239, 68, 68, 0.32);
   background: rgba(239, 68, 68, 0.12);
   color: #fecaca;
+}
+
+body.ux-enhanced.theme-light .form-message.error {
+  border-color: rgba(185, 28, 28, 0.34);
+  background: rgba(185, 28, 28, 0.1);
+  color: #8a1616;
 }
 
 body.ux-enhanced .records-table th {
@@ -603,12 +615,28 @@ body.ux-enhanced .ux-toast-success {
   color: #bbf7d0;
 }
 
+body.ux-enhanced.theme-light .form-message.success,
+body.ux-enhanced.theme-light .success-status,
+body.ux-enhanced.theme-light .ux-toast-success {
+  border-color: rgba(22, 163, 74, 0.34);
+  background: rgba(22, 163, 74, 0.12);
+  color: #075b52;
+}
+
 body.ux-enhanced .form-message.error,
 body.ux-enhanced .error-status,
 body.ux-enhanced .ux-toast-error {
   border-color: rgba(239, 68, 68, 0.38);
   background: rgba(239, 68, 68, 0.13);
   color: #fecaca;
+}
+
+body.ux-enhanced.theme-light .form-message.error,
+body.ux-enhanced.theme-light .error-status,
+body.ux-enhanced.theme-light .ux-toast-error {
+  border-color: rgba(185, 28, 28, 0.34);
+  background: rgba(185, 28, 28, 0.1);
+  color: #8a1616;
 }
 
 body.ux-enhanced #activeBrandsMetric,

@@ -35,6 +35,23 @@ $componentSidebarInitials = static function (string $name): string {
   return $initials !== "" ? $initials : "TT";
 };
 
+// A foto do cracha fica no disco; no banco e na sessao guardamos apenas o nome do arquivo.
+$componentSidebarBadgePhotoUrl = static function (mixed $fileName): string {
+  $fileName = trim((string) $fileName);
+
+  if ($fileName === "" || !preg_match('/^cracha-[A-Za-z0-9_-]+-[a-f0-9]{16}\.(jpg|png|webp)$/', $fileName)) {
+    return "";
+  }
+
+  $filePath = dirname(__DIR__) . DIRECTORY_SEPARATOR . "uploads" . DIRECTORY_SEPARATOR . "crachas" . DIRECTORY_SEPARATOR . $fileName;
+
+  if (!is_file($filePath)) {
+    return "";
+  }
+
+  return "../uploads/crachas/" . rawurlencode($fileName);
+};
+
 // Verifica permissoes combinando a regra de admin com as permissoes dos grupos.
 // Isso permite que usuarios nao administradores vejam apenas os menus liberados.
 $componentSidebarHasPermission = static function (string $permission) use ($componentSidebarUsuario): bool {
@@ -105,6 +122,8 @@ $componentSidebarRoleClass = $componentSidebarEscape($componentSidebarIsAdminRol
 $componentSidebarEmail = $componentSidebarEscape((string) ($componentSidebarUsuario["email"] ?? ""));
 $componentSidebarDepartment = $componentSidebarEscape((string) ($componentSidebarUsuario["departamento"] ?? "Sem departamento"));
 $componentSidebarAvatar = $componentSidebarEscape($componentSidebarInitials($componentSidebarNameText));
+$componentSidebarBadgePhoto = $componentSidebarBadgePhotoUrl($componentSidebarUsuario["foto_cracha"] ?? "");
+$componentSidebarBadgePhotoEscaped = $componentSidebarEscape($componentSidebarBadgePhoto);
 
 // Normaliza preferencias visuais antes de envia-las ao JavaScript global.
 $componentSidebarPreferenceChoice = static function (mixed $value, array $allowed, string $fallback): string {
@@ -356,7 +375,13 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
   <!-- Rodape fixo com resumo do usuario e acao de logout. -->
   <div class="sidebar-footer">
     <div class="sidebar-summary user-summary-card">
-      <div class="sidebar-avatar" aria-hidden="true"><?php echo $componentSidebarAvatar; ?></div>
+      <div class="sidebar-avatar<?php echo $componentSidebarBadgePhoto !== "" ? " has-photo" : ""; ?>" aria-hidden="true">
+        <?php if ($componentSidebarBadgePhoto !== ""): ?>
+          <img src="<?php echo $componentSidebarBadgePhotoEscaped; ?>" alt="" />
+        <?php else: ?>
+          <?php echo $componentSidebarAvatar; ?>
+        <?php endif; ?>
+      </div>
       <div class="sidebar-user-info">
         <strong title="<?php echo $componentSidebarName; ?>"><?php echo $componentSidebarName; ?></strong>
         <span

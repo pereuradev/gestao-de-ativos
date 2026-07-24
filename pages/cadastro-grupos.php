@@ -123,7 +123,7 @@ try {
   <link rel="stylesheet" href="../css/cadastro-funcionarios.css?v=20260702-employee-hero-gradient" />
   <link rel="stylesheet" href="../css/cadastro-grupos.css?v=20260707-permission-icons" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260701-admin-employee-register-v2" />
-  <link rel="stylesheet" href="../css/ux-profissional.css?v=20260706-record-counts" />
+  <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
   <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
   <!-- Scripts da interface; os módulos compartilhados devem carregar antes do script da página. -->
   <script src="../js/animations/efeito-digitacao.js?v=20260701-admin-employee-register-v2" defer></script>

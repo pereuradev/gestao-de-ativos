@@ -6,6 +6,8 @@ document.addEventListener("DOMContentLoaded", initSettingsPage);
 const SETTINGS_PREFIX = "titech-settings:";
 const PREFERENCE_MESSAGE_TIMEOUT_MS = 2400;
 const TOAST_TIMEOUT_MS = 3200;
+const BADGE_PHOTO_MAX_BYTES = 2 * 1024 * 1024;
+const BADGE_PHOTO_ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const DEFAULT_INTERFACE_PREFERENCES = {
   theme: "dark",
   accent: "teal",
@@ -24,6 +26,7 @@ function initSettingsPage() {
   setupThemeToggle();
   setupSidebar();
   setupNavGroups();
+  setupBadgePhotoUpload();
   setupPreferenceControls();
   setupLocalSettings();
   setupPasswordValidation();
@@ -31,7 +34,150 @@ function initSettingsPage() {
   setupDiagnostics();
 }
 
-// Preferências visuais são aplicadas imediatamente e persistidas somente no navegador.
+// O JavaScript melhora a experiencia com preview e mensagens, mas a validacao real fica no PHP.
+function setupBadgePhotoUpload() {
+  const form = document.getElementById("badgePhotoForm");
+  const input = document.getElementById("badgePhotoInput");
+  const button = document.getElementById("saveBadgePhotoButton");
+
+  if (!form || !input) {
+    return;
+  }
+
+  input.addEventListener("change", () => {
+    const file = input.files?.[0] || null;
+    const error = validateBadgePhotoFile(file);
+
+    setBadgePhotoMessage(error, error ? "error" : "");
+
+    if (button) {
+      button.disabled = Boolean(error) || !file;
+    }
+
+    if (!error && file) {
+      previewBadgePhoto(URL.createObjectURL(file), true);
+    }
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const file = input.files?.[0] || null;
+    const error = validateBadgePhotoFile(file);
+
+    if (error) {
+      setBadgePhotoMessage(error, "error");
+      return;
+    }
+
+    setButtonLoading(button, true, "Salvando...");
+
+    try {
+      const response = await fetch(form.action, {
+        method: "POST",
+        credentials: "same-origin",
+        body: new FormData(form),
+      });
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.ok) {
+        throw new Error(result?.message || "Nao foi possivel salvar a foto.");
+      }
+
+      const photoUrl = addCacheBuster(result.foto_cracha_url || "");
+
+      if (photoUrl) {
+        previewBadgePhoto(photoUrl, false);
+        updateSidebarBadgePhoto(photoUrl);
+      }
+
+      input.value = "";
+      setBadgePhotoMessage(result.message || "Foto do cracha atualizada.", "success");
+      showToast("Foto do cracha salva no perfil.");
+    } catch (error) {
+      setBadgePhotoMessage(error.message || "Nao foi possivel salvar a foto.", "error");
+    } finally {
+      setButtonLoading(button, false);
+
+      if (button) {
+        button.disabled = true;
+      }
+    }
+  });
+}
+
+function validateBadgePhotoFile(file) {
+  if (!file) {
+    return "Selecione uma imagem para o cracha.";
+  }
+
+  if (!BADGE_PHOTO_ALLOWED_TYPES.includes(file.type)) {
+    return "Use uma imagem JPG, PNG ou WebP.";
+  }
+
+  if (file.size > BADGE_PHOTO_MAX_BYTES) {
+    return "Envie uma imagem de ate 2 MB.";
+  }
+
+  return "";
+}
+
+function previewBadgePhoto(url, revokeAfterLoad) {
+  const avatar = document.querySelector("[data-badge-photo-preview]");
+
+  if (!avatar || !url) {
+    return;
+  }
+
+  avatar.classList.add("has-photo");
+  avatar.removeAttribute("aria-hidden");
+  avatar.textContent = "";
+
+  const image = document.createElement("img");
+  image.src = url;
+  image.alt = "Foto do cracha";
+
+  if (revokeAfterLoad) {
+    image.addEventListener("load", () => URL.revokeObjectURL(url), { once: true });
+  }
+
+  avatar.appendChild(image);
+}
+
+function updateSidebarBadgePhoto(url) {
+  document.querySelectorAll(".sidebar-avatar").forEach((avatar) => {
+    avatar.classList.add("has-photo");
+    avatar.textContent = "";
+
+    const image = document.createElement("img");
+    image.src = url;
+    image.alt = "";
+    avatar.appendChild(image);
+  });
+}
+
+function setBadgePhotoMessage(message, type) {
+  const element = document.getElementById("badgePhotoMessage");
+
+  if (!element) {
+    return;
+  }
+
+  element.textContent = message;
+  element.classList.toggle("show", Boolean(message));
+  element.classList.toggle("success", type === "success");
+  element.classList.toggle("error", type === "error");
+}
+
+function addCacheBuster(url) {
+  if (!url) {
+    return "";
+  }
+
+  return `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
+}
+
+// Preferencias visuais sao aplicadas imediatamente e persistidas no perfil do usuario.
 function setupPreferenceControls() {
   syncPreferenceForm();
 

@@ -326,8 +326,8 @@ function updateSidebarProfile(usuario) {
   const nameElement = summary.querySelector("strong");
   const smalls = summary.querySelectorAll("small");
 
-  if (avatar && usuario.iniciais) {
-    avatar.textContent = usuario.iniciais;
+  if (avatar) {
+    updateSidebarAvatar(avatar, usuario.foto_cracha_url || "", usuario.iniciais || "");
   }
 
   if (nameElement) {
@@ -343,6 +343,24 @@ function updateSidebarProfile(usuario) {
   if (smalls[1]) {
     smalls[1].textContent = department;
     smalls[1].title = department;
+  }
+}
+
+function updateSidebarAvatar(avatar, photoUrl, initials) {
+  avatar.classList.toggle("has-photo", Boolean(photoUrl));
+
+  if (photoUrl) {
+    avatar.textContent = "";
+
+    const image = document.createElement("img");
+    image.src = photoUrl;
+    image.alt = "";
+    avatar.appendChild(image);
+    return;
+  }
+
+  if (initials) {
+    avatar.textContent = initials;
   }
 }
 
