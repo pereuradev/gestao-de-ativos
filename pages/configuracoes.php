@@ -299,7 +299,7 @@ $resumoPermissoes = $usuarioEhAdmin
   <link rel="stylesheet" href="../css/pagina-base.css?v=20260720-sidebar-role-accent" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
-  <link rel="stylesheet" href="../css/configuracoes.css?v=20260724-accent-palette" />
+  <link rel="stylesheet" href="../css/configuracoes.css?v=20260724-accent-wheel" />
 
 
   <!-- Scripts carregados com defer para não bloquear a montagem do HTML. -->
@@ -309,8 +309,8 @@ $resumoPermissoes = $usuarioEhAdmin
   <script src="../js/core/armazenamento-local.js?v=20260721-js-structure" defer></script>
   <script src="../js/animations/entrada-pagina.js?v=20260721-js-structure" defer></script>
   <script src="../js/ui/menu-lateral.js?v=20260721-js-structure" defer></script>
-  <script src="../js/base-interface.js?v=20260721-js-structure" defer></script>
-  <script src="../js/pages/configuracoes.js?v=20260630-system-cursor" defer></script>
+  <script src="../js/base-interface.js?v=20260724-custom-accent" defer></script>
+  <script src="../js/pages/configuracoes.js?v=20260724-accent-wheel" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="../js/ui/widgets-react.js?v=20260626-react-responsive" defer></script>
@@ -509,42 +509,46 @@ $resumoPermissoes = $usuarioEhAdmin
           </div>
 
           <form class="preferences-form" id="preferencesForm">
-            <!-- Cores de destaque da interface. O JS  o radio selecionado e aplica a classe/variavel correspondente. -->
+            <!-- Cores de destaque da interface. O JS converte a posicao no circulo em uma cor hexadecimal. -->
             <fieldset class="preference-group">
               <legend>Prefer&ecirc;ncia de cor</legend>
-              <div class="accent-options" role="radiogroup" aria-label="Prefer&ecirc;ncia de cor">
-                <label class="accent-option accent-teal">
-                  <input type="radio" name="accent" value="teal" />
-                  <span class="accent-palette" aria-hidden="true">
-                    <span></span><span></span><span></span><span></span>
-                  </span>
-                  <strong>TI TECH</strong>
-                  <small>Ciano, menta e oceano</small>
-                </label>
-                <label class="accent-option accent-green">
-                  <input type="radio" name="accent" value="green" />
-                  <span class="accent-palette" aria-hidden="true">
-                    <span></span><span></span><span></span><span></span>
-                  </span>
-                  <strong>Verde positivo</strong>
-                  <small>Energia, status e sucesso</small>
-                </label>
-                <label class="accent-option accent-blue">
-                  <input type="radio" name="accent" value="blue" />
-                  <span class="accent-palette" aria-hidden="true">
-                    <span></span><span></span><span></span><span></span>
-                  </span>
-                  <strong>Azul tecnologia</strong>
-                  <small>Foco, dados e suporte</small>
-                </label>
-                <label class="accent-option accent-violet">
-                  <input type="radio" name="accent" value="violet" />
-                  <span class="accent-palette" aria-hidden="true">
-                    <span></span><span></span><span></span><span></span>
-                  </span>
-                  <strong>Violeta</strong>
-                  <small>Contraste, premium e destaque</small>
-                </label>
+              <div class="accent-wheel-control" data-accent-wheel-control>
+                <button class="accent-color-wheel" id="accentColorWheel" type="button"
+                  aria-label="Escolher cor de destaque">
+                  <span class="accent-wheel-thumb" id="accentWheelThumb" aria-hidden="true"></span>
+                </button>
+
+                <div class="accent-color-panel">
+                  <div class="accent-current-card">
+                    <span class="accent-current-swatch" id="accentCurrentSwatch" aria-hidden="true"></span>
+                    <div>
+                      <span>Cor atual</span>
+                      <strong id="accentCurrentLabel">#66D5C2</strong>
+                    </div>
+                  </div>
+
+                  <label class="accent-hex-field">
+                    <span>HEX</span>
+                    <input id="accentColorValue" type="text" value="#66D5C2" maxlength="7" spellcheck="false"
+                      inputmode="text" />
+                  </label>
+
+                  <input class="accent-native-color" id="accentNativeColor" type="color" value="#66d5c2"
+                    aria-label="Selecionar cor pelo controle do navegador" />
+
+                  <div class="accent-preset-strip" aria-label="Cores rapidas">
+                    <button type="button" style="--preset-color: #66d5c2" data-accent-preset="#66d5c2"
+                      aria-label="Usar ciano TI TECH"></button>
+                    <button type="button" style="--preset-color: #22c55e" data-accent-preset="#22c55e"
+                      aria-label="Usar verde"></button>
+                    <button type="button" style="--preset-color: #38bdf8" data-accent-preset="#38bdf8"
+                      aria-label="Usar azul"></button>
+                    <button type="button" style="--preset-color: #a78bfa" data-accent-preset="#a78bfa"
+                      aria-label="Usar violeta"></button>
+                    <button type="button" style="--preset-color: #ff2d75" data-accent-preset="#ff2d75"
+                      aria-label="Usar magenta"></button>
+                  </div>
+                </div>
               </div>
             </fieldset>
 

@@ -51,12 +51,27 @@ function preferenciaUsuario(array $perfil, string $campo, array $permitidos, str
     return in_array($valor, $permitidos, true) ? $valor : $padrao;
 }
 
+function corPreferenciaUsuario(array $perfil): string
+{
+    $valor = trim((string)($perfil["preferencia_cor"] ?? ""));
+
+    if (in_array($valor, ["teal", "green", "blue", "violet"], true)) {
+        return $valor;
+    }
+
+    if (preg_match('/^#[0-9A-Fa-f]{6}$/', $valor)) {
+        return strtolower($valor);
+    }
+
+    return "teal";
+}
+
 function preferenciasUsuario(array $perfil): array
 {
     // Estes nomes sao os mesmos usados pelo JavaScript para aplicar a interface.
     return [
         "theme" => preferenciaUsuario($perfil, "preferencia_tema", ["dark", "light", "auto"], "dark"),
-        "accent" => preferenciaUsuario($perfil, "preferencia_cor", ["teal", "green", "blue", "violet"], "teal"),
+        "accent" => corPreferenciaUsuario($perfil),
         "fontSize" => preferenciaUsuario($perfil, "preferencia_tamanho_fonte", ["small", "default", "large", "extra"], "default"),
         "density" => preferenciaUsuario($perfil, "preferencia_densidade", ["comfortable", "compact"], "comfortable"),
         "motion" => preferenciaUsuario($perfil, "preferencia_movimento", ["normal", "reduced"], "normal"),

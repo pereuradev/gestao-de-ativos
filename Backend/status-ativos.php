@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 // Centraliza os status aceitos para ativos. A estrutura da tabela e os dados
-// base agora sao aplicados por migrations em supabase/migrations.
+// A estrutura base deve estar provisionada no banco antes de iniciar a aplicacao.
 function garantirStatusAtivos(PDO $pdo): void
 {
     // Mantida para compatibilidade com chamadas antigas; nao executa DDL.

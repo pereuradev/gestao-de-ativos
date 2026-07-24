@@ -47,11 +47,26 @@ function preferenciaUsuarioSessao(array $perfil, string $campo, array $permitido
     return in_array($valor, $permitidos, true) ? $valor : $padrao;
 }
 
+function corPreferenciaUsuarioSessao(array $perfil): string
+{
+    $valor = trim((string) ($perfil["preferencia_cor"] ?? ""));
+
+    if (in_array($valor, ["teal", "green", "blue", "violet"], true)) {
+        return $valor;
+    }
+
+    if (preg_match('/^#[0-9A-Fa-f]{6}$/', $valor)) {
+        return strtolower($valor);
+    }
+
+    return "teal";
+}
+
 function preferenciasUsuarioSessao(array $perfil): array
 {
     return [
         "theme" => preferenciaUsuarioSessao($perfil, "preferencia_tema", ["dark", "light", "auto"], "dark"),
-        "accent" => preferenciaUsuarioSessao($perfil, "preferencia_cor", ["teal", "green", "blue", "violet"], "teal"),
+        "accent" => corPreferenciaUsuarioSessao($perfil),
         "fontSize" => preferenciaUsuarioSessao($perfil, "preferencia_tamanho_fonte", ["small", "default", "large", "extra"], "default"),
         "density" => preferenciaUsuarioSessao($perfil, "preferencia_densidade", ["comfortable", "compact"], "comfortable"),
         "motion" => preferenciaUsuarioSessao($perfil, "preferencia_movimento", ["normal", "reduced"], "normal"),

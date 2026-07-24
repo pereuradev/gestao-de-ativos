@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 function garantirTabelasGruposAcesso(PDO $pdo): void
 {
-    // Estrutura criada por migrations. Mantido para compatibilidade.
+    // A estrutura deve existir previamente no banco. Mantido para compatibilidade.
 }
 
 function permissoesGruposAcesso(): array

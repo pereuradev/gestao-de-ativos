@@ -8,6 +8,13 @@ const PREFERENCE_MESSAGE_TIMEOUT_MS = 2400;
 const TOAST_TIMEOUT_MS = 3200;
 const BADGE_PHOTO_MAX_BYTES = 2 * 1024 * 1024;
 const BADGE_PHOTO_ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ACCENT_PRESET_COLORS = {
+  teal: "#66d5c2",
+  green: "#22c55e",
+  blue: "#38bdf8",
+  violet: "#a78bfa",
+};
+const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 const DEFAULT_INTERFACE_PREFERENCES = {
   theme: "dark",
   accent: "teal",
@@ -186,18 +193,7 @@ function setupPreferenceControls() {
   });
 
   window.addEventListener("titech:theme-change", syncPreferenceForm);
-
-  document.querySelectorAll('input[name="accent"]').forEach((input) => {
-    input.addEventListener("change", () => {
-      if (!input.checked) return;
-
-      void savePreferenceChange(
-        { accent: input.value },
-        "Preferencia de cor aplicada.",
-        "Preferencia visual salva para seu usuario.",
-      );
-    });
-  });
+  setupAccentWheelControl();
 
   document.querySelectorAll('input[name="theme"]').forEach((input) => {
     input.addEventListener("change", () => {
@@ -263,6 +259,264 @@ function setupPreferenceControls() {
       void resetPreferences();
     }
   });
+}
+
+function setupAccentWheelControl() {
+  const wheel = document.getElementById("accentColorWheel");
+  const colorInput = document.getElementById("accentColorValue");
+  const nativeInput = document.getElementById("accentNativeColor");
+  const presetButtons = document.querySelectorAll("[data-accent-preset]");
+
+  if (!wheel || !colorInput) {
+    return;
+  }
+
+  let isDragging = false;
+
+  const previewColor = (value) => {
+    const color = normalizeAccentColor(value);
+
+    if (!color) {
+      return "";
+    }
+
+    const preferences = applyPreferenceState({
+      ...getPreferenceState(),
+      accent: color,
+    });
+
+    syncAccentColorControls(preferences.accent);
+    updateSecurityScore();
+
+    return color;
+  };
+
+  const saveColor = (value) => {
+    const color = normalizeAccentColor(value);
+
+    if (!color) {
+      syncAccentColorControls(getPreferenceState().accent);
+      return;
+    }
+
+    void savePreferenceChange(
+      { accent: color },
+      "Cor aplicada.",
+      "Cor salva para seu usuario.",
+    );
+  };
+
+  const updateFromPointer = (event, shouldSave) => {
+    const color = colorFromWheelPointer(wheel, event);
+
+    previewColor(color);
+
+    if (shouldSave) {
+      saveColor(color);
+    }
+  };
+
+  wheel.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    isDragging = true;
+    wheel.setPointerCapture?.(event.pointerId);
+    updateFromPointer(event, false);
+  });
+
+  wheel.addEventListener("pointermove", (event) => {
+    if (!isDragging) {
+      return;
+    }
+
+    updateFromPointer(event, false);
+  });
+
+  const finishPointerChoice = (event) => {
+    if (!isDragging) {
+      return;
+    }
+
+    isDragging = false;
+    wheel.releasePointerCapture?.(event.pointerId);
+    updateFromPointer(event, true);
+  };
+
+  wheel.addEventListener("pointerup", finishPointerChoice);
+  wheel.addEventListener("pointercancel", finishPointerChoice);
+
+  wheel.addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const hsv = hexToHsv(accentToHex(getPreferenceState().accent));
+    let nextHue = hsv.h;
+    let nextSaturation = hsv.s;
+
+    if (event.key === "ArrowLeft") nextHue -= 6;
+    if (event.key === "ArrowRight") nextHue += 6;
+    if (event.key === "ArrowUp") nextSaturation += 0.05;
+    if (event.key === "ArrowDown") nextSaturation -= 0.05;
+    if (event.key === "Home") nextSaturation = 0;
+    if (event.key === "End") nextSaturation = 1;
+
+    saveColor(hsvToHex((nextHue + 360) % 360, clampNumber(nextSaturation, 0, 1), 1));
+  });
+
+  colorInput.addEventListener("input", () => {
+    const color = normalizeAccentColor(colorInput.value);
+
+    colorInput.classList.toggle("invalid", !color && colorInput.value.trim() !== "");
+
+    if (color) {
+      previewColor(color);
+    }
+  });
+
+  colorInput.addEventListener("change", () => saveColor(colorInput.value));
+
+  nativeInput?.addEventListener("input", () => previewColor(nativeInput.value));
+  nativeInput?.addEventListener("change", () => saveColor(nativeInput.value));
+
+  presetButtons.forEach((button) => {
+    button.addEventListener("click", () => saveColor(button.dataset.accentPreset || ""));
+  });
+}
+
+function syncAccentColorControls(accent) {
+  const color = accentToHex(accent);
+  const colorInput = document.getElementById("accentColorValue");
+  const nativeInput = document.getElementById("accentNativeColor");
+  const label = document.getElementById("accentCurrentLabel");
+  const swatch = document.getElementById("accentCurrentSwatch");
+  const thumb = document.getElementById("accentWheelThumb");
+
+  if (colorInput) {
+    colorInput.value = color.toUpperCase();
+    colorInput.classList.remove("invalid");
+  }
+
+  if (nativeInput) {
+    nativeInput.value = color;
+  }
+
+  if (label) {
+    label.textContent = color.toUpperCase();
+  }
+
+  if (swatch) {
+    swatch.style.backgroundColor = color;
+  }
+
+  if (thumb) {
+    const hsv = hexToHsv(color);
+    const angle = (hsv.h * Math.PI) / 180;
+    const distance = hsv.s * 50;
+
+    thumb.style.left = `${50 + Math.cos(angle) * distance}%`;
+    thumb.style.top = `${50 + Math.sin(angle) * distance}%`;
+    thumb.style.backgroundColor = color;
+  }
+}
+
+function colorFromWheelPointer(wheel, event) {
+  const rect = wheel.getBoundingClientRect();
+  const radius = Math.min(rect.width, rect.height) / 2;
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  const deltaX = event.clientX - centerX;
+  const deltaY = event.clientY - centerY;
+  const distance = Math.min(Math.hypot(deltaX, deltaY), radius);
+  const saturation = radius > 0 ? distance / radius : 0;
+  const hue = (Math.atan2(deltaY, deltaX) * 180) / Math.PI;
+
+  return hsvToHex((hue + 360) % 360, saturation, 1);
+}
+
+function normalizeAccentColor(value) {
+  const color = String(value ?? "").trim();
+
+  if (Object.hasOwn(ACCENT_PRESET_COLORS, color)) {
+    return ACCENT_PRESET_COLORS[color];
+  }
+
+  return HEX_COLOR_PATTERN.test(color) ? color.toLowerCase() : "";
+}
+
+function accentToHex(value) {
+  return normalizeAccentColor(value) || ACCENT_PRESET_COLORS.teal;
+}
+
+function hexToRgb(hex) {
+  const normalized = accentToHex(hex).replace("#", "");
+
+  return {
+    r: parseInt(normalized.slice(0, 2), 16),
+    g: parseInt(normalized.slice(2, 4), 16),
+    b: parseInt(normalized.slice(4, 6), 16),
+  };
+}
+
+function rgbToHex({ r, g, b }) {
+  return `#${[r, g, b]
+    .map((channel) => Math.round(clampNumber(channel, 0, 255)).toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+function hexToHsv(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  const red = r / 255;
+  const green = g / 255;
+  const blue = b / 255;
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const delta = max - min;
+  let hue = 0;
+
+  if (delta !== 0) {
+    if (max === red) {
+      hue = 60 * (((green - blue) / delta) % 6);
+    } else if (max === green) {
+      hue = 60 * ((blue - red) / delta + 2);
+    } else {
+      hue = 60 * ((red - green) / delta + 4);
+    }
+  }
+
+  return {
+    h: (hue + 360) % 360,
+    s: max === 0 ? 0 : delta / max,
+    v: max,
+  };
+}
+
+function hsvToHex(hue, saturation, value) {
+  const chroma = value * saturation;
+  const segment = hue / 60;
+  const x = chroma * (1 - Math.abs((segment % 2) - 1));
+  const match = value - chroma;
+  let red = 0;
+  let green = 0;
+  let blue = 0;
+
+  if (segment >= 0 && segment < 1) [red, green, blue] = [chroma, x, 0];
+  else if (segment >= 1 && segment < 2) [red, green, blue] = [x, chroma, 0];
+  else if (segment >= 2 && segment < 3) [red, green, blue] = [0, chroma, x];
+  else if (segment >= 3 && segment < 4) [red, green, blue] = [0, x, chroma];
+  else if (segment >= 4 && segment < 5) [red, green, blue] = [x, 0, chroma];
+  else [red, green, blue] = [chroma, 0, x];
+
+  return rgbToHex({
+    r: (red + match) * 255,
+    g: (green + match) * 255,
+    b: (blue + match) * 255,
+  });
+}
+
+function clampNumber(value, min, max) {
+  return Math.min(max, Math.max(min, value));
 }
 
 function getPreferenceState() {
@@ -477,7 +731,7 @@ function setupDiagnostics() {
 function syncPreferenceForm() {
   const preferences = getPreferenceState();
 
-  setCheckedValue("accent", preferences.accent);
+  syncAccentColorControls(preferences.accent);
   setCheckedValue("theme", preferences.theme);
   setCheckedValue("fontSize", preferences.fontSize);
 

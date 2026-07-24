@@ -38,9 +38,32 @@ function payloadPreferenciasUsuario(): array
 
 function escolhaPreferenciaUsuario(mixed $value, array $permitidos, string $padrao): string
 {
+    if (is_array($value) || is_object($value)) {
+        return $padrao;
+    }
+
     $valor = trim((string) $value);
 
     return in_array($valor, $permitidos, true) ? $valor : $padrao;
+}
+
+function corPreferenciaUsuario(mixed $value, string $padrao = "teal"): string
+{
+    if (is_array($value) || is_object($value)) {
+        return $padrao;
+    }
+
+    $valor = trim((string) $value);
+
+    if (in_array($valor, ["teal", "green", "blue", "violet"], true)) {
+        return $valor;
+    }
+
+    if (preg_match('/^#[0-9A-Fa-f]{6}$/', $valor)) {
+        return strtolower($valor);
+    }
+
+    return $padrao;
 }
 
 function preferenciasAtuaisSessao(array $usuario): array
@@ -61,7 +84,7 @@ function normalizarPreferenciasUsuario(array $payload, array $usuario): array
 
     return [
         "theme" => escolhaPreferenciaUsuario($source["theme"] ?? null, ["dark", "light", "auto"], "dark"),
-        "accent" => escolhaPreferenciaUsuario($source["accent"] ?? null, ["teal", "green", "blue", "violet"], "teal"),
+        "accent" => corPreferenciaUsuario($source["accent"] ?? null),
         "fontSize" => escolhaPreferenciaUsuario($source["fontSize"] ?? null, ["small", "default", "large", "extra"], "default"),
         "density" => escolhaPreferenciaUsuario($source["density"] ?? null, ["comfortable", "compact"], "comfortable"),
         "motion" => escolhaPreferenciaUsuario($source["motion"] ?? null, ["normal", "reduced"], "normal"),
@@ -125,7 +148,7 @@ try {
 
     $preferencias = [
         "theme" => escolhaPreferenciaUsuario($perfil["preferencia_tema"] ?? null, ["dark", "light", "auto"], "dark"),
-        "accent" => escolhaPreferenciaUsuario($perfil["preferencia_cor"] ?? null, ["teal", "green", "blue", "violet"], "teal"),
+        "accent" => corPreferenciaUsuario($perfil["preferencia_cor"] ?? null),
         "fontSize" => escolhaPreferenciaUsuario($perfil["preferencia_tamanho_fonte"] ?? null, ["small", "default", "large", "extra"], "default"),
         "density" => escolhaPreferenciaUsuario($perfil["preferencia_densidade"] ?? null, ["comfortable", "compact"], "comfortable"),
         "motion" => escolhaPreferenciaUsuario($perfil["preferencia_movimento"] ?? null, ["normal", "reduced"], "normal"),

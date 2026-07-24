@@ -11,8 +11,4 @@ Options -Indexes
 
     RewriteRule (^|/)\. - [F,L]
 
-# A pasta do Supabase contém migrations e não precisa ser pública.
-
-    RewriteRule ^supabase(?:/|$) - [F,L,NC]
-
 </IfModule>

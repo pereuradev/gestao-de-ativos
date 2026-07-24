@@ -202,7 +202,7 @@ try {
   <script src="../js/core/armazenamento-local.js?v=20260721-js-structure" defer></script>
   <script src="../js/animations/entrada-pagina.js?v=20260721-js-structure" defer></script>
   <script src="../js/ui/menu-lateral.js?v=20260721-js-structure" defer></script>
-  <script src="../js/base-interface.js?v=20260721-js-structure" defer></script>
+  <script src="../js/base-interface.js?v=20260724-custom-accent" defer></script>
   <script src="../js/pages/edicao-grupos.js?v=20260707-group-status" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>

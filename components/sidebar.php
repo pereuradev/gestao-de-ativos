@@ -127,13 +127,34 @@ $componentSidebarBadgePhotoEscaped = $componentSidebarEscape($componentSidebarBa
 
 // Normaliza preferencias visuais antes de envia-las ao JavaScript global.
 $componentSidebarPreferenceChoice = static function (mixed $value, array $allowed, string $fallback): string {
+  if (is_array($value) || is_object($value)) {
+    return $fallback;
+  }
+
   $normalized = trim((string) $value);
 
   return in_array($normalized, $allowed, true) ? $normalized : $fallback;
 };
+$componentSidebarAccentPreference = static function (mixed $value): string {
+  if (is_array($value) || is_object($value)) {
+    return "teal";
+  }
+
+  $normalized = trim((string) $value);
+
+  if (in_array($normalized, ["teal", "green", "blue", "violet"], true)) {
+    return $normalized;
+  }
+
+  if (preg_match('/^#[0-9A-Fa-f]{6}$/', $normalized)) {
+    return strtolower($normalized);
+  }
+
+  return "teal";
+};
 $componentSidebarPreferences = [
   "theme" => $componentSidebarPreferenceChoice($componentSidebarUsuario["preferencia_tema"] ?? null, ["dark", "light", "auto"], "dark"),
-  "accent" => $componentSidebarPreferenceChoice($componentSidebarUsuario["preferencia_cor"] ?? null, ["teal", "green", "blue", "violet"], "teal"),
+  "accent" => $componentSidebarAccentPreference($componentSidebarUsuario["preferencia_cor"] ?? null),
   "fontSize" => $componentSidebarPreferenceChoice($componentSidebarUsuario["preferencia_tamanho_fonte"] ?? null, ["small", "default", "large", "extra"], "default"),
   "density" => $componentSidebarPreferenceChoice($componentSidebarUsuario["preferencia_densidade"] ?? null, ["comfortable", "compact"], "comfortable"),
   "motion" => $componentSidebarPreferenceChoice($componentSidebarUsuario["preferencia_movimento"] ?? null, ["normal", "reduced"], "normal"),

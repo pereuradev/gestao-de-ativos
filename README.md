@@ -290,32 +290,13 @@ Tabelas principais utilizadas:
 - `grupos_acesso_membros`
 - `grupos_acesso_permissoes`
 
-As rotas PHP nao executam DDL em runtime. Mudancas de estrutura devem ser feitas por migrations versionadas em:
+As rotas PHP nao executam DDL em runtime. Este repositorio nao distribui
+migrations nem a configuracao local da CLI do Supabase. O schema precisa estar
+previamente provisionado no projeto remoto antes de iniciar a aplicacao.
 
-```text
-supabase/migrations/
-```
-
-Baseline remoto e detalhes de validacao:
-
-```text
-supabase/README.md
-```
-
-Migration incremental de endurecimento:
-
-```text
-supabase/migrations/20260713120035_harden_schema_auth_rls_indexes.sql
-```
-
-Fluxo recomendado quando o Supabase CLI estiver instalado:
-
-```bash
-supabase migration list
-supabase db push
-```
-
-Para criar novas mudancas de schema, use `supabase migration new nome_da_mudanca` e versione o SQL gerado.
+Mudancas de estrutura devem ser aplicadas e documentadas pelo processo externo
+de administracao do banco, preservando constraints, indices, funcoes, grants e
+politicas RLS necessarias para o funcionamento do sistema.
 
 ---
 

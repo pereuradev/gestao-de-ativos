@@ -110,6 +110,7 @@ const ACCENT_THEMES = {
     accent: "#a78bfa",
   },
 };
+const CUSTOM_ACCENT_FALLBACK = ACCENT_THEMES.teal.accent;
 
 let themeTimer = null;
 let systemThemeListenerAttached = false;
@@ -167,11 +168,7 @@ function normalizeUserPreferences(preferences = {}) {
       ["dark", "light", "auto"],
       USER_PREFERENCE_DEFAULTS.theme,
     ),
-    accent: normalizeChoice(
-      source.accent ?? source.preferencia_cor,
-      Object.keys(ACCENT_THEMES),
-      USER_PREFERENCE_DEFAULTS.accent,
-    ),
+    accent: normalizeAccentPreference(source.accent ?? source.preferencia_cor),
     fontSize: normalizeChoice(
       source.fontSize ?? source.font_size ?? source.preferencia_tamanho_fonte,
       Object.keys(FONT_SIZE_OPTIONS),
@@ -193,6 +190,24 @@ function normalizeUserPreferences(preferences = {}) {
       USER_PREFERENCE_DEFAULTS.cursor,
     ),
   };
+}
+
+function normalizeAccentPreference(value) {
+  const accent = String(value ?? "").trim();
+
+  if (Object.hasOwn(ACCENT_THEMES, accent)) {
+    return accent;
+  }
+
+  if (isHexColor(accent)) {
+    return accent.toLowerCase();
+  }
+
+  return USER_PREFERENCE_DEFAULTS.accent;
+}
+
+function isHexColor(value) {
+  return /^#[0-9a-f]{6}$/i.test(String(value ?? "").trim());
 }
 
 function getServerUserPreferences() {
@@ -766,10 +781,10 @@ function loadInterfacePreferences() {
 
 function applyAccent(accent) {
   // Atualiza variaveis CSS globais para botoes, graficos e detalhes visuais.
-  const nextAccent = Object.hasOwn(ACCENT_THEMES, accent) ? accent : "teal";
-  const palette = ACCENT_THEMES[nextAccent];
+  const nextAccent = normalizeAccentPreference(accent);
+  const palette = getAccentPalette(nextAccent);
 
-  document.body.dataset.accent = nextAccent;
+  document.body.dataset.accent = isHexColor(nextAccent) ? "custom" : nextAccent;
   document.body.style.setProperty("--cyan", palette.cyan);
   document.body.style.setProperty("--teal", palette.teal);
   document.body.style.setProperty("--mint", palette.mint);
@@ -778,6 +793,47 @@ function applyAccent(accent) {
   window.dispatchEvent(new CustomEvent("titech:accent-change", {
     detail: { accent: nextAccent, palette },
   }));
+}
+
+function getAccentPalette(accent) {
+  if (Object.hasOwn(ACCENT_THEMES, accent)) {
+    return ACCENT_THEMES[accent];
+  }
+
+  const rgb = hexToRgb(isHexColor(accent) ? accent : CUSTOM_ACCENT_FALLBACK);
+
+  return {
+    cyan: rgbToHex(mixRgb(rgb, hexToRgb("#ffffff"), 0.28)),
+    teal: rgbToHex(mixRgb(rgb, hexToRgb("#03101d"), 0.22)),
+    mint: rgbToHex(mixRgb(rgb, hexToRgb("#ffffff"), 0.42)),
+    accent: rgbToHex(rgb),
+  };
+}
+
+function hexToRgb(hex) {
+  const normalized = String(hex).replace("#", "");
+
+  return {
+    r: parseInt(normalized.slice(0, 2), 16),
+    g: parseInt(normalized.slice(2, 4), 16),
+    b: parseInt(normalized.slice(4, 6), 16),
+  };
+}
+
+function mixRgb(base, target, targetWeight) {
+  const baseWeight = 1 - targetWeight;
+
+  return {
+    r: Math.round(base.r * baseWeight + target.r * targetWeight),
+    g: Math.round(base.g * baseWeight + target.g * targetWeight),
+    b: Math.round(base.b * baseWeight + target.b * targetWeight),
+  };
+}
+
+function rgbToHex(rgb) {
+  return `#${[rgb.r, rgb.g, rgb.b]
+    .map((channel) => Math.max(0, Math.min(255, channel)).toString(16).padStart(2, "0"))
+    .join("")}`;
 }
 
 function applyDensity(density) {
