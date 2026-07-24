@@ -17,18 +17,21 @@ function permissoesGruposAcesso(): array
         "visualizar_categorias" => "Visualizar categorias",
         "visualizar_locais" => "Visualizar localizacoes",
         "visualizar_marcas" => "Visualizar marcas",
+        "visualizar_propriedades" => "Visualizar propriedades",
         "cadastrar_grupos" => "Cadastrar grupos",
         "cadastrar_funcionarios" => "Cadastrar funcionarios",
         "cadastrar_ativos" => "Cadastrar ativos",
         "cadastrar_categorias" => "Cadastrar categorias",
         "cadastrar_locais" => "Cadastrar localizacoes",
         "cadastrar_marcas" => "Cadastrar marcas",
+        "cadastrar_propriedades" => "Cadastrar propriedades",
         "editar_grupos" => "Editar grupos",
         "editar_funcionarios" => "Editar funcionarios",
         "editar_ativos" => "Editar ativos",
         "editar_categorias" => "Editar categorias",
         "editar_locais" => "Editar localizacoes",
         "editar_marcas" => "Editar marcas",
+        "editar_propriedades" => "Editar propriedades",
     ];
 }
 
@@ -48,6 +51,7 @@ function permissoesGruposAcessoAgrupadas(): array
                 "visualizar_categorias" => "Categorias",
                 "visualizar_locais" => "Localizacoes",
                 "visualizar_marcas" => "Marcas",
+                "visualizar_propriedades" => "Propriedades",
             ],
         ],
         [
@@ -61,6 +65,7 @@ function permissoesGruposAcessoAgrupadas(): array
                 "cadastrar_categorias" => "Categorias",
                 "cadastrar_locais" => "Localizacoes",
                 "cadastrar_marcas" => "Marcas",
+                "cadastrar_propriedades" => "Propriedades",
             ],
         ],
         [
@@ -74,6 +79,7 @@ function permissoesGruposAcessoAgrupadas(): array
                 "editar_categorias" => "Categorias",
                 "editar_locais" => "Localizacoes",
                 "editar_marcas" => "Marcas",
+                "editar_propriedades" => "Propriedades",
             ],
         ],
     ];
