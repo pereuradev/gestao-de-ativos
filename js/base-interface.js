@@ -789,6 +789,8 @@ function applyAccent(accent) {
   document.body.style.setProperty("--teal", palette.teal);
   document.body.style.setProperty("--mint", palette.mint);
   document.body.style.setProperty("--accent", palette.accent);
+  document.body.style.setProperty("--accent-strong", getAccentStrongColor(palette.accent));
+  document.body.style.setProperty("--accent-contrast", getAccentContrastColor(palette.accent));
 
   window.dispatchEvent(new CustomEvent("titech:accent-change", {
     detail: { accent: nextAccent, palette },
@@ -808,6 +810,38 @@ function getAccentPalette(accent) {
     mint: rgbToHex(mixRgb(rgb, hexToRgb("#ffffff"), 0.42)),
     accent: rgbToHex(rgb),
   };
+}
+
+// Cores muito claras ou escuras precisam de apoio para continuarem legíveis nos dois temas.
+function getAccentStrongColor(accent) {
+  const rgb = hexToRgb(accent);
+  const luminance = getRelativeLuminance(rgb);
+
+  if (luminance > 0.62) {
+    return rgbToHex(mixRgb(rgb, hexToRgb("#0a253c"), 0.46));
+  }
+
+  if (luminance < 0.1) {
+    return rgbToHex(mixRgb(rgb, hexToRgb("#ffffff"), 0.35));
+  }
+
+  return rgbToHex(rgb);
+}
+
+  function getAccentContrastColor(accent) {
+    return getRelativeLuminance(hexToRgb(accent)) > 0.18 ? "#05291f" : "#ffffff";
+  }
+
+function getRelativeLuminance({ r, g, b }) {
+  const [red, green, blue] = [r, g, b].map((channel) => {
+    const normalized = channel / 255;
+
+    return normalized <= 0.04045
+      ? normalized / 12.92
+      : ((normalized + 0.055) / 1.055) ** 2.4;
+  });
+
+  return (0.2126 * red) + (0.7152 * green) + (0.0722 * blue);
 }
 
 function hexToRgb(hex) {

@@ -299,7 +299,7 @@ $resumoPermissoes = $usuarioEhAdmin
   <link rel="stylesheet" href="../css/pagina-base.css?v=20260720-sidebar-role-accent" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
-  <link rel="stylesheet" href="../css/configuracoes.css?v=20260724-accent-wheel" />
+  <link rel="stylesheet" href="../css/configuracoes.css?v=20260727-settings-simple" />
 
 
   <!-- Scripts carregados com defer para não bloquear a montagem do HTML. -->
@@ -310,7 +310,7 @@ $resumoPermissoes = $usuarioEhAdmin
   <script src="../js/animations/entrada-pagina.js?v=20260721-js-structure" defer></script>
   <script src="../js/ui/menu-lateral.js?v=20260721-js-structure" defer></script>
   <script src="../js/base-interface.js?v=20260724-custom-accent" defer></script>
-  <script src="../js/pages/configuracoes.js?v=20260724-accent-wheel" defer></script>
+  <script src="../js/pages/configuracoes.js?v=20260727-identificadores-portugues" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="../js/ui/widgets-react.js?v=20260626-react-responsive" defer></script>
@@ -349,17 +349,14 @@ $resumoPermissoes = $usuarioEhAdmin
       </header>
 
       <!-- Bloco de apresentação, da página, dando contexto ao usuário sobre o que ele pode configurar. -->
-      <section class="hero-panel settings-hero" aria-labelledby="settingsTitle">
-        <div class="hero-content">
+      <section class="settings-intro" aria-labelledby="settingsTitle">
+        <span class="settings-intro-icon" aria-hidden="true">
+          <i class="bi bi-sliders2"></i>
+        </span>
+        <div>
           <p class="section-tag">Central do usu&aacute;rio</p>
-          <h2 id="settingsTitle">
-            <span class="typewriter-heading" style="--typewriter-min: 34ch" data-typewriter-loop
-              data-typewriter-phrases="Conta, seguran&ccedil;a e experi&ecirc;ncia.|Seu ambiente, do seu jeito.|Prefer&ecirc;ncias com controle e clareza.">Conta,
-              seguran&ccedil;a e experi&ecirc;ncia.</span><span aria-hidden="true"></span>
-          </h2>
-          <p>
-            Personalize sua interface, revise dados da conta e ajuste a experi&ecirc;ncia do sistema.
-          </p>
+          <h2 id="settingsTitle">Sua conta e sua experi&ecirc;ncia em um s&oacute; lugar</h2>
+          <p>Revise seus dados, personalize a interface e mantenha o acesso protegido.</p>
         </div>
       </section>
 
@@ -371,6 +368,48 @@ $resumoPermissoes = $usuarioEhAdmin
       <?php endif; ?>
 
       <!-- Resumo rápido da conta antes das configurações detalhadas. -->
+      <div class="settings-layout">
+        <aside class="settings-navigation" aria-label="Se&ccedil;&otilde;es das configura&ccedil;&otilde;es">
+          <div class="settings-navigation-profile">
+            <?php if ($fotoCrachaUrl !== ""): ?>
+              <span class="settings-navigation-avatar has-photo">
+                <img src="<?php echo e($fotoCrachaUrl); ?>" alt="" />
+              </span>
+            <?php else: ?>
+              <span class="settings-navigation-avatar" aria-hidden="true"><?php echo $iniciais; ?></span>
+            <?php endif; ?>
+            <span>
+              <strong><?php echo $nomeUsuario; ?></strong>
+              <small><?php echo $emailUsuario; ?></small>
+            </span>
+          </div>
+
+          <nav class="settings-navigation-menu" aria-label="Navega&ccedil;&atilde;o da p&aacute;gina">
+            <a class="settings-navigation-link is-active" href="#conta" data-settings-nav aria-current="location">
+              <i class="bi bi-person-circle" aria-hidden="true"></i>
+              <span>Conta</span>
+            </a>
+            <a class="settings-navigation-link" href="#interface" data-settings-nav>
+              <i class="bi bi-palette2" aria-hidden="true"></i>
+              <span>Interface</span>
+            </a>
+            <a class="settings-navigation-link" href="#seguranca" data-settings-nav>
+              <i class="bi bi-shield-lock" aria-hidden="true"></i>
+              <span>Seguran&ccedil;a</span>
+            </a>
+            <a class="settings-navigation-link" href="#sistema" data-settings-nav>
+              <i class="bi bi-laptop" aria-hidden="true"></i>
+              <span>Sistema</span>
+            </a>
+          </nav>
+
+          <p class="settings-navigation-note">
+            <i class="bi bi-cloud-check" aria-hidden="true"></i>
+            Prefer&ecirc;ncias visuais s&atilde;o salvas automaticamente.
+          </p>
+        </aside>
+
+        <div class="settings-content">
       <section class="settings-overview" aria-label="Resumo das configura&ccedil;&otilde;es">
         <!-- Crachá digital com os principais dados do usuário logado. -->
         <article class="content-card digital-badge-card" id="conta">
@@ -459,18 +498,21 @@ $resumoPermissoes = $usuarioEhAdmin
             <div class="profile-field"><span>Atualizado em</span><strong><?php echo e($atualizadoEm); ?></strong></div>
           </div>
 
-          <div class="account-permissions-panel" aria-labelledby="accountPermissionsTitle">
-            <div class="account-permissions-head">
-              <div>
-                <p class="section-tag">Permiss&otilde;es</p>
-                <h4 id="accountPermissionsTitle">Acessos liberados</h4>
-                <span><?php echo e($resumoPermissoes); ?></span>
-              </div>
-              <strong><?php echo e((string) $totalPermissoesUsuario); ?></strong>
-            </div>
+          <details class="account-permissions-panel">
+            <summary class="account-permissions-summary">
+              <span>
+                <span class="section-tag">Permiss&otilde;es</span>
+                <strong>Acessos liberados</strong>
+                <small><?php echo e($resumoPermissoes); ?></small>
+              </span>
+              <span class="account-permissions-summary-meta">
+                <strong><?php echo e((string) $totalPermissoesUsuario); ?></strong>
+                <i class="bi bi-chevron-down" aria-hidden="true"></i>
+              </span>
+            </summary>
 
             <?php if ($permissoesVisiveis): ?>
-              <div class="account-permissions-grid">
+              <div class="account-permissions-grid" aria-label="Permiss&otilde;es liberadas">
                 <?php foreach ($permissoesVisiveis as $grupoPermissao): ?>
                   <section class="account-permission-group">
                     <span class="account-permission-title">
@@ -491,7 +533,7 @@ $resumoPermissoes = $usuarioEhAdmin
                 <span>Nenhuma permiss&atilde;o liberada para este usu&aacute;rio.</span>
               </div>
             <?php endif; ?>
-          </div>
+          </details>
         </article>
 
         <!-- Preferências visuais salvas pelo JavaScript, como tema, cor e densidade da interface. -->
@@ -514,7 +556,7 @@ $resumoPermissoes = $usuarioEhAdmin
               <legend>Prefer&ecirc;ncia de cor</legend>
               <div class="accent-wheel-control" data-accent-wheel-control>
                 <button class="accent-color-wheel" id="accentColorWheel" type="button"
-                  aria-label="Escolher cor de destaque">
+                  aria-label="Escolher cor de destaque pelo anel colorido">
                   <span class="accent-wheel-thumb" id="accentWheelThumb" aria-hidden="true"></span>
                 </button>
 
@@ -606,53 +648,144 @@ $resumoPermissoes = $usuarioEhAdmin
           <div class="form-message success" id="preferencesMessage" role="status"></div>
         </article>
 
-        <!-- área  de segurança. A validação visual da senha fica no JS; a troca real precisa ser feita no backend. -->
+        <!-- Área de segurança. O navegador orienta o usuário e o backend valida e atualiza a senha real. -->
         <article class="content-card security-card wide-card" id="seguranca" aria-labelledby="securityTitle">
-          <div class="card-header">
-            <div>
-              <p class="section-tag">Seguran&ccedil;a</p>
-              <h3 id="securityTitle">Prote&ccedil;&atilde;o da conta</h3>
+          <div class="card-header security-card-header">
+            <div class="security-title-group">
+              <span class="security-title-icon" aria-hidden="true"><i class="bi bi-shield-lock"></i></span>
+              <div>
+                <p class="section-tag">Seguran&ccedil;a da conta</p>
+                <h3 id="securityTitle">Alterar senha</h3>
+                <span class="card-subtitle">Confirme sua identidade e escolha uma senha exclusiva para o portal.</span>
+              </div>
             </div>
+            <span class="password-protection-badge">
+              <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+              Altera&ccedil;&atilde;o protegida
+            </span>
           </div>
 
-          <div class="security-layout">
-            <!-- Formulário de senha preparado para receber integração real depois. -->
-            <form class="password-form" id="passwordForm">
-              <label class="asset-field">
-                <span>Senha atual</span>
-                <span class="input-shell"><i class="bi bi-lock"></i><input id="currentPassword" type="password"
-                    autocomplete="current-password" /></span>
-              </label>
-              <label class="asset-field">
-                <span>Nova senha</span>
-                <span class="input-shell"><i class="bi bi-key"></i><input id="newPassword" type="password"
-                    autocomplete="new-password" /></span>
-              </label>
-              <label class="asset-field">
-                <span>Confirmar nova senha</span>
-                <span class="input-shell"><i class="bi bi-check2-circle"></i><input id="confirmPassword" type="password"
-                    autocomplete="new-password" /></span>
-              </label>
+          <div class="password-change-layout">
+            <!-- A confirmação da senha atual reduz o impacto de uma sessão aberta indevidamente. -->
+            <form class="password-form password-form-panel" id="passwordForm"
+              action="../Backend/atualizar-senha.php" method="post">
+              <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
 
-              <div class="password-strength" aria-live="polite">
-                <div class="strength-track"><span id="strengthBar"></span></div>
-                <strong id="strengthLabel">Digite uma nova senha</strong>
+              <div class="password-step-heading">
+                <span class="password-step-number" aria-hidden="true">1</span>
+                <div>
+                  <strong>Confirme sua identidade</strong>
+                  <small>Digite a senha que voc&ecirc; usa atualmente para entrar.</small>
+                </div>
               </div>
 
-              <ul class="password-rules" id="passwordRules">
-                <li data-rule="length">Pelo menos 8 caracteres</li>
-                <li data-rule="uppercase">Letra mai&uacute;scula</li>
-                <li data-rule="number">N&uacute;mero</li>
-                <li data-rule="special">Caractere especial</li>
-                <li data-rule="match">Confirma&ccedil;&atilde;o igual</li>
+              <div class="asset-field password-field">
+                <label for="currentPassword">Senha atual</label>
+                <span class="input-shell password-input-shell">
+                  <i class="bi bi-lock" aria-hidden="true"></i>
+                  <input id="currentPassword" name="senha_atual" type="password" autocomplete="current-password"
+                    maxlength="128" placeholder="Digite sua senha atual" required />
+                  <button class="password-visibility-toggle" type="button" data-password-toggle="currentPassword"
+                    aria-label="Mostrar senha atual" aria-pressed="false">
+                    <i class="bi bi-eye" aria-hidden="true"></i>
+                  </button>
+                </span>
+              </div>
+
+              <div class="password-section-divider" aria-hidden="true"></div>
+
+              <div class="password-step-heading">
+                <span class="password-step-number" aria-hidden="true">2</span>
+                <div>
+                  <strong>Crie sua nova senha</strong>
+                  <small>Os requisitos abaixo s&atilde;o atualizados enquanto voc&ecirc; digita.</small>
+                </div>
+              </div>
+
+              <div class="password-field-grid">
+                <div class="asset-field password-field">
+                  <label for="newPassword">Nova senha</label>
+                  <span class="input-shell password-input-shell">
+                    <i class="bi bi-key" aria-hidden="true"></i>
+                    <input id="newPassword" name="nova_senha" type="password" autocomplete="new-password" minlength="8"
+                      maxlength="128" placeholder="Crie uma senha forte" aria-describedby="passwordRules" required />
+                    <button class="password-visibility-toggle" type="button" data-password-toggle="newPassword"
+                      aria-label="Mostrar nova senha" aria-pressed="false">
+                      <i class="bi bi-eye" aria-hidden="true"></i>
+                    </button>
+                  </span>
+                </div>
+
+                <div class="asset-field password-field">
+                  <label for="confirmPassword">Confirmar nova senha</label>
+                  <span class="input-shell password-input-shell">
+                    <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                    <input id="confirmPassword" name="confirmacao_senha" type="password" autocomplete="new-password"
+                      minlength="8" maxlength="128" placeholder="Repita a nova senha" aria-describedby="passwordRules"
+                      required />
+                    <button class="password-visibility-toggle" type="button" data-password-toggle="confirmPassword"
+                      aria-label="Mostrar confirma&ccedil;&atilde;o da senha" aria-pressed="false">
+                      <i class="bi bi-eye" aria-hidden="true"></i>
+                    </button>
+                  </span>
+                </div>
+              </div>
+
+              <p class="password-caps-warning" id="passwordCapsLock" role="status" aria-live="polite" hidden>
+                <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                Caps Lock est&aacute; ativado.
+              </p>
+
+              <div class="password-strength-card" aria-live="polite">
+                <div class="password-strength-heading">
+                  <span>For&ccedil;a da senha</span>
+                  <strong id="strengthLabel">Digite uma nova senha</strong>
+                </div>
+                <div class="strength-track" aria-hidden="true"><span id="strengthBar"></span></div>
+              </div>
+
+              <ul class="password-rules" id="passwordRules" aria-label="Requisitos da nova senha">
+                <li data-rule="length"><i class="bi bi-circle" aria-hidden="true"></i>Pelo menos 8 caracteres</li>
+                <li data-rule="uppercase"><i class="bi bi-circle" aria-hidden="true"></i>Letra mai&uacute;scula</li>
+                <li data-rule="number"><i class="bi bi-circle" aria-hidden="true"></i>N&uacute;mero</li>
+                <li data-rule="special"><i class="bi bi-circle" aria-hidden="true"></i>Caractere especial</li>
+                <li data-rule="match"><i class="bi bi-circle" aria-hidden="true"></i>Confirma&ccedil;&atilde;o igual</li>
               </ul>
 
-              <button class="primary-button" id="updatePasswordButton" type="submit">
-                <i class="bi bi-shield-check"></i>
-                Atualizar senha
-              </button>
+              <div id="passwordMessage" class="form-message" role="status" aria-live="polite"></div>
+
+              <div class="password-form-actions">
+                <span class="password-session-note">
+                  <i class="bi bi-info-circle" aria-hidden="true"></i>
+                  A senha ser&aacute; atualizada no acesso principal e no perfil local.
+                </span>
+                <button class="primary-button password-submit-button" id="updatePasswordButton" type="submit">
+                  <i class="bi bi-shield-check" aria-hidden="true"></i>
+                  Salvar nova senha
+                </button>
+              </div>
             </form>
 
+            <aside class="password-guidance-panel" aria-labelledby="passwordGuidanceTitle">
+              <span class="password-guidance-icon" aria-hidden="true"><i class="bi bi-fingerprint"></i></span>
+              <p class="section-tag">Boas pr&aacute;ticas</p>
+              <h4 id="passwordGuidanceTitle">Uma senha mais dif&iacute;cil de adivinhar</h4>
+              <p>Prefira uma combina&ccedil;&atilde;o exclusiva e f&aacute;cil de guardar em um gerenciador de senhas.</p>
+
+              <ul class="password-tips-list">
+                <li><i class="bi bi-check2" aria-hidden="true"></i>N&atilde;o reutilize a senha do e-mail corporativo.</li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i>Evite nomes, datas e informa&ccedil;&otilde;es pessoais.</li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i>Use um gerenciador para criar e guardar senhas.</li>
+              </ul>
+
+              <div class="password-sync-note">
+                <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                <div>
+                  <strong>Sincroniza&ccedil;&atilde;o autom&aacute;tica</strong>
+                  <span>Depois de salvar, a nova senha passa a valer no pr&oacute;ximo acesso.</span>
+                </div>
+              </div>
+            </aside>
           </div>
         </article>
 
@@ -679,6 +812,9 @@ $resumoPermissoes = $usuarioEhAdmin
       </section>
 
       <!-- Toast usado para mensagens rápidas sem interromper a navegação. -->
+        </div>
+      </div>
+
       <div class="settings-toast" id="settingsToast" role="status" aria-live="polite"></div>
     </main>
   </div>

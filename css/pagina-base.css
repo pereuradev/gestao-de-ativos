@@ -9,6 +9,8 @@
   --teal: #4fc7b1;
   --mint: #66d5c2;
   --accent: #66d5c2;
+  --accent-strong: #4fc7b1;
+  --accent-contrast: #05291f;
   --danger: #e05d5d;
   --white: #ffffff;
   --radius: 18px;
@@ -760,12 +762,12 @@ body.sidebar-resizing .sidebar-resize-handle::before {
   max-width: 100%;
   padding: 4px 9px;
   border-radius: 999px;
-  color: #ffffff;
+  color: var(--accent-contrast, #ffffff);
   font-size: 0.64rem;
   font-weight: 900;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  border: 1px solid color-mix(in srgb, var(--accent, var(--teal)) 74%, #ffffff);
+  border: 1px solid var(--accent-strong, var(--accent, var(--teal)));
   background:
     linear-gradient(
       135deg,

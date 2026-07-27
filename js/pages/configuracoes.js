@@ -1,21 +1,25 @@
 // Gerencia preferencias do usuario, seguranca visual e diagnosticos da pagina de configuracoes.
 // O navegador fica como cache; a fonte principal das preferencias e o perfil salvo no servidor.
 
-document.addEventListener("DOMContentLoaded", initSettingsPage);
+document.addEventListener("DOMContentLoaded", inicializarPaginaConfiguracoes);
 
-const SETTINGS_PREFIX = "titech-settings:";
-const PREFERENCE_MESSAGE_TIMEOUT_MS = 2400;
-const TOAST_TIMEOUT_MS = 3200;
-const BADGE_PHOTO_MAX_BYTES = 2 * 1024 * 1024;
-const BADGE_PHOTO_ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const ACCENT_PRESET_COLORS = {
+const TEMPO_EXIBICAO_MENSAGEM_PREFERENCIA_MS = 2400;
+const TEMPO_EXIBICAO_NOTIFICACAO_MS = 3200;
+const TAMANHO_MAXIMO_FOTO_CRACHA_BYTES = 2 * 1024 * 1024;
+const TIPOS_PERMITIDOS_FOTO_CRACHA = ["image/jpeg", "image/png", "image/webp"];
+const DESLOCAMENTO_SECAO_CONFIGURACOES_PX = 160;
+const CORES_PREDEFINIDAS_DESTAQUE = {
   teal: "#66d5c2",
   green: "#22c55e",
   blue: "#38bdf8",
   violet: "#a78bfa",
 };
-const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
-const DEFAULT_INTERFACE_PREFERENCES = {
+const PADRAO_COR_HEXADECIMAL = /^#[0-9a-f]{6}$/i;
+// Gradientes conicos do CSS iniciam no topo; atan2 considera a direita como angulo zero.
+const DESLOCAMENTO_GRADIENTE_CONICO_GRAUS = 90;
+const PROPORCAO_RAIO_INTERNO_ANEL = 0.58;
+const DISTANCIA_BOLINHA_ANEL_PERCENTUAL = 41;
+const PREFERENCIAS_INTERFACE_PADRAO = {
   theme: "dark",
   accent: "teal",
   fontSize: "default",
@@ -24,225 +28,279 @@ const DEFAULT_INTERFACE_PREFERENCES = {
   cursor: "enhanced",
 };
 
-let preferenceMessageTimer = null;
-let toastTimer = null;
+let temporizadorMensagemPreferencia = null;
+let temporizadorNotificacao = null;
+let identificadorAnimacaoNavegacao = null;
 
-function initSettingsPage() {
+function inicializarPaginaConfiguracoes() {
   startPageAnimation();
   loadSavedTheme();
   setupThemeToggle();
   setupSidebar();
   setupNavGroups();
-  setupBadgePhotoUpload();
-  setupPreferenceControls();
-  setupLocalSettings();
-  setupPasswordValidation();
-  setupSecurityActions();
-  setupDiagnostics();
+  configurarNavegacaoConfiguracoes();
+  configurarEnvioFotoCracha();
+  configurarControlesPreferencias();
+  configurarValidacaoSenha();
+  configurarDiagnosticos();
 }
 
-// O JavaScript melhora a experiencia com preview e mensagens, mas a validacao real fica no PHP.
-function setupBadgePhotoUpload() {
-  const form = document.getElementById("badgePhotoForm");
-  const input = document.getElementById("badgePhotoInput");
-  const button = document.getElementById("saveBadgePhotoButton");
+// Mantém a navegação local alinhada à seção visível sem acoplar essa regra ao restante da página.
+function configurarNavegacaoConfiguracoes() {
+  const itensNavegacao = [...document.querySelectorAll("[data-settings-nav]")];
+  const secoes = itensNavegacao
+    .map((itemNavegacao) => document.querySelector(itemNavegacao.getAttribute("href") || ""))
+    .filter(Boolean);
 
-  if (!form || !input) {
+  if (!itensNavegacao.length || !secoes.length) {
     return;
   }
 
-  input.addEventListener("change", () => {
-    const file = input.files?.[0] || null;
-    const error = validateBadgePhotoFile(file);
+  const atualizarSecaoAtiva = () => {
+    identificadorAnimacaoNavegacao = null;
+    const secaoAtiva = [...secoes]
+      .reverse()
+      .find((secao) => secao.getBoundingClientRect().top <= DESLOCAMENTO_SECAO_CONFIGURACOES_PX)
+      || secoes[0];
 
-    setBadgePhotoMessage(error, error ? "error" : "");
+    definirItemNavegacaoAtivo(itensNavegacao, secaoAtiva.id);
+  };
 
-    if (button) {
-      button.disabled = Boolean(error) || !file;
-    }
-
-    if (!error && file) {
-      previewBadgePhoto(URL.createObjectURL(file), true);
-    }
-  });
-
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const file = input.files?.[0] || null;
-    const error = validateBadgePhotoFile(file);
-
-    if (error) {
-      setBadgePhotoMessage(error, "error");
+  const agendarAtualizacaoNavegacao = () => {
+    if (identificadorAnimacaoNavegacao !== null) {
       return;
     }
 
-    setButtonLoading(button, true, "Salvando...");
+    identificadorAnimacaoNavegacao = window.requestAnimationFrame(atualizarSecaoAtiva);
+  };
+
+  itensNavegacao.forEach((itemNavegacao) => {
+    itemNavegacao.addEventListener("click", () => {
+      definirItemNavegacaoAtivo(itensNavegacao, itemNavegacao.hash.slice(1));
+    });
+  });
+
+  window.addEventListener("scroll", agendarAtualizacaoNavegacao, { passive: true });
+  window.addEventListener("resize", agendarAtualizacaoNavegacao);
+  atualizarSecaoAtiva();
+}
+
+function definirItemNavegacaoAtivo(itensNavegacao, idSecao) {
+  itensNavegacao.forEach((itemNavegacao) => {
+    const estaAtivo = itemNavegacao.hash === `#${idSecao}`;
+
+    itemNavegacao.classList.toggle("is-active", estaAtivo);
+
+    if (estaAtivo) {
+      itemNavegacao.setAttribute("aria-current", "location");
+    } else {
+      itemNavegacao.removeAttribute("aria-current");
+    }
+  });
+}
+
+// O JavaScript melhora a experiencia com preview e mensagens, mas a validacao real fica no PHP.
+function configurarEnvioFotoCracha() {
+  const formulario = document.getElementById("badgePhotoForm");
+  const campoFoto = document.getElementById("badgePhotoInput");
+  const botaoSalvar = document.getElementById("saveBadgePhotoButton");
+
+  if (!formulario || !campoFoto) {
+    return;
+  }
+
+  campoFoto.addEventListener("change", () => {
+    const arquivoFoto = campoFoto.files?.[0] || null;
+    const erroValidacao = validarArquivoFotoCracha(arquivoFoto);
+
+    definirMensagemFotoCracha(erroValidacao, erroValidacao ? "error" : "");
+
+    if (botaoSalvar) {
+      botaoSalvar.disabled = Boolean(erroValidacao) || !arquivoFoto;
+    }
+
+    if (!erroValidacao && arquivoFoto) {
+      exibirPreviaFotoCracha(URL.createObjectURL(arquivoFoto), true);
+    }
+  });
+
+  formulario.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+
+    const arquivoFoto = campoFoto.files?.[0] || null;
+    const erroValidacao = validarArquivoFotoCracha(arquivoFoto);
+
+    if (erroValidacao) {
+      definirMensagemFotoCracha(erroValidacao, "error");
+      return;
+    }
+
+    definirBotaoCarregando(botaoSalvar, true, "Salvando...");
 
     try {
-      const response = await fetch(form.action, {
+      const resposta = await fetch(formulario.action, {
         method: "POST",
         credentials: "same-origin",
-        body: new FormData(form),
+        body: new FormData(formulario),
       });
-      const result = await response.json().catch(() => null);
+      const resultado = await resposta.json().catch(() => null);
 
-      if (!response.ok || !result?.ok) {
-        throw new Error(result?.message || "Nao foi possivel salvar a foto.");
+      if (!resposta.ok || !resultado?.ok) {
+        throw new Error(resultado?.message || "Nao foi possivel salvar a foto.");
       }
 
-      const photoUrl = addCacheBuster(result.foto_cracha_url || "");
+      const enderecoFoto = adicionarParametroAnticache(resultado.foto_cracha_url || "");
 
-      if (photoUrl) {
-        previewBadgePhoto(photoUrl, false);
-        updateSidebarBadgePhoto(photoUrl);
+      if (enderecoFoto) {
+        exibirPreviaFotoCracha(enderecoFoto, false);
+        atualizarFotoCrachaBarraLateral(enderecoFoto);
       }
 
-      input.value = "";
-      setBadgePhotoMessage(result.message || "Foto do cracha atualizada.", "success");
-      showToast("Foto do cracha salva no perfil.");
-    } catch (error) {
-      setBadgePhotoMessage(error.message || "Nao foi possivel salvar a foto.", "error");
+      campoFoto.value = "";
+      definirMensagemFotoCracha(resultado.message || "Foto do cracha atualizada.", "success");
+      exibirNotificacao("Foto do cracha salva no perfil.");
+    } catch (erro) {
+      definirMensagemFotoCracha(erro.message || "Nao foi possivel salvar a foto.", "error");
     } finally {
-      setButtonLoading(button, false);
+      definirBotaoCarregando(botaoSalvar, false);
 
-      if (button) {
-        button.disabled = true;
+      if (botaoSalvar) {
+        botaoSalvar.disabled = true;
       }
     }
   });
 }
 
-function validateBadgePhotoFile(file) {
-  if (!file) {
+function validarArquivoFotoCracha(arquivoFoto) {
+  if (!arquivoFoto) {
     return "Selecione uma imagem para o cracha.";
   }
 
-  if (!BADGE_PHOTO_ALLOWED_TYPES.includes(file.type)) {
+  if (!TIPOS_PERMITIDOS_FOTO_CRACHA.includes(arquivoFoto.type)) {
     return "Use uma imagem JPG, PNG ou WebP.";
   }
 
-  if (file.size > BADGE_PHOTO_MAX_BYTES) {
+  if (arquivoFoto.size > TAMANHO_MAXIMO_FOTO_CRACHA_BYTES) {
     return "Envie uma imagem de ate 2 MB.";
   }
 
   return "";
 }
 
-function previewBadgePhoto(url, revokeAfterLoad) {
-  const avatar = document.querySelector("[data-badge-photo-preview]");
+function exibirPreviaFotoCracha(enderecoFoto, revogarEnderecoAposCarregar) {
+  const avatarCracha = document.querySelector("[data-badge-photo-preview]");
 
-  if (!avatar || !url) {
+  if (!avatarCracha || !enderecoFoto) {
     return;
   }
 
-  avatar.classList.add("has-photo");
-  avatar.removeAttribute("aria-hidden");
-  avatar.textContent = "";
+  avatarCracha.classList.add("has-photo");
+  avatarCracha.removeAttribute("aria-hidden");
+  avatarCracha.textContent = "";
 
-  const image = document.createElement("img");
-  image.src = url;
-  image.alt = "Foto do cracha";
+  const imagem = document.createElement("img");
+  imagem.src = enderecoFoto;
+  imagem.alt = "Foto do cracha";
 
-  if (revokeAfterLoad) {
-    image.addEventListener("load", () => URL.revokeObjectURL(url), { once: true });
+  if (revogarEnderecoAposCarregar) {
+    imagem.addEventListener("load", () => URL.revokeObjectURL(enderecoFoto), { once: true });
   }
 
-  avatar.appendChild(image);
+  avatarCracha.appendChild(imagem);
 }
 
-function updateSidebarBadgePhoto(url) {
-  document.querySelectorAll(".sidebar-avatar").forEach((avatar) => {
-    avatar.classList.add("has-photo");
-    avatar.textContent = "";
+function atualizarFotoCrachaBarraLateral(enderecoFoto) {
+  document.querySelectorAll(".sidebar-avatar").forEach((avatarLateral) => {
+    avatarLateral.classList.add("has-photo");
+    avatarLateral.textContent = "";
 
-    const image = document.createElement("img");
-    image.src = url;
-    image.alt = "";
-    avatar.appendChild(image);
+    const imagem = document.createElement("img");
+    imagem.src = enderecoFoto;
+    imagem.alt = "";
+    avatarLateral.appendChild(imagem);
   });
 }
 
-function setBadgePhotoMessage(message, type) {
-  const element = document.getElementById("badgePhotoMessage");
+function definirMensagemFotoCracha(mensagem, tipo) {
+  const elementoMensagem = document.getElementById("badgePhotoMessage");
 
-  if (!element) {
+  if (!elementoMensagem) {
     return;
   }
 
-  element.textContent = message;
-  element.classList.toggle("show", Boolean(message));
-  element.classList.toggle("success", type === "success");
-  element.classList.toggle("error", type === "error");
+  elementoMensagem.textContent = mensagem;
+  elementoMensagem.classList.toggle("show", Boolean(mensagem));
+  elementoMensagem.classList.toggle("success", tipo === "success");
+  elementoMensagem.classList.toggle("error", tipo === "error");
 }
 
-function addCacheBuster(url) {
-  if (!url) {
+function adicionarParametroAnticache(endereco) {
+  if (!endereco) {
     return "";
   }
 
-  return `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
+  return `${endereco}${endereco.includes("?") ? "&" : "?"}v=${Date.now()}`;
 }
 
 // Preferencias visuais sao aplicadas imediatamente e persistidas no perfil do usuario.
-function setupPreferenceControls() {
-  syncPreferenceForm();
+function configurarControlesPreferencias() {
+  sincronizarFormularioPreferencias();
 
   document.getElementById("themeToggle")?.addEventListener("click", () => {
-    window.setTimeout(syncPreferenceForm, 0);
+    window.setTimeout(sincronizarFormularioPreferencias, 0);
   });
 
-  window.addEventListener("titech:theme-change", syncPreferenceForm);
-  setupAccentWheelControl();
+  window.addEventListener("titech:theme-change", sincronizarFormularioPreferencias);
+  configurarSeletorCircularCor();
 
-  document.querySelectorAll('input[name="theme"]').forEach((input) => {
-    input.addEventListener("change", () => {
-      if (!input.checked) return;
+  document.querySelectorAll('input[name="theme"]').forEach((campoTema) => {
+    campoTema.addEventListener("change", () => {
+      if (!campoTema.checked) return;
 
-      void savePreferenceChange(
-        { theme: input.value },
+      void salvarAlteracaoPreferencias(
+        { theme: campoTema.value },
         "Modo de tela atualizado.",
-        input.value === "auto" ? "Tema automatico salvo para seu usuario." : "Tema salvo para seu usuario.",
+        campoTema.value === "auto" ? "Tema automatico salvo para seu usuario." : "Tema salvo para seu usuario.",
       );
     });
   });
 
-  document.querySelectorAll('input[name="fontSize"]').forEach((input) => {
-    input.addEventListener("change", () => {
-      if (!input.checked) return;
+  document.querySelectorAll('input[name="fontSize"]').forEach((campoTamanhoFonte) => {
+    campoTamanhoFonte.addEventListener("change", () => {
+      if (!campoTamanhoFonte.checked) return;
 
-      void savePreferenceChange(
-        { fontSize: input.value },
+      void salvarAlteracaoPreferencias(
+        { fontSize: campoTamanhoFonte.value },
         "Tamanho da fonte atualizado.",
         "Preferencia de leitura salva para seu usuario.",
       );
     });
   });
 
-  document.getElementById("densityToggle")?.addEventListener("change", (event) => {
-    const density = event.currentTarget.checked ? "compact" : "comfortable";
+  document.getElementById("densityToggle")?.addEventListener("change", (evento) => {
+    const densidade = evento.currentTarget.checked ? "compact" : "comfortable";
 
-    void savePreferenceChange(
-      { density },
+    void salvarAlteracaoPreferencias(
+      { density: densidade },
       "Ajuste de densidade salvo.",
       "Densidade salva para seu usuario.",
     );
   });
 
-  document.getElementById("motionToggle")?.addEventListener("change", (event) => {
-    const motion = event.currentTarget.checked ? "reduced" : "normal";
+  document.getElementById("motionToggle")?.addEventListener("change", (evento) => {
+    const animacao = evento.currentTarget.checked ? "reduced" : "normal";
 
-    void savePreferenceChange(
-      { motion },
+    void salvarAlteracaoPreferencias(
+      { motion: animacao },
       "Preferencia de animacao salva.",
       "Preferencia de animacao salva para seu usuario.",
     );
   });
 
-  document.getElementById("cursorToggle")?.addEventListener("change", (event) => {
-    const cursor = event.currentTarget.checked ? "enhanced" : "normal";
+  document.getElementById("cursorToggle")?.addEventListener("change", (evento) => {
+    const cursor = evento.currentTarget.checked ? "enhanced" : "normal";
 
-    void savePreferenceChange(
+    void salvarAlteracaoPreferencias(
       { cursor },
       "Realce de cursor atualizado.",
       "Cursor salvo para seu usuario.",
@@ -250,652 +308,700 @@ function setupPreferenceControls() {
   });
 
   document.getElementById("resetPreferences")?.addEventListener("click", async () => {
-    const confirmed = await confirmSettingsAction(
+    const confirmado = await confirmarAcaoConfiguracoes(
       "Restaurar preferencias?",
       "As escolhas visuais do seu usuario voltarao para o padrao TI TECH."
     );
 
-    if (confirmed) {
-      void resetPreferences();
+    if (confirmado) {
+      void restaurarPreferencias();
     }
   });
 }
 
-function setupAccentWheelControl() {
-  const wheel = document.getElementById("accentColorWheel");
-  const colorInput = document.getElementById("accentColorValue");
-  const nativeInput = document.getElementById("accentNativeColor");
-  const presetButtons = document.querySelectorAll("[data-accent-preset]");
+function configurarSeletorCircularCor() {
+  const anelCores = document.getElementById("accentColorWheel");
+  const campoCorHexadecimal = document.getElementById("accentColorValue");
+  const campoCorNativo = document.getElementById("accentNativeColor");
+  const botoesCoresPredefinidas = document.querySelectorAll("[data-accent-preset]");
 
-  if (!wheel || !colorInput) {
+  if (!anelCores || !campoCorHexadecimal) {
     return;
   }
 
-  let isDragging = false;
+  let estaArrastando = false;
 
-  const previewColor = (value) => {
-    const color = normalizeAccentColor(value);
+  const aplicarPreviaCor = (valor) => {
+    const cor = normalizarCorDestaque(valor);
 
-    if (!color) {
+    if (!cor) {
       return "";
     }
 
-    const preferences = applyPreferenceState({
-      ...getPreferenceState(),
-      accent: color,
+    const preferencias = aplicarEstadoPreferencias({
+      ...obterEstadoPreferencias(),
+      accent: cor,
     });
 
-    syncAccentColorControls(preferences.accent);
-    updateSecurityScore();
-
-    return color;
+    sincronizarControlesCorDestaque(preferencias.accent);
+    return cor;
   };
 
-  const saveColor = (value) => {
-    const color = normalizeAccentColor(value);
+  const salvarCor = (valor) => {
+    const cor = normalizarCorDestaque(valor);
 
-    if (!color) {
-      syncAccentColorControls(getPreferenceState().accent);
+    if (!cor) {
+      sincronizarControlesCorDestaque(obterEstadoPreferencias().accent);
       return;
     }
 
-    void savePreferenceChange(
-      { accent: color },
+    void salvarAlteracaoPreferencias(
+      { accent: cor },
       "Cor aplicada.",
       "Cor salva para seu usuario.",
     );
   };
 
-  const updateFromPointer = (event, shouldSave) => {
-    const color = colorFromWheelPointer(wheel, event);
+  const atualizarCorPeloPonteiro = (evento, deveSalvar) => {
+    const cor = obterCorPeloPonteiroDoAnel(anelCores, evento);
 
-    previewColor(color);
+    aplicarPreviaCor(cor);
 
-    if (shouldSave) {
-      saveColor(color);
+    if (deveSalvar) {
+      salvarCor(cor);
     }
   };
 
-  wheel.addEventListener("pointerdown", (event) => {
-    event.preventDefault();
-    isDragging = true;
-    wheel.setPointerCapture?.(event.pointerId);
-    updateFromPointer(event, false);
+  anelCores.addEventListener("pointerdown", (evento) => {
+    evento.preventDefault();
+    estaArrastando = true;
+    anelCores.setPointerCapture?.(evento.pointerId);
+    atualizarCorPeloPonteiro(evento, false);
   });
 
-  wheel.addEventListener("pointermove", (event) => {
-    if (!isDragging) {
+  anelCores.addEventListener("pointermove", (evento) => {
+    if (!estaArrastando) {
       return;
     }
 
-    updateFromPointer(event, false);
+    atualizarCorPeloPonteiro(evento, false);
   });
 
-  const finishPointerChoice = (event) => {
-    if (!isDragging) {
+  const finalizarEscolhaPonteiro = (evento) => {
+    if (!estaArrastando) {
       return;
     }
 
-    isDragging = false;
-    wheel.releasePointerCapture?.(event.pointerId);
-    updateFromPointer(event, true);
+    estaArrastando = false;
+    anelCores.releasePointerCapture?.(evento.pointerId);
+    atualizarCorPeloPonteiro(evento, true);
   };
 
-  wheel.addEventListener("pointerup", finishPointerChoice);
-  wheel.addEventListener("pointercancel", finishPointerChoice);
+  anelCores.addEventListener("pointerup", finalizarEscolhaPonteiro);
+  anelCores.addEventListener("pointercancel", finalizarEscolhaPonteiro);
 
-  wheel.addEventListener("keydown", (event) => {
-    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
+  anelCores.addEventListener("keydown", (evento) => {
+    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(evento.key)) {
       return;
     }
 
-    event.preventDefault();
+    evento.preventDefault();
 
-    const hsv = hexToHsv(accentToHex(getPreferenceState().accent));
-    let nextHue = hsv.h;
-    let nextSaturation = hsv.s;
+    const corHsv = converterHexParaHsv(converterDestaqueParaHex(obterEstadoPreferencias().accent));
+    let proximoMatiz = corHsv.h;
 
-    if (event.key === "ArrowLeft") nextHue -= 6;
-    if (event.key === "ArrowRight") nextHue += 6;
-    if (event.key === "ArrowUp") nextSaturation += 0.05;
-    if (event.key === "ArrowDown") nextSaturation -= 0.05;
-    if (event.key === "Home") nextSaturation = 0;
-    if (event.key === "End") nextSaturation = 1;
+    if (["ArrowLeft", "ArrowDown"].includes(evento.key)) proximoMatiz -= 6;
+    if (["ArrowRight", "ArrowUp"].includes(evento.key)) proximoMatiz += 6;
+    if (evento.key === "Home") proximoMatiz = 0;
+    if (evento.key === "End") proximoMatiz = 359;
 
-    saveColor(hsvToHex((nextHue + 360) % 360, clampNumber(nextSaturation, 0, 1), 1));
+    salvarCor(converterHsvParaHex((proximoMatiz + 360) % 360, 1, 1));
   });
 
-  colorInput.addEventListener("input", () => {
-    const color = normalizeAccentColor(colorInput.value);
+  campoCorHexadecimal.addEventListener("input", () => {
+    const cor = normalizarCorDestaque(campoCorHexadecimal.value);
 
-    colorInput.classList.toggle("invalid", !color && colorInput.value.trim() !== "");
+    campoCorHexadecimal.classList.toggle("invalid", !cor && campoCorHexadecimal.value.trim() !== "");
 
-    if (color) {
-      previewColor(color);
+    if (cor) {
+      aplicarPreviaCor(cor);
     }
   });
 
-  colorInput.addEventListener("change", () => saveColor(colorInput.value));
+  campoCorHexadecimal.addEventListener("change", () => salvarCor(campoCorHexadecimal.value));
 
-  nativeInput?.addEventListener("input", () => previewColor(nativeInput.value));
-  nativeInput?.addEventListener("change", () => saveColor(nativeInput.value));
+  campoCorNativo?.addEventListener("input", () => aplicarPreviaCor(campoCorNativo.value));
+  campoCorNativo?.addEventListener("change", () => salvarCor(campoCorNativo.value));
 
-  presetButtons.forEach((button) => {
-    button.addEventListener("click", () => saveColor(button.dataset.accentPreset || ""));
+  botoesCoresPredefinidas.forEach((botaoCor) => {
+    botaoCor.addEventListener("click", () => salvarCor(botaoCor.dataset.accentPreset || ""));
   });
 }
 
-function syncAccentColorControls(accent) {
-  const color = accentToHex(accent);
-  const colorInput = document.getElementById("accentColorValue");
-  const nativeInput = document.getElementById("accentNativeColor");
-  const label = document.getElementById("accentCurrentLabel");
-  const swatch = document.getElementById("accentCurrentSwatch");
-  const thumb = document.getElementById("accentWheelThumb");
+function sincronizarControlesCorDestaque(corDestaque) {
+  const cor = converterDestaqueParaHex(corDestaque);
+  const campoCorHexadecimal = document.getElementById("accentColorValue");
+  const campoCorNativo = document.getElementById("accentNativeColor");
+  const rotuloCorAtual = document.getElementById("accentCurrentLabel");
+  const amostraCorAtual = document.getElementById("accentCurrentSwatch");
+  const bolinhaSeletora = document.getElementById("accentWheelThumb");
 
-  if (colorInput) {
-    colorInput.value = color.toUpperCase();
-    colorInput.classList.remove("invalid");
+  if (campoCorHexadecimal) {
+    campoCorHexadecimal.value = cor.toUpperCase();
+    campoCorHexadecimal.classList.remove("invalid");
   }
 
-  if (nativeInput) {
-    nativeInput.value = color;
+  if (campoCorNativo) {
+    campoCorNativo.value = cor;
   }
 
-  if (label) {
-    label.textContent = color.toUpperCase();
+  if (rotuloCorAtual) {
+    rotuloCorAtual.textContent = cor.toUpperCase();
   }
 
-  if (swatch) {
-    swatch.style.backgroundColor = color;
+  if (amostraCorAtual) {
+    amostraCorAtual.style.backgroundColor = cor;
   }
 
-  if (thumb) {
-    const hsv = hexToHsv(color);
-    const angle = (hsv.h * Math.PI) / 180;
-    const distance = hsv.s * 50;
+  if (bolinhaSeletora) {
+    const corHsv = converterHexParaHsv(cor);
+    const angulo = ((corHsv.h - DESLOCAMENTO_GRADIENTE_CONICO_GRAUS) * Math.PI) / 180;
 
-    thumb.style.left = `${50 + Math.cos(angle) * distance}%`;
-    thumb.style.top = `${50 + Math.sin(angle) * distance}%`;
-    thumb.style.backgroundColor = color;
+    bolinhaSeletora.style.left = `${50 + Math.cos(angulo) * DISTANCIA_BOLINHA_ANEL_PERCENTUAL}%`;
+    bolinhaSeletora.style.top = `${50 + Math.sin(angulo) * DISTANCIA_BOLINHA_ANEL_PERCENTUAL}%`;
+    bolinhaSeletora.style.backgroundColor = cor;
   }
 }
 
-function colorFromWheelPointer(wheel, event) {
-  const rect = wheel.getBoundingClientRect();
-  const radius = Math.min(rect.width, rect.height) / 2;
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top + rect.height / 2;
-  const deltaX = event.clientX - centerX;
-  const deltaY = event.clientY - centerY;
-  const distance = Math.min(Math.hypot(deltaX, deltaY), radius);
-  const saturation = radius > 0 ? distance / radius : 0;
-  const hue = (Math.atan2(deltaY, deltaX) * 180) / Math.PI;
+function obterCorPeloPonteiroDoAnel(anelCores, evento) {
+  const limites = anelCores.getBoundingClientRect();
+  const raio = Math.min(limites.width, limites.height) / 2;
+  const centroX = limites.left + limites.width / 2;
+  const centroY = limites.top + limites.height / 2;
+  const diferencaX = evento.clientX - centroX;
+  const diferencaY = evento.clientY - centroY;
+  const distancia = Math.hypot(diferencaX, diferencaY);
 
-  return hsvToHex((hue + 360) % 360, saturation, 1);
-}
-
-function normalizeAccentColor(value) {
-  const color = String(value ?? "").trim();
-
-  if (Object.hasOwn(ACCENT_PRESET_COLORS, color)) {
-    return ACCENT_PRESET_COLORS[color];
+  if (raio <= 0 || distancia < raio * PROPORCAO_RAIO_INTERNO_ANEL) {
+    return "";
   }
 
-  return HEX_COLOR_PATTERN.test(color) ? color.toLowerCase() : "";
+  const anguloPonteiro = (Math.atan2(diferencaY, diferencaX) * 180) / Math.PI;
+  const matiz = anguloPonteiro + DESLOCAMENTO_GRADIENTE_CONICO_GRAUS;
+
+  return converterHsvParaHex((matiz + 360) % 360, 1, 1);
 }
 
-function accentToHex(value) {
-  return normalizeAccentColor(value) || ACCENT_PRESET_COLORS.teal;
+function normalizarCorDestaque(valor) {
+  const cor = String(valor ?? "").trim();
+
+  if (Object.hasOwn(CORES_PREDEFINIDAS_DESTAQUE, cor)) {
+    return CORES_PREDEFINIDAS_DESTAQUE[cor];
+  }
+
+  return PADRAO_COR_HEXADECIMAL.test(cor) ? cor.toLowerCase() : "";
 }
 
-function hexToRgb(hex) {
-  const normalized = accentToHex(hex).replace("#", "");
+function converterDestaqueParaHex(valor) {
+  return normalizarCorDestaque(valor) || CORES_PREDEFINIDAS_DESTAQUE.teal;
+}
+
+function converterHexParaRgb(hexadecimal) {
+  const hexadecimalNormalizado = converterDestaqueParaHex(hexadecimal).replace("#", "");
 
   return {
-    r: parseInt(normalized.slice(0, 2), 16),
-    g: parseInt(normalized.slice(2, 4), 16),
-    b: parseInt(normalized.slice(4, 6), 16),
+    r: parseInt(hexadecimalNormalizado.slice(0, 2), 16),
+    g: parseInt(hexadecimalNormalizado.slice(2, 4), 16),
+    b: parseInt(hexadecimalNormalizado.slice(4, 6), 16),
   };
 }
 
-function rgbToHex({ r, g, b }) {
-  return `#${[r, g, b]
-    .map((channel) => Math.round(clampNumber(channel, 0, 255)).toString(16).padStart(2, "0"))
+function converterRgbParaHex({ r: vermelho, g: verde, b: azul }) {
+  return `#${[vermelho, verde, azul]
+    .map((canal) => Math.round(limitarNumero(canal, 0, 255)).toString(16).padStart(2, "0"))
     .join("")}`;
 }
 
-function hexToHsv(hex) {
-  const { r, g, b } = hexToRgb(hex);
-  const red = r / 255;
-  const green = g / 255;
-  const blue = b / 255;
-  const max = Math.max(red, green, blue);
-  const min = Math.min(red, green, blue);
-  const delta = max - min;
-  let hue = 0;
+function converterHexParaHsv(hexadecimal) {
+  const { r: vermelho, g: verde, b: azul } = converterHexParaRgb(hexadecimal);
+  const vermelhoNormalizado = vermelho / 255;
+  const verdeNormalizado = verde / 255;
+  const azulNormalizado = azul / 255;
+  const maximo = Math.max(vermelhoNormalizado, verdeNormalizado, azulNormalizado);
+  const minimo = Math.min(vermelhoNormalizado, verdeNormalizado, azulNormalizado);
+  const diferenca = maximo - minimo;
+  let matiz = 0;
 
-  if (delta !== 0) {
-    if (max === red) {
-      hue = 60 * (((green - blue) / delta) % 6);
-    } else if (max === green) {
-      hue = 60 * ((blue - red) / delta + 2);
+  if (diferenca !== 0) {
+    if (maximo === vermelhoNormalizado) {
+      matiz = 60 * (((verdeNormalizado - azulNormalizado) / diferenca) % 6);
+    } else if (maximo === verdeNormalizado) {
+      matiz = 60 * ((azulNormalizado - vermelhoNormalizado) / diferenca + 2);
     } else {
-      hue = 60 * ((red - green) / delta + 4);
+      matiz = 60 * ((vermelhoNormalizado - verdeNormalizado) / diferenca + 4);
     }
   }
 
   return {
-    h: (hue + 360) % 360,
-    s: max === 0 ? 0 : delta / max,
-    v: max,
+    h: (matiz + 360) % 360,
+    s: maximo === 0 ? 0 : diferenca / maximo,
+    v: maximo,
   };
 }
 
-function hsvToHex(hue, saturation, value) {
-  const chroma = value * saturation;
-  const segment = hue / 60;
-  const x = chroma * (1 - Math.abs((segment % 2) - 1));
-  const match = value - chroma;
-  let red = 0;
-  let green = 0;
-  let blue = 0;
+function converterHsvParaHex(matiz, saturacao, valor) {
+  const croma = valor * saturacao;
+  const segmento = matiz / 60;
+  const componenteIntermediario = croma * (1 - Math.abs((segmento % 2) - 1));
+  const ajuste = valor - croma;
+  let vermelho = 0;
+  let verde = 0;
+  let azul = 0;
 
-  if (segment >= 0 && segment < 1) [red, green, blue] = [chroma, x, 0];
-  else if (segment >= 1 && segment < 2) [red, green, blue] = [x, chroma, 0];
-  else if (segment >= 2 && segment < 3) [red, green, blue] = [0, chroma, x];
-  else if (segment >= 3 && segment < 4) [red, green, blue] = [0, x, chroma];
-  else if (segment >= 4 && segment < 5) [red, green, blue] = [x, 0, chroma];
-  else [red, green, blue] = [chroma, 0, x];
+  if (segmento >= 0 && segmento < 1) [vermelho, verde, azul] = [croma, componenteIntermediario, 0];
+  else if (segmento >= 1 && segmento < 2) [vermelho, verde, azul] = [componenteIntermediario, croma, 0];
+  else if (segmento >= 2 && segmento < 3) [vermelho, verde, azul] = [0, croma, componenteIntermediario];
+  else if (segmento >= 3 && segmento < 4) [vermelho, verde, azul] = [0, componenteIntermediario, croma];
+  else if (segmento >= 4 && segmento < 5) [vermelho, verde, azul] = [componenteIntermediario, 0, croma];
+  else [vermelho, verde, azul] = [croma, 0, componenteIntermediario];
 
-  return rgbToHex({
-    r: (red + match) * 255,
-    g: (green + match) * 255,
-    b: (blue + match) * 255,
+  return converterRgbParaHex({
+    r: (vermelho + ajuste) * 255,
+    g: (verde + ajuste) * 255,
+    b: (azul + ajuste) * 255,
   });
 }
 
-function clampNumber(value, min, max) {
-  return Math.min(max, Math.max(min, value));
+function limitarNumero(valor, minimo, maximo) {
+  return Math.min(maximo, Math.max(minimo, valor));
 }
 
-function getPreferenceState() {
+function obterEstadoPreferencias() {
   if (typeof window.getCurrentUserPreferences === "function") {
     return window.getCurrentUserPreferences();
   }
 
   return {
-    theme: getSavedItem("titech-theme") || DEFAULT_INTERFACE_PREFERENCES.theme,
-    accent: getSavedItem("titech-accent") || DEFAULT_INTERFACE_PREFERENCES.accent,
-    fontSize: getSavedItem("titech-font-size") || DEFAULT_INTERFACE_PREFERENCES.fontSize,
-    density: getSavedItem("titech-density") || DEFAULT_INTERFACE_PREFERENCES.density,
-    motion: getSavedItem("titech-motion") || DEFAULT_INTERFACE_PREFERENCES.motion,
-    cursor: getSavedItem("titech-cursor") || DEFAULT_INTERFACE_PREFERENCES.cursor,
+    theme: getSavedItem("titech-theme") || PREFERENCIAS_INTERFACE_PADRAO.theme,
+    accent: getSavedItem("titech-accent") || PREFERENCIAS_INTERFACE_PADRAO.accent,
+    fontSize: getSavedItem("titech-font-size") || PREFERENCIAS_INTERFACE_PADRAO.fontSize,
+    density: getSavedItem("titech-density") || PREFERENCIAS_INTERFACE_PADRAO.density,
+    motion: getSavedItem("titech-motion") || PREFERENCIAS_INTERFACE_PADRAO.motion,
+    cursor: getSavedItem("titech-cursor") || PREFERENCIAS_INTERFACE_PADRAO.cursor,
   };
 }
 
-function normalizePreferenceState(preferences) {
+function normalizarEstadoPreferencias(preferencias) {
   if (typeof window.normalizeUserPreferences === "function") {
-    return window.normalizeUserPreferences(preferences);
+    return window.normalizeUserPreferences(preferencias);
   }
 
-  return { ...DEFAULT_INTERFACE_PREFERENCES, ...preferences };
+  return { ...PREFERENCIAS_INTERFACE_PADRAO, ...preferencias };
 }
 
-function applyPreferenceState(preferences) {
-  const normalized = normalizePreferenceState(preferences);
+function aplicarEstadoPreferencias(preferencias) {
+  const preferenciasNormalizadas = normalizarEstadoPreferencias(preferencias);
 
   if (typeof window.applyUserPreferences === "function") {
-    return window.applyUserPreferences(normalized);
+    return window.applyUserPreferences(preferenciasNormalizadas);
   }
 
-  setSavedItem("titech-accent", normalized.accent);
-  setSavedItem("titech-theme", normalized.theme);
-  setSavedItem("titech-font-size", normalized.fontSize);
-  setSavedItem("titech-density", normalized.density);
-  setSavedItem("titech-motion", normalized.motion);
-  setSavedItem("titech-cursor", normalized.cursor);
-  applyTheme(normalized.theme);
-  applyAccent(normalized.accent);
-  applyFontSizePreference(normalized.fontSize);
-  applyDensity(normalized.density);
-  applyMotionPreference(normalized.motion);
-  applyCursorPreference(normalized.cursor);
+  setSavedItem("titech-accent", preferenciasNormalizadas.accent);
+  setSavedItem("titech-theme", preferenciasNormalizadas.theme);
+  setSavedItem("titech-font-size", preferenciasNormalizadas.fontSize);
+  setSavedItem("titech-density", preferenciasNormalizadas.density);
+  setSavedItem("titech-motion", preferenciasNormalizadas.motion);
+  setSavedItem("titech-cursor", preferenciasNormalizadas.cursor);
+  applyTheme(preferenciasNormalizadas.theme);
+  applyAccent(preferenciasNormalizadas.accent);
+  applyFontSizePreference(preferenciasNormalizadas.fontSize);
+  applyDensity(preferenciasNormalizadas.density);
+  applyMotionPreference(preferenciasNormalizadas.motion);
+  applyCursorPreference(preferenciasNormalizadas.cursor);
 
-  return normalized;
+  return preferenciasNormalizadas;
 }
 
-async function savePreferenceChange(partialPreferences, message, successToast) {
-  const nextPreferences = applyPreferenceState({
-    ...getPreferenceState(),
-    ...partialPreferences,
+async function salvarAlteracaoPreferencias(preferenciasParciais, mensagem, notificacaoSucesso) {
+  const proximasPreferencias = aplicarEstadoPreferencias({
+    ...obterEstadoPreferencias(),
+    ...preferenciasParciais,
   });
 
-  syncPreferenceForm();
-  showPreferenceMessage(message);
+  sincronizarFormularioPreferencias();
+  exibirMensagemPreferencia(mensagem);
 
-  const result = typeof window.saveUserPreferences === "function"
-    ? await window.saveUserPreferences(nextPreferences)
-    : { ok: true, preferences: nextPreferences };
+  const resultado = typeof window.saveUserPreferences === "function"
+    ? await window.saveUserPreferences(proximasPreferencias)
+    : { ok: true, preferences: proximasPreferencias };
 
-  if (result.ok) {
-    if (result.preferences) {
-      applyPreferenceState(result.preferences);
-      syncPreferenceForm();
+  if (resultado.ok) {
+    if (resultado.preferences) {
+      aplicarEstadoPreferencias(resultado.preferences);
+      sincronizarFormularioPreferencias();
     }
 
-    showToast(successToast || "Preferencias salvas para seu usuario.");
+    exibirNotificacao(notificacaoSucesso || "Preferencias salvas para seu usuario.");
   } else {
-    showToast("Preferencia aplicada nesta sessao, mas nao foi salva no usuario.");
+    exibirNotificacao("Preferencia aplicada nesta sessao, mas nao foi salva no usuario.");
+  }
+}
+
+// A análise no navegador orienta o usuário; o backend repete as regras antes de alterar a senha.
+function configurarValidacaoSenha() {
+  const formulario = document.getElementById("passwordForm");
+  const campoSenhaAtual = document.getElementById("currentPassword");
+  const campoNovaSenha = document.getElementById("newPassword");
+  const campoConfirmacaoSenha = document.getElementById("confirmPassword");
+  const botaoAtualizar = document.getElementById("updatePasswordButton");
+
+  configurarBotoesVisibilidadeSenha(formulario);
+  configurarAvisoCapsLockSenha(formulario);
+
+  [campoSenhaAtual, campoNovaSenha, campoConfirmacaoSenha].forEach((campoSenha) => {
+    campoSenha?.addEventListener("input", () => definirMensagemSenha("", ""));
+  });
+
+  campoNovaSenha?.addEventListener("input", atualizarForcaSenha);
+  campoConfirmacaoSenha?.addEventListener("input", atualizarForcaSenha);
+
+  formulario?.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+
+    const senhaAtual = campoSenhaAtual?.value || "";
+    const novaSenha = campoNovaSenha?.value || "";
+    const confirmacaoSenha = campoConfirmacaoSenha?.value || "";
+    const resultadoAvaliacao = avaliarSenha(novaSenha, confirmacaoSenha);
+
+    definirMensagemSenha("", "");
+
+    if (!senhaAtual || !novaSenha || !confirmacaoSenha) {
+      definirMensagemSenha("Preencha senha atual, nova senha e confirmacao.", "error");
+      [campoSenhaAtual, campoNovaSenha, campoConfirmacaoSenha]
+        .find((campoSenha) => !campoSenha?.value)
+        ?.focus();
+      return;
+    }
+
+    if (!Object.values(resultadoAvaliacao.rules).every(Boolean)) {
+      definirMensagemSenha("A nova senha ainda nao atende a todos os criterios.", "error");
+      campoNovaSenha?.focus();
+      return;
+    }
+
+    if (senhaAtual === novaSenha) {
+      definirMensagemSenha("A nova senha precisa ser diferente da senha atual.", "error");
+      campoNovaSenha?.focus();
+      return;
+    }
+
+    definirBotaoCarregando(botaoAtualizar, true, "Atualizando...");
+
+    try {
+      const resposta = await fetch(formulario.action, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          Accept: "application/json",
+        },
+        body: new FormData(formulario),
+      });
+      const corpoResposta = await resposta.json().catch(() => null);
+
+      if (!resposta.ok || !corpoResposta?.ok) {
+        if (resposta.status === 401) {
+          campoSenhaAtual?.focus();
+        }
+
+        throw new Error(corpoResposta?.message || "Nao foi possivel atualizar a senha.");
+      }
+
+      formulario.reset();
+      restaurarVisibilidadeSenhas(formulario);
+      atualizarForcaSenha();
+      definirMensagemSenha(corpoResposta.message || "Senha atualizada com sucesso.", "success");
+      exibirNotificacao("Senha atualizada no Supabase e no perfil local.");
+    } catch (erro) {
+      definirMensagemSenha(erro.message || "Nao foi possivel atualizar a senha.", "error");
+    } finally {
+      definirBotaoCarregando(botaoAtualizar, false);
+    }
+  });
+
+  atualizarForcaSenha();
+}
+
+function configurarBotoesVisibilidadeSenha(formulario) {
+  formulario?.querySelectorAll("[data-password-toggle]").forEach((botaoVisibilidade) => {
+    const campoSenha = document.getElementById(botaoVisibilidade.dataset.passwordToggle || "");
+
+    if (!campoSenha) {
+      return;
+    }
+
+    botaoVisibilidade.dataset.passwordLabel = (botaoVisibilidade.getAttribute("aria-label") || "Mostrar senha")
+      .replace(/^(Mostrar|Ocultar)\s+/i, "");
+    botaoVisibilidade.addEventListener("click", () => {
+      definirVisibilidadeCampoSenha(botaoVisibilidade, campoSenha, campoSenha.type === "password");
+    });
+  });
+}
+
+function definirVisibilidadeCampoSenha(
+  botaoVisibilidade,
+  campoSenha,
+  estaVisivel,
+  deveReceberFoco = true,
+) {
+  const rotuloCampo = botaoVisibilidade.dataset.passwordLabel || "senha";
+  const icone = botaoVisibilidade.querySelector("i");
+
+  campoSenha.type = estaVisivel ? "text" : "password";
+  botaoVisibilidade.setAttribute("aria-pressed", String(estaVisivel));
+  botaoVisibilidade.setAttribute("aria-label", `${estaVisivel ? "Ocultar" : "Mostrar"} ${rotuloCampo}`);
+  icone?.classList.toggle("bi-eye", !estaVisivel);
+  icone?.classList.toggle("bi-eye-slash", estaVisivel);
+
+  if (deveReceberFoco) {
+    campoSenha.focus({ preventScroll: true });
+  }
+}
+
+function restaurarVisibilidadeSenhas(formulario) {
+  formulario?.querySelectorAll("[data-password-toggle]").forEach((botaoVisibilidade) => {
+    const campoSenha = document.getElementById(botaoVisibilidade.dataset.passwordToggle || "");
+
+    if (campoSenha && campoSenha.type !== "password") {
+      definirVisibilidadeCampoSenha(botaoVisibilidade, campoSenha, false, false);
+    }
+  });
+}
+
+function configurarAvisoCapsLockSenha(formulario) {
+  const avisoCapsLock = document.getElementById("passwordCapsLock");
+
+  if (!formulario || !avisoCapsLock) {
+    return;
   }
 
-  updateSecurityScore();
-}
+  formulario.querySelectorAll('input[autocomplete$="password"]').forEach((campoSenha) => {
+    const atualizarAvisoCapsLock = (evento) => {
+      avisoCapsLock.hidden = !Boolean(evento.getModifierState?.("CapsLock"));
+    };
 
-function setupLocalSettings() {
-  document.querySelectorAll("[data-setting]").forEach((control) => {
-    const key = getSettingKey(control.dataset.setting);
-    const savedValue = getSavedItem(key);
-
-    if (control.type === "checkbox") {
-      control.checked = savedValue === "true";
-      control.addEventListener("change", () => {
-        setSavedItem(key, String(control.checked));
-        showToast("Preferencia salva localmente.");
-        updateSecurityScore();
-      });
-      return;
-    }
-
-    if (savedValue !== null) {
-      control.value = savedValue;
-    }
-
-    control.addEventListener("change", () => {
-      setSavedItem(key, control.value);
-      showToast("Configuracao salva neste navegador.");
-    });
-  });
-
-  setupWorkModes();
-}
-
-function setupWorkModes() {
-  const savedMode = getSavedItem(getSettingKey("work-mode")) || "support";
-
-  setCheckedValue("workMode", savedMode);
-
-  document.querySelectorAll("[data-work-mode]").forEach((input) => {
-    input.addEventListener("change", () => {
-      if (!input.checked) return;
-
-      setSavedItem(getSettingKey("work-mode"), input.value);
-      showToast("Modo de trabalho atualizado.");
+    campoSenha.addEventListener("keydown", atualizarAvisoCapsLock);
+    campoSenha.addEventListener("keyup", atualizarAvisoCapsLock);
+    campoSenha.addEventListener("blur", () => {
+      avisoCapsLock.hidden = true;
     });
   });
 }
 
-// A análise de senha nesta página é informativa e não substitui a validação do backend.
-function setupPasswordValidation() {
-  const form = document.getElementById("passwordForm");
-  const newPassword = document.getElementById("newPassword");
-  const confirmPassword = document.getElementById("confirmPassword");
+function definirMensagemSenha(mensagem, tipo) {
+  const elementoMensagem = document.getElementById("passwordMessage");
 
-  newPassword?.addEventListener("input", updatePasswordStrength);
-  confirmPassword?.addEventListener("input", updatePasswordStrength);
+  if (!elementoMensagem) {
+    return;
+  }
 
-  form?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const current = document.getElementById("currentPassword")?.value || "";
-    const next = newPassword?.value || "";
-    const confirmation = confirmPassword?.value || "";
-    const result = evaluatePassword(next, confirmation);
-
-    if (!current || !next || !confirmation) {
-      showToast("Preencha senha atual, nova senha e confirmacao.");
-      return;
-    }
-
-    if (result.score < 4 || next !== confirmation) {
-      showToast("A nova senha ainda nao atende aos criterios minimos.");
-      return;
-    }
-
-    const button = document.getElementById("updatePasswordButton");
-
-    setButtonLoading(button, true, "Validando...");
-    await wait(650);
-    setButtonLoading(button, false);
-    showToast("Validacao concluida. Integracao com backend necessaria para alterar a senha real.");
-    form.reset();
-    updatePasswordStrength();
-  });
-
-  updatePasswordStrength();
-}
-
-function setupSecurityActions() {
-  document.querySelectorAll("[data-feature-button]").forEach((button) => {
-    button.addEventListener("click", () => {
-      showToast("Interface pronta. Integracao futura com PHP/Supabase necessaria.");
-      updateSecurityScore();
-    });
-  });
-
-  document.getElementById("logoutAllDevices")?.addEventListener("click", async () => {
-    const confirmed = await confirmSettingsAction(
-      "Solicitar saida global?",
-      "Hoje a interface apenas valida a acao. A execucao real depende do backend de sessoes."
-    );
-
-    if (confirmed) {
-      showToast("Solicitacao registrada visualmente. Backend necessario para encerrar sessoes reais.");
-    }
-  });
-
-  updateSecurityScore();
+  elementoMensagem.textContent = mensagem;
+  elementoMensagem.classList.toggle("show", Boolean(mensagem));
+  elementoMensagem.classList.toggle("success", tipo === "success");
+  elementoMensagem.classList.toggle("error", tipo === "error");
 }
 
 // Os diagnósticos exibem apenas informações disponíveis no navegador do usuário.
-function setupDiagnostics() {
-  updateDiagnostics();
-  window.addEventListener("resize", updateDiagnostics);
-  window.addEventListener("online", updateDiagnostics);
-  window.addEventListener("offline", updateDiagnostics);
+function configurarDiagnosticos() {
+  atualizarDiagnosticos();
+  window.addEventListener("resize", atualizarDiagnosticos);
+  window.addEventListener("online", atualizarDiagnosticos);
+  window.addEventListener("offline", atualizarDiagnosticos);
 
   document.getElementById("copyDiagnostics")?.addEventListener("click", async () => {
-    updateDiagnostics();
+    atualizarDiagnosticos();
 
-    const info = [
-      `Navegador: ${getText("diagBrowser")}`,
-      `Sistema operacional: ${getText("diagOs")}`,
-      `Largura da tela: ${getText("diagWidth")}`,
-      `Status: ${getText("diagOnline")}`,
-      `Idioma: ${getText("diagLanguage")}`,
-      `Data/hora local: ${getText("diagTime")}`,
+    const informacoes = [
+      `Navegador: ${obterTexto("diagBrowser")}`,
+      `Sistema operacional: ${obterTexto("diagOs")}`,
+      `Largura da tela: ${obterTexto("diagWidth")}`,
+      `Status: ${navigator.onLine ? "Online" : "Offline"}`,
+      `Idioma: ${navigator.language || "--"}`,
+      `Data/hora local: ${obterTexto("diagTime")}`,
       "Versao: TI TECH Assets v1.4.0",
     ].join("\n");
 
     try {
-      await navigator.clipboard.writeText(info);
-      showToast("Informacoes copiadas para o suporte.");
+      await navigator.clipboard.writeText(informacoes);
+      exibirNotificacao("Informacoes copiadas para o suporte.");
     } catch {
-      showToast("Nao foi possivel copiar automaticamente. Selecione os dados manualmente.");
+      exibirNotificacao("Nao foi possivel copiar automaticamente. Selecione os dados manualmente.");
     }
   });
 
-  window.setInterval(updateDiagnostics, 30000);
+  window.setInterval(atualizarDiagnosticos, 30000);
 }
 
-function syncPreferenceForm() {
-  const preferences = getPreferenceState();
+function sincronizarFormularioPreferencias() {
+  const preferencias = obterEstadoPreferencias();
 
-  syncAccentColorControls(preferences.accent);
-  setCheckedValue("theme", preferences.theme);
-  setCheckedValue("fontSize", preferences.fontSize);
+  sincronizarControlesCorDestaque(preferencias.accent);
+  definirValorSelecionado("theme", preferencias.theme);
+  definirValorSelecionado("fontSize", preferencias.fontSize);
 
-  setChecked("densityToggle", preferences.density === "compact");
-  setChecked("motionToggle", preferences.motion === "reduced");
-  setChecked("cursorToggle", preferences.cursor === "enhanced");
+  definirControleMarcado("densityToggle", preferencias.density === "compact");
+  definirControleMarcado("motionToggle", preferencias.motion === "reduced");
+  definirControleMarcado("cursorToggle", preferencias.cursor === "enhanced");
 }
 
-function setCheckedValue(name, value) {
-  const input = document.querySelector(`input[name="${name}"][value="${cssEscape(value)}"]`);
+function definirValorSelecionado(nome, valor) {
+  const campoOpcao = document.querySelector(
+    `input[name="${nome}"][value="${escaparCss(valor)}"]`,
+  );
 
-  if (input) {
-    input.checked = true;
+  if (campoOpcao) {
+    campoOpcao.checked = true;
   }
 }
 
-function setChecked(id, checked) {
-  const input = document.getElementById(id);
+function definirControleMarcado(idElemento, estaMarcado) {
+  const campoControle = document.getElementById(idElemento);
 
-  if (input) {
-    input.checked = checked;
+  if (campoControle) {
+    campoControle.checked = estaMarcado;
   }
 }
 
-async function resetPreferences() {
-  await savePreferenceChange(
-    DEFAULT_INTERFACE_PREFERENCES,
+async function restaurarPreferencias() {
+  await salvarAlteracaoPreferencias(
+    PREFERENCIAS_INTERFACE_PADRAO,
     "Preferencias restauradas para o padrao do sistema.",
     "Preferencias restauradas para seu usuario.",
   );
 }
 
-function updatePasswordStrength() {
-  const password = document.getElementById("newPassword")?.value || "";
-  const confirmation = document.getElementById("confirmPassword")?.value || "";
-  const result = evaluatePassword(password, confirmation);
-  const bar = document.getElementById("strengthBar");
-  const label = document.getElementById("strengthLabel");
-  const percent = Math.round((result.score / 5) * 100);
+function atualizarForcaSenha() {
+  const senha = document.getElementById("newPassword")?.value || "";
+  const confirmacaoSenha = document.getElementById("confirmPassword")?.value || "";
+  const resultadoAvaliacao = avaliarSenha(senha, confirmacaoSenha);
+  const barraForca = document.getElementById("strengthBar");
+  const rotuloForca = document.getElementById("strengthLabel");
+  const percentual = Math.round((resultadoAvaliacao.score / 5) * 100);
 
-  if (bar) {
-    bar.style.width = `${percent}%`;
-    bar.style.background = result.score >= 4 ? "#22c55e" : result.score >= 3 ? "#f59e0b" : "#e05d5d";
+  if (barraForca) {
+    barraForca.style.width = `${percentual}%`;
+    barraForca.style.background = resultadoAvaliacao.score >= 4
+      ? "#22c55e"
+      : resultadoAvaliacao.score >= 3
+        ? "#f59e0b"
+        : "#e05d5d";
   }
 
-  if (label) {
-    label.textContent = result.label;
+  if (rotuloForca) {
+    rotuloForca.textContent = resultadoAvaliacao.label;
   }
 
-  Object.entries(result.rules).forEach(([rule, isValid]) => {
-    document.querySelector(`[data-rule="${rule}"]`)?.classList.toggle("valid", isValid);
+  Object.entries(resultadoAvaliacao.rules).forEach(([regra, estaValida]) => {
+    const elementoRegra = document.querySelector(`[data-rule="${regra}"]`);
+    const icone = elementoRegra?.querySelector("i");
+
+    elementoRegra?.classList.toggle("valid", estaValida);
+    icone?.classList.toggle("bi-circle", !estaValida);
+    icone?.classList.toggle("bi-check-circle-fill", estaValida);
   });
 
-  updateSecurityScore(result);
 }
 
-function evaluatePassword(password, confirmation) {
-  const rules = {
-    length: password.length >= 8,
-    uppercase: /[A-Z]/.test(password),
-    number: /\d/.test(password),
-    special: /[^A-Za-z0-9]/.test(password),
-    match: password !== "" && password === confirmation,
+function avaliarSenha(senha, confirmacaoSenha) {
+  const regras = {
+    length: senha.length >= 8,
+    uppercase: /[A-Z]/.test(senha),
+    number: /\d/.test(senha),
+    special: /[^A-Za-z0-9]/.test(senha),
+    match: senha !== "" && senha === confirmacaoSenha,
   };
-  const score = Object.values(rules).filter(Boolean).length;
-  const labels = ["Digite uma nova senha", "Muito fraca", "Fraca", "Media", "Forte", "Muito forte"];
+  const pontuacao = Object.values(regras).filter(Boolean).length;
+  const rotulos = ["Digite uma nova senha", "Muito fraca", "Fraca", "Media", "Forte", "Muito forte"];
 
   return {
-    rules,
-    score,
-    label: labels[score] || labels[0],
+    rules: regras,
+    score: pontuacao,
+    label: rotulos[pontuacao] || rotulos[0],
   };
 }
 
-function updateSecurityScore(passwordResult = null) {
-  const scoreElement = document.getElementById("securityScoreValue");
-
-  if (!scoreElement) return;
-
-  const passwordScore = passwordResult ? passwordResult.score * 10 : 0;
-  const suspiciousLogin = getSavedItem(getSettingKey("notify-suspicious-login")) === "true" ? 15 : 0;
-  const reviewedSessions = 12;
-  const currentPreferences = getPreferenceState();
-  const preferencesComplete = currentPreferences.theme && currentPreferences.accent ? 13 : 8;
-  const score = Math.min(100, 42 + passwordScore + suspiciousLogin + reviewedSessions + preferencesComplete);
-
-  scoreElement.textContent = String(score);
-}
-
-function updateDiagnostics() {
-  updateText("diagBrowser", getBrowserName());
-  updateText("diagOs", getOperatingSystem());
+function atualizarDiagnosticos() {
+  updateText("diagBrowser", obterNomeNavegador());
+  updateText("diagOs", obterSistemaOperacional());
   updateText("diagWidth", `${window.innerWidth}px`);
-  updateText("diagOnline", navigator.onLine ? "Online" : "Offline");
-  updateText("diagLanguage", navigator.language || "--");
   updateText("diagTime", new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
     timeStyle: "medium",
   }).format(new Date()));
 }
 
-function getBrowserName() {
-  const ua = navigator.userAgent;
+function obterNomeNavegador() {
+  const agenteUsuario = navigator.userAgent;
 
-  if (ua.includes("Edg/")) return "Microsoft Edge";
-  if (ua.includes("Chrome/")) return "Google Chrome";
-  if (ua.includes("Firefox/")) return "Mozilla Firefox";
-  if (ua.includes("Safari/")) return "Safari";
+  if (agenteUsuario.includes("Edg/")) return "Microsoft Edge";
+  if (agenteUsuario.includes("Chrome/")) return "Google Chrome";
+  if (agenteUsuario.includes("Firefox/")) return "Mozilla Firefox";
+  if (agenteUsuario.includes("Safari/")) return "Safari";
 
   return "Navegador desconhecido";
 }
 
-function getOperatingSystem() {
-  const platform = navigator.platform || "";
-  const ua = navigator.userAgent;
+function obterSistemaOperacional() {
+  const plataforma = navigator.platform || "";
+  const agenteUsuario = navigator.userAgent;
 
-  if (/Win/i.test(platform) || /Windows/i.test(ua)) return "Windows";
-  if (/Mac/i.test(platform)) return "macOS";
-  if (/Linux/i.test(platform)) return "Linux";
-  if (/Android/i.test(ua)) return "Android";
-  if (/iPhone|iPad/i.test(ua)) return "iOS";
+  if (/Win/i.test(plataforma) || /Windows/i.test(agenteUsuario)) return "Windows";
+  if (/Mac/i.test(plataforma)) return "macOS";
+  if (/Linux/i.test(plataforma)) return "Linux";
+  if (/Android/i.test(agenteUsuario)) return "Android";
+  if (/iPhone|iPad/i.test(agenteUsuario)) return "iOS";
 
   return "Sistema desconhecido";
 }
 
-function showPreferenceMessage(message) {
-  const element = document.getElementById("preferencesMessage");
+function exibirMensagemPreferencia(mensagem) {
+  const elementoMensagem = document.getElementById("preferencesMessage");
 
-  if (!element) return;
+  if (!elementoMensagem) return;
 
-  clearTimeout(preferenceMessageTimer);
-  element.textContent = message;
-  element.classList.add("show", "success");
+  clearTimeout(temporizadorMensagemPreferencia);
+  elementoMensagem.textContent = mensagem;
+  elementoMensagem.classList.add("show", "success");
 
-  preferenceMessageTimer = setTimeout(() => {
-    element.textContent = "";
-    element.classList.remove("show", "success");
-  }, PREFERENCE_MESSAGE_TIMEOUT_MS);
+  temporizadorMensagemPreferencia = setTimeout(() => {
+    elementoMensagem.textContent = "";
+    elementoMensagem.classList.remove("show", "success");
+  }, TEMPO_EXIBICAO_MENSAGEM_PREFERENCIA_MS);
 }
 
-function showToast(message) {
-  const toast = document.getElementById("settingsToast");
+function exibirNotificacao(mensagem) {
+  const notificacao = document.getElementById("settingsToast");
 
-  if (!toast) return;
+  if (!notificacao) return;
 
-  clearTimeout(toastTimer);
-  toast.textContent = message;
-  toast.classList.add("show");
+  clearTimeout(temporizadorNotificacao);
+  notificacao.textContent = mensagem;
+  notificacao.classList.add("show");
 
-  toastTimer = setTimeout(() => {
-    toast.classList.remove("show");
-  }, TOAST_TIMEOUT_MS);
+  temporizadorNotificacao = setTimeout(() => {
+    notificacao.classList.remove("show");
+  }, TEMPO_EXIBICAO_NOTIFICACAO_MS);
 }
 
 // Usa o diálogo global quando disponível e mantém confirm() como fallback progressivo.
-function confirmSettingsAction(title, text) {
-  return new Promise((resolve) => {
-    const overlay = document.createElement("div");
-    overlay.className = "settings-confirm-overlay";
-    overlay.innerHTML = `
+function confirmarAcaoConfiguracoes(titulo, texto) {
+  return new Promise((resolver) => {
+    const sobreposicao = document.createElement("div");
+    sobreposicao.className = "settings-confirm-overlay";
+    sobreposicao.innerHTML = `
       <section class="settings-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="settingsConfirmTitle">
         <div class="confirm-icon"><i class="bi bi-exclamation-triangle"></i></div>
-        <h2 id="settingsConfirmTitle">${escapeHtml(title)}</h2>
-        <p>${escapeHtml(text)}</p>
+        <h2 id="settingsConfirmTitle">${escaparHtml(titulo)}</h2>
+        <p>${escaparHtml(texto)}</p>
         <div class="confirm-actions">
           <button class="secondary-button" type="button" data-confirm-cancel>Cancelar</button>
           <button class="primary-button" type="button" data-confirm-ok>Confirmar</button>
@@ -903,56 +1009,50 @@ function confirmSettingsAction(title, text) {
       </section>
     `;
 
-    document.body.appendChild(overlay);
+    document.body.appendChild(sobreposicao);
 
-    const close = (answer) => {
-      overlay.remove();
-      resolve(answer);
+    const fecharConfirmacao = (resposta) => {
+      sobreposicao.remove();
+      resolver(resposta);
     };
 
-    overlay.querySelector("[data-confirm-cancel]")?.addEventListener("click", () => close(false));
-    overlay.querySelector("[data-confirm-ok]")?.addEventListener("click", () => close(true));
-    overlay.addEventListener("click", (event) => {
-      if (event.target === overlay) {
-        close(false);
+    sobreposicao.querySelector("[data-confirm-cancel]")
+      ?.addEventListener("click", () => fecharConfirmacao(false));
+    sobreposicao.querySelector("[data-confirm-ok]")
+      ?.addEventListener("click", () => fecharConfirmacao(true));
+    sobreposicao.addEventListener("click", (evento) => {
+      if (evento.target === sobreposicao) {
+        fecharConfirmacao(false);
       }
     });
-    overlay.querySelector("[data-confirm-cancel]")?.focus();
+    sobreposicao.querySelector("[data-confirm-cancel]")?.focus();
   });
 }
 
-function setButtonLoading(button, isLoading, loadingText = "Aguarde...") {
-  if (!button) return;
+function definirBotaoCarregando(botao, estaCarregando, textoCarregando = "Aguarde...") {
+  if (!botao) return;
 
-  if (isLoading) {
-    button.dataset.originalHtml = button.innerHTML;
-    button.disabled = true;
-    button.innerHTML = `<i class="bi bi-arrow-repeat"></i>${loadingText}`;
+  if (estaCarregando) {
+    botao.dataset.originalHtml = botao.innerHTML;
+    botao.disabled = true;
+    botao.innerHTML = `<i class="bi bi-arrow-repeat"></i>${textoCarregando}`;
     return;
   }
 
-  button.disabled = false;
+  botao.disabled = false;
 
-  if (button.dataset.originalHtml) {
-    button.innerHTML = button.dataset.originalHtml;
-    delete button.dataset.originalHtml;
+  if (botao.dataset.originalHtml) {
+    botao.innerHTML = botao.dataset.originalHtml;
+    delete botao.dataset.originalHtml;
   }
 }
 
-function getSettingKey(key) {
-  return `${SETTINGS_PREFIX}${key}`;
+function obterTexto(idElemento) {
+  return document.getElementById(idElemento)?.textContent?.trim() || "--";
 }
 
-function getText(id) {
-  return document.getElementById(id)?.textContent?.trim() || "--";
-}
-
-function wait(ms) {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
-}
-
-function escapeHtml(value) {
-  return String(value)
+function escaparHtml(valor) {
+  return String(valor)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -960,10 +1060,10 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-function cssEscape(value) {
+function escaparCss(valor) {
   if (window.CSS?.escape) {
-    return window.CSS.escape(value);
+    return window.CSS.escape(valor);
   }
 
-  return String(value).replace(/["\\]/g, "\\$&");
+  return String(valor).replace(/["\\]/g, "\\$&");
 }
