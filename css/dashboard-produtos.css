@@ -5,7 +5,7 @@
 }
 
 /* A pagina usa o mesmo fundo e as mesmas cores globais das outras telas. */
-body.dashboard-products-page {
+.dashboard-products-page.dashboard-products-embedded {
   min-height: 100vh;
   background: var(--page-bg);
   color: var(--text, #f6fbff);
@@ -13,7 +13,7 @@ body.dashboard-products-page {
 }
 
 /* No modo claro, a sombra fica mais leve para nao pesar sobre o fundo claro. */
-body.theme-light.dashboard-products-page {
+.theme-light .dashboard-products-page.dashboard-products-embedded {
   --dashboard-shadow: 0 18px 48px rgba(9, 31, 48, 0.11);
   background: var(--page-bg);
 }
@@ -22,7 +22,7 @@ body.theme-light.dashboard-products-page {
   padding-bottom: 42px;
 }
 
-.dashboard-topbar {
+.dashboard-products-page .dashboard-topbar {
   align-items: center;
 }
 
@@ -38,12 +38,12 @@ body.theme-light.dashboard-products-page {
   font-family: "Sora", "Inter", system-ui, sans-serif;
 }
 
-.dashboard-topbar h1 {
+.dashboard-products-page .dashboard-topbar h1 {
   line-height: 1.15;
 }
 
 /* Botao manual de atualizacao. A cor vem da preferencia de destaque do usuario. */
-.refresh-dashboard-button {
+.dashboard-products-page .refresh-dashboard-button {
   min-height: 46px;
   border: 1px solid
     color-mix(
@@ -63,7 +63,7 @@ body.theme-light.dashboard-products-page {
     color 0.2s ease;
 }
 
-.refresh-dashboard-button:hover {
+.dashboard-products-page .refresh-dashboard-button:hover {
   transform: translateY(-2px);
   border-color: color-mix(
     in srgb,
@@ -74,17 +74,17 @@ body.theme-light.dashboard-products-page {
     color-mix(in srgb, var(--cyan, #4aa3c7) 22%, transparent);
 }
 
-.refresh-dashboard-button i {
+.dashboard-products-page .refresh-dashboard-button i {
   font-size: 0.94rem;
 }
 
 /* Typewriter precisa de largura minima para reduzir o pulo visual durante a digitacao. */
-.dashboard-hero .typewriter-heading {
+.dashboard-products-page .dashboard-hero .typewriter-heading {
   min-width: min(var(--typewriter-min, 38ch), 100%);
 }
 
 /* Hero principal: banner visual do dashboard com imagem propria e overlay para leitura. */
-.dashboard-hero {
+.dashboard-products-page .dashboard-hero {
   margin-top: 18px;
   min-height: 300px;
   padding: 28px;
@@ -100,7 +100,7 @@ body.theme-light.dashboard-products-page {
   isolation: isolate;
 }
 
-.dashboard-hero::before {
+.dashboard-products-page .dashboard-hero::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -110,14 +110,14 @@ body.theme-light.dashboard-products-page {
 }
 
 /* Mantem o hero claro com leitura forte, sem apagar totalmente a arte de dados. */
-.theme-light .dashboard-hero {
+.theme-light .dashboard-products-page .dashboard-hero {
   border: 0;
   box-shadow:
     0 22px 70px rgba(9, 31, 48, 0.11),
     inset 0 0 0 1px rgba(255, 255, 255, 0.62);
 }
 
-.theme-light .dashboard-hero::before {
+.theme-light .dashboard-products-page .dashboard-hero::before {
   background:
     linear-gradient(
       90deg,
@@ -135,12 +135,12 @@ body.theme-light.dashboard-products-page {
     );
 }
 
-.dashboard-hero > * {
+.dashboard-products-page .dashboard-hero > * {
   position: relative;
   z-index: 1;
 }
 
-.eyebrow {
+.dashboard-products-page .eyebrow {
   color: var(--mint, #66d5c2);
   font-size: 0.78rem;
   font-weight: 900;
@@ -148,7 +148,7 @@ body.theme-light.dashboard-products-page {
   text-transform: uppercase;
 }
 
-.dashboard-hero h2 {
+.dashboard-products-page .dashboard-hero h2 {
   max-width: 760px;
   margin: 12px 0 10px;
   color: #f6fbff;
@@ -158,7 +158,7 @@ body.theme-light.dashboard-products-page {
   text-shadow: 0 10px 28px rgba(3, 16, 29, 0.52);
 }
 
-.dashboard-hero p {
+.dashboard-products-page .dashboard-hero p {
   max-width: 680px;
   margin: 0;
   color: rgba(246, 251, 255, 0.84);
@@ -168,18 +168,18 @@ body.theme-light.dashboard-products-page {
   text-shadow: 0 8px 22px rgba(3, 16, 29, 0.42);
 }
 
-.theme-light .dashboard-hero h2 {
+.theme-light .dashboard-products-page .dashboard-hero h2 {
   color: #0b1f30;
   text-shadow: 0 10px 28px rgba(255, 255, 255, 0.5);
 }
 
-.theme-light .dashboard-hero p {
+.theme-light .dashboard-products-page .dashboard-hero p {
   color: #315369;
   text-shadow: 0 8px 22px rgba(255, 255, 255, 0.55);
 }
 
 /* Texto usado por leitores de tela; fica invisivel sem sair da arvore de acessibilidade. */
-.dashboard-status-text {
+.dashboard-products-page .dashboard-status-text {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -192,7 +192,7 @@ body.theme-light.dashboard-products-page {
 }
 
 /* Cards superiores: quatro indicadores rapidos antes dos filtros. */
-.dashboard-summary-grid {
+.dashboard-products-page .dashboard-summary-grid {
   margin-top: 22px;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -200,8 +200,8 @@ body.theme-light.dashboard-products-page {
 }
 
 /* Superficies principais do dashboard, compartilhadas por cards e paineis. */
-.summary-card,
-.dashboard-panel {
+.dashboard-products-page .summary-card,
+.dashboard-products-page .dashboard-panel {
   border: 1px solid var(--line, rgba(255, 255, 255, 0.13));
   background: linear-gradient(
     135deg,
@@ -210,7 +210,7 @@ body.theme-light.dashboard-products-page {
   );
 }
 
-.summary-card {
+.dashboard-products-page .summary-card {
   padding: 20px;
   border-radius: 22px;
   min-height: 148px;
@@ -223,15 +223,15 @@ body.theme-light.dashboard-products-page {
     opacity 0.22s ease;
 }
 
-.summary-card span,
-.summary-card strong,
-.summary-card small {
+.dashboard-products-page .summary-card span,
+.dashboard-products-page .summary-card strong,
+.dashboard-products-page .summary-card small {
   position: relative;
   z-index: 1;
   display: block;
 }
 
-.summary-card span {
+.dashboard-products-page .summary-card span {
   color: var(--muted, #9cb8c9);
   font-size: 0.8rem;
   font-weight: 900;
@@ -239,27 +239,27 @@ body.theme-light.dashboard-products-page {
   text-transform: uppercase;
 }
 
-.summary-card strong {
+.dashboard-products-page .summary-card strong {
   margin-top: 12px;
   font-size: clamp(1.7rem, 3vw, 2.4rem);
   line-height: 1;
   letter-spacing: 0;
 }
 
-.summary-card small {
+.dashboard-products-page .summary-card small {
   margin-top: 11px;
   color: var(--muted, #9cb8c9);
   line-height: 1.45;
   font-weight: 650;
 }
 
-.dashboard-panel {
+.dashboard-products-page .dashboard-panel {
   border-radius: var(--dashboard-card-radius);
   padding: 22px;
 }
 
 /* Painel de filtros. A grade mantem os selects alinhados em desktop. */
-.chart-control-panel {
+.dashboard-products-page .chart-control-panel {
   margin-top: 22px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -267,12 +267,12 @@ body.theme-light.dashboard-products-page {
   gap: 14px;
 }
 
-.dashboard-control-group {
+.dashboard-products-page .dashboard-control-group {
   display: grid;
   gap: 8px;
 }
 
-.dashboard-control-group label {
+.dashboard-products-page .dashboard-control-group label {
   color: var(--muted, #9cb8c9);
   font-size: 0.78rem;
   font-weight: 900;
@@ -281,7 +281,7 @@ body.theme-light.dashboard-products-page {
 }
 
 /* Selects seguem o tema atual e recebem destaque apenas no foco. */
-.dashboard-control-group select {
+.dashboard-products-page .dashboard-control-group select {
   width: 100%;
   min-height: 48px;
   border: 1px solid var(--line, rgba(255, 255, 255, 0.13));
@@ -297,17 +297,17 @@ body.theme-light.dashboard-products-page {
     transform 0.2s ease;
 }
 
-.dashboard-control-group select:focus {
+.dashboard-products-page .dashboard-control-group select:focus {
   border-color: color-mix(in srgb, var(--cyan, #4aa3c7) 68%, transparent);
   box-shadow: 0 0 0 4px
     color-mix(in srgb, var(--cyan, #4aa3c7) 15%, transparent);
 }
 
-.dashboard-control-group select option {
+.dashboard-products-page .dashboard-control-group select option {
   color: #0b1720;
 }
 
-.refresh-dashboard-button {
+.dashboard-products-page .refresh-dashboard-button {
   min-height: 48px;
   width: 100%;
   padding: 0 18px;
@@ -328,7 +328,7 @@ body.theme-light.dashboard-products-page {
   cursor: pointer;
 }
 
-.refresh-dashboard-button:hover {
+.dashboard-products-page .refresh-dashboard-button:hover {
   color: #03101d;
   background: linear-gradient(
     135deg,
@@ -340,7 +340,7 @@ body.theme-light.dashboard-products-page {
 }
 
 /* Layout principal: grafico maior e leitura rapida lateral. */
-.dashboard-grid-main {
+.dashboard-products-page .dashboard-grid-main {
   margin-top: 22px;
   display: grid;
   grid-template-columns: minmax(0, 1.7fr) minmax(310px, 0.8fr);
@@ -348,7 +348,7 @@ body.theme-light.dashboard-products-page {
 }
 
 /* Cabecalho interno dos paineis, com titulo e metricas auxiliares. */
-.panel-heading {
+.dashboard-products-page .panel-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -356,17 +356,17 @@ body.theme-light.dashboard-products-page {
   margin-bottom: 18px;
 }
 
-.panel-heading.compact {
+.dashboard-products-page .panel-heading.compact {
   margin-bottom: 14px;
 }
 
-.panel-heading h3 {
+.dashboard-products-page .panel-heading h3 {
   margin: 6px 0 7px;
   font-size: 1.25rem;
   letter-spacing: 0;
 }
 
-.panel-heading p {
+.dashboard-products-page .panel-heading p {
   margin: 0;
   color: var(--muted, #9cb8c9);
   line-height: 1.5;
@@ -374,7 +374,7 @@ body.theme-light.dashboard-products-page {
 }
 
 /* Selo numerico no canto do grafico, usado para total analisado. */
-.chart-total-pill {
+.dashboard-products-page .chart-total-pill {
   min-width: 155px;
   padding: 13px 15px;
   border: 1px solid var(--line, rgba(255, 255, 255, 0.13));
@@ -383,33 +383,33 @@ body.theme-light.dashboard-products-page {
   text-align: right;
 }
 
-.chart-total-pill span,
-.chart-total-pill strong {
+.dashboard-products-page .chart-total-pill span,
+.dashboard-products-page .chart-total-pill strong {
   display: block;
 }
 
-.chart-total-pill span {
+.dashboard-products-page .chart-total-pill span {
   color: var(--muted, #9cb8c9);
   font-size: 0.75rem;
   font-weight: 900;
   text-transform: uppercase;
 }
 
-.chart-total-pill strong {
+.dashboard-products-page .chart-total-pill strong {
   margin-top: 5px;
   font-size: 1.55rem;
   letter-spacing: 0;
 }
 
 /* Altura fixa evita que o grafico encolha ou cresca ao trocar o tipo. */
-.chart-wrapper {
+.dashboard-products-page .chart-wrapper {
   --dashboard-loading-pill-width: 192px;
   width: 100%;
   height: 430px;
   position: relative;
 }
 
-.chart-wrapper canvas {
+.dashboard-products-page .chart-wrapper canvas {
   transition:
     opacity 0.22s ease,
     filter 0.22s ease,
@@ -519,19 +519,19 @@ body.theme-light.dashboard-products-page {
 }
 
 /* Lista lateral com ranking dos dados visiveis no grafico. */
-.ranking-list {
+.dashboard-products-page .ranking-list {
   display: grid;
   gap: 13px;
 }
 
-.ranking-item {
+.dashboard-products-page .ranking-item {
   padding: 14px;
   border: 1px solid var(--line, rgba(255, 255, 255, 0.13));
   border-radius: 18px;
   background: var(--soft, rgba(255, 255, 255, 0.06));
 }
 
-.ranking-item-head {
+.dashboard-products-page .ranking-item-head {
   display: flex;
   justify-content: space-between;
   gap: 14px;
@@ -539,19 +539,19 @@ body.theme-light.dashboard-products-page {
   font-weight: 850;
 }
 
-.ranking-item-head span {
+.dashboard-products-page .ranking-item-head span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.ranking-item-head strong {
+.dashboard-products-page .ranking-item-head strong {
   color: var(--mint, #66d5c2);
 }
 
 /* Barra de progresso simples para comparar participacao entre itens. */
-.ranking-progress {
+.dashboard-products-page .ranking-progress {
   height: 8px;
   margin: 10px 0 8px;
   border-radius: 999px;
@@ -559,7 +559,7 @@ body.theme-light.dashboard-products-page {
   overflow: hidden;
 }
 
-.ranking-progress span {
+.dashboard-products-page .ranking-progress span {
   display: block;
   height: 100%;
   border-radius: inherit;
@@ -570,36 +570,36 @@ body.theme-light.dashboard-products-page {
   );
 }
 
-.ranking-item small,
-.ranking-empty {
+.dashboard-products-page .ranking-item small,
+.dashboard-products-page .ranking-empty {
   color: var(--muted, #9cb8c9);
   font-weight: 650;
 }
 
 /* Tabela de apoio para leitura detalhada dos mesmos dados do ranking. */
-.table-panel {
+.dashboard-products-page .table-panel {
   margin-top: 22px;
 }
 
-.dashboard-table-wrap {
+.dashboard-products-page .dashboard-table-wrap {
   width: 100%;
   overflow-x: auto;
 }
 
-.dashboard-table {
+.dashboard-products-page .dashboard-table {
   width: 100%;
   border-collapse: collapse;
   min-width: 620px;
 }
 
-.dashboard-table th,
-.dashboard-table td {
+.dashboard-products-page .dashboard-table th,
+.dashboard-products-page .dashboard-table td {
   padding: 15px 14px;
   border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.13));
   text-align: left;
 }
 
-.dashboard-table th {
+.dashboard-products-page .dashboard-table th {
   color: var(--muted, #9cb8c9);
   font-size: 0.76rem;
   font-weight: 950;
@@ -607,18 +607,18 @@ body.theme-light.dashboard-products-page {
   text-transform: uppercase;
 }
 
-.dashboard-table td {
+.dashboard-products-page .dashboard-table td {
   color: var(--text, #f6fbff);
   font-weight: 750;
 }
 
-.dashboard-table tr:last-child td {
+.dashboard-products-page .dashboard-table tr:last-child td {
   border-bottom: 0;
 }
 
 /* Ajustes especificos do tema claro para manter contraste e leveza. */
-.theme-light .summary-card,
-.theme-light .dashboard-panel {
+.theme-light .dashboard-products-page .summary-card,
+.theme-light .dashboard-products-page .dashboard-panel {
   border-color: rgba(11, 31, 48, 0.12);
   background:
     linear-gradient(
@@ -630,12 +630,12 @@ body.theme-light.dashboard-products-page {
   box-shadow: var(--shadow, var(--dashboard-shadow));
 }
 
-.theme-light .dashboard-control-group select {
+.theme-light .dashboard-products-page .dashboard-control-group select {
   color: var(--text, #0b1f30);
   background: rgba(255, 255, 255, 0.86);
 }
 
-.theme-light .refresh-dashboard-button {
+.theme-light .dashboard-products-page .refresh-dashboard-button {
   color: #03101d;
   border-color: color-mix(
     in srgb,
@@ -646,77 +646,77 @@ body.theme-light.dashboard-products-page {
     color-mix(in srgb, var(--cyan, #4aa3c7) 24%, transparent);
 }
 
-.theme-light .chart-total-pill,
-.theme-light .ranking-item {
+.theme-light .dashboard-products-page .chart-total-pill,
+.theme-light .dashboard-products-page .ranking-item {
   background: rgba(11, 31, 48, 0.045);
 }
 
-.theme-light .dashboard-table th,
-.theme-light .dashboard-table td {
+.theme-light .dashboard-products-page .dashboard-table th,
+.theme-light .dashboard-products-page .dashboard-table td {
   border-bottom-color: rgba(11, 31, 48, 0.1);
 }
 
-.theme-light .dashboard-table td {
+.theme-light .dashboard-products-page .dashboard-table td {
   color: var(--text, #0b1f30);
 }
 
 /* Em telas medias, o dashboard deixa de tentar manter quatro colunas. */
 @media (max-width: 1240px) {
-  .dashboard-summary-grid {
+  .dashboard-products-page .dashboard-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .chart-control-panel {
+  .dashboard-products-page .chart-control-panel {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .refresh-dashboard-button {
+  .dashboard-products-page .refresh-dashboard-button {
     width: 100%;
   }
 
-  .dashboard-grid-main {
+  .dashboard-products-page .dashboard-grid-main {
     grid-template-columns: 1fr;
   }
 }
 
 /* Mobile: filtros e cards empilham para evitar textos espremidos. */
 @media (max-width: 780px) {
-  .dashboard-hero {
+  .dashboard-products-page .dashboard-hero {
     padding: 22px;
   }
 
-  .dashboard-summary-grid,
-  .chart-control-panel {
+  .dashboard-products-page .dashboard-summary-grid,
+  .dashboard-products-page .chart-control-panel {
     grid-template-columns: 1fr;
   }
 
-  .panel-heading {
+  .dashboard-products-page .panel-heading {
     flex-direction: column;
   }
 
-  .chart-total-pill {
+  .dashboard-products-page .chart-total-pill {
     width: 100%;
     text-align: left;
   }
 
-  .chart-wrapper {
+  .dashboard-products-page .chart-wrapper {
     height: 340px;
   }
 }
 
 /* Ajustes finais para celulares pequenos. */
 @media (max-width: 520px) {
-  .dashboard-panel,
-  .summary-card,
-  .dashboard-hero {
+  .dashboard-products-page .dashboard-panel,
+  .dashboard-products-page .summary-card,
+  .dashboard-products-page .dashboard-hero {
     border-radius: 20px;
   }
 
-  .dashboard-hero h2 {
+  .dashboard-products-page .dashboard-hero h2 {
     font-size: 1.85rem;
   }
 
-  .chart-wrapper {
+  .dashboard-products-page .chart-wrapper {
     height: 300px;
   }
 }

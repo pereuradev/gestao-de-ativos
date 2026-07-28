@@ -127,7 +127,11 @@ document.addEventListener("DOMContentLoaded", initDashboardProductsPage);
 
 function initDashboardProductsPage() {
   // O tema e a sidebar seguem o base-interface.js; aqui so reagimos para redesenhar o grafico.
-  window.onThemeChanged = () => renderCurrentChart();
+  const previousThemeChanged = typeof window.onThemeChanged === "function" ? window.onThemeChanged : null;
+  window.onThemeChanged = () => {
+    previousThemeChanged?.();
+    renderCurrentChart();
+  };
   window.addEventListener("titech:motion-change", renderCurrentChart);
   (window.startPageAnimation || startPageAnimation)();
   (window.loadSavedTheme || loadSavedTheme)();
@@ -389,7 +393,6 @@ function applyLocalCategorySelection() {
   if (state.categoriaId === "todos") {
     // Voltar para "Todos" e instantaneo porque guardamos a resposta completa.
     dashboardData = dashboardBaseData;
-    renderSummaryCards();
     renderCurrentChart();
     setStatus("Dados exibidos.", "Filtro removido na tela.");
     return true;
@@ -428,7 +431,6 @@ function applyLocalCategorySelection() {
     locais: categoryLocations,
   };
 
-  renderSummaryCards();
   renderCurrentChart();
   setStatus("Dados exibidos.", "Filtro aplicado na tela.");
 
@@ -516,7 +518,6 @@ async function loadDashboardProducts(showLoading = true, options = {}) {
 
     console.error(error);
     dashboardData = DEFAULT_DASHBOARD_DATA;
-    renderSummaryCards();
     renderCurrentChart();
     setStatus(
       "Não foi possível carregar os dados.",
@@ -562,7 +563,6 @@ function applyDashboardPayload(payload) {
   populateCategoryFilter(dashboardData.categorias);
   populateBrandFilter(dashboardData.marcas_filtro);
   populateLocationFilter(dashboardData.locais_filtro);
-  renderSummaryCards();
   renderCurrentChart();
 }
 
@@ -768,39 +768,6 @@ function createOption(value, label) {
   return option;
 }
 
-function renderSummaryCards() {
-  // Atualiza os quatro cards superiores a partir do resumo atual.
-  const resumo = dashboardData.resumo || DEFAULT_DASHBOARD_DATA.resumo;
-  const selected =
-    dashboardData.categoria_selecionada ||
-    DEFAULT_DASHBOARD_DATA.categoria_selecionada;
-  const largest = resumo.maior_categoria;
-  const activeFilters = buildActiveFilterLabels(selected);
-  const totalFiltrado = normalizeNumber(resumo.total_filtrado);
-  const resultText = totalFiltrado === 1 ? "ativo encontrado" : "ativos encontrados";
-
-  setText("totalAssetsMetric", formatNumber(resumo.total_ativos));
-  setText("totalTypesMetric", formatNumber(resumo.total_tipos));
-  setText("selectedTypeMetric", activeFilters.title);
-
-  const selectedDetail = `${formatNumber(totalFiltrado)} ${resultText}${
-    activeFilters.detail ? ` para ${activeFilters.detail}.` : " no inventario."
-  }`;
-
-  setText("selectedTypeDetail", selectedDetail);
-
-  if (largest) {
-    setText("largestTypeMetric", formatCategoryLabel(largest.nome || "--"));
-    setText(
-      "largestTypeDetail",
-      `${formatNumber(largest.total)} ativos, ${formatPercent(largest.percentual)} do total.`,
-    );
-  } else {
-    setText("largestTypeMetric", "--");
-    setText("largestTypeDetail", "Nenhuma categoria encontrada.");
-  }
-}
-
 function buildActiveFilterLabels(selectedCategory) {
   const labels = [];
 
@@ -838,7 +805,7 @@ function getSelectedOptionLabel(selectId) {
 }
 
 function renderCurrentChart() {
-  // Um unico fluxo renderiza grafico, ranking e tabela para todas as metricas.
+  // Um unico fluxo renderiza grafico e ranking para todas as metricas.
   const config = METRIC_CONFIG[state.metrica] || METRIC_CONFIG.categorias;
   const rows = getCurrentRows(config);
   const total = calculateRowsTotal(rows);
@@ -851,7 +818,6 @@ function renderCurrentChart() {
 
   renderChart(rows, config);
   renderRanking(visibleRows, total);
-  renderTable(visibleRows, total);
 }
 
 function getCurrentRows(config) {
@@ -1100,36 +1066,6 @@ function renderRanking(rows, total) {
         `;
 
     container.appendChild(item);
-  });
-}
-
-function renderTable(rows, total) {
-  // Tabela completa de apoio, usando os mesmos dados da leitura rapida.
-  const tableBody = document.getElementById("dashboardTableBody");
-
-  if (!tableBody) {
-    return;
-  }
-
-  tableBody.innerHTML = "";
-
-  if (!rows.length || total === 0) {
-    tableBody.innerHTML =
-      '<tr><td colspan="3">Nenhum dado encontrado para o filtro atual.</td></tr>';
-    return;
-  }
-
-  rows.forEach((row) => {
-    const percent = total ? (row.total / total) * 100 : 0;
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-            <td>${escapeHtml(formatRowLabel(row.nome))}</td>
-            <td>${formatNumber(row.total)}</td>
-            <td>${formatPercent(percent)}</td>
-        `;
-
-    tableBody.appendChild(tr);
   });
 }
 

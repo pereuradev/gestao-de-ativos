@@ -203,7 +203,6 @@ SIte-Gestao_de_Ativos/
 │   │   └── widgets-react.js
 │   └── pages/
 │       ├── pagina-login.js
-│       ├── pagina-inicial.js
 │       ├── dashboard-produtos.js
 │       └── scripts especificos das demais paginas
 │

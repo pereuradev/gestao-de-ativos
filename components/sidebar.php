@@ -180,7 +180,16 @@ $componentSidebarCanEditGroups = $componentSidebarHasPermission("editar_grupos")
 $componentSidebarCanEditCategories = $componentSidebarHasPermission("editar_categorias");
 
 // Listas de telas que pertencem aos grupos expansivos da sidebar.
-// Elas controlam quando Cadastros ou Edicao devem iniciar abertos.
+// Elas controlam quando Visualizacoes, Cadastros ou Edicao devem iniciar abertos.
+$componentSidebarVisualizationPages = [
+  "ativos.php",
+  "funcionarios.php",
+  "grupos-visualizacao.php",
+  "categorias-visualizacao.php",
+  "marcas-visualizacao.php",
+  "propriedades-visualizacao.php",
+  "locais-visualizacao.php",
+];
 $componentSidebarRegistrationPages = [
   "cadastro-ativos.php",
   "categorias.php",
@@ -199,6 +208,7 @@ $componentSidebarEditingPages = [
   "edicao-grupos.php",
   "edicao-locais.php",
 ];
+$componentSidebarVisualizationOpen = $componentSidebarSubmenuIsOpen($componentSidebarVisualizationPages);
 $componentSidebarRegistrationOpen = $componentSidebarSubmenuIsOpen($componentSidebarRegistrationPages);
 $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarEditingPages);
 ?>
@@ -230,64 +240,53 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
       <span>Dashboard</span>
     </a>
 
-    <!-- Funcionarios depende de permissao de visualizacao. Sem acesso, aparece bloqueado. -->
-    <?php if ($componentSidebarCanViewEmployees): ?>
-      <a class="<?php echo $componentSidebarLinkClass("funcionarios.php"); ?>" href="funcionarios.php" <?php echo $componentSidebarCurrentAttr("funcionarios.php"); ?>>
-        <i class="bi bi-people-fill"></i>
-        <span>Funcion&aacute;rios</span>
-      </a>
-    <?php else: ?>
-      <span class="nav-link nav-link-disabled" aria-disabled="true" data-permission-resource="Funcionarios"
-        title="Apenas usuarios autorizados podem acessar funcionarios">
-        <i class="bi bi-people-fill"></i>
-        <span>Funcion&aacute;rios</span>
-      </span>
-    <?php endif; ?>
+    <!-- Grupo expansivo que concentra todas as telas de consulta do sistema. -->
+    <div class="nav-group<?php echo $componentSidebarVisualizationOpen ? " open" : ""; ?>" data-nav-group>
+      <button class="nav-link nav-toggle<?php echo $componentSidebarVisualizationOpen ? " active" : ""; ?>" type="button"
+        aria-expanded="<?php echo $componentSidebarVisualizationOpen ? "true" : "false"; ?>"
+        aria-controls="visualizationSubmenu">
+        <i class="bi bi-eye-fill"></i>
+        <span>Visualiza&ccedil;&otilde;es</span>
+        <i class="bi bi-chevron-down nav-chevron"></i>
+      </button>
 
-    <!-- Grupos tambem respeita permissao de visualizacao independente. -->
-    <?php if ($componentSidebarCanViewGroups): ?>
-      <a class="<?php echo $componentSidebarLinkClass("grupos-visualizacao.php"); ?>" href="grupos-visualizacao.php" <?php echo $componentSidebarCurrentAttr("grupos-visualizacao.php"); ?>>
-        <i class="bi bi-collection-fill"></i>
-        <span>Grupos</span>
-      </a>
-    <?php else: ?>
-      <span class="nav-link nav-link-disabled" aria-disabled="true" data-permission-resource="Grupos"
-        title="Apenas usuarios autorizados podem acessar grupos">
-        <i class="bi bi-collection-fill"></i>
-        <span>Grupos</span>
-      </span>
-    <?php endif; ?>
+      <div class="nav-submenu" id="visualizationSubmenu">
+        <a<?php echo $componentSidebarSubmenuClass("ativos.php"); ?> href="ativos.php">Ativos</a>
 
-    <!-- Links de consulta que ficam disponiveis na navegacao principal. -->
-    <?php if ($componentSidebarCanViewCategories): ?>
-      <a class="<?php echo $componentSidebarLinkClass("categorias-visualizacao.php"); ?>"
-        href="categorias-visualizacao.php" <?php echo $componentSidebarCurrentAttr("categorias-visualizacao.php"); ?>>
-        <i class="bi bi-diagram-3-fill"></i>
-        <span>Categorias</span>
-      </a>
-    <?php else: ?>
-      <span class="nav-link nav-link-disabled" aria-disabled="true" data-permission-resource="Categorias"
-        title="Apenas usuarios autorizados podem acessar categorias">
-        <i class="bi bi-diagram-3-fill"></i>
-        <span>Categorias</span>
-      </span>
-    <?php endif; ?>
+        <?php if ($componentSidebarCanViewEmployees): ?>
+          <a<?php echo $componentSidebarSubmenuClass("funcionarios.php"); ?> href="funcionarios.php">Funcion&aacute;rios</a>
+        <?php else: ?>
+          <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
+            data-permission-resource="Funcionarios"
+            title="Apenas usuarios autorizados podem acessar funcionarios">Funcion&aacute;rios</span>
+        <?php endif; ?>
 
-    <a class="<?php echo $componentSidebarLinkClass("marcas-visualizacao.php"); ?>" href="marcas-visualizacao.php" <?php echo $componentSidebarCurrentAttr("marcas-visualizacao.php"); ?>>
-      <i class="bi bi-tags-fill"></i>
-      <span>Marcas</span>
-    </a>
+        <?php if ($componentSidebarCanViewGroups): ?>
+          <a<?php echo $componentSidebarSubmenuClass("grupos-visualizacao.php"); ?>
+            href="grupos-visualizacao.php">Grupos</a>
+        <?php else: ?>
+          <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
+            data-permission-resource="Grupos"
+            title="Apenas usuarios autorizados podem acessar grupos">Grupos</span>
+        <?php endif; ?>
 
-    <a class="<?php echo $componentSidebarLinkClass("propriedades-visualizacao.php"); ?>"
-      href="propriedades-visualizacao.php" <?php echo $componentSidebarCurrentAttr("propriedades-visualizacao.php"); ?>>
-      <i class="bi bi-building-check"></i>
-      <span>Propriedades</span>
-    </a>
+        <?php if ($componentSidebarCanViewCategories): ?>
+          <a<?php echo $componentSidebarSubmenuClass("categorias-visualizacao.php"); ?>
+            href="categorias-visualizacao.php">Categorias</a>
+        <?php else: ?>
+          <span class="nav-submenu-disabled nav-link-disabled" aria-disabled="true"
+            data-permission-resource="Categorias"
+            title="Apenas usuarios autorizados podem acessar categorias">Categorias</span>
+        <?php endif; ?>
 
-    <a class="<?php echo $componentSidebarLinkClass("locais-visualizacao.php"); ?>" href="locais-visualizacao.php" <?php echo $componentSidebarCurrentAttr("locais-visualizacao.php"); ?>>
-      <i class="bi bi-geo-alt-fill"></i>
-      <span>Localiza&ccedil;&otilde;es</span>
-    </a>
+        <a<?php echo $componentSidebarSubmenuClass("marcas-visualizacao.php"); ?>
+          href="marcas-visualizacao.php">Marcas</a>
+        <a<?php echo $componentSidebarSubmenuClass("propriedades-visualizacao.php"); ?>
+          href="propriedades-visualizacao.php">Propriedades</a>
+        <a<?php echo $componentSidebarSubmenuClass("locais-visualizacao.php"); ?>
+          href="locais-visualizacao.php">Localiza&ccedil;&otilde;es</a>
+      </div>
+    </div>
 
     <!-- Grupo expansivo de telas de cadastro. -->
     <div class="nav-group<?php echo $componentSidebarRegistrationOpen ? " open" : ""; ?>" data-nav-group>
@@ -381,12 +380,7 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
       </div>
     </div>
 
-    <!-- Links finais da navegacao principal. -->
-    <a class="<?php echo $componentSidebarLinkClass("ativos.php"); ?>" href="ativos.php" <?php echo $componentSidebarCurrentAttr("ativos.php"); ?>>
-      <i class="bi bi-hdd-network-fill"></i>
-      <span>Ativos</span>
-    </a>
-
+    <!-- Configuracoes permanece como link principal por nao pertencer aos fluxos expansivos. -->
     <a class="<?php echo $componentSidebarLinkClass("configuracoes.php"); ?>" href="configuracoes.php" <?php echo $componentSidebarCurrentAttr("configuracoes.php"); ?>>
       <i class="bi bi-gear-fill"></i>
       <span>Configura&ccedil;&otilde;es</span>
