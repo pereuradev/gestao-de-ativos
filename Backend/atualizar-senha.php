@@ -10,11 +10,11 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
-function responderAtualizacaoSenha(bool $ok, string $message, int $statusCode = 200): void
+function responderAtualizacaoSenha(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200): void
 {
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        ["ok" => $ok, "message" => $message],
+        ["ok" => $sucesso, "message" => $mensagemResposta],
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -68,49 +68,49 @@ function gerarHashAtualizacaoSenha(string $senha): string
     return $hash;
 }
 
-function requisicaoAuthAtualizacaoSenha(
-    string $method,
+function requisicaoAutenticacaoAtualizacaoSenha(
+    string $metodoHttp,
     string $url,
-    string $anonKey,
-    array $payload,
-    ?string $accessToken = null
+    string $chaveAnonima,
+    array $dadosRequisicao,
+    ?string $tokenAcesso = null
 ): array {
-    $ch = curl_init();
+    $requisicaoCurl = curl_init();
 
-    curl_setopt_array($ch, [
+    curl_setopt_array($requisicaoCurl, [
         CURLOPT_URL => $url,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_CUSTOMREQUEST => $method,
+        CURLOPT_CUSTOMREQUEST => $metodoHttp,
         CURLOPT_HTTPHEADER => [
             "Content-Type: application/json",
-            "apikey: " . $anonKey,
-            "Authorization: Bearer " . ($accessToken ?: $anonKey),
+            "apikey: " . $chaveAnonima,
+            "Authorization: Bearer " . ($tokenAcesso ?: $chaveAnonima),
         ],
-        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        CURLOPT_POSTFIELDS => json_encode($dadosRequisicao, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         CURLOPT_CONNECTTIMEOUT => 10,
         CURLOPT_TIMEOUT => 30,
     ]);
 
-    $response = curl_exec($ch);
-    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlError = curl_error($ch);
+    $respostaHttp = curl_exec($requisicaoCurl);
+    $codigoHttp = (int) curl_getinfo($requisicaoCurl, CURLINFO_HTTP_CODE);
+    $erroCurl = curl_error($requisicaoCurl);
 
-    curl_close($ch);
+    curl_close($requisicaoCurl);
 
     return [
-        "http_code" => $httpCode,
-        "data" => json_decode((string) $response, true),
-        "curl_error" => $curlError,
+        "http_code" => $codigoHttp,
+        "data" => json_decode((string) $respostaHttp, true),
+        "curl_error" => $erroCurl,
     ];
 }
 
-function requisicaoAuthAtualizacaoSenhaSucesso(array $response): bool
+function requisicaoAutenticacaoAtualizacaoSenhaSucesso(array $respostaHttp): bool
 {
-    $httpCode = (int) ($response["http_code"] ?? 0);
+    $codigoHttp = (int) ($respostaHttp["http_code"] ?? 0);
 
-    return $httpCode >= 200
-        && $httpCode < 300
-        && is_array($response["data"] ?? null);
+    return $codigoHttp >= 200
+        && $codigoHttp < 300
+        && is_array($respostaHttp["data"] ?? null);
 }
 
 function cancelarTransacaoAtualizacaoSenha(PDO $pdo): void
@@ -168,25 +168,25 @@ $senhaAtualizadaNoSupabase = false;
 
 try {
     require_once __DIR__ . "/config.php";
-    $supabaseUrl = configObrigatoria("SUPABASE_URL");
-    $supabaseAnonKey = configObrigatoria("SUPABASE_ANON_KEY");
+    $urlSupabase = configObrigatoria("SUPABASE_URL");
+    $chaveAnonimaSupabase = configObrigatoria("SUPABASE_ANON_KEY");
 
     require __DIR__ . "/Conexao.php";
     $pdo->beginTransaction();
 
     // O bloqueio serializa duas trocas concorrentes da mesma conta.
-    $perfilStmt = $pdo->prepare("
+    $consultaPerfil = $pdo->prepare("
         select id::text, email, status
           from public.perfis_usuarios
          where id = cast(:id as uuid)
            and lower(btrim(email)) = lower(btrim(:email))
          for update
     ");
-    $perfilStmt->execute([
+    $consultaPerfil->execute([
         ":id" => $usuarioId,
         ":email" => $emailSessao,
     ]);
-    $perfil = $perfilStmt->fetch();
+    $perfil = $consultaPerfil->fetch();
 
     if (!is_array($perfil)) {
         cancelarTransacaoAtualizacaoSenha($pdo);
@@ -199,10 +199,10 @@ try {
     }
 
     // A senha atual e confirmada diretamente no provedor de identidade.
-    $autenticacao = requisicaoAuthAtualizacaoSenha(
+    $autenticacao = requisicaoAutenticacaoAtualizacaoSenha(
         "POST",
-        rtrim($supabaseUrl, "/") . "/auth/v1/token?grant_type=password",
-        $supabaseAnonKey,
+        rtrim($urlSupabase, "/") . "/auth/v1/token?grant_type=password",
+        $chaveAnonimaSupabase,
         [
             "email" => $emailSessao,
             "password" => $senhaAtual,
@@ -227,82 +227,82 @@ try {
         responderAtualizacaoSenha(false, "O Supabase esta indisponivel para validar a senha.", 502);
     }
 
-    if (!requisicaoAuthAtualizacaoSenhaSucesso($autenticacao)) {
+    if (!requisicaoAutenticacaoAtualizacaoSenhaSucesso($autenticacao)) {
         cancelarTransacaoAtualizacaoSenha($pdo);
         responderAtualizacaoSenha(false, "Senha atual incorreta.", 401);
     }
 
-    $authData = $autenticacao["data"];
-    $authUser = is_array($authData["user"] ?? null) ? $authData["user"] : [];
-    $authUserId = strtolower(trim((string) ($authUser["id"] ?? "")));
+    $dadosAutenticacao = $autenticacao["data"];
+    $usuarioAutenticacao = is_array($dadosAutenticacao["user"] ?? null) ? $dadosAutenticacao["user"] : [];
+    $idUsuarioAutenticado = strtolower(trim((string) ($usuarioAutenticacao["id"] ?? "")));
 
-    if ($authUserId === "" || !hash_equals(strtolower($usuarioId), $authUserId)) {
+    if ($idUsuarioAutenticado === "" || !hash_equals(strtolower($usuarioId), $idUsuarioAutenticado)) {
         cancelarTransacaoAtualizacaoSenha($pdo);
         responderAtualizacaoSenha(false, "A identidade autenticada nao corresponde a sessao atual.", 403);
     }
 
-    $accessToken = (string) ($authData["access_token"] ?? "");
+    $tokenAcesso = (string) ($dadosAutenticacao["access_token"] ?? "");
 
-    if ($accessToken === "") {
+    if ($tokenAcesso === "") {
         cancelarTransacaoAtualizacaoSenha($pdo);
         responderAtualizacaoSenha(false, "O Supabase nao retornou uma sessao valida.", 502);
     }
 
-    $atualizacaoLocalStmt = $pdo->prepare("
+    $consultaAtualizacaoLocal = $pdo->prepare("
         update public.perfis_usuarios
            set senha = :senha,
                atualizado_em = now()
          where id = cast(:id as uuid)
     ");
-    $atualizacaoLocalStmt->execute([
+    $consultaAtualizacaoLocal->execute([
         ":senha" => gerarHashAtualizacaoSenha($novaSenha),
         ":id" => $usuarioId,
     ]);
 
     // O token foi emitido agora, portanto a atualizacao pertence ao proprio usuario autenticado.
-    $atualizacaoAuth = requisicaoAuthAtualizacaoSenha(
+    $atualizacaoAutenticacao = requisicaoAutenticacaoAtualizacaoSenha(
         "PUT",
-        rtrim($supabaseUrl, "/") . "/auth/v1/user",
-        $supabaseAnonKey,
+        rtrim($urlSupabase, "/") . "/auth/v1/user",
+        $chaveAnonimaSupabase,
         [
             "email" => $emailSessao,
             "current_password" => $senhaAtual,
             "password" => $novaSenha,
         ],
-        $accessToken
+        $tokenAcesso
     );
 
-    if (($atualizacaoAuth["curl_error"] ?? "") !== "") {
+    if (($atualizacaoAutenticacao["curl_error"] ?? "") !== "") {
         cancelarTransacaoAtualizacaoSenha($pdo);
         responderAtualizacaoSenha(false, "Nao foi possivel atualizar a senha no Supabase.", 502);
     }
 
-    if ((int) ($atualizacaoAuth["http_code"] ?? 0) === 429) {
+    if ((int) ($atualizacaoAutenticacao["http_code"] ?? 0) === 429) {
         cancelarTransacaoAtualizacaoSenha($pdo);
         responderAtualizacaoSenha(false, "Muitas tentativas. Aguarde um pouco e tente novamente.", 429);
     }
 
     if (
-        (int) ($atualizacaoAuth["http_code"] ?? 0) === 0
-        || (int) ($atualizacaoAuth["http_code"] ?? 0) >= 500
+        (int) ($atualizacaoAutenticacao["http_code"] ?? 0) === 0
+        || (int) ($atualizacaoAutenticacao["http_code"] ?? 0) >= 500
     ) {
         cancelarTransacaoAtualizacaoSenha($pdo);
         responderAtualizacaoSenha(false, "O Supabase esta indisponivel para atualizar a senha.", 502);
     }
 
-    if (!requisicaoAuthAtualizacaoSenhaSucesso($atualizacaoAuth)) {
+    if (!requisicaoAutenticacaoAtualizacaoSenhaSucesso($atualizacaoAutenticacao)) {
         cancelarTransacaoAtualizacaoSenha($pdo);
-        $erroAuth = strtolower((string) (
-            $atualizacaoAuth["data"]["error_code"]
-            ?? $atualizacaoAuth["data"]["code"]
+        $erroAutenticacao = strtolower((string) (
+            $atualizacaoAutenticacao["data"]["error_code"]
+            ?? $atualizacaoAutenticacao["data"]["code"]
             ?? ""
         ));
 
-        if (str_contains($erroAuth, "same_password")) {
+        if (str_contains($erroAutenticacao, "same_password")) {
             responderAtualizacaoSenha(false, "A nova senha precisa ser diferente da senha atual.", 422);
         }
 
-        if (str_contains($erroAuth, "weak_password")) {
+        if (str_contains($erroAutenticacao, "weak_password")) {
             responderAtualizacaoSenha(false, "A nova senha nao atende a politica de seguranca do Supabase.", 422);
         }
 
@@ -317,10 +317,10 @@ try {
 
     // Mantem na sessao PHP os tokens obtidos na confirmacao da senha atual.
     $_SESSION["supabase"] = [
-        "access_token" => $accessToken,
-        "refresh_token" => (string) ($authData["refresh_token"] ?? ""),
-        "expires_at" => time() + (int) ($authData["expires_in"] ?? 0),
-        "token_type" => (string) ($authData["token_type"] ?? "bearer"),
+        "access_token" => $tokenAcesso,
+        "refresh_token" => (string) ($dadosAutenticacao["refresh_token"] ?? ""),
+        "expires_at" => time() + (int) ($dadosAutenticacao["expires_in"] ?? 0),
+        "token_type" => (string) ($dadosAutenticacao["token_type"] ?? "bearer"),
     ];
     session_regenerate_id(true);
 

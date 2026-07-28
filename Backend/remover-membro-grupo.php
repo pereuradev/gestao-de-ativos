@@ -10,11 +10,11 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
-function responderRemocaoMembroGrupo(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responderRemocaoMembroGrupo(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -71,30 +71,30 @@ try {
 
     garantirTabelasGruposAcesso($pdo);
 
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         delete from public.grupos_acesso_membros
          where grupo_id = cast(:grupo_id as uuid)
            and usuario_id = cast(:usuario_id as uuid)
      returning grupo_id, usuario_id
     ");
-    $stmt->execute([
+    $consultaPreparada->execute([
         ":grupo_id" => $grupoId,
         ":usuario_id" => $usuarioId,
     ]);
 
-    $removido = $stmt->fetch();
+    $removido = $consultaPreparada->fetch();
 
     if (!$removido) {
         responderRemocaoMembroGrupo(false, "Membro nao encontrado neste grupo.", 404);
     }
 
     // Atualiza o grupo para que a alteração de composição apareça nas ordenações e auditorias visuais.
-    $atualizarStmt = $pdo->prepare("
+    $consultaAtualizacao = $pdo->prepare("
         update public.grupos_acesso
            set atualizado_em = now()
          where id = cast(:grupo_id as uuid)
     ");
-    $atualizarStmt->execute([":grupo_id" => $grupoId]);
+    $consultaAtualizacao->execute([":grupo_id" => $grupoId]);
 
     responderRemocaoMembroGrupo(true, "Membro removido do grupo.", 200, [
         "grupo_id" => $grupoId,

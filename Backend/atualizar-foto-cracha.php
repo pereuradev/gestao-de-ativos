@@ -15,11 +15,11 @@ const FOTO_CRACHA_MAX_BYTES = 2097152;
 const FOTO_CRACHA_PASTA = __DIR__ . "/../uploads/crachas";
 const FOTO_CRACHA_URL_BASE = "../uploads/crachas/";
 
-function responderFotoCracha(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responderFotoCracha(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -39,14 +39,14 @@ function campoFotoCracha(string $nome): string
 function csrfFotoCrachaValido(): bool
 {
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
-    $tokenPost = campoFotoCracha("csrf_token");
+    $tokenRequisicao = campoFotoCracha("csrf_token");
 
     return is_string($tokenSessao)
         && $tokenSessao !== ""
-        && hash_equals($tokenSessao, $tokenPost);
+        && hash_equals($tokenSessao, $tokenRequisicao);
 }
 
-function extensaoFotoCracha(string $tmpPath): ?string
+function extensaoFotoCracha(string $caminhoTemporario): ?string
 {
     $permitidos = [
         "image/jpeg" => "jpg",
@@ -57,10 +57,10 @@ function extensaoFotoCracha(string $tmpPath): ?string
     $mime = "";
 
     if (class_exists("finfo")) {
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mime = (string) $finfo->file($tmpPath);
+        $informacoesArquivo = new finfo(FILEINFO_MIME_TYPE);
+        $mime = (string) $informacoesArquivo->file($caminhoTemporario);
     } elseif (function_exists("mime_content_type")) {
-        $mime = (string) mime_content_type($tmpPath);
+        $mime = (string) mime_content_type($caminhoTemporario);
     }
 
     return $permitidos[$mime] ?? null;
@@ -136,29 +136,29 @@ if (!is_array($arquivo)) {
     responderFotoCracha(false, "Selecione uma imagem para o cracha.", 422);
 }
 
-$erroUploadRaw = $arquivo["error"] ?? UPLOAD_ERR_NO_FILE;
+$erroUploadOriginal = $arquivo["error"] ?? UPLOAD_ERR_NO_FILE;
 
-if (is_array($erroUploadRaw)) {
+if (is_array($erroUploadOriginal)) {
     responderFotoCracha(false, "Envie apenas uma imagem por vez.", 422);
 }
 
-$erroUpload = (int) $erroUploadRaw;
+$erroUpload = (int) $erroUploadOriginal;
 
 if ($erroUpload !== UPLOAD_ERR_OK) {
     responderFotoCracha(false, mensagemErroUploadFotoCracha($erroUpload), 422);
 }
 
-$tmpPathRaw = $arquivo["tmp_name"] ?? "";
-$tamanhoRaw = $arquivo["size"] ?? 0;
+$caminhoTemporarioOriginal = $arquivo["tmp_name"] ?? "";
+$tamanhoOriginal = $arquivo["size"] ?? 0;
 
-if (is_array($tmpPathRaw) || is_array($tamanhoRaw)) {
+if (is_array($caminhoTemporarioOriginal) || is_array($tamanhoOriginal)) {
     responderFotoCracha(false, "Envie apenas uma imagem por vez.", 422);
 }
 
-$tmpPath = (string) $tmpPathRaw;
-$tamanho = (int) $tamanhoRaw;
+$caminhoTemporario = (string) $caminhoTemporarioOriginal;
+$tamanho = (int) $tamanhoOriginal;
 
-if ($tmpPath === "" || !is_uploaded_file($tmpPath)) {
+if ($caminhoTemporario === "" || !is_uploaded_file($caminhoTemporario)) {
     responderFotoCracha(false, "Upload invalido.", 422);
 }
 
@@ -166,9 +166,9 @@ if ($tamanho <= 0 || $tamanho > FOTO_CRACHA_MAX_BYTES) {
     responderFotoCracha(false, "Envie uma imagem de ate 2 MB.", 422);
 }
 
-$extensao = extensaoFotoCracha($tmpPath);
+$extensao = extensaoFotoCracha($caminhoTemporario);
 
-if ($extensao === null || @getimagesize($tmpPath) === false) {
+if ($extensao === null || @getimagesize($caminhoTemporario) === false) {
     responderFotoCracha(false, "Use uma imagem JPG, PNG ou WebP valida.", 422);
 }
 
@@ -179,7 +179,7 @@ if (!is_dir(FOTO_CRACHA_PASTA) && !mkdir(FOTO_CRACHA_PASTA, 0775, true)) {
 $nomeArquivo = nomeArquivoFotoCracha($usuarioId, $extensao);
 $destino = FOTO_CRACHA_PASTA . DIRECTORY_SEPARATOR . $nomeArquivo;
 
-if (!move_uploaded_file($tmpPath, $destino)) {
+if (!move_uploaded_file($caminhoTemporario, $destino)) {
     responderFotoCracha(false, "Nao foi possivel salvar a imagem no servidor.", 500);
 }
 
@@ -188,19 +188,19 @@ if (!move_uploaded_file($tmpPath, $destino)) {
 try {
     require __DIR__ . "/Conexao.php";
 
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         update public.perfis_usuarios
            set foto_cracha = :foto_cracha,
                atualizado_em = now()
          where id = :id
      returning foto_cracha
     ");
-    $stmt->execute([
+    $consultaPreparada->execute([
         ":foto_cracha" => $nomeArquivo,
         ":id" => $usuarioId,
     ]);
 
-    $perfil = $stmt->fetch();
+    $perfil = $consultaPreparada->fetch();
 
     if (!is_array($perfil)) {
         @unlink($destino);

@@ -10,12 +10,12 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
-function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responder(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
     // Todas as respostas seguem o mesmo envelope JSON.
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -51,11 +51,11 @@ function csrfValido(): bool
 {
     // Protege o cadastro contra envio sem o token da sessao.
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
-    $tokenPost = campo("csrf_token");
+    $tokenRequisicao = campo("csrf_token");
 
     return is_string($tokenSessao)
         && $tokenSessao !== ""
-        && hash_equals($tokenSessao, $tokenPost);
+        && hash_equals($tokenSessao, $tokenRequisicao);
 }
 
 function garantirTabelaLocais(PDO $pdo): void
@@ -117,20 +117,20 @@ try {
     garantirTabelaLocais($pdo);
 
     // Bloqueia duplicidade por nome antes de inserir.
-    $duplicadoStmt = $pdo->prepare("
+    $consultaDuplicado = $pdo->prepare("
         select 1
           from public.locais
          where lower(btrim(nome)) = lower(btrim(:nome))
          limit 1
     ");
-    $duplicadoStmt->execute([":nome" => $nome]);
+    $consultaDuplicado->execute([":nome" => $nome]);
 
-    if ($duplicadoStmt->fetchColumn() !== false) {
+    if ($consultaDuplicado->fetchColumn() !== false) {
         responder(false, "Este local ja esta cadastrado.", 409);
     }
 
     // Insere e retorna o local criado.
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         insert into public.locais (
             nome,
             endereco,
@@ -151,13 +151,13 @@ try {
             atualizado_em
     ");
 
-    $stmt->execute([
+    $consultaPreparada->execute([
         ":nome" => $nome,
         ":endereco" => $endereco,
         ":status" => $status,
     ]);
 
-    $local = $stmt->fetch();
+    $local = $consultaPreparada->fetch();
 
     responder(true, "Local cadastrado com sucesso.", 201, [
         "local" => $local,

@@ -55,7 +55,7 @@ $componentSidebarBadgePhotoUrl = static function (mixed $fileName): string {
 // Verifica permissoes combinando a regra de admin com as permissoes dos grupos.
 // Isso permite que usuarios nao administradores vejam apenas os menus liberados.
 $componentSidebarHasPermission = static function (string $permission) use ($componentSidebarUsuario): bool {
-  if (function_exists("usuarioGrupoAcessoAdmin") && usuarioGrupoAcessoAdmin($componentSidebarUsuario)) {
+  if (function_exists("usuarioGrupoAcessoAdministrador") && usuarioGrupoAcessoAdministrador($componentSidebarUsuario)) {
     return true;
   }
 
@@ -114,8 +114,8 @@ $componentSidebarNameText = (string) (
 );
 $componentSidebarName = $componentSidebarEscape($componentSidebarNameText);
 $componentSidebarRoleRaw = strtolower(trim((string) ($componentSidebarUsuario["tipo_usuario"] ?? "")));
-$componentSidebarIsAdminRole = function_exists("usuarioGrupoAcessoAdmin")
-  ? usuarioGrupoAcessoAdmin($componentSidebarUsuario)
+$componentSidebarIsAdminRole = function_exists("usuarioGrupoAcessoAdministrador")
+  ? usuarioGrupoAcessoAdministrador($componentSidebarUsuario)
   : in_array($componentSidebarRoleRaw, ["adm", "admin", "administrador"], true);
 $componentSidebarRoleLabel = $componentSidebarEscape($componentSidebarIsAdminRole ? "ADM" : "Colaborador");
 $componentSidebarRoleClass = $componentSidebarEscape($componentSidebarIsAdminRole ? "is-admin" : "is-collaborator");

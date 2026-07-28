@@ -20,11 +20,11 @@ function sanitizarCelulaCsv(mixed $valor): string
     return $comecaComControle || $comecaComFormula ? "'" . $texto : $texto;
 }
 
-function escreverLinhaCsv($output, array $linha): void
+function escreverLinhaCsv($saidaArquivo, array $linha): void
 {
     $linhaSegura = array_map("sanitizarCelulaCsv", $linha);
 
-    if (fputcsv($output, $linhaSegura, ";") === false) {
+    if (fputcsv($saidaArquivo, $linhaSegura, ";") === false) {
         throw new RuntimeException("Nao foi possivel montar o arquivo CSV.");
     }
 }
@@ -54,14 +54,14 @@ function gerarCsvAtivos(array $ativos, bool $incluirResponsavel): string
         "Data de cadastro",
     ]);
 
-    $output = fopen("php://temp", "w+b");
+    $saidaArquivo = fopen("php://temp", "w+b");
 
-    if ($output === false) {
+    if ($saidaArquivo === false) {
         throw new RuntimeException("Nao foi possivel preparar o arquivo CSV.");
     }
 
-    fwrite($output, "\xEF\xBB\xBF");
-    escreverLinhaCsv($output, $cabecalho);
+    fwrite($saidaArquivo, "\xEF\xBB\xBF");
+    escreverLinhaCsv($saidaArquivo, $cabecalho);
 
     foreach ($ativos as $ativo) {
         $linha = [
@@ -84,12 +84,12 @@ function gerarCsvAtivos(array $ativos, bool $incluirResponsavel): string
         $linha[] = $ativo["status"] ?? "";
         $linha[] = $ativo["datasheet"] ?? "";
         $linha[] = $ativo["criado_em_formatado"] ?? "";
-        escreverLinhaCsv($output, $linha);
+        escreverLinhaCsv($saidaArquivo, $linha);
     }
 
-    rewind($output);
-    $csv = stream_get_contents($output);
-    fclose($output);
+    rewind($saidaArquivo);
+    $csv = stream_get_contents($saidaArquivo);
+    fclose($saidaArquivo);
 
     if ($csv === false) {
         throw new RuntimeException("Nao foi possivel finalizar o arquivo CSV.");

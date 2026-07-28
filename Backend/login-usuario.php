@@ -12,15 +12,15 @@ header("Cache-Control: no-store");
 require_once __DIR__ . "/config.php";
 
 // Credenciais publicas do Supabase Auth usadas para validar a senha do usuario.
-$supabaseUrl = configObrigatoria("SUPABASE_URL");
-$supabaseAnonKey = configObrigatoria("SUPABASE_ANON_KEY");
+$urlSupabase = configObrigatoria("SUPABASE_URL");
+$chaveAnonimaSupabase = configObrigatoria("SUPABASE_ANON_KEY");
 
-function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responder(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
     // Todas as saidas passam por aqui para o frontend tratar sempre o mesmo formato.
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -82,11 +82,11 @@ function preferenciasUsuario(array $perfil): array
 function caminhoAplicacao(string $arquivo): string
 {
     // Monta o redirect respeitando a pasta onde o XAMPP serviu o projeto.
-    $scriptPath = str_replace("\\", "/", (string)($_SERVER["SCRIPT_NAME"] ?? ""));
-    $backendPath = dirname($scriptPath);
-    $appPath = preg_replace("#/Backend$#", "", $backendPath) ?: "";
+    $caminhoScript = str_replace("\\", "/", (string)($_SERVER["SCRIPT_NAME"] ?? ""));
+    $caminhoServidor = dirname($caminhoScript);
+    $caminhoBaseAplicacao = preg_replace("#/Backend$#", "", $caminhoServidor) ?: "";
 
-    return rtrim($appPath, "/") . "/" . ltrim($arquivo, "/");
+    return rtrim($caminhoBaseAplicacao, "/") . "/" . ltrim($arquivo, "/");
 }
 
 function gerarHashSenha(string $senha): string
@@ -105,80 +105,80 @@ function gerarHashSenha(string $senha): string
     return $hash;
 }
 
-function autenticarSupabase(string $url, string $anonKey, string $email, string $senha): array
+function autenticarSupabase(string $url, string $chaveAnonima, string $email, string $senha): array
 {
     // Quando a senha local nao confere, validamos direto no Supabase Auth.
-    $payload = [
+    $dadosRequisicao = [
         "email" => $email,
         "password" => $senha,
     ];
 
-    $ch = curl_init();
+    $requisicaoCurl = curl_init();
 
-    curl_setopt_array($ch, [
+    curl_setopt_array($requisicaoCurl, [
         CURLOPT_URL => rtrim($url, "/") . "/auth/v1/token?grant_type=password",
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
         CURLOPT_HTTPHEADER => [
             "Content-Type: application/json",
-            "apikey: " . $anonKey,
-            "Authorization: Bearer " . $anonKey,
+            "apikey: " . $chaveAnonima,
+            "Authorization: Bearer " . $chaveAnonima,
         ],
-        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_POSTFIELDS => json_encode($dadosRequisicao, JSON_UNESCAPED_UNICODE),
         CURLOPT_TIMEOUT => 30,
     ]);
 
-    $response = curl_exec($ch);
-    $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlError = curl_error($ch);
+    $respostaHttp = curl_exec($requisicaoCurl);
+    $codigoHttp = (int)curl_getinfo($requisicaoCurl, CURLINFO_HTTP_CODE);
+    $erroCurl = curl_error($requisicaoCurl);
 
-    curl_close($ch);
+    curl_close($requisicaoCurl);
 
-    if ($curlError) {
-        responder(false, "Erro ao comunicar com o Supabase: " . $curlError, 502);
+    if ($erroCurl) {
+        responder(false, "Erro ao comunicar com o Supabase: " . $erroCurl, 502);
     }
 
-    $authData = json_decode((string)$response, true);
+    $dadosAutenticacao = json_decode((string)$respostaHttp, true);
 
-    if ($httpCode < 200 || $httpCode >= 300 || !is_array($authData)) {
-        responder(false, "E-mail ou senha invalidos.", 401, ["supabase_status" => $httpCode]);
+    if ($codigoHttp < 200 || $codigoHttp >= 300 || !is_array($dadosAutenticacao)) {
+        responder(false, "E-mail ou senha invalidos.", 401, ["supabase_status" => $codigoHttp]);
     }
 
-    return $authData;
+    return $dadosAutenticacao;
 }
 
 function buscarPerfilPorEmail(PDO $pdo, string $email): ?array
 {
     // Primeiro tentamos achar o perfil pelo e-mail informado no formulario.
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         select *
           from public.perfis_usuarios
          where lower(btrim(email)) = lower(btrim(:email))
          limit 1
     ");
-    $stmt->execute([":email" => $email]);
+    $consultaPreparada->execute([":email" => $email]);
 
-    $perfil = $stmt->fetch();
+    $perfil = $consultaPreparada->fetch();
 
     return is_array($perfil) ? $perfil : null;
 }
 
-function buscarPerfil(PDO $pdo, string $userId, string $email): ?array
+function buscarPerfil(PDO $pdo, string $idUsuarioAutenticacao, string $email): ?array
 {
     // Depois da autenticacao no Supabase, buscamos por id ou e-mail retornado.
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         select *
           from public.perfis_usuarios
          where id = :id
             or lower(btrim(email)) = lower(btrim(:email))
          limit 1
     ");
-    $stmt->execute([
-        ":id" => $userId,
+    $consultaPreparada->execute([
+        ":id" => $idUsuarioAutenticacao,
         ":email" => $email,
     ]);
 
-    $perfil = $stmt->fetch();
+    $perfil = $consultaPreparada->fetch();
 
     return is_array($perfil) ? $perfil : null;
 }
@@ -190,31 +190,31 @@ function atualizarSenhaPerfil(PDO $pdo, string $perfilId, string $senhaHash): vo
         return;
     }
 
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         update public.perfis_usuarios
            set senha = :senha,
                atualizado_em = now()
          where id = :id
     ");
-    $stmt->execute([
+    $consultaPreparada->execute([
         ":senha" => $senhaHash,
         ":id" => $perfilId,
     ]);
 }
 
-function criarPerfilMinimo(PDO $pdo, array $authUser): array
+function criarPerfilMinimo(PDO $pdo, array $usuarioAutenticacao): array
 {
     // Se o Auth possui o usuario mas a tabela local ainda nao, criamos um perfil basico.
-    $metadata = is_array($authUser["user_metadata"] ?? null) ? $authUser["user_metadata"] : [];
-    $userId = (string)($authUser["id"] ?? "");
-    $email = (string)($authUser["email"] ?? "");
-    $nomeCompleto = trim((string)($metadata["nome_completo"] ?? $email));
+    $metadados = is_array($usuarioAutenticacao["user_metadata"] ?? null) ? $usuarioAutenticacao["user_metadata"] : [];
+    $idUsuarioAutenticacao = (string)($usuarioAutenticacao["id"] ?? "");
+    $email = (string)($usuarioAutenticacao["email"] ?? "");
+    $nomeCompleto = trim((string)($metadados["nome_completo"] ?? $email));
 
-    if ($userId === "" || $email === "") {
+    if ($idUsuarioAutenticacao === "" || $email === "") {
         responder(false, "Nao foi possivel identificar o usuario autenticado.", 500);
     }
 
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         insert into public.perfis_usuarios (
             id,
             nome_completo,
@@ -248,20 +248,20 @@ function criarPerfilMinimo(PDO $pdo, array $authUser): array
         returning *
     ");
 
-    $stmt->execute([
-        ":id" => $userId,
+    $consultaPreparada->execute([
+        ":id" => $idUsuarioAutenticacao,
         ":nome_completo" => $nomeCompleto,
         ":email" => $email,
         ":tipo_usuario" => "Colaborador",
-        ":departamento" => (string)($metadata["departamento"] ?? ""),
-        ":empresa" => (string)($metadata["empresa"] ?? ""),
-        ":rg" => (string)($metadata["rg"] ?? ""),
-        ":cpf" => (string)($metadata["cpf"] ?? ""),
-        ":celular" => (string)($metadata["celular"] ?? ""),
-        ":data_nascimento" => ($metadata["data_nascimento"] ?? null) ?: null,
+        ":departamento" => (string)($metadados["departamento"] ?? ""),
+        ":empresa" => (string)($metadados["empresa"] ?? ""),
+        ":rg" => (string)($metadados["rg"] ?? ""),
+        ":cpf" => (string)($metadados["cpf"] ?? ""),
+        ":celular" => (string)($metadados["celular"] ?? ""),
+        ":data_nascimento" => ($metadados["data_nascimento"] ?? null) ?: null,
     ]);
 
-    $perfil = $stmt->fetch();
+    $perfil = $consultaPreparada->fetch();
 
     if (!is_array($perfil)) {
         responder(false, "Nao foi possivel carregar o perfil do usuario.", 500);
@@ -301,9 +301,9 @@ try {
     require_once __DIR__ . "/grupos-acesso-util.php";
 
     // Comecamos pelo perfil local; se ele nao resolver a senha, caimos para Supabase.
-    $authData = null;
+    $dadosAutenticacao = null;
     $perfil = buscarPerfilPorEmail($pdo, $email);
-    $authEmail = (string)($perfil["email"] ?? $email);
+    $emailAutenticacao = (string)($perfil["email"] ?? $email);
     $senhaPrecisaAtualizar = false;
     $senhaHashAtual = (string)($perfil["senha"] ?? "");
 
@@ -316,19 +316,19 @@ try {
         ]);
     } else {
         // Senha local ausente ou invalida: Supabase decide se o login e verdadeiro.
-        $authData = autenticarSupabase($supabaseUrl, $supabaseAnonKey, $email, $senha);
-        $authUser = is_array($authData["user"] ?? null) ? $authData["user"] : [];
-        $userId = (string)($authUser["id"] ?? "");
-        $authEmail = (string)($authUser["email"] ?? $email);
+        $dadosAutenticacao = autenticarSupabase($urlSupabase, $chaveAnonimaSupabase, $email, $senha);
+        $usuarioAutenticacao = is_array($dadosAutenticacao["user"] ?? null) ? $dadosAutenticacao["user"] : [];
+        $idUsuarioAutenticacao = (string)($usuarioAutenticacao["id"] ?? "");
+        $emailAutenticacao = (string)($usuarioAutenticacao["email"] ?? $email);
 
-        if ($userId === "") {
+        if ($idUsuarioAutenticacao === "") {
             responder(false, "Nao foi possivel identificar o usuario autenticado.", 500);
         }
 
-        $perfil = buscarPerfil($pdo, $userId, $authEmail);
+        $perfil = buscarPerfil($pdo, $idUsuarioAutenticacao, $emailAutenticacao);
 
         if (!$perfil) {
-            $perfil = criarPerfilMinimo($pdo, $authUser);
+            $perfil = criarPerfilMinimo($pdo, $usuarioAutenticacao);
         }
 
         $senhaPrecisaAtualizar = true;
@@ -361,7 +361,7 @@ try {
     $_SESSION["usuario"] = [
         "id" => (string)$perfil["id"],
         "nome_completo" => (string)($perfil["nome_completo"] ?? ""),
-        "email" => (string)($perfil["email"] ?? $authEmail),
+        "email" => (string)($perfil["email"] ?? $emailAutenticacao),
         "tipo_usuario" => (string)$perfil["tipo_usuario"],
         "departamento" => (string)($perfil["departamento"] ?? ""),
         "empresa" => (string)($perfil["empresa"] ?? ""),
@@ -376,13 +376,13 @@ try {
     ];
     $_SESSION["usuario"]["permissoes_grupos"] = permissoesUsuarioGrupoAcesso($pdo, $_SESSION["usuario"]);
 
-    if (is_array($authData)) {
+    if (is_array($dadosAutenticacao)) {
         // Guardamos tokens quando a autenticacao veio do Supabase.
         $_SESSION["supabase"] = [
-            "access_token" => (string)($authData["access_token"] ?? ""),
-            "refresh_token" => (string)($authData["refresh_token"] ?? ""),
-            "expires_at" => time() + (int)($authData["expires_in"] ?? 0),
-            "token_type" => (string)($authData["token_type"] ?? "bearer"),
+            "access_token" => (string)($dadosAutenticacao["access_token"] ?? ""),
+            "refresh_token" => (string)($dadosAutenticacao["refresh_token"] ?? ""),
+            "expires_at" => time() + (int)($dadosAutenticacao["expires_in"] ?? 0),
+            "token_type" => (string)($dadosAutenticacao["token_type"] ?? "bearer"),
         ];
     } else {
         unset($_SESSION["supabase"]);

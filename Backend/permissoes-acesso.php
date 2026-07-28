@@ -84,7 +84,7 @@ function exigirAdministradorPagina(?string $recurso = null): void
         exit;
     }
 
-    if (usuarioGrupoAcessoAdmin($_SESSION["usuario"])) {
+    if (usuarioGrupoAcessoAdministrador($_SESSION["usuario"])) {
         return;
     }
 
@@ -106,7 +106,7 @@ function exigirAdministradorApi(?string $recurso = null): void
         exit;
     }
 
-    if (usuarioGrupoAcessoAdmin($_SESSION["usuario"])) {
+    if (usuarioGrupoAcessoAdministrador($_SESSION["usuario"])) {
         return;
     }
 

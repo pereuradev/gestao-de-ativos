@@ -10,15 +10,15 @@ $_SESSION = [];
 
 if (ini_get("session.use_cookies")) {
     // Expira o cookie da sessao no navegador.
-    $params = session_get_cookie_params();
+    $parametrosCookie = session_get_cookie_params();
     setcookie(
         session_name(),
         "",
         time() - 42000,
-        $params["path"],
-        $params["domain"],
-        (bool)$params["secure"],
-        (bool)$params["httponly"]
+        $parametrosCookie["path"],
+        $parametrosCookie["domain"],
+        (bool)$parametrosCookie["secure"],
+        (bool)$parametrosCookie["httponly"]
     );
 }
 

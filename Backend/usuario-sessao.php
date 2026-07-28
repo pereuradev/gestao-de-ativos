@@ -10,11 +10,11 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
-function responderUsuarioSessao(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responderUsuarioSessao(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -112,7 +112,7 @@ try {
     require __DIR__ . "/grupos-acesso-util.php";
 
     // Recarrega o perfil pelo e-mail da sessão para refletir mudanças administrativas recentes.
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         select
             id,
             nome_completo,
@@ -132,8 +132,8 @@ try {
          where lower(btrim(email)) = lower(btrim(:email))
          limit 1
     ");
-    $stmt->execute([":email" => $email]);
-    $perfil = $stmt->fetch();
+    $consultaPreparada->execute([":email" => $email]);
+    $perfil = $consultaPreparada->fetch();
 
     if (!is_array($perfil)) {
         responderUsuarioSessao(false, "Perfil nao encontrado.", 404);
@@ -176,7 +176,7 @@ try {
             "foto_cracha_url" => urlFotoCrachaSessao((string) ($usuarioAtualizado["foto_cracha"] ?? "")),
             "iniciais" => iniciaisUsuarioSessao($nome),
             "permissoes" => $permissoes,
-            "is_admin" => usuarioGrupoAcessoAdmin($usuarioAtualizado),
+            "is_admin" => usuarioGrupoAcessoAdministrador($usuarioAtualizado),
             "preferencias" => $preferencias,
         ],
     ]);

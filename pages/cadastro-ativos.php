@@ -406,6 +406,21 @@ try {
                 <small class="field-hint">Pode se repetir entre unidades do mesmo modelo.</small>
               </label>
 
+              <label class="asset-field pn-quantity-field" data-pn-quantity-field hidden>
+                <span>Quantidade</span>
+                <div class="quantity-stepper" data-quantity-stepper>
+                  <button type="button" data-quantity-decrement aria-label="Diminuir quantidade">
+                    <i class="bi bi-dash-lg" aria-hidden="true"></i>
+                  </button>
+                  <input id="pnQuantity" name="quantidade" type="number" value="1" min="1" max="100" inputmode="numeric"
+                    aria-label="Quantidade de ativos com este PN" data-quantity-input disabled />
+                  <button type="button" data-quantity-increment aria-label="Aumentar quantidade">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <small class="field-hint">Usado apenas em Somente PN; cada unidade ser&aacute; cadastrada separadamente.</small>
+              </label>
+
               <label class="asset-field" data-traceability-field="sn" hidden>
                 <span>SN</span>
                 <div class="input-shell">

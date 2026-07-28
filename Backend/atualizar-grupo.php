@@ -10,11 +10,11 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
-function responderAtualizacaoGrupo(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responderAtualizacaoGrupo(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -78,16 +78,16 @@ function iniciaisAtualizacaoGrupo(string $nome): string
 // Reconstrói o estado completo devolvido ao navegador após a atualização.
 function buscarGrupoAtualizado(PDO $pdo, string $grupoId, array $rotulosPermissoes): array
 {
-    $grupoStmt = $pdo->prepare("
+    $consultaGrupo = $pdo->prepare("
         select id, nome, descricao, status, criado_em, atualizado_em
           from public.grupos_acesso
          where id = cast(:id as uuid)
          limit 1
     ");
-    $grupoStmt->execute([":id" => $grupoId]);
-    $grupo = $grupoStmt->fetch() ?: [];
+    $consultaGrupo->execute([":id" => $grupoId]);
+    $grupo = $consultaGrupo->fetch() ?: [];
 
-    $membrosStmt = $pdo->prepare("
+    $consultaMembros = $pdo->prepare("
         select
             u.id,
             u.nome_completo,
@@ -99,7 +99,7 @@ function buscarGrupoAtualizado(PDO $pdo, string $grupoId, array $rotulosPermisso
          where gm.grupo_id = cast(:id as uuid)
       order by u.nome_completo asc
     ");
-    $membrosStmt->execute([":id" => $grupoId]);
+    $consultaMembros->execute([":id" => $grupoId]);
     $membros = array_map(static function (array $membro): array {
         $nome = (string) ($membro["nome_completo"] ?? "");
 
@@ -111,15 +111,15 @@ function buscarGrupoAtualizado(PDO $pdo, string $grupoId, array $rotulosPermisso
             "departamento" => (string) ($membro["departamento"] ?? ""),
             "iniciais" => iniciaisAtualizacaoGrupo($nome),
         ];
-    }, $membrosStmt->fetchAll());
+    }, $consultaMembros->fetchAll());
 
-    $permissoesStmt = $pdo->prepare("
+    $consultaPermissoes = $pdo->prepare("
         select permissao
           from public.grupos_acesso_permissoes
          where grupo_id = cast(:id as uuid)
       order by permissao asc
     ");
-    $permissoesStmt->execute([":id" => $grupoId]);
+    $consultaPermissoes->execute([":id" => $grupoId]);
     $permissoes = array_map(static function (array $permissao) use ($rotulosPermissoes): array {
         $codigo = (string) ($permissao["permissao"] ?? "");
 
@@ -127,7 +127,7 @@ function buscarGrupoAtualizado(PDO $pdo, string $grupoId, array $rotulosPermisso
             "codigo" => $codigo,
             "rotulo" => $rotulosPermissoes[$codigo] ?? $codigo,
         ];
-    }, $permissoesStmt->fetchAll());
+    }, $consultaPermissoes->fetchAll());
 
     return [
         "id" => (string) ($grupo["id"] ?? $grupoId),
@@ -199,48 +199,48 @@ try {
     }
 
     if ($membros) {
-        $placeholders = [];
-        $params = [];
+        $marcadoresConsulta = [];
+        $parametrosConsulta = [];
 
-        foreach ($membros as $index => $membroId) {
-            $key = ":membro_{$index}";
-            $placeholders[] = "cast({$key} as uuid)";
-            $params[$key] = $membroId;
+        foreach ($membros as $indice => $membroId) {
+            $chaveItem = ":membro_{$indice}";
+            $marcadoresConsulta[] = "cast({$chaveItem} as uuid)";
+            $parametrosConsulta[$chaveItem] = $membroId;
         }
 
-        $stmt = $pdo->prepare("
+        $consultaPreparada = $pdo->prepare("
             select count(*)::int
               from public.perfis_usuarios
-             where id in (" . implode(", ", $placeholders) . ")
+             where id in (" . implode(", ", $marcadoresConsulta) . ")
                and lower(coalesce(status, 'ativo')) = 'ativo'
         ");
-        $stmt->execute($params);
+        $consultaPreparada->execute($parametrosConsulta);
 
-        if ((int) $stmt->fetchColumn() !== count($membros)) {
+        if ((int) $consultaPreparada->fetchColumn() !== count($membros)) {
             responderAtualizacaoGrupo(false, "Selecione apenas funcionarios ativos.", 422);
         }
     }
 
-    $duplicadoStmt = $pdo->prepare("
+    $consultaDuplicado = $pdo->prepare("
         select 1
           from public.grupos_acesso
          where lower(btrim(nome)) = lower(btrim(:nome))
            and id <> cast(:id as uuid)
          limit 1
     ");
-    $duplicadoStmt->execute([
+    $consultaDuplicado->execute([
         ":nome" => $nome,
         ":id" => $grupoId,
     ]);
 
-    if ($duplicadoStmt->fetchColumn() !== false) {
+    if ($consultaDuplicado->fetchColumn() !== false) {
         responderAtualizacaoGrupo(false, "Ja existe outro grupo com este nome.", 409);
     }
 
     // Grupo, membros e permissões formam uma única alteração e devem confirmar ou falhar juntos.
     $pdo->beginTransaction();
 
-    $grupoStmt = $pdo->prepare("
+    $consultaGrupo = $pdo->prepare("
         update public.grupos_acesso
            set nome = :nome,
                descricao = :descricao,
@@ -249,14 +249,14 @@ try {
          where id = cast(:id as uuid)
      returning id
     ");
-    $grupoStmt->execute([
+    $consultaGrupo->execute([
         ":id" => $grupoId,
         ":nome" => $nome,
         ":descricao" => $descricao !== "" ? $descricao : null,
         ":status" => $status,
     ]);
 
-    if (!$grupoStmt->fetch()) {
+    if (!$consultaGrupo->fetch()) {
         $pdo->rollBack();
         responderAtualizacaoGrupo(false, "Grupo nao encontrado.", 404);
     }
@@ -264,13 +264,13 @@ try {
     $pdo->prepare("delete from public.grupos_acesso_membros where grupo_id = cast(:id as uuid)")
         ->execute([":id" => $grupoId]);
 
-    $membroStmt = $pdo->prepare("
+    $consultaMembro = $pdo->prepare("
         insert into public.grupos_acesso_membros (grupo_id, usuario_id)
         values (cast(:grupo_id as uuid), cast(:usuario_id as uuid))
     ");
 
     foreach ($membros as $membroId) {
-        $membroStmt->execute([
+        $consultaMembro->execute([
             ":grupo_id" => $grupoId,
             ":usuario_id" => $membroId,
         ]);
@@ -279,13 +279,13 @@ try {
     $pdo->prepare("delete from public.grupos_acesso_permissoes where grupo_id = cast(:id as uuid)")
         ->execute([":id" => $grupoId]);
 
-    $permissaoStmt = $pdo->prepare("
+    $consultaPermissao = $pdo->prepare("
         insert into public.grupos_acesso_permissoes (grupo_id, permissao)
         values (cast(:grupo_id as uuid), :permissao)
     ");
 
     foreach ($permissoes as $permissao) {
-        $permissaoStmt->execute([
+        $consultaPermissao->execute([
             ":grupo_id" => $grupoId,
             ":permissao" => $permissao,
         ]);

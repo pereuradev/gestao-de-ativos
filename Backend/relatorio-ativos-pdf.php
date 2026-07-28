@@ -33,83 +33,83 @@ final class RelatorioAtivosPdf
         ["key" => "criado_em", "title" => "Criado em", "width" => 32.0],
     ];
 
-    private array $pages = [];
-    private string $commands = "";
-    private float $cursorY = 0.0;
-    private int $rowIndex = 0;
-    private DateTimeImmutable $generatedAt;
-    private array $metrics = [];
-    private array $filters = [];
-    private ?array $logoImage = null;
+    private array $paginas = [];
+    private string $comandos = "";
+    private float $cursorVertical = 0.0;
+    private int $indiceLinha = 0;
+    private DateTimeImmutable $geradoEm;
+    private array $metricas = [];
+    private array $filtros = [];
+    private ?array $imagemLogo = null;
 
-    public function generate(
-        array $assets,
-        array $metrics,
-        array $filters,
-        DateTimeImmutable $generatedAt
+    public function gerar(
+        array $ativos,
+        array $metricas,
+        array $filtros,
+        DateTimeImmutable $geradoEm
     ): string {
-        $this->pages = [];
-        $this->commands = "";
-        $this->cursorY = 0.0;
-        $this->rowIndex = 0;
-        $this->metrics = $metrics;
-        $this->filters = $filters;
-        $this->generatedAt = $generatedAt;
-        $this->logoImage = $this->loadLogoImage();
+        $this->paginas = [];
+        $this->comandos = "";
+        $this->cursorVertical = 0.0;
+        $this->indiceLinha = 0;
+        $this->metricas = $metricas;
+        $this->filtros = $filtros;
+        $this->geradoEm = $geradoEm;
+        $this->imagemLogo = $this->carregarImagemLogo();
 
-        $this->startPage(true);
+        $this->iniciarPagina(true);
 
-        if ($assets === []) {
-            $this->drawEmptyState();
+        if ($ativos === []) {
+            $this->desenharEstadoVazio();
         } else {
-            foreach ($assets as $asset) {
-                $cells = $this->prepareRow(is_array($asset) ? $asset : []);
-                $rowHeight = $this->calculateRowHeight($cells);
+            foreach ($ativos as $ativo) {
+                $celulas = $this->prepararLinha(is_array($ativo) ? $ativo : []);
+                $alturaLinha = $this->calcularAlturaLinha($celulas);
 
-                if ($this->cursorY + $rowHeight > self::CONTENT_BOTTOM_MM) {
-                    $this->finishPage();
-                    $this->startPage(false);
+                if ($this->cursorVertical + $alturaLinha > self::CONTENT_BOTTOM_MM) {
+                    $this->finalizarPagina();
+                    $this->iniciarPagina(false);
                 }
 
-                $this->drawRow($cells, $rowHeight);
+                $this->desenharLinha($celulas, $alturaLinha);
             }
         }
 
-        $this->finishPage();
-        $this->addFooters();
+        $this->finalizarPagina();
+        $this->adicionarRodapes();
 
-        return $this->buildDocument();
+        return $this->montarDocumento();
     }
 
-    private function startPage(bool $firstPage): void
+    private function iniciarPagina(bool $primeiraPagina): void
     {
-        $this->commands = "";
+        $this->comandos = "";
 
-        if ($firstPage) {
-            $this->drawMainHeader();
+        if ($primeiraPagina) {
+            $this->desenharCabecalhoPrincipal();
             return;
         }
 
-        $this->drawContinuationHeader();
+        $this->desenharCabecalhoContinuacao();
     }
 
-    private function finishPage(): void
+    private function finalizarPagina(): void
     {
-        $this->pages[] = $this->commands;
-        $this->commands = "";
+        $this->paginas[] = $this->comandos;
+        $this->comandos = "";
     }
 
-    private function drawMainHeader(): void
+    private function desenharCabecalhoPrincipal(): void
     {
-        $this->drawLogo(10.0, 4.2, 42.0);
-        $this->text(59.0, 5.0, "RELATÓRIO DE ATIVOS", 16.0, true, self::NAVY);
-        $this->text(59.0, 12.8, "Inventário corporativo consolidado", 8.2, false, self::MUTED);
-        $this->textRight(287.0, 5.2, "GERADO EM", 7.2, true, self::BLUE);
-        $this->textRight(287.0, 10.8, $this->generatedAt->format("d/m/Y H:i"), 9.0, true, self::NAVY);
-        $this->drawBrandBar(26.0, 3.0);
+        $this->desenharLogo(10.0, 4.2, 42.0);
+        $this->texto(59.0, 5.0, "RELATÓRIO DE ATIVOS", 16.0, true, self::NAVY);
+        $this->texto(59.0, 12.8, "Inventário corporativo consolidado", 8.2, false, self::MUTED);
+        $this->textoDireita(287.0, 5.2, "GERADO EM", 7.2, true, self::BLUE);
+        $this->textoDireita(287.0, 10.8, $this->geradoEm->format("d/m/Y H:i"), 9.0, true, self::NAVY);
+        $this->desenharBarraMarca(26.0, 3.0);
 
-        $this->text(10.0, 34.0, "Visão geral do inventário", 10.5, true, self::NAVY);
-        $this->text(
+        $this->texto(10.0, 34.0, "Visão geral do inventário", 10.5, true, self::NAVY);
+        $this->texto(
             10.0,
             39.0,
             "Indicadores e registros correspondentes aos filtros aplicados.",
@@ -118,448 +118,448 @@ final class RelatorioAtivosPdf
             self::MUTED
         );
 
-        $metricCards = [
+        $cartoesMetricas = [
             [
                 "label" => "Total de ativos",
-                "value" => (string) ($this->metrics["total"] ?? 0),
+                "value" => (string) ($this->metricas["total"] ?? 0),
                 "accent" => self::NAVY,
             ],
             [
                 "label" => "Em estoque",
-                "value" => (string) ($this->metrics["disponiveis"] ?? 0),
+                "value" => (string) ($this->metricas["disponiveis"] ?? 0),
                 "accent" => self::BLUE,
             ],
             [
                 "label" => "Registros no relatório",
-                "value" => (string) ($this->metrics["filtrados"] ?? 0),
+                "value" => (string) ($this->metricas["filtrados"] ?? 0),
                 "accent" => self::MINT,
             ],
         ];
 
-        foreach ($metricCards as $index => $metric) {
-            $x = self::MARGIN_X_MM + ($index * 94.0);
-            $this->rectangle($x, 45.0, 89.0, 20.0, self::PANEL, self::BORDER);
-            $this->rectangle($x, 45.0, 2.2, 20.0, $metric["accent"]);
-            $this->rectangle($x + 2.2, 45.0, 86.8, 1.0, $metric["accent"]);
-            $this->text($x + 6.0, 49.0, $metric["label"], 7.4, true, self::MUTED);
-            $this->text($x + 6.0, 55.0, $metric["value"], 16.0, true, self::NAVY);
+        foreach ($cartoesMetricas as $indice => $metrica) {
+            $x = self::MARGIN_X_MM + ($indice * 94.0);
+            $this->retangulo($x, 45.0, 89.0, 20.0, self::PANEL, self::BORDER);
+            $this->retangulo($x, 45.0, 2.2, 20.0, $metrica["accent"]);
+            $this->retangulo($x + 2.2, 45.0, 86.8, 1.0, $metrica["accent"]);
+            $this->texto($x + 6.0, 49.0, $metrica["label"], 7.4, true, self::MUTED);
+            $this->texto($x + 6.0, 55.0, $metrica["value"], 16.0, true, self::NAVY);
         }
 
-        $filterText = $this->formatFilters();
-        $filterLines = $this->wrapText($filterText, 265.0, 7.6, 3);
-        $filterHeight = max(14.0, 9.0 + (count($filterLines) * 3.6));
+        $textoFiltros = $this->formatarFiltros();
+        $linhasFiltros = $this->quebrarTexto($textoFiltros, 265.0, 7.6, 3);
+        $alturaFiltros = max(14.0, 9.0 + (count($linhasFiltros) * 3.6));
 
-        $this->rectangle(10.0, 70.0, 277.0, $filterHeight, self::PANEL, self::BORDER);
-        $this->rectangle(10.0, 70.0, 2.0, $filterHeight, self::BLUE);
-        $this->text(15.0, 73.0, "FILTROS DO RELATÓRIO", 7.0, true, self::BLUE);
-        $this->wrappedText(15.0, 78.0, $filterLines, 7.6, 3.6, false, self::TEXT);
+        $this->retangulo(10.0, 70.0, 277.0, $alturaFiltros, self::PANEL, self::BORDER);
+        $this->retangulo(10.0, 70.0, 2.0, $alturaFiltros, self::BLUE);
+        $this->texto(15.0, 73.0, "FILTROS DO RELATÓRIO", 7.0, true, self::BLUE);
+        $this->desenharTextoQuebrado(15.0, 78.0, $linhasFiltros, 7.6, 3.6, false, self::TEXT);
 
-        $tableTop = 70.0 + $filterHeight + 6.0;
-        $this->drawTableHeader($tableTop);
-        $this->cursorY = $tableTop + 8.0;
+        $topoTabela = 70.0 + $alturaFiltros + 6.0;
+        $this->desenharCabecalhoTabela($topoTabela);
+        $this->cursorVertical = $topoTabela + 8.0;
     }
 
-    private function drawContinuationHeader(): void
+    private function desenharCabecalhoContinuacao(): void
     {
-        $this->drawLogo(10.0, 3.4, 28.0);
-        $this->text(44.0, 4.2, "RELATÓRIO DE ATIVOS", 11.0, true, self::NAVY);
-        $this->text(44.0, 10.0, "Inventário corporativo | Continuação", 7.2, false, self::MUTED);
-        $this->textRight(287.0, 4.0, "GERADO EM", 6.8, true, self::BLUE);
-        $this->textRight(
+        $this->desenharLogo(10.0, 3.4, 28.0);
+        $this->texto(44.0, 4.2, "RELATÓRIO DE ATIVOS", 11.0, true, self::NAVY);
+        $this->texto(44.0, 10.0, "Inventário corporativo | Continuação", 7.2, false, self::MUTED);
+        $this->textoDireita(287.0, 4.0, "GERADO EM", 6.8, true, self::BLUE);
+        $this->textoDireita(
             287.0,
             9.5,
-            $this->generatedAt->format("d/m/Y H:i"),
+            $this->geradoEm->format("d/m/Y H:i"),
             8.0,
             true,
             self::NAVY
         );
-        $this->drawBrandBar(18.0, 2.5);
+        $this->desenharBarraMarca(18.0, 2.5);
 
-        $this->drawTableHeader(24.0);
-        $this->cursorY = 32.0;
+        $this->desenharCabecalhoTabela(24.0);
+        $this->cursorVertical = 32.0;
     }
 
-    private function drawTableHeader(float $top): void
+    private function desenharCabecalhoTabela(float $topo): void
     {
         $x = self::MARGIN_X_MM;
 
-        foreach (self::COLUMNS as $column) {
-            $width = (float) $column["width"];
-            $this->rectangle($x, $top, $width, 8.0, self::NAVY, self::WHITE);
-            $this->rectangle($x, $top, $width, 0.8, self::MINT);
-            $this->text($x + 1.6, $top + 2.2, (string) $column["title"], 7.0, true, self::WHITE);
-            $x += $width;
+        foreach (self::COLUMNS as $coluna) {
+            $largura = (float) $coluna["width"];
+            $this->retangulo($x, $topo, $largura, 8.0, self::NAVY, self::WHITE);
+            $this->retangulo($x, $topo, $largura, 0.8, self::MINT);
+            $this->texto($x + 1.6, $topo + 2.2, (string) $coluna["title"], 7.0, true, self::WHITE);
+            $x += $largura;
         }
     }
 
-    private function prepareRow(array $asset): array
+    private function prepararLinha(array $ativo): array
     {
-        $name = trim((string) ($asset["nome"] ?? ""));
-        $property = trim((string) ($asset["propriedade"] ?? ""));
-        $assetLabel = $name !== "" ? $name : "--";
+        $nome = trim((string) ($ativo["nome"] ?? ""));
+        $propriedade = trim((string) ($ativo["propriedade"] ?? ""));
+        $rotuloAtivo = $nome !== "" ? $nome : "--";
 
-        if ($property !== "") {
-            $assetLabel .= "\n" . $property;
+        if ($propriedade !== "") {
+            $rotuloAtivo .= "\n" . $propriedade;
         }
 
-        $values = [
-            "ativo" => $assetLabel,
-            "categoria" => $this->valueOrFallback($asset["categoria"] ?? null, "Sem categoria"),
-            "marca" => $this->valueOrFallback($asset["marca"] ?? null),
-            "part_number" => $this->valueOrFallback($asset["part_number"] ?? null),
-            "numero_serie" => $this->valueOrFallback($asset["numero_serie"] ?? null),
-            "status" => $this->valueOrFallback($asset["status"] ?? null),
-            "localizacao" => $this->valueOrFallback($asset["localizacao"] ?? null),
-            "datasheet" => trim((string) ($asset["datasheet"] ?? "")) !== "" ? "Disponível" : "--",
-            "criado_em" => $this->valueOrFallback($asset["criado_em_formatado"] ?? null),
+        $valores = [
+            "ativo" => $rotuloAtivo,
+            "categoria" => $this->valorOuPadrao($ativo["categoria"] ?? null, "Sem categoria"),
+            "marca" => $this->valorOuPadrao($ativo["marca"] ?? null),
+            "part_number" => $this->valorOuPadrao($ativo["part_number"] ?? null),
+            "numero_serie" => $this->valorOuPadrao($ativo["numero_serie"] ?? null),
+            "status" => $this->valorOuPadrao($ativo["status"] ?? null),
+            "localizacao" => $this->valorOuPadrao($ativo["localizacao"] ?? null),
+            "datasheet" => trim((string) ($ativo["datasheet"] ?? "")) !== "" ? "Disponível" : "--",
+            "criado_em" => $this->valorOuPadrao($ativo["criado_em_formatado"] ?? null),
         ];
 
-        $cells = [];
+        $celulas = [];
 
-        foreach (self::COLUMNS as $column) {
-            $key = (string) $column["key"];
-            $cells[$key] = $this->wrapText(
-                (string) ($values[$key] ?? "--"),
-                (float) $column["width"] - 3.0,
+        foreach (self::COLUMNS as $coluna) {
+            $chaveItem = (string) $coluna["key"];
+            $celulas[$chaveItem] = $this->quebrarTexto(
+                (string) ($valores[$chaveItem] ?? "--"),
+                (float) $coluna["width"] - 3.0,
                 7.2,
                 4
             );
         }
 
-        return $cells;
+        return $celulas;
     }
 
-    private function calculateRowHeight(array $cells): float
+    private function calcularAlturaLinha(array $celulas): float
     {
-        $lineCount = 1;
+        $quantidadeLinhas = 1;
 
-        foreach ($cells as $lines) {
-            $lineCount = max($lineCount, count($lines));
+        foreach ($celulas as $linhas) {
+            $quantidadeLinhas = max($quantidadeLinhas, count($linhas));
         }
 
-        return max(9.5, 3.0 + ($lineCount * 3.4));
+        return max(9.5, 3.0 + ($quantidadeLinhas * 3.4));
     }
 
-    private function drawRow(array $cells, float $height): void
+    private function desenharLinha(array $celulas, float $altura): void
     {
-        $background = $this->rowIndex % 2 === 0 ? self::WHITE : self::ROW_ALT;
+        $fundo = $this->indiceLinha % 2 === 0 ? self::WHITE : self::ROW_ALT;
         $x = self::MARGIN_X_MM;
 
-        foreach (self::COLUMNS as $column) {
-            $key = (string) $column["key"];
-            $width = (float) $column["width"];
-            $this->rectangle($x, $this->cursorY, $width, $height, $background, self::BORDER);
-            $this->wrappedText(
+        foreach (self::COLUMNS as $coluna) {
+            $chaveItem = (string) $coluna["key"];
+            $largura = (float) $coluna["width"];
+            $this->retangulo($x, $this->cursorVertical, $largura, $altura, $fundo, self::BORDER);
+            $this->desenharTextoQuebrado(
                 $x + 1.5,
-                $this->cursorY + 2.0,
-                $cells[$key] ?? ["--"],
+                $this->cursorVertical + 2.0,
+                $celulas[$chaveItem] ?? ["--"],
                 7.2,
                 3.4,
-                $key === "ativo",
+                $chaveItem === "ativo",
                 self::TEXT
             );
-            $x += $width;
+            $x += $largura;
         }
 
-        $this->cursorY += $height;
-        $this->rowIndex++;
+        $this->cursorVertical += $altura;
+        $this->indiceLinha++;
     }
 
-    private function drawEmptyState(): void
+    private function desenharEstadoVazio(): void
     {
-        $this->rectangle(
+        $this->retangulo(
             self::MARGIN_X_MM,
-            $this->cursorY,
+            $this->cursorVertical,
             277.0,
             15.0,
             self::ROW_ALT,
             self::BORDER
         );
-        $this->text(
+        $this->texto(
             self::MARGIN_X_MM + 4.0,
-            $this->cursorY + 5.0,
+            $this->cursorVertical + 5.0,
             "Nenhum ativo encontrado para os filtros aplicados.",
             9.0,
             true,
             self::MUTED
         );
-        $this->cursorY += 15.0;
+        $this->cursorVertical += 15.0;
     }
 
-    private function addFooters(): void
+    private function adicionarRodapes(): void
     {
-        $totalPages = count($this->pages);
+        $totalPaginas = count($this->paginas);
 
-        foreach ($this->pages as $index => $page) {
-            $this->commands = $page;
-            $this->line(10.0, 198.5, 287.0, 198.5, self::BORDER, 0.25);
-            $this->polygon(
+        foreach ($this->paginas as $indice => $conteudoPagina) {
+            $this->comandos = $conteudoPagina;
+            $this->linha(10.0, 198.5, 287.0, 198.5, self::BORDER, 0.25);
+            $this->poligono(
                 [[238.0, 210.0], [248.0, 202.5], [297.0, 195.0], [297.0, 210.0]],
                 self::MINT
             );
-            $this->polygon(
+            $this->poligono(
                 [[249.0, 210.0], [260.0, 204.0], [297.0, 198.5], [297.0, 210.0]],
                 self::NAVY
             );
-            $this->text(10.0, 202.0, "TI TECH Solutions | Inventário de ativos", 7.0, true, self::NAVY);
-            $this->textRight(
+            $this->texto(10.0, 202.0, "TI TECH Solutions | Inventário de ativos", 7.0, true, self::NAVY);
+            $this->textoDireita(
                 287.0,
                 202.0,
-                "Página " . ($index + 1) . " de " . $totalPages,
+                "Página " . ($indice + 1) . " de " . $totalPaginas,
                 7.0,
                 true,
                 self::WHITE
             );
-            $this->pages[$index] = $this->commands;
+            $this->paginas[$indice] = $this->comandos;
         }
 
-        $this->commands = "";
+        $this->comandos = "";
     }
 
-    private function formatFilters(): string
+    private function formatarFiltros(): string
     {
-        if ($this->filters === []) {
+        if ($this->filtros === []) {
             return "Nenhum filtro ativo - inventário completo.";
         }
 
-        $items = [];
+        $itens = [];
 
-        foreach ($this->filters as $label => $value) {
-            $items[] = $label . ": " . $value;
+        foreach ($this->filtros as $rotulo => $valorEntrada) {
+            $itens[] = $rotulo . ": " . $valorEntrada;
         }
 
-        return implode(" | ", $items);
+        return implode(" | ", $itens);
     }
 
-    private function valueOrFallback(mixed $value, string $fallback = "--"): string
+    private function valorOuPadrao(mixed $valorEntrada, string $valorPadrao = "--"): string
     {
-        $text = trim((string) $value);
+        $texto = trim((string) $valorEntrada);
 
-        return $text !== "" ? $text : $fallback;
+        return $texto !== "" ? $texto : $valorPadrao;
     }
 
-    private function wrapText(string $text, float $maxWidthMm, float $fontSize, int $maxLines): array
+    private function quebrarTexto(string $texto, float $larguraMaximaMm, float $tamanhoFonte, int $maximoLinhas): array
     {
-        $text = str_replace(["\r\n", "\r"], "\n", trim($text));
-        $maxChars = max(4, (int) floor(($maxWidthMm * self::MM_TO_PT) / ($fontSize * 0.52)));
-        $lines = [];
-        $paragraphs = preg_split("/\n/u", $text) ?: [$text];
+        $texto = str_replace(["\r\n", "\r"], "\n", trim($texto));
+        $maximoCaracteres = max(4, (int) floor(($larguraMaximaMm * self::MM_TO_PT) / ($tamanhoFonte * 0.52)));
+        $linhas = [];
+        $paragrafos = preg_split("/\n/u", $texto) ?: [$texto];
 
-        foreach ($paragraphs as $paragraph) {
-            $paragraph = trim((string) (preg_replace("/[\t ]+/u", " ", $paragraph) ?? $paragraph));
+        foreach ($paragrafos as $paragrafo) {
+            $paragrafo = trim((string) (preg_replace("/[\t ]+/u", " ", $paragrafo) ?? $paragrafo));
 
-            if ($paragraph === "") {
+            if ($paragrafo === "") {
                 continue;
             }
 
-            $words = preg_split("/\s+/u", $paragraph) ?: [$paragraph];
-            $current = "";
+            $palavras = preg_split("/\s+/u", $paragrafo) ?: [$paragrafo];
+            $objetoAtual = "";
 
-            foreach ($words as $word) {
-                $word = (string) $word;
+            foreach ($palavras as $palavra) {
+                $palavra = (string) $palavra;
 
-                while (mb_strlen($word, "UTF-8") > $maxChars) {
-                    if ($current !== "") {
-                        $lines[] = $current;
-                        $current = "";
+                while (mb_strlen($palavra, "UTF-8") > $maximoCaracteres) {
+                    if ($objetoAtual !== "") {
+                        $linhas[] = $objetoAtual;
+                        $objetoAtual = "";
                     }
 
-                    $lines[] = mb_substr($word, 0, $maxChars - 1, "UTF-8") . "-";
-                    $word = mb_substr($word, $maxChars - 1, null, "UTF-8");
+                    $linhas[] = mb_substr($palavra, 0, $maximoCaracteres - 1, "UTF-8") . "-";
+                    $palavra = mb_substr($palavra, $maximoCaracteres - 1, null, "UTF-8");
                 }
 
-                $candidate = $current === "" ? $word : $current . " " . $word;
+                $candidato = $objetoAtual === "" ? $palavra : $objetoAtual . " " . $palavra;
 
-                if (mb_strlen($candidate, "UTF-8") <= $maxChars) {
-                    $current = $candidate;
+                if (mb_strlen($candidato, "UTF-8") <= $maximoCaracteres) {
+                    $objetoAtual = $candidato;
                     continue;
                 }
 
-                $lines[] = $current;
-                $current = $word;
+                $linhas[] = $objetoAtual;
+                $objetoAtual = $palavra;
             }
 
-            if ($current !== "") {
-                $lines[] = $current;
+            if ($objetoAtual !== "") {
+                $linhas[] = $objetoAtual;
             }
         }
 
-        if ($lines === []) {
-            $lines = ["--"];
+        if ($linhas === []) {
+            $linhas = ["--"];
         }
 
-        if (count($lines) > $maxLines) {
-            $lines = array_slice($lines, 0, $maxLines);
-            $lastIndex = $maxLines - 1;
-            $lastLine = rtrim((string) $lines[$lastIndex], ".-");
-            $lines[$lastIndex] = mb_substr($lastLine, 0, max(1, $maxChars - 3), "UTF-8") . "...";
+        if (count($linhas) > $maximoLinhas) {
+            $linhas = array_slice($linhas, 0, $maximoLinhas);
+            $ultimoIndice = $maximoLinhas - 1;
+            $ultimaLinha = rtrim((string) $linhas[$ultimoIndice], ".-");
+            $linhas[$ultimoIndice] = mb_substr($ultimaLinha, 0, max(1, $maximoCaracteres - 3), "UTF-8") . "...";
         }
 
-        return $lines;
+        return $linhas;
     }
 
-    private function wrappedText(
+    private function desenharTextoQuebrado(
         float $x,
-        float $top,
-        array $lines,
-        float $fontSize,
-        float $lineHeightMm,
-        bool $bold,
-        array $color
+        float $topo,
+        array $linhas,
+        float $tamanhoFonte,
+        float $alturaLinhaMm,
+        bool $negrito,
+        array $cor
     ): void {
-        foreach ($lines as $index => $line) {
-            $this->text($x, $top + ($index * $lineHeightMm), (string) $line, $fontSize, $bold, $color);
+        foreach ($linhas as $indice => $linhaTexto) {
+            $this->texto($x, $topo + ($indice * $alturaLinhaMm), (string) $linhaTexto, $tamanhoFonte, $negrito, $cor);
         }
     }
 
-    private function drawBrandBar(float $top, float $height): void
+    private function desenharBarraMarca(float $topo, float $altura): void
     {
-        $this->rectangle(0.0, $top, 170.0, $height, self::NAVY);
-        $this->rectangle(170.0, $top, 70.0, $height, self::BLUE);
-        $this->rectangle(240.0, $top, 57.0, $height, self::MINT);
+        $this->retangulo(0.0, $topo, 170.0, $altura, self::NAVY);
+        $this->retangulo(170.0, $topo, 70.0, $altura, self::BLUE);
+        $this->retangulo(240.0, $topo, 57.0, $altura, self::MINT);
     }
 
-    private function drawLogo(float $x, float $top, float $width): void
+    private function desenharLogo(float $x, float $topo, float $largura): void
     {
-        if ($this->logoImage === null) {
+        if ($this->imagemLogo === null) {
             return;
         }
 
-        $height = $width * ((float) $this->logoImage["height"] / (float) $this->logoImage["width"]);
-        $xPt = $this->mm($x);
-        $yPt = $this->mm(self::PAGE_HEIGHT_MM - $top - $height);
-        $widthPt = $this->mm($width);
-        $heightPt = $this->mm($height);
+        $altura = $largura * ((float) $this->imagemLogo["height"] / (float) $this->imagemLogo["width"]);
+        $xPontos = $this->milimetros($x);
+        $yPontos = $this->milimetros(self::PAGE_HEIGHT_MM - $topo - $altura);
+        $larguraPontos = $this->milimetros($largura);
+        $alturaPontos = $this->milimetros($altura);
 
-        $this->commands .= "q " . $this->number($widthPt) . " 0 0 " . $this->number($heightPt) . " "
-            . $this->number($xPt) . " " . $this->number($yPt) . " cm /Logo Do Q\n";
+        $this->comandos .= "q " . $this->numero($larguraPontos) . " 0 0 " . $this->numero($alturaPontos) . " "
+            . $this->numero($xPontos) . " " . $this->numero($yPontos) . " cm /Logo Do Q\n";
     }
 
-    private function polygon(array $points, array $fill): void
+    private function poligono(array $pontos, array $preenchimento): void
     {
-        if (count($points) < 3) {
+        if (count($pontos) < 3) {
             return;
         }
 
-        $command = $this->color($fill, "rg") . " ";
+        $comando = $this->cor($preenchimento, "rg") . " ";
 
-        foreach ($points as $index => $point) {
-            $xPt = $this->mm((float) ($point[0] ?? 0.0));
-            $yPt = $this->mm(self::PAGE_HEIGHT_MM - (float) ($point[1] ?? 0.0));
-            $command .= $this->number($xPt) . " " . $this->number($yPt)
-                . ($index === 0 ? " m " : " l ");
+        foreach ($pontos as $indice => $ponto) {
+            $xPontos = $this->milimetros((float) ($ponto[0] ?? 0.0));
+            $yPontos = $this->milimetros(self::PAGE_HEIGHT_MM - (float) ($ponto[1] ?? 0.0));
+            $comando .= $this->numero($xPontos) . " " . $this->numero($yPontos)
+                . ($indice === 0 ? " m " : " l ");
         }
 
-        $this->commands .= $command . "h f\n";
+        $this->comandos .= $comando . "h f\n";
     }
 
-    private function loadLogoImage(): array
+    private function carregarImagemLogo(): array
     {
         // A versão opaca evita conversão de imagem em tempo de execução no XAMPP.
-        $path = dirname(__DIR__) . DIRECTORY_SEPARATOR . "assets"
+        $caminho = dirname(__DIR__) . DIRECTORY_SEPARATOR . "assets"
             . DIRECTORY_SEPARATOR . "logo-relatorio-pdf.jpg";
 
-        if (!is_readable($path)) {
+        if (!is_readable($caminho)) {
             throw new RuntimeException("O logotipo da TI TECH não está disponível para o relatório.");
         }
 
-        $imageInfo = getimagesize($path);
-        $contents = file_get_contents($path);
+        $informacoesImagem = getimagesize($caminho);
+        $conteudos = file_get_contents($caminho);
 
         if (
-            $imageInfo === false
-            || $contents === false
-            || ($imageInfo["mime"] ?? "") !== "image/jpeg"
+            $informacoesImagem === false
+            || $conteudos === false
+            || ($informacoesImagem["mime"] ?? "") !== "image/jpeg"
         ) {
             throw new RuntimeException("O logotipo preparado para o PDF é inválido.");
         }
 
         return [
-            "width" => (int) $imageInfo[0],
-            "height" => (int) $imageInfo[1],
-            "data" => $contents,
+            "width" => (int) $informacoesImagem[0],
+            "height" => (int) $informacoesImagem[1],
+            "data" => $conteudos,
         ];
     }
 
-    private function rectangle(
+    private function retangulo(
         float $x,
-        float $top,
-        float $width,
-        float $height,
-        array $fill,
-        ?array $stroke = null
+        float $topo,
+        float $largura,
+        float $altura,
+        array $preenchimento,
+        ?array $contorno = null
     ): void {
-        $xPt = $this->mm($x);
-        $yPt = $this->mm(self::PAGE_HEIGHT_MM - $top - $height);
-        $widthPt = $this->mm($width);
-        $heightPt = $this->mm($height);
-        $command = $this->color($fill, "rg") . " ";
+        $xPontos = $this->milimetros($x);
+        $yPontos = $this->milimetros(self::PAGE_HEIGHT_MM - $topo - $altura);
+        $larguraPontos = $this->milimetros($largura);
+        $alturaPontos = $this->milimetros($altura);
+        $comando = $this->cor($preenchimento, "rg") . " ";
 
-        if ($stroke !== null) {
-            $command .= $this->color($stroke, "RG") . " 0.35 w ";
+        if ($contorno !== null) {
+            $comando .= $this->cor($contorno, "RG") . " 0.35 w ";
         }
 
-        $command .= $this->number($xPt) . " " . $this->number($yPt) . " "
-            . $this->number($widthPt) . " " . $this->number($heightPt) . " re "
-            . ($stroke !== null ? "B" : "f");
-        $this->commands .= $command . "\n";
+        $comando .= $this->numero($xPontos) . " " . $this->numero($yPontos) . " "
+            . $this->numero($larguraPontos) . " " . $this->numero($alturaPontos) . " re "
+            . ($contorno !== null ? "B" : "f");
+        $this->comandos .= $comando . "\n";
     }
 
-    private function line(
+    private function linha(
         float $x1,
-        float $top1,
+        float $topo1,
         float $x2,
-        float $top2,
-        array $color,
-        float $width
+        float $topo2,
+        array $cor,
+        float $largura
     ): void {
-        $this->commands .= $this->color($color, "RG") . " " . $this->number($width) . " w "
-            . $this->number($this->mm($x1)) . " " . $this->number($this->mm(self::PAGE_HEIGHT_MM - $top1)) . " m "
-            . $this->number($this->mm($x2)) . " " . $this->number($this->mm(self::PAGE_HEIGHT_MM - $top2)) . " l S\n";
+        $this->comandos .= $this->cor($cor, "RG") . " " . $this->numero($largura) . " w "
+            . $this->numero($this->milimetros($x1)) . " " . $this->numero($this->milimetros(self::PAGE_HEIGHT_MM - $topo1)) . " m "
+            . $this->numero($this->milimetros($x2)) . " " . $this->numero($this->milimetros(self::PAGE_HEIGHT_MM - $topo2)) . " l S\n";
     }
 
-    private function text(
+    private function texto(
         float $x,
-        float $top,
-        string $text,
-        float $fontSize,
-        bool $bold,
-        array $color
+        float $topo,
+        string $texto,
+        float $tamanhoFonte,
+        bool $negrito,
+        array $cor
     ): void {
-        $encoded = $this->encodeText($text);
-        $escaped = str_replace(["\\", "(", ")", "\r", "\n"], ["\\\\", "\\(", "\\)", "", " "], $encoded);
-        $font = $bold ? "F2" : "F1";
-        $xPt = $this->mm($x);
-        $yPt = $this->mm(self::PAGE_HEIGHT_MM - $top) - $fontSize;
+        $textoCodificado = $this->codificarTexto($texto);
+        $textoEscapado = str_replace(["\\", "(", ")", "\r", "\n"], ["\\\\", "\\(", "\\)", "", " "], $textoCodificado);
+        $fonte = $negrito ? "F2" : "F1";
+        $xPontos = $this->milimetros($x);
+        $yPontos = $this->milimetros(self::PAGE_HEIGHT_MM - $topo) - $tamanhoFonte;
 
-        $this->commands .= "BT " . $this->color($color, "rg") . " /{$font} "
-            . $this->number($fontSize) . " Tf " . $this->number($xPt) . " " . $this->number($yPt)
-            . " Td (" . $escaped . ") Tj ET\n";
+        $this->comandos .= "BT " . $this->cor($cor, "rg") . " /{$fonte} "
+            . $this->numero($tamanhoFonte) . " Tf " . $this->numero($xPontos) . " " . $this->numero($yPontos)
+            . " Td (" . $textoEscapado . ") Tj ET\n";
     }
 
-    private function textRight(
-        float $right,
-        float $top,
-        string $text,
-        float $fontSize,
-        bool $bold,
-        array $color
+    private function textoDireita(
+        float $posicaoDireita,
+        float $topo,
+        string $texto,
+        float $tamanhoFonte,
+        bool $negrito,
+        array $cor
     ): void {
-        $estimatedWidthMm = (mb_strlen($text, "UTF-8") * $fontSize * 0.50) / self::MM_TO_PT;
-        $this->text(max(self::MARGIN_X_MM, $right - $estimatedWidthMm), $top, $text, $fontSize, $bold, $color);
+        $larguraEstimadaMm = (mb_strlen($texto, "UTF-8") * $tamanhoFonte * 0.50) / self::MM_TO_PT;
+        $this->texto(max(self::MARGIN_X_MM, $posicaoDireita - $larguraEstimadaMm), $topo, $texto, $tamanhoFonte, $negrito, $cor);
     }
 
-    private function encodeText(string $text): string
+    private function codificarTexto(string $texto): string
     {
         if (function_exists("iconv")) {
-            $encoded = iconv("UTF-8", "Windows-1252//TRANSLIT//IGNORE", $text);
+            $textoCodificado = iconv("UTF-8", "Windows-1252//TRANSLIT//IGNORE", $texto);
 
-            if ($encoded !== false) {
-                return $encoded;
+            if ($textoCodificado !== false) {
+                return $textoCodificado;
             }
         }
 
-        return strtr($text, [
+        return strtr($texto, [
             "á" => "a", "à" => "a", "ã" => "a", "â" => "a", "ä" => "a",
             "é" => "e", "è" => "e", "ê" => "e", "ë" => "e",
             "í" => "i", "ì" => "i", "î" => "i", "ï" => "i",
@@ -569,98 +569,98 @@ final class RelatorioAtivosPdf
         ]);
     }
 
-    private function color(array $color, string $operator): string
+    private function cor(array $cor, string $operador): string
     {
-        return $this->number((float) $color[0]) . " "
-            . $this->number((float) $color[1]) . " "
-            . $this->number((float) $color[2]) . " " . $operator;
+        return $this->numero((float) $cor[0]) . " "
+            . $this->numero((float) $cor[1]) . " "
+            . $this->numero((float) $cor[2]) . " " . $operador;
     }
 
-    private function mm(float $value): float
+    private function milimetros(float $valorEntrada): float
     {
-        return $value * self::MM_TO_PT;
+        return $valorEntrada * self::MM_TO_PT;
     }
 
-    private function number(float $value): string
+    private function numero(float $valorEntrada): string
     {
-        return number_format($value, 3, ".", "");
+        return number_format($valorEntrada, 3, ".", "");
     }
 
-    private function buildDocument(): string
+    private function montarDocumento(): string
     {
-        $pageCount = count($this->pages);
+        $quantidadePaginas = count($this->paginas);
 
-        if ($pageCount === 0) {
+        if ($quantidadePaginas === 0) {
             throw new RuntimeException("O relatório não possui páginas.");
         }
 
-        if ($this->logoImage === null) {
+        if ($this->imagemLogo === null) {
             throw new RuntimeException("O relatório não possui um logotipo válido.");
         }
 
-        $objects = [
+        $objetos = [
             1 => "<< /Type /Catalog /Pages 2 0 R >>",
             3 => "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
             4 => "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>",
         ];
-        $logoObjectId = 5;
-        $logoData = (string) ($this->logoImage["data"] ?? "");
+        $idObjetoLogo = 5;
+        $dadosLogo = (string) ($this->imagemLogo["data"] ?? "");
 
-        if ($logoData === "") {
+        if ($dadosLogo === "") {
             throw new RuntimeException("O logotipo preparado para o PDF está vazio.");
         }
 
-        $objects[$logoObjectId] = "<< /Type /XObject /Subtype /Image /Width "
-            . (int) $this->logoImage["width"]
-            . " /Height " . (int) $this->logoImage["height"]
-            . " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " . strlen($logoData)
-            . " >>\nstream\n" . $logoData . "\nendstream";
-        $pageReferences = [];
+        $objetos[$idObjetoLogo] = "<< /Type /XObject /Subtype /Image /Width "
+            . (int) $this->imagemLogo["width"]
+            . " /Height " . (int) $this->imagemLogo["height"]
+            . " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " . strlen($dadosLogo)
+            . " >>\nstream\n" . $dadosLogo . "\nendstream";
+        $referenciasPaginas = [];
 
-        foreach ($this->pages as $index => $content) {
-            $pageObjectId = 6 + ($index * 2);
-            $contentObjectId = $pageObjectId + 1;
-            $pageReferences[] = $pageObjectId . " 0 R";
-            $stream = $content . "\n";
+        foreach ($this->paginas as $indice => $conteudo) {
+            $idObjetoPagina = 6 + ($indice * 2);
+            $idObjetoConteudo = $idObjetoPagina + 1;
+            $referenciasPaginas[] = $idObjetoPagina . " 0 R";
+            $fluxo = $conteudo . "\n";
 
-            $objects[$pageObjectId] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "
-                . $this->number($this->mm(self::PAGE_WIDTH_MM)) . " "
-                . $this->number($this->mm(self::PAGE_HEIGHT_MM))
-                . "] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << /Logo {$logoObjectId} 0 R >> >>"
-                . " /Contents {$contentObjectId} 0 R >>";
-            $objects[$contentObjectId] = "<< /Length " . strlen($stream) . " >>\nstream\n"
-                . $stream . "endstream";
+            $objetos[$idObjetoPagina] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "
+                . $this->numero($this->milimetros(self::PAGE_WIDTH_MM)) . " "
+                . $this->numero($this->milimetros(self::PAGE_HEIGHT_MM))
+                . "] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << /Logo {$idObjetoLogo} 0 R >> >>"
+                . " /Contents {$idObjetoConteudo} 0 R >>";
+            $objetos[$idObjetoConteudo] = "<< /Length " . strlen($fluxo) . " >>\nstream\n"
+                . $fluxo . "endstream";
         }
 
-        $objects[2] = "<< /Type /Pages /Kids [" . implode(" ", $pageReferences) . "] /Count {$pageCount} >>";
-        ksort($objects);
+        $objetos[2] = "<< /Type /Pages /Kids [" . implode(" ", $referenciasPaginas) . "] /Count {$quantidadePaginas} >>";
+        ksort($objetos);
 
         $pdf = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
-        $offsets = [0 => 0];
-        $maxObjectId = max(array_keys($objects));
+        $deslocamentos = [0 => 0];
+        $idMaximoObjeto = max(array_keys($objetos));
 
-        for ($objectId = 1; $objectId <= $maxObjectId; $objectId++) {
-            if (!isset($objects[$objectId])) {
+        for ($idObjeto = 1; $idObjeto <= $idMaximoObjeto; $idObjeto++) {
+            if (!isset($objetos[$idObjeto])) {
                 continue;
             }
 
-            $offsets[$objectId] = strlen($pdf);
-            $pdf .= $objectId . " 0 obj\n" . $objects[$objectId] . "\nendobj\n";
+            $deslocamentos[$idObjeto] = strlen($pdf);
+            $pdf .= $idObjeto . " 0 obj\n" . $objetos[$idObjeto] . "\nendobj\n";
         }
 
-        $xrefOffset = strlen($pdf);
-        $pdf .= "xref\n0 " . ($maxObjectId + 1) . "\n";
+        $deslocamentoXref = strlen($pdf);
+        $pdf .= "xref\n0 " . ($idMaximoObjeto + 1) . "\n";
         $pdf .= "0000000000 65535 f \n";
 
-        for ($objectId = 1; $objectId <= $maxObjectId; $objectId++) {
-            $offset = $offsets[$objectId] ?? 0;
-            $status = isset($offsets[$objectId]) ? "n" : "f";
-            $generation = $status === "n" ? "00000" : "65535";
-            $pdf .= sprintf("%010d %s %s \n", $offset, $generation, $status);
+        for ($idObjeto = 1; $idObjeto <= $idMaximoObjeto; $idObjeto++) {
+            $deslocamento = $deslocamentos[$idObjeto] ?? 0;
+            $status = isset($deslocamentos[$idObjeto]) ? "n" : "f";
+            $numeroGeracao = $status === "n" ? "00000" : "65535";
+            $pdf .= sprintf("%010d %s %s \n", $deslocamento, $numeroGeracao, $status);
         }
 
-        $pdf .= "trailer\n<< /Size " . ($maxObjectId + 1) . " /Root 1 0 R >>\n";
-        $pdf .= "startxref\n{$xrefOffset}\n%%EOF";
+        $pdf .= "trailer\n<< /Size " . ($idMaximoObjeto + 1) . " /Root 1 0 R >>\n";
+        $pdf .= "startxref\n{$deslocamentoXref}\n%%EOF";
 
         return $pdf;
     }

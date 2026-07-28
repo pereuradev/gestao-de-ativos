@@ -11,17 +11,17 @@ function garantirStatusAtivos(PDO $pdo): void
 
 function nomesStatusAtivos(PDO $pdo): array
 {
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         select nome
           from public.status_ativos
          where ativo = true
       order by ordem asc, nome asc
     ");
-    $stmt->execute();
+    $consultaPreparada->execute();
 
     return array_map(
-        static fn(array $row): string => (string)($row["nome"] ?? ""),
-        $stmt->fetchAll()
+        static fn(array $linhaResultado): string => (string)($linhaResultado["nome"] ?? ""),
+        $consultaPreparada->fetchAll()
     );
 }
 
@@ -48,30 +48,30 @@ function obterStatusAtivo(PDO $pdo, string $status): ?string
     }
 
     if ($slug !== null) {
-        $stmt = $pdo->prepare("
+        $consultaPreparada = $pdo->prepare("
             select nome
               from public.status_ativos
              where ativo = true
                and slug = :slug
              limit 1
         ");
-        $stmt->execute([":slug" => $slug]);
+        $consultaPreparada->execute([":slug" => $slug]);
 
-        $nome = $stmt->fetchColumn();
+        $nome = $consultaPreparada->fetchColumn();
 
         return $nome !== false ? (string)$nome : null;
     }
 
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         select nome
           from public.status_ativos
          where ativo = true
            and lower(btrim(nome)) = lower(btrim(:status))
          limit 1
     ");
-    $stmt->execute([":status" => trim($status)]);
+    $consultaPreparada->execute([":status" => trim($status)]);
 
-    $nome = $stmt->fetchColumn();
+    $nome = $consultaPreparada->fetchColumn();
 
     return $nome !== false ? (string)$nome : null;
 }

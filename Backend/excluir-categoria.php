@@ -10,11 +10,11 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
-function responderCategoria(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responderCategoria(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -28,11 +28,11 @@ function campoCategoria(string $nome): string
 function csrfCategoriaValido(): bool
 {
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
-    $tokenPost = campoCategoria("csrf_token");
+    $tokenRequisicao = campoCategoria("csrf_token");
 
     return is_string($tokenSessao)
         && $tokenSessao !== ""
-        && hash_equals($tokenSessao, $tokenPost);
+        && hash_equals($tokenSessao, $tokenRequisicao);
 }
 
 function uuidCategoriaValido(string $valor): bool
@@ -67,14 +67,14 @@ if (!uuidCategoriaValido($id)) {
 try {
     require __DIR__ . "/Conexao.php";
 
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         delete from public.categorias_ativos
          where id = :id
      returning id, nome, descricao
     ");
 
-    $stmt->execute([":id" => $id]);
-    $categoria = $stmt->fetch();
+    $consultaPreparada->execute([":id" => $id]);
+    $categoria = $consultaPreparada->fetch();
 
     if (!$categoria) {
         responderCategoria(false, "Categoria nao encontrada.", 404);

@@ -23,35 +23,35 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
 require_once __DIR__ . "/permissoes-acesso.php";
 exigirPermissaoApi("visualizar_dashboard", "Dashboard");
 
-function responderJson(array $payload, int $statusCode = 200): void
+function responderJson(array $dadosResposta, int $codigoStatusHttp = 200): void
 {
     // Centraliza o formato da resposta para sucesso e erro sairem iguais.
-    http_response_code($statusCode);
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    http_response_code($codigoStatusHttp);
+    echo json_encode($dadosResposta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
-function consultarValor(PDO $pdo, string $sql, array $params = []): int
+function consultarValor(PDO $pdo, string $sql, array $parametrosConsulta = []): int
 {
     // Usado para consultas de contagem, onde esperamos apenas um numero.
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
+    $consultaPreparada = $pdo->prepare($sql);
+    $consultaPreparada->execute($parametrosConsulta);
 
-    return (int)$stmt->fetchColumn();
+    return (int)$consultaPreparada->fetchColumn();
 }
 
-function consultarLinhas(PDO $pdo, string $sql, array $params = []): array
+function consultarLinhas(PDO $pdo, string $sql, array $parametrosConsulta = []): array
 {
     // Usado para rankings e series do grafico, retornando varias linhas.
-    $stmt = $pdo->prepare($sql);
+    $consultaPreparada = $pdo->prepare($sql);
 
-    foreach ($params as $key => $value) {
-        $stmt->bindValue($key, $value);
+    foreach ($parametrosConsulta as $chaveItem => $valorEntrada) {
+        $consultaPreparada->bindValue($chaveItem, $valorEntrada);
     }
 
-    $stmt->execute();
+    $consultaPreparada->execute();
 
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    return $consultaPreparada->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function normalizarPeriodo(mixed $periodo): int
@@ -84,7 +84,7 @@ function montarFiltrosAtivos(string $categoriaId, string $marca, string $localId
 {
     // Todos os filtros do dashboard passam por aqui para manter as consultas coerentes.
     $condicoes = [];
-    $params = [];
+    $parametrosConsulta = [];
     $categoriaId = trim($categoriaId);
     $marca = trim($marca);
     $localId = trim($localId);
@@ -93,26 +93,26 @@ function montarFiltrosAtivos(string $categoriaId, string $marca, string $localId
         $condicoes[] = "a.categoria_id is null";
     } elseif ($categoriaId !== "" && $categoriaId !== "todos") {
         $condicoes[] = "a.categoria_id::text = :categoria_id";
-        $params[":categoria_id"] = $categoriaId;
+        $parametrosConsulta[":categoria_id"] = $categoriaId;
     }
 
     if ($marca === "sem-marca") {
         $condicoes[] = "nullif(trim(a.marca), '') is null";
     } elseif ($marca !== "" && $marca !== "todos") {
         $condicoes[] = "lower(trim(a.marca)) = lower(:marca)";
-        $params[":marca"] = $marca;
+        $parametrosConsulta[":marca"] = $marca;
     }
 
     if ($localId === "sem-localizacao") {
         $condicoes[] = "a.local_id is null";
     } elseif ($localId !== "" && $localId !== "todos") {
         $condicoes[] = "a.local_id::text = :local_id";
-        $params[":local_id"] = $localId;
+        $parametrosConsulta[":local_id"] = $localId;
     }
 
     return [
         $condicoes ? " where " . implode(" and ", $condicoes) . " " : "",
-        $params,
+        $parametrosConsulta,
     ];
 }
 
@@ -135,12 +135,12 @@ function agruparLinhasPorCategoria(array $linhas, array $totaisPorCategoria): ar
     foreach ($linhas as $linha) {
         $categoriaId = (string)($linha["categoria_id"] ?? "sem-categoria");
         $total = (int)($linha["total"] ?? 0);
-        $baseTotal = (int)($totaisPorCategoria[$categoriaId] ?? 0);
+        $totalBase = (int)($totaisPorCategoria[$categoriaId] ?? 0);
 
         $grupos[$categoriaId][] = [
             "nome" => (string)($linha["nome"] ?? "Sem nome"),
             "total" => $total,
-            "percentual" => calcularPercentual($total, $baseTotal),
+            "percentual" => calcularPercentual($total, $totalBase),
         ];
     }
 
@@ -160,10 +160,10 @@ try {
     $localId = trim((string)($_GET["local_id"] ?? "todos"));
     $periodo = normalizarPeriodo($_GET["periodo"] ?? 30);
 
-    [$whereFiltros, $paramsFiltros] = montarFiltrosAtivos($categoriaId, $marcaFiltro, $localId);
-    [$whereSemCategoria, $paramsSemCategoria] = montarFiltrosAtivos("todos", $marcaFiltro, $localId);
-    [$whereSemMarca, $paramsSemMarca] = montarFiltrosAtivos($categoriaId, "todos", $localId);
-    [$whereSemLocal, $paramsSemLocal] = montarFiltrosAtivos($categoriaId, $marcaFiltro, "todos");
+    [$condicoesFiltros, $parametrosFiltros] = montarFiltrosAtivos($categoriaId, $marcaFiltro, $localId);
+    [$condicoesSemCategoria, $parametrosSemCategoria] = montarFiltrosAtivos("todos", $marcaFiltro, $localId);
+    [$condicoesSemMarca, $parametrosSemMarca] = montarFiltrosAtivos($categoriaId, "todos", $localId);
+    [$condicoesSemLocal, $parametrosSemLocal] = montarFiltrosAtivos($categoriaId, $marcaFiltro, "todos");
 
     // Numeros gerais que alimentam os cards principais do dashboard.
     $totalAtivos = consultarValor($pdo, "select count(*) from public.ativos");
@@ -177,10 +177,10 @@ try {
             count(a.id)::int as total
         from public.ativos a
         left join public.categorias_ativos c on c.id = a.categoria_id
-        {$whereSemCategoria}
+        {$condicoesSemCategoria}
         group by coalesce(c.id::text, 'sem-categoria'), coalesce(nullif(trim(c.nome), ''), 'Sem categoria')
         order by total desc, nome asc
-    ", $paramsSemCategoria);
+    ", $parametrosSemCategoria);
 
     $totaisPorCategoria = [];
 
@@ -192,7 +192,7 @@ try {
     }
     unset($categoria);
 
-    $totalSelecionado = consultarValor($pdo, "select count(*) from public.ativos a {$whereFiltros}", $paramsFiltros);
+    $totalSelecionado = consultarValor($pdo, "select count(*) from public.ativos a {$condicoesFiltros}", $parametrosFiltros);
 
     // Por padrao a tela esta em "Todos"; se vier um tipo especifico, substituimos abaixo.
     $categoriaSelecionada = [
@@ -224,10 +224,10 @@ try {
             coalesce(nullif(trim(a.status), ''), 'Sem status') as nome,
             count(*)::int as total
         from public.ativos a
-        {$whereFiltros}
+        {$condicoesFiltros}
         group by coalesce(nullif(trim(a.status), ''), 'Sem status')
         order by total desc, nome asc
-    ", $paramsFiltros);
+    ", $parametrosFiltros);
 
     // Mesmo agrupamento, mas separado por categoria para troca instantanea no frontend.
     $statusPorCategoria = consultarLinhas($pdo, "
@@ -236,12 +236,12 @@ try {
             coalesce(nullif(trim(a.status), ''), 'Sem status') as nome,
             count(*)::int as total
         from public.ativos a
-        {$whereSemCategoria}
+        {$condicoesSemCategoria}
         group by
             coalesce(a.categoria_id::text, 'sem-categoria'),
             coalesce(nullif(trim(a.status), ''), 'Sem status')
         order by categoria_id asc, total desc, nome asc
-    ", $paramsSemCategoria);
+    ", $parametrosSemCategoria);
 
     // Ranking de marcas do filtro atual, limitado para manter a leitura simples.
     $marcas = consultarLinhas($pdo, "
@@ -249,11 +249,11 @@ try {
             coalesce(nullif(trim(a.marca), ''), 'Sem marca') as nome,
             count(*)::int as total
         from public.ativos a
-        {$whereFiltros}
+        {$condicoesFiltros}
         group by coalesce(nullif(trim(a.marca), ''), 'Sem marca')
         order by total desc, nome asc
         limit 12
-    ", $paramsFiltros);
+    ", $parametrosFiltros);
 
     $marcasFiltro = consultarLinhas($pdo, "
         select
@@ -264,13 +264,13 @@ try {
             end as id,
             count(*)::int as total
         from public.ativos a
-        {$whereSemMarca}
+        {$condicoesSemMarca}
         group by coalesce(nullif(trim(a.marca), ''), 'Sem marca'), case
             when nullif(trim(a.marca), '') is null then 'sem-marca'
             else trim(a.marca)
         end
         order by total desc, nome asc
-    ", $paramsSemMarca);
+    ", $parametrosSemMarca);
 
     // Ranking de marcas pre-carregado por categoria.
     $marcasPorCategoria = consultarLinhas($pdo, "
@@ -280,7 +280,7 @@ try {
                 coalesce(nullif(trim(a.marca), ''), 'Sem marca') as nome,
                 count(*)::int as total
             from public.ativos a
-            {$whereSemCategoria}
+            {$condicoesSemCategoria}
             group by
                 coalesce(a.categoria_id::text, 'sem-categoria'),
                 coalesce(nullif(trim(a.marca), ''), 'Sem marca')
@@ -300,7 +300,7 @@ try {
         from ordenadas
         where posicao <= 12
         order by categoria_id asc, posicao asc
-    ", $paramsSemCategoria);
+    ", $parametrosSemCategoria);
 
     // Ranking de locais do filtro atual.
     $locais = consultarLinhas($pdo, "
@@ -309,11 +309,11 @@ try {
             count(a.id)::int as total
         from public.ativos a
         left join public.locais l on l.id = a.local_id
-        {$whereFiltros}
+        {$condicoesFiltros}
         group by coalesce(nullif(trim(l.nome), ''), 'Sem localização')
         order by total desc, nome asc
         limit 12
-    ", $paramsFiltros);
+    ", $parametrosFiltros);
 
     $locaisFiltro = consultarLinhas($pdo, "
         select
@@ -322,10 +322,10 @@ try {
             count(a.id)::int as total
         from public.ativos a
         left join public.locais l on l.id = a.local_id
-        {$whereSemLocal}
+        {$condicoesSemLocal}
         group by coalesce(l.id::text, 'sem-localizacao'), coalesce(nullif(trim(l.nome), ''), 'Sem localizacao')
         order by total desc, nome asc
-    ", $paramsSemLocal);
+    ", $parametrosSemLocal);
 
     // Ranking de locais pre-carregado por categoria.
     $locaisPorCategoria = consultarLinhas($pdo, "
@@ -336,7 +336,7 @@ try {
                 count(a.id)::int as total
             from public.ativos a
             left join public.locais l on l.id = a.local_id
-            {$whereSemCategoria}
+            {$condicoesSemCategoria}
             group by
                 coalesce(a.categoria_id::text, 'sem-categoria'),
                 coalesce(nullif(trim(l.nome), ''), 'Sem localizacao')
@@ -356,30 +356,30 @@ try {
         from ordenados
         where posicao <= 12
         order by categoria_id asc, posicao asc
-    ", $paramsSemCategoria);
+    ", $parametrosSemCategoria);
 
-    $evolucaoParams = $paramsFiltros;
-    $evolucaoParams[":periodo"] = $periodo;
+    $parametrosEvolucao = $parametrosFiltros;
+    $parametrosEvolucao[":periodo"] = $periodo;
 
     // A evolucao precisa manter todos os dias do periodo, mesmo quando o total do dia e zero.
-    $joinEvolucao = "a.criado_em::date = d.dia";
+    $juncaoEvolucao = "a.criado_em::date = d.dia";
 
     if ($categoriaId === "sem-categoria") {
-        $joinEvolucao .= " and a.categoria_id is null";
+        $juncaoEvolucao .= " and a.categoria_id is null";
     } elseif ($categoriaId !== "" && $categoriaId !== "todos") {
-        $joinEvolucao .= " and a.categoria_id::text = :categoria_id";
+        $juncaoEvolucao .= " and a.categoria_id::text = :categoria_id";
     }
 
     if ($marcaFiltro === "sem-marca") {
-        $joinEvolucao .= " and nullif(trim(a.marca), '') is null";
+        $juncaoEvolucao .= " and nullif(trim(a.marca), '') is null";
     } elseif ($marcaFiltro !== "" && $marcaFiltro !== "todos") {
-        $joinEvolucao .= " and lower(trim(a.marca)) = lower(:marca)";
+        $juncaoEvolucao .= " and lower(trim(a.marca)) = lower(:marca)";
     }
 
     if ($localId === "sem-localizacao") {
-        $joinEvolucao .= " and a.local_id is null";
+        $juncaoEvolucao .= " and a.local_id is null";
     } elseif ($localId !== "" && $localId !== "todos") {
-        $joinEvolucao .= " and a.local_id::text = :local_id";
+        $juncaoEvolucao .= " and a.local_id::text = :local_id";
     }
 
     $evolucao = consultarLinhas($pdo, "
@@ -394,20 +394,20 @@ try {
             to_char(d.dia, 'DD/MM') as nome,
             count(a.id)::int as total
         from dias d
-        left join public.ativos a on {$joinEvolucao}
+        left join public.ativos a on {$juncaoEvolucao}
         group by d.dia
         order by d.dia
-    ", $evolucaoParams);
+    ", $parametrosEvolucao);
 
-    $normalizarLista = static function (array $lista, int $baseTotal): array {
+    $normalizarLista = static function (array $lista, int $totalBase): array {
         // Padroniza nome, total e percentual antes de enviar para o JavaScript.
-        return array_map(static function (array $item) use ($baseTotal): array {
+        return array_map(static function (array $item) use ($totalBase): array {
             $total = (int)($item["total"] ?? 0);
 
             return [
                 "nome" => (string)($item["nome"] ?? "Sem nome"),
                 "total" => $total,
-                "percentual" => calcularPercentual($total, $baseTotal),
+                "percentual" => calcularPercentual($total, $totalBase),
             ];
         }, $lista);
     };

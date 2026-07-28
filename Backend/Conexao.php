@@ -7,19 +7,19 @@ declare(strict_types=1);
 require_once __DIR__ . "/config.php";
 
 // As credenciais ficam no ambiente/.env para nao ficarem espalhadas pelo codigo.
-$host = configObrigatoria("DB_HOST");
-$port = configValor("DB_PORT", "5432");
-$dbname = configValor("DB_NAME", "postgres");
-$user = configObrigatoria("DB_USER");
-$password = configObrigatoria("DB_PASSWORD");
-$sslMode = configValor("DB_SSLMODE", "require");
+$servidorBanco = configObrigatoria("DB_HOST");
+$portaBanco = configValor("DB_PORT", "5432");
+$nomeBanco = configValor("DB_NAME", "postgres");
+$usuarioBanco = configObrigatoria("DB_USER");
+$senhaBanco = configObrigatoria("DB_PASSWORD");
+$modoSsl = configValor("DB_SSLMODE", "require");
 
 try {
     // PDO com erros por excecao deixa as rotas tratarem falhas de banco no catch.
     $pdo = new PDO(
-        "pgsql:host={$host};port={$port};dbname={$dbname};sslmode={$sslMode}",
-        $user,
-        $password,
+        "pgsql:host={$servidorBanco};port={$portaBanco};dbname={$nomeBanco};sslmode={$modoSsl}",
+        $usuarioBanco,
+        $senhaBanco,
         [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

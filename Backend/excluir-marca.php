@@ -10,12 +10,12 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
-function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responder(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
     // Todas as respostas seguem o envelope JSON padrao.
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -31,11 +31,11 @@ function csrfValido(): bool
 {
     // Confere o token para evitar exclusao fora da pagina autenticada.
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
-    $tokenPost = campo("csrf_token");
+    $tokenRequisicao = campo("csrf_token");
 
     return is_string($tokenSessao)
         && $tokenSessao !== ""
-        && hash_equals($tokenSessao, $tokenPost);
+        && hash_equals($tokenSessao, $tokenRequisicao);
 }
 
 function uuidValido(string $valor): bool
@@ -74,14 +74,14 @@ try {
     require __DIR__ . "/Conexao.php";
 
     // Exclui e retorna o registro apagado para atualizar a interface.
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         delete from public.marcas_ativos
          where id = :id
      returning id, nome, status
     ");
 
-    $stmt->execute([":id" => $id]);
-    $marca = $stmt->fetch();
+    $consultaPreparada->execute([":id" => $id]);
+    $marca = $consultaPreparada->fetch();
 
     if (!$marca) {
         responder(false, "Marca nao encontrada.", 404);

@@ -10,12 +10,12 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
-function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responder(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
     // Resposta JSON unica para sucesso, validacao e erro.
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -51,11 +51,11 @@ function csrfValido(): bool
 {
     // Protege a alteracao contra envio fora da sessao.
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
-    $tokenPost = campo("csrf_token");
+    $tokenRequisicao = campo("csrf_token");
 
     return is_string($tokenSessao)
         && $tokenSessao !== ""
-        && hash_equals($tokenSessao, $tokenPost);
+        && hash_equals($tokenSessao, $tokenRequisicao);
 }
 
 function garantirTabelaLocais(PDO $pdo): void
@@ -122,24 +122,24 @@ try {
     garantirTabelaLocais($pdo);
 
     // Impede renomear para um nome que ja pertence a outro local.
-    $duplicadoStmt = $pdo->prepare("
+    $consultaDuplicado = $pdo->prepare("
         select 1
           from public.locais
          where lower(btrim(nome)) = lower(btrim(:nome))
            and id::text <> :id
          limit 1
     ");
-    $duplicadoStmt->execute([
+    $consultaDuplicado->execute([
         ":nome" => $nome,
         ":id" => $id,
     ]);
 
-    if ($duplicadoStmt->fetchColumn() !== false) {
+    if ($consultaDuplicado->fetchColumn() !== false) {
         responder(false, "Ja existe um local cadastrado com este nome.", 409);
     }
 
     // Atualiza e retorna o registro final.
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         update public.locais
            set nome = :nome,
                endereco = :endereco,
@@ -149,14 +149,14 @@ try {
      returning id, nome, endereco, status, criado_em, atualizado_em
     ");
 
-    $stmt->execute([
+    $consultaPreparada->execute([
         ":id" => $id,
         ":nome" => $nome,
         ":endereco" => $endereco,
         ":status" => $status,
     ]);
 
-    $local = $stmt->fetch();
+    $local = $consultaPreparada->fetch();
 
     if (!$local) {
         responder(false, "Local nao encontrado.", 404);

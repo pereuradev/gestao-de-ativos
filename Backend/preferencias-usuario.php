@@ -10,50 +10,50 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
-function responderPreferenciasUsuario(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responderPreferenciasUsuario(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
 }
 
-function payloadPreferenciasUsuario(): array
+function dadosPreferenciasUsuario(): array
 {
-    $raw = file_get_contents("php://input");
-    $payload = json_decode((string) $raw, true);
+    $conteudoBruto = file_get_contents("php://input");
+    $dadosRequisicao = json_decode((string) $conteudoBruto, true);
 
-    if (!is_array($payload)) {
-        $payload = $_POST;
+    if (!is_array($dadosRequisicao)) {
+        $dadosRequisicao = $_POST;
     }
 
-    if (isset($payload["preferences"]) && is_array($payload["preferences"])) {
-        return $payload["preferences"];
+    if (isset($dadosRequisicao["preferences"]) && is_array($dadosRequisicao["preferences"])) {
+        return $dadosRequisicao["preferences"];
     }
 
-    return $payload;
+    return $dadosRequisicao;
 }
 
-function escolhaPreferenciaUsuario(mixed $value, array $permitidos, string $padrao): string
+function escolhaPreferenciaUsuario(mixed $valorEntrada, array $permitidos, string $padrao): string
 {
-    if (is_array($value) || is_object($value)) {
+    if (is_array($valorEntrada) || is_object($valorEntrada)) {
         return $padrao;
     }
 
-    $valor = trim((string) $value);
+    $valor = trim((string) $valorEntrada);
 
     return in_array($valor, $permitidos, true) ? $valor : $padrao;
 }
 
-function corPreferenciaUsuario(mixed $value, string $padrao = "teal"): string
+function corPreferenciaUsuario(mixed $valorEntrada, string $padrao = "teal"): string
 {
-    if (is_array($value) || is_object($value)) {
+    if (is_array($valorEntrada) || is_object($valorEntrada)) {
         return $padrao;
     }
 
-    $valor = trim((string) $value);
+    $valor = trim((string) $valorEntrada);
 
     if (in_array($valor, ["teal", "green", "blue", "violet"], true)) {
         return $valor;
@@ -78,17 +78,17 @@ function preferenciasAtuaisSessao(array $usuario): array
     ];
 }
 
-function normalizarPreferenciasUsuario(array $payload, array $usuario): array
+function normalizarPreferenciasUsuario(array $dadosRequisicao, array $usuario): array
 {
-    $source = array_merge(preferenciasAtuaisSessao($usuario), $payload);
+    $dadosOrigem = array_merge(preferenciasAtuaisSessao($usuario), $dadosRequisicao);
 
     return [
-        "theme" => escolhaPreferenciaUsuario($source["theme"] ?? null, ["dark", "light", "auto"], "dark"),
-        "accent" => corPreferenciaUsuario($source["accent"] ?? null),
-        "fontSize" => escolhaPreferenciaUsuario($source["fontSize"] ?? null, ["small", "default", "large", "extra"], "default"),
-        "density" => escolhaPreferenciaUsuario($source["density"] ?? null, ["comfortable", "compact"], "comfortable"),
-        "motion" => escolhaPreferenciaUsuario($source["motion"] ?? null, ["normal", "reduced"], "normal"),
-        "cursor" => escolhaPreferenciaUsuario($source["cursor"] ?? null, ["enhanced", "normal"], "enhanced"),
+        "theme" => escolhaPreferenciaUsuario($dadosOrigem["theme"] ?? null, ["dark", "light", "auto"], "dark"),
+        "accent" => corPreferenciaUsuario($dadosOrigem["accent"] ?? null),
+        "fontSize" => escolhaPreferenciaUsuario($dadosOrigem["fontSize"] ?? null, ["small", "default", "large", "extra"], "default"),
+        "density" => escolhaPreferenciaUsuario($dadosOrigem["density"] ?? null, ["comfortable", "compact"], "comfortable"),
+        "motion" => escolhaPreferenciaUsuario($dadosOrigem["motion"] ?? null, ["normal", "reduced"], "normal"),
+        "cursor" => escolhaPreferenciaUsuario($dadosOrigem["cursor"] ?? null, ["enhanced", "normal"], "enhanced"),
     ];
 }
 
@@ -107,12 +107,12 @@ if ($usuarioId === "") {
     responderPreferenciasUsuario(false, "Usuario da sessao sem identificador.", 422);
 }
 
-$preferencias = normalizarPreferenciasUsuario(payloadPreferenciasUsuario(), $usuario);
+$preferencias = normalizarPreferenciasUsuario(dadosPreferenciasUsuario(), $usuario);
 
 try {
     require __DIR__ . "/Conexao.php";
 
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         update public.perfis_usuarios
            set preferencia_tema = :tema,
                preferencia_cor = :cor,
@@ -130,7 +130,7 @@ try {
                preferencia_movimento,
                preferencia_cursor
     ");
-    $stmt->execute([
+    $consultaPreparada->execute([
         ":tema" => $preferencias["theme"],
         ":cor" => $preferencias["accent"],
         ":tamanho_fonte" => $preferencias["fontSize"],
@@ -140,7 +140,7 @@ try {
         ":id" => $usuarioId,
     ]);
 
-    $perfil = $stmt->fetch();
+    $perfil = $consultaPreparada->fetch();
 
     if (!is_array($perfil)) {
         responderPreferenciasUsuario(false, "Perfil nao encontrado.", 404);

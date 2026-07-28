@@ -12,15 +12,15 @@ header("Cache-Control: no-store");
 require_once __DIR__ . "/config.php";
 
 // Chaves usadas para chamar o endpoint de signup do Supabase.
-$supabaseUrl = configObrigatoria("SUPABASE_URL");
-$supabaseAnonKey = configObrigatoria("SUPABASE_ANON_KEY");
+$urlSupabase = configObrigatoria("SUPABASE_URL");
+$chaveAnonimaSupabase = configObrigatoria("SUPABASE_ANON_KEY");
 
-function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responder(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
     // Mantem o mesmo formato de resposta para erro e sucesso.
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE
     );
     exit;
@@ -61,8 +61,8 @@ function cpfValido(string $valor): bool
 
     $soma = 0;
 
-    for ($i = 0; $i < 9; $i++) {
-        $soma += (int) $cpf[$i] * (10 - $i);
+    for ($indiceDigito = 0; $indiceDigito < 9; $indiceDigito++) {
+        $soma += (int) $cpf[$indiceDigito] * (10 - $indiceDigito);
     }
 
     $primeiroDigito = ($soma * 10) % 11;
@@ -77,8 +77,8 @@ function cpfValido(string $valor): bool
 
     $soma = 0;
 
-    for ($i = 0; $i < 10; $i++) {
-        $soma += (int) $cpf[$i] * (11 - $i);
+    for ($indiceDigito = 0; $indiceDigito < 10; $indiceDigito++) {
+        $soma += (int) $cpf[$indiceDigito] * (11 - $indiceDigito);
     }
 
     $segundoDigito = ($soma * 10) % 11;
@@ -135,62 +135,62 @@ function gerarUuidLocal(): string
     );
 }
 
-function criarUsuarioSupabase(string $url, string $anonKey, array $payload): array
+function criarUsuarioSupabase(string $url, string $chaveAnonima, array $dadosRequisicao): array
 {
     // O Supabase Auth fica responsavel pela identidade principal do usuario.
-    $ch = curl_init();
+    $requisicaoCurl = curl_init();
 
-    curl_setopt_array($ch, [
+    curl_setopt_array($requisicaoCurl, [
         CURLOPT_URL => rtrim($url, "/") . "/auth/v1/signup",
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
         CURLOPT_HTTPHEADER => [
             "Content-Type: application/json",
-            "apikey: " . $anonKey,
-            "Authorization: Bearer " . $anonKey,
+            "apikey: " . $chaveAnonima,
+            "Authorization: Bearer " . $chaveAnonima,
         ],
-        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_POSTFIELDS => json_encode($dadosRequisicao, JSON_UNESCAPED_UNICODE),
         CURLOPT_TIMEOUT => 30,
     ]);
 
-    $response = curl_exec($ch);
-    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlError = curl_error($ch);
+    $respostaHttp = curl_exec($requisicaoCurl);
+    $codigoHttp = (int) curl_getinfo($requisicaoCurl, CURLINFO_HTTP_CODE);
+    $erroCurl = curl_error($requisicaoCurl);
 
-    curl_close($ch);
+    curl_close($requisicaoCurl);
 
-    if ($curlError) {
-        responder(false, "Erro ao comunicar com o Supabase: " . $curlError, 502);
+    if ($erroCurl) {
+        responder(false, "Erro ao comunicar com o Supabase: " . $erroCurl, 502);
     }
 
-    $authData = json_decode((string) $response, true);
+    $dadosAutenticacao = json_decode((string) $respostaHttp, true);
 
-    if ($httpCode < 200 || $httpCode >= 300) {
-        $message = $authData["msg"] ?? $authData["message"] ?? "Erro ao criar usuario no Supabase Auth.";
+    if ($codigoHttp < 200 || $codigoHttp >= 300) {
+        $mensagemResposta = $dadosAutenticacao["msg"] ?? $dadosAutenticacao["message"] ?? "Erro ao criar usuario no Supabase Auth.";
 
-        if (stripos($message, "already") !== false || stripos($message, "registered") !== false) {
+        if (stripos($mensagemResposta, "already") !== false || stripos($mensagemResposta, "registered") !== false) {
             return ["auth_email_existente" => true];
         }
 
-        responder(false, $message, 400, ["supabase_status" => $httpCode]);
+        responder(false, $mensagemResposta, 400, ["supabase_status" => $codigoHttp]);
     }
 
-    return is_array($authData) ? $authData : [];
+    return is_array($dadosAutenticacao) ? $dadosAutenticacao : [];
 }
 
-function autenticarUsuarioSupabase(string $url, string $anonKey, string $email, string $senha): array
+function autenticarUsuarioSupabase(string $url, string $chaveAnonima, string $email, string $senha): array
 {
     // Quando o Auth ja tem a conta mas o perfil local falhou, o login recupera o ID para completar o perfil.
-    $ch = curl_init();
+    $requisicaoCurl = curl_init();
 
-    curl_setopt_array($ch, [
+    curl_setopt_array($requisicaoCurl, [
         CURLOPT_URL => rtrim($url, "/") . "/auth/v1/token?grant_type=password",
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
         CURLOPT_HTTPHEADER => [
             "Content-Type: application/json",
-            "apikey: " . $anonKey,
-            "Authorization: Bearer " . $anonKey,
+            "apikey: " . $chaveAnonima,
+            "Authorization: Bearer " . $chaveAnonima,
         ],
         CURLOPT_POSTFIELDS => json_encode([
             "email" => $email,
@@ -199,36 +199,36 @@ function autenticarUsuarioSupabase(string $url, string $anonKey, string $email, 
         CURLOPT_TIMEOUT => 30,
     ]);
 
-    $response = curl_exec($ch);
-    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlError = curl_error($ch);
+    $respostaHttp = curl_exec($requisicaoCurl);
+    $codigoHttp = (int) curl_getinfo($requisicaoCurl, CURLINFO_HTTP_CODE);
+    $erroCurl = curl_error($requisicaoCurl);
 
-    curl_close($ch);
+    curl_close($requisicaoCurl);
 
-    if ($curlError) {
-        responder(false, "Erro ao comunicar com o Supabase: " . $curlError, 502);
+    if ($erroCurl) {
+        responder(false, "Erro ao comunicar com o Supabase: " . $erroCurl, 502);
     }
 
-    $authData = json_decode((string) $response, true);
+    $dadosAutenticacao = json_decode((string) $respostaHttp, true);
 
-    if ($httpCode < 200 || $httpCode >= 300) {
+    if ($codigoHttp < 200 || $codigoHttp >= 300) {
         return [];
     }
 
-    return is_array($authData) ? $authData : [];
+    return is_array($dadosAutenticacao) ? $dadosAutenticacao : [];
 }
 
-function buscarUsuarioAuthPorEmail(PDO $pdo, string $email): ?string
+function buscarUsuarioAutenticacaoPorEmail(PDO $pdo, string $email): ?string
 {
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         select id::text
           from auth.users
          where lower(btrim(email)) = lower(btrim(:email))
          limit 1
     ");
-    $stmt->execute([":email" => $email]);
+    $consultaPreparada->execute([":email" => $email]);
 
-    $id = $stmt->fetchColumn();
+    $id = $consultaPreparada->fetchColumn();
 
     return is_string($id) && $id !== "" ? $id : null;
 }
@@ -327,7 +327,7 @@ try {
     require_once __DIR__ . "/Conexao.php";
 
     // Antes de chamar o Auth, verificamos duplicidade nos dados locais principais.
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         select email, cpf, rg
         from public.perfis_usuarios
         where lower(btrim(email)) = lower(btrim(:email))
@@ -335,13 +335,13 @@ try {
            or regexp_replace(rg, '[^0-9]', '', 'g') = regexp_replace(:rg, '[^0-9]', '', 'g')
         limit 1
     ");
-    $stmt->execute([
+    $consultaPreparada->execute([
         ":email" => $email,
         ":cpf" => $cpf,
         ":rg" => $rg,
     ]);
 
-    $usuarioExistente = $stmt->fetch();
+    $usuarioExistente = $consultaPreparada->fetch();
 
     if ($usuarioExistente) {
         if (strcasecmp(trim((string) ($usuarioExistente["email"] ?? "")), trim($email)) === 0) {
@@ -360,7 +360,7 @@ try {
     responder(false, "Erro ao consultar o banco de dados.", 500);
 }
 
-$metadata = [
+$metadados = [
     // Esses dados acompanham o usuario no Supabase e ajudam a reconstruir o perfil.
     "nome_completo" => $nomeCompleto,
     "tipo_usuario" => $tipoUsuario,
@@ -372,26 +372,26 @@ $metadata = [
     "data_nascimento" => $dataNascimento,
 ];
 
-$authData = criarUsuarioSupabase($supabaseUrl, $supabaseAnonKey, [
+$dadosAutenticacao = criarUsuarioSupabase($urlSupabase, $chaveAnonimaSupabase, [
     // Cadastro no Auth: e-mail e senha ficam no provedor de autenticacao.
     "email" => $email,
     "password" => $senha,
-    "data" => $metadata,
+    "data" => $metadados,
 ]);
 
-$userId = $authData["user"]["id"] ?? $authData["id"] ?? null;
+$idUsuarioAutenticacao = $dadosAutenticacao["user"]["id"] ?? $dadosAutenticacao["id"] ?? null;
 
-if (!$userId && !empty($authData["auth_email_existente"])) {
-    $userId = buscarUsuarioAuthPorEmail($pdo, $email);
+if (!$idUsuarioAutenticacao && !empty($dadosAutenticacao["auth_email_existente"])) {
+    $idUsuarioAutenticacao = buscarUsuarioAutenticacaoPorEmail($pdo, $email);
 
-    if (!$userId) {
-        $authData = autenticarUsuarioSupabase($supabaseUrl, $supabaseAnonKey, $email, $senha);
-        $userId = $authData["user"]["id"] ?? $authData["id"] ?? null;
+    if (!$idUsuarioAutenticacao) {
+        $dadosAutenticacao = autenticarUsuarioSupabase($urlSupabase, $chaveAnonimaSupabase, $email, $senha);
+        $idUsuarioAutenticacao = $dadosAutenticacao["user"]["id"] ?? $dadosAutenticacao["id"] ?? null;
     }
 }
 
-if (!$userId) {
-    $userId = gerarUuidLocal();
+if (!$idUsuarioAutenticacao) {
+    $idUsuarioAutenticacao = gerarUuidLocal();
 }
 
 try {
@@ -450,8 +450,8 @@ try {
             atualizado_em
     ";
 
-    $params = [
-        ":id" => $userId,
+    $parametrosConsulta = [
+        ":id" => $idUsuarioAutenticacao,
         ":nome_completo" => $nomeCompleto,
         ":email" => $email,
         ":tipo_usuario" => $tipoUsuario,
@@ -468,16 +468,16 @@ try {
 
     do {
         try {
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
-            $usuarioCriado = $stmt->fetch();
+            $consultaPreparada = $pdo->prepare($sql);
+            $consultaPreparada->execute($parametrosConsulta);
+            $usuarioCriado = $consultaPreparada->fetch();
             break;
         } catch (PDOException $erroPerfil) {
             $tentativas++;
-            $erroForeignKeyAuth = $erroPerfil->getCode() === "23503"
+            $erroChaveEstrangeiraAutenticacao = $erroPerfil->getCode() === "23503"
                 && str_contains($erroPerfil->getMessage(), "perfis_usuarios_id_fkey");
 
-            if (!$erroForeignKeyAuth || $tentativas >= 4) {
+            if (!$erroChaveEstrangeiraAutenticacao || $tentativas >= 4) {
                 throw $erroPerfil;
             }
 
@@ -486,21 +486,21 @@ try {
         }
     } while ($tentativas < 4);
 } catch (Throwable $erro) {
-    $message = $erro->getMessage();
+    $mensagemResposta = $erro->getMessage();
 
-    if (str_contains($message, "perfis_usuarios_email_key")) {
+    if (str_contains($mensagemResposta, "perfis_usuarios_email_key")) {
         responder(false, "Este e-mail ja esta cadastrado.", 409);
     }
 
-    if (str_contains($message, "perfis_usuarios_cpf_key")) {
+    if (str_contains($mensagemResposta, "perfis_usuarios_cpf_key")) {
         responder(false, "Este CPF ja esta cadastrado.", 409);
     }
 
-    if (str_contains($message, "perfis_usuarios_rg_key")) {
+    if (str_contains($mensagemResposta, "perfis_usuarios_rg_key")) {
         responder(false, "Este RG ja esta cadastrado.", 409);
     }
 
-    error_log("Erro ao salvar perfil de usuario {$email}: " . $message);
+    error_log("Erro ao salvar perfil de usuario {$email}: " . $mensagemResposta);
     responder(false, "Usuario criado no Auth, mas houve erro ao salvar o perfil.", 500);
 }
 

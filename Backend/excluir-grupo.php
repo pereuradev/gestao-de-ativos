@@ -10,11 +10,11 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
-function responderExclusaoGrupo(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responderExclusaoGrupo(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -71,24 +71,24 @@ try {
     garantirTabelasGruposAcesso($pdo);
 
     // Registra o impacto antes da exclusão para devolver um resumo útil à interface.
-    $resumoStmt = $pdo->prepare("
+    $consultaResumo = $pdo->prepare("
         select
             (select count(*)::int from public.grupos_acesso_membros where grupo_id = cast(:id_membros as uuid)) as membros,
             (select count(*)::int from public.grupos_acesso_permissoes where grupo_id = cast(:id_permissoes as uuid)) as permissoes
     ");
-    $resumoStmt->execute([
+    $consultaResumo->execute([
         ":id_membros" => $grupoId,
         ":id_permissoes" => $grupoId,
     ]);
-    $resumo = $resumoStmt->fetch() ?: ["membros" => 0, "permissoes" => 0];
+    $resumo = $consultaResumo->fetch() ?: ["membros" => 0, "permissoes" => 0];
 
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         delete from public.grupos_acesso
          where id = cast(:id as uuid)
      returning id, nome
     ");
-    $stmt->execute([":id" => $grupoId]);
-    $grupo = $stmt->fetch();
+    $consultaPreparada->execute([":id" => $grupoId]);
+    $grupo = $consultaPreparada->fetch();
 
     if (!$grupo) {
         responderExclusaoGrupo(false, "Grupo nao encontrado.", 404);

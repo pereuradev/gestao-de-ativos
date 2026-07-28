@@ -2,6 +2,8 @@
 // Usa os diálogos e avisos globais fornecidos pelos módulos compartilhados da interface.
 
 const REDIRECT_DELAY_MS = 900;
+const PN_QUANTITY_MIN = 1;
+const PN_QUANTITY_MAX = 100;
 // Cada modo informa quais campos de identificacao devem ficar disponiveis no formulario.
 const TRACEABILITY_CONFIG = {
   nao_possui: { pn: false, sn: false },
@@ -49,6 +51,7 @@ function setupAssetForm() {
     setTimeout(() => setFormMessage("", ""), 0);
   });
   setupTraceabilityControls(form);
+  setupQuantityControls(form);
 }
 
 // Só atualiza métricas e registros recentes depois de receber confirmação do backend.
@@ -89,7 +92,9 @@ async function submitAssetForm(event) {
     }
 
     setFormMessage(result.message || "Ativo cadastrado com sucesso.", "success");
-    const createdAssets = [result.ativo].filter(Boolean);
+    const createdAssets = Array.isArray(result.ativos)
+      ? result.ativos.filter(Boolean)
+      : [result.ativo].filter(Boolean);
 
     createdAssets.forEach(prependRecentAsset);
     updateAssetMetrics(createdAssets);
@@ -110,7 +115,11 @@ async function submitAssetForm(event) {
 async function confirmAssetRegistration(form) {
   const data = new FormData(form);
   const assetName = String(data.get("nome") || "este ativo").trim() || "este ativo";
-  const confirmationText = `Confirme para cadastrar ${assetName} no inventario.`;
+  const traceability = getSelectedTraceability(form);
+  const quantity = traceability === "somente_pn" ? getPnQuantity(form) : PN_QUANTITY_MIN;
+  const confirmationText = quantity > PN_QUANTITY_MIN
+    ? `Confirme para cadastrar ${quantity} unidades de ${assetName} no inventario.`
+    : `Confirme para cadastrar ${assetName} no inventario.`;
 
   if (typeof window.titechConfirm === "function") {
     return window.titechConfirm({
@@ -134,6 +143,7 @@ function validateAssetForm(form) {
   const config = TRACEABILITY_CONFIG[traceability];
   const partNumber = String(data.get("part_number") || "").trim();
   const serial = String(data.get("numero_serie") || "").trim();
+  const quantity = getPnQuantity(form);
 
   if (!nome || !categoria || !status) {
     return "Preencha nome, categoria e status para cadastrar o ativo.";
@@ -155,6 +165,10 @@ function validateAssetForm(form) {
     return "Informe o numero de serie para a rastreabilidade escolhida.";
   }
 
+  if (traceability === "somente_pn" && !quantity) {
+    return `Informe uma quantidade entre ${PN_QUANTITY_MIN} e ${PN_QUANTITY_MAX}.`;
+  }
+
   return "";
 }
 
@@ -171,11 +185,13 @@ function getSelectedTraceability(form) {
 }
 
 function updateTraceabilityFields(form) {
-  const config = TRACEABILITY_CONFIG[getSelectedTraceability(form)] || TRACEABILITY_CONFIG.nao_possui;
+  const traceability = getSelectedTraceability(form);
+  const config = TRACEABILITY_CONFIG[traceability] || TRACEABILITY_CONFIG.nao_possui;
 
   // Desabilitar campos escondidos impede que valores antigos sejam enviados ao backend.
   toggleTraceabilityField(form, "pn", config.pn);
   toggleTraceabilityField(form, "sn", config.sn);
+  togglePnQuantityField(form, traceability === "somente_pn");
 }
 
 function toggleTraceabilityField(form, field, shouldShow) {
@@ -192,6 +208,74 @@ function toggleTraceabilityField(form, field, shouldShow) {
 
   input.disabled = !shouldShow;
   input.required = shouldShow;
+}
+
+function setupQuantityControls(form) {
+  const decrementButton = form.querySelector("[data-quantity-decrement]");
+  const incrementButton = form.querySelector("[data-quantity-increment]");
+  const input = form.querySelector("[data-quantity-input]");
+
+  if (!(input instanceof HTMLInputElement)) {
+    return;
+  }
+
+  decrementButton?.addEventListener("click", () => setPnQuantity(form, getPnQuantity(form) - 1));
+  incrementButton?.addEventListener("click", () => setPnQuantity(form, getPnQuantity(form) + 1));
+  input.addEventListener("input", () => setPnQuantity(form, input.value));
+  setPnQuantity(form, input.value);
+}
+
+function togglePnQuantityField(form, shouldShow) {
+  const wrapper = form.querySelector("[data-pn-quantity-field]");
+  const input = form.querySelector("[data-quantity-input]");
+
+  if (wrapper) {
+    wrapper.hidden = !shouldShow;
+  }
+
+  if (!(input instanceof HTMLInputElement)) {
+    return;
+  }
+
+  input.disabled = !shouldShow;
+
+  if (!shouldShow) {
+    setPnQuantity(form, PN_QUANTITY_MIN);
+  }
+}
+
+function getPnQuantity(form) {
+  const input = form.querySelector("[data-quantity-input]");
+
+  if (!(input instanceof HTMLInputElement)) {
+    return PN_QUANTITY_MIN;
+  }
+
+  const quantity = Number.parseInt(input.value || "", 10);
+
+  return Number.isInteger(quantity) ? quantity : 0;
+}
+
+function setPnQuantity(form, value) {
+  const input = form.querySelector("[data-quantity-input]");
+  const decrementButton = form.querySelector("[data-quantity-decrement]");
+  const incrementButton = form.querySelector("[data-quantity-increment]");
+  const quantity = Math.min(
+    PN_QUANTITY_MAX,
+    Math.max(PN_QUANTITY_MIN, Number.parseInt(String(value || ""), 10) || PN_QUANTITY_MIN),
+  );
+
+  if (input instanceof HTMLInputElement) {
+    input.value = String(quantity);
+  }
+
+  if (decrementButton instanceof HTMLButtonElement) {
+    decrementButton.disabled = quantity <= PN_QUANTITY_MIN;
+  }
+
+  if (incrementButton instanceof HTMLButtonElement) {
+    incrementButton.disabled = quantity >= PN_QUANTITY_MAX;
+  }
 }
 
 function setButtonLoading(button, isLoading) {

@@ -10,11 +10,11 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
-function responderFuncionario(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responderFuncionario(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -28,9 +28,9 @@ function campoFuncionario(string $nome): string
 function csrfFuncionarioValido(): bool
 {
     $tokenSessao = (string) ($_SESSION["csrf_token"] ?? "");
-    $tokenPost = campoFuncionario("csrf_token");
+    $tokenRequisicao = campoFuncionario("csrf_token");
 
-    return $tokenSessao !== "" && $tokenPost !== "" && hash_equals($tokenSessao, $tokenPost);
+    return $tokenSessao !== "" && $tokenRequisicao !== "" && hash_equals($tokenSessao, $tokenRequisicao);
 }
 
 function apenasNumerosFuncionario(string $valor): string
@@ -48,8 +48,8 @@ function cpfFuncionarioValido(string $valor): bool
 
     $soma = 0;
 
-    for ($i = 0; $i < 9; $i++) {
-        $soma += (int) $cpf[$i] * (10 - $i);
+    for ($indiceDigito = 0; $indiceDigito < 9; $indiceDigito++) {
+        $soma += (int) $cpf[$indiceDigito] * (10 - $indiceDigito);
     }
 
     $primeiroDigito = ($soma * 10) % 11;
@@ -61,8 +61,8 @@ function cpfFuncionarioValido(string $valor): bool
 
     $soma = 0;
 
-    for ($i = 0; $i < 10; $i++) {
-        $soma += (int) $cpf[$i] * (11 - $i);
+    for ($indiceDigito = 0; $indiceDigito < 10; $indiceDigito++) {
+        $soma += (int) $cpf[$indiceDigito] * (11 - $indiceDigito);
     }
 
     $segundoDigito = ($soma * 10) % 11;
@@ -175,7 +175,7 @@ try {
     // Abre a conexão compartilhada somente quando esta etapa precisa acessar o banco.
     require_once __DIR__ . "/Conexao.php";
 
-    $duplicadoStmt = $pdo->prepare("
+    $consultaDuplicado = $pdo->prepare("
         select cpf, rg
           from public.perfis_usuarios
          where (
@@ -185,13 +185,13 @@ try {
            and id::text <> :id
          limit 1
     ");
-    $duplicadoStmt->execute([
+    $consultaDuplicado->execute([
         ":cpf" => $cpf,
         ":rg" => $rg,
         ":id" => $id,
     ]);
 
-    $duplicado = $duplicadoStmt->fetch();
+    $duplicado = $consultaDuplicado->fetch();
 
     if ($duplicado) {
         if (apenasNumerosFuncionario((string) ($duplicado["cpf"] ?? "")) === apenasNumerosFuncionario($cpf)) {
@@ -203,7 +203,7 @@ try {
         }
     }
 
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         update public.perfis_usuarios
            set nome_completo = :nome_completo,
                tipo_usuario = :tipo_usuario,
@@ -231,7 +231,7 @@ try {
                criado_em,
                atualizado_em
     ");
-    $stmt->execute([
+    $consultaPreparada->execute([
         ":id" => $id,
         ":nome_completo" => $nomeCompleto,
         ":tipo_usuario" => $tipoUsuario,
@@ -244,7 +244,7 @@ try {
         ":status" => $status,
     ]);
 
-    $funcionario = $stmt->fetch();
+    $funcionario = $consultaPreparada->fetch();
 
     if (!$funcionario) {
         responderFuncionario(false, "Funcionario nao encontrado.", 404);

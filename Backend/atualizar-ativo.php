@@ -10,12 +10,12 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
-function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responder(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
     // Resposta unica para o frontend tratar sucesso, validacao e erro do mesmo jeito.
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -40,10 +40,10 @@ function rastreabilidadePermitida(string $valor): bool
     return in_array($valor, ["nao_possui", "somente_pn", "somente_sn", "ambos"], true);
 }
 
-function mensagemRastreabilidadeAtivo(string $rastreabilidade, ?string $numeroSerie, ?string $partNumber): ?string
+function mensagemRastreabilidadeAtivo(string $rastreabilidade, ?string $numeroSerie, ?string $numeroParte): ?string
 {
     // A edicao usa a mesma regra do cadastro para nao salvar identificadores escondidos no modal.
-    if (in_array($rastreabilidade, ["somente_pn", "ambos"], true) && $partNumber === null) {
+    if (in_array($rastreabilidade, ["somente_pn", "ambos"], true) && $numeroParte === null) {
         return "Informe o PN para a rastreabilidade escolhida.";
     }
 
@@ -54,13 +54,13 @@ function mensagemRastreabilidadeAtivo(string $rastreabilidade, ?string $numeroSe
     return null;
 }
 
-function normalizarRastreabilidadeAtivo(string $rastreabilidade, ?string $numeroSerie, ?string $partNumber): array
+function normalizarRastreabilidadeAtivo(string $rastreabilidade, ?string $numeroSerie, ?string $numeroParte): array
 {
     // Mantem somente os campos compativeis com a opcao marcada pelo usuario.
     return match ($rastreabilidade) {
-        "somente_pn" => [null, $partNumber],
+        "somente_pn" => [null, $numeroParte],
         "somente_sn" => [$numeroSerie, null],
-        "ambos" => [$numeroSerie, $partNumber],
+        "ambos" => [$numeroSerie, $numeroParte],
         default => [null, null],
     };
 }
@@ -69,11 +69,11 @@ function csrfValido(): bool
 {
     // Protege a alteracao contra envio fora da pagina autenticada.
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
-    $tokenPost = campo("csrf_token");
+    $tokenRequisicao = campo("csrf_token");
 
     return is_string($tokenSessao)
         && $tokenSessao !== ""
-        && hash_equals($tokenSessao, $tokenPost);
+        && hash_equals($tokenSessao, $tokenRequisicao);
 }
 
 function uuidValido(?string $valor): bool
@@ -119,15 +119,15 @@ function garantirIndicesUnicosAtivos(PDO $pdo): void
 
 function categoriaExiste(PDO $pdo, string $categoriaId): bool
 {
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         select 1
           from public.categorias_ativos
          where id = cast(:id as uuid)
          limit 1
     ");
-    $stmt->execute([":id" => $categoriaId]);
+    $consultaPreparada->execute([":id" => $categoriaId]);
 
-    return $stmt->fetchColumn() !== false;
+    return $consultaPreparada->fetchColumn() !== false;
 }
 
 function localExiste(PDO $pdo, ?string $localId): bool
@@ -136,46 +136,46 @@ function localExiste(PDO $pdo, ?string $localId): bool
         return true;
     }
 
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         select 1
           from public.locais
          where id = cast(:id as uuid)
            and lower(coalesce(status, 'ativo')) = 'ativo'
          limit 1
     ");
-    $stmt->execute([":id" => $localId]);
+    $consultaPreparada->execute([":id" => $localId]);
 
-    return $stmt->fetchColumn() !== false;
+    return $consultaPreparada->fetchColumn() !== false;
 }
 
 function mensagemDuplicidadeAtivo(PDO $pdo, string $id, ?string $numeroSerie, ?string $imei): ?string
 {
-    $where = [];
-    $params = [":id" => $id];
+    $condicoesSql = [];
+    $parametrosConsulta = [":id" => $id];
 
     if ($numeroSerie !== null) {
-        $where[] = "lower(trim(numero_serie)) = lower(trim(:numero_serie))";
-        $params[":numero_serie"] = $numeroSerie;
+        $condicoesSql[] = "lower(trim(numero_serie)) = lower(trim(:numero_serie))";
+        $parametrosConsulta[":numero_serie"] = $numeroSerie;
     }
 
     if ($imei !== null) {
-        $where[] = "btrim(imei) ~ '^[0-9]{8,20}$' and btrim(imei) = btrim(:imei)";
-        $params[":imei"] = $imei;
+        $condicoesSql[] = "btrim(imei) ~ '^[0-9]{8,20}$' and btrim(imei) = btrim(:imei)";
+        $parametrosConsulta[":imei"] = $imei;
     }
 
-    if (!$where) {
+    if (!$condicoesSql) {
         return null;
     }
 
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         select numero_serie, imei
           from public.ativos
          where id <> cast(:id as uuid)
-           and (" . implode(" or ", $where) . ")
+           and (" . implode(" or ", $condicoesSql) . ")
          limit 1
     ");
-    $stmt->execute($params);
-    $ativo = $stmt->fetch();
+    $consultaPreparada->execute($parametrosConsulta);
+    $ativo = $consultaPreparada->fetch();
 
     if (!$ativo) {
         return null;
@@ -210,14 +210,14 @@ $nome = campo("nome");
 $descricao = campoNulo("descricao");
 $rastreabilidade = campo("rastreabilidade") ?: "nao_possui";
 $numeroSerieEnviado = campoNulo("numero_serie");
-$partNumberEnviado = campoNulo("part_number");
+$numeroParteEnviado = campoNulo("part_number");
 $categoriaId = campoNulo("categoria_id");
 $localId = campoNulo("local_id");
 $status = campo("status") ?: "Disponível";
 $marca = campoNulo("marca");
 $propriedade = campoNulo("propriedade");
 $imei = campoNulo("imei");
-$datasheet = campoNulo("datasheet");
+$fichaTecnica = campoNulo("datasheet");
 
 if (!uuidValido($id)) {
     responder(false, "Ativo invalido para alteracao.", 422);
@@ -235,19 +235,19 @@ if (!rastreabilidadePermitida($rastreabilidade)) {
     responder(false, "Selecione uma opcao de rastreabilidade valida.", 422);
 }
 
-$mensagemRastreabilidade = mensagemRastreabilidadeAtivo($rastreabilidade, $numeroSerieEnviado, $partNumberEnviado);
+$mensagemRastreabilidade = mensagemRastreabilidadeAtivo($rastreabilidade, $numeroSerieEnviado, $numeroParteEnviado);
 
 if ($mensagemRastreabilidade !== null) {
     responder(false, $mensagemRastreabilidade, 422);
 }
 
-[$numeroSerie, $partNumber] = normalizarRastreabilidadeAtivo(
+[$numeroSerie, $numeroParte] = normalizarRastreabilidadeAtivo(
     $rastreabilidade,
     $numeroSerieEnviado,
-    $partNumberEnviado
+    $numeroParteEnviado
 );
 
-if ($partNumber !== null && strlen($partNumber) > 120) {
+if ($numeroParte !== null && strlen($numeroParte) > 120) {
     responder(false, "PN deve ter no maximo 120 caracteres.", 422);
 }
 
@@ -289,19 +289,19 @@ try {
 
     if ($marca !== null) {
         // A marca precisa existir e estar ativa para nao salvar texto solto.
-        $marcaStmt = $pdo->prepare("
+        $consultaMarca = $pdo->prepare("
             select nome
               from public.marcas_ativos
              where lower(btrim(nome)) = lower(btrim(:marca))
                and status = :status
              limit 1
         ");
-        $marcaStmt->execute([
+        $consultaMarca->execute([
             ":marca" => $marca,
             ":status" => "Ativa",
         ]);
 
-        $marcaAtiva = $marcaStmt->fetchColumn();
+        $marcaAtiva = $consultaMarca->fetchColumn();
 
         if ($marcaAtiva === false) {
             responder(false, "Selecione uma marca ativa cadastrada.", 422);
@@ -317,7 +317,7 @@ try {
     }
 
     // Atualiza o ativo e junta categoria/local para devolver a linha pronta ao frontend.
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         with ativo_atualizado as (
             update public.ativos
                set nome = :nome,
@@ -356,22 +356,22 @@ try {
      left join public.locais l on l.id = a.local_id
     ");
 
-    $stmt->execute([
+    $consultaPreparada->execute([
         ":id" => $id,
         ":nome" => $nome,
         ":descricao" => $descricao,
         ":numero_serie" => $numeroSerie,
-        ":part_number" => $partNumber,
+        ":part_number" => $numeroParte,
         ":categoria_id" => $categoriaId,
         ":local_id" => $localId,
         ":status" => $status,
         ":marca" => $marca,
         ":propriedade" => $propriedade,
         ":imei" => $imei,
-        ":datasheet" => $datasheet,
+        ":datasheet" => $fichaTecnica,
     ]);
 
-    $ativo = $stmt->fetch();
+    $ativo = $consultaPreparada->fetch();
 
     if (!$ativo) {
         responder(false, "Ativo nao encontrado.", 404);

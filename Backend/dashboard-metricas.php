@@ -28,19 +28,19 @@ exigirPermissaoApi("visualizar_dashboard", "Dashboard");
 function consultarValorInteiro(PDO $pdo, string $sql, array $parametros = []): int
 {
     // Atalho para contagens simples exibidas nos cards.
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($parametros);
+    $consultaPreparada = $pdo->prepare($sql);
+    $consultaPreparada->execute($parametros);
 
-    return (int)$stmt->fetchColumn();
+    return (int)$consultaPreparada->fetchColumn();
 }
 
 function consultarLinhas(PDO $pdo, string $sql, array $parametros = []): array
 {
     // Atalho para consultas que alimentam listas e graficos.
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($parametros);
+    $consultaPreparada = $pdo->prepare($sql);
+    $consultaPreparada->execute($parametros);
 
-    return $stmt->fetchAll();
+    return $consultaPreparada->fetchAll();
 }
 
 function consultarEvolucaoAtivos(PDO $pdo, string $periodo): array
@@ -74,19 +74,19 @@ function consultarEvolucaoAtivos(PDO $pdo, string $periodo): array
     ];
 
     $periodoSeguro = array_key_exists($periodo, $configuracoes) ? $periodo : 'semana';
-    $config = $configuracoes[$periodoSeguro];
+    $configuracao = $configuracoes[$periodoSeguro];
 
     return consultarLinhas(
         $pdo,
         "with pontos as (
             select generate_series(
-                {$config['inicio']},
-                {$config['fim']},
-                {$config['passo']}
+                {$configuracao['inicio']},
+                {$configuracao['fim']},
+                {$configuracao['passo']}
             ) as ponto
         )
         select
-            to_char(p.ponto, '{$config['label']}') as label,
+            to_char(p.ponto, '{$configuracao['label']}') as label,
             count(a.id)::int as novos,
             (
                 select count(*)::int

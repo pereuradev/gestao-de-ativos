@@ -36,100 +36,100 @@ final class RelatorioAtivosXlsx
     private const STYLE_EMPTY = 25;
 
     // Monta as partes Open XML em arquivo temporário e sempre remove o artefato ao terminar.
-    public function generate(
-        array $assets,
-        array $metrics,
-        array $filters,
-        DateTimeImmutable $generatedAt,
-        bool $includeResponsible
+    public function gerar(
+        array $ativos,
+        array $metricas,
+        array $filtros,
+        DateTimeImmutable $geradoEm,
+        bool $incluirResponsavel
     ): string {
         if (!class_exists(ZipArchive::class)) {
             throw new RuntimeException("A extensao ZIP do PHP nao esta disponivel.");
         }
 
-        $logoPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . "assets" . DIRECTORY_SEPARATOR . "logo-branca.png";
+        $caminhoLogo = dirname(__DIR__) . DIRECTORY_SEPARATOR . "assets" . DIRECTORY_SEPARATOR . "logo-branca.png";
 
-        if (!is_file($logoPath) || !is_readable($logoPath)) {
+        if (!is_file($caminhoLogo) || !is_readable($caminhoLogo)) {
             throw new RuntimeException("O logotipo da TI TECH nao esta disponivel para a planilha.");
         }
 
-        $columns = $this->columns($includeResponsible);
-        $summary = $this->buildSummarySheet($metrics, $filters, $generatedAt, count($columns));
-        $details = $this->buildDetailsSheet($assets, $columns, $generatedAt);
-        $temporaryPath = tempnam(sys_get_temp_dir(), "titech-xlsx-");
+        $colunas = $this->colunas($incluirResponsavel);
+        $resumo = $this->montarPlanilhaResumo($metricas, $filtros, $geradoEm, count($colunas));
+        $detalhes = $this->montarPlanilhaDetalhes($ativos, $colunas, $geradoEm);
+        $caminhoTemporario = tempnam(sys_get_temp_dir(), "titech-xlsx-");
 
-        if ($temporaryPath === false) {
+        if ($caminhoTemporario === false) {
             throw new RuntimeException("Nao foi possivel preparar a planilha.");
         }
 
         try {
-            $zip = new ZipArchive();
-            $opened = $zip->open($temporaryPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+            $arquivoZip = new ZipArchive();
+            $resultadoAbertura = $arquivoZip->open($caminhoTemporario, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
-            if ($opened !== true) {
+            if ($resultadoAbertura !== true) {
                 throw new RuntimeException("Nao foi possivel criar o arquivo XLSX.");
             }
 
-            $this->addPart($zip, "[Content_Types].xml", $this->contentTypesXml());
-            $this->addPart($zip, "_rels/.rels", $this->rootRelationshipsXml());
-            $this->addPart($zip, "docProps/app.xml", $this->appPropertiesXml());
-            $this->addPart($zip, "docProps/core.xml", $this->corePropertiesXml($generatedAt));
-            $this->addPart(
-                $zip,
+            $this->adicionarParte($arquivoZip, "[Content_Types].xml", $this->tiposConteudoXml());
+            $this->adicionarParte($arquivoZip, "_rels/.rels", $this->relacionamentosRaizXml());
+            $this->adicionarParte($arquivoZip, "docProps/app.xml", $this->propriedadesAplicacaoXml());
+            $this->adicionarParte($arquivoZip, "docProps/core.xml", $this->propriedadesPrincipaisXml($geradoEm));
+            $this->adicionarParte(
+                $arquivoZip,
                 "xl/workbook.xml",
-                $this->workbookXml($summary["lastRow"], $details["lastRow"], count($columns))
+                $this->pastaTrabalhoXml($resumo["lastRow"], $detalhes["lastRow"], count($colunas))
             );
-            $this->addPart($zip, "xl/_rels/workbook.xml.rels", $this->workbookRelationshipsXml());
-            $this->addPart($zip, "xl/styles.xml", $this->stylesXml());
-            $this->addPart($zip, "xl/worksheets/sheet1.xml", $summary["xml"]);
-            $this->addPart($zip, "xl/worksheets/_rels/sheet1.xml.rels", $this->sheetRelationshipsXml(1, []));
-            $this->addPart($zip, "xl/worksheets/sheet2.xml", $details["xml"]);
-            $this->addPart(
-                $zip,
+            $this->adicionarParte($arquivoZip, "xl/_rels/workbook.xml.rels", $this->relacionamentosPastaTrabalhoXml());
+            $this->adicionarParte($arquivoZip, "xl/styles.xml", $this->estilosXml());
+            $this->adicionarParte($arquivoZip, "xl/worksheets/sheet1.xml", $resumo["xml"]);
+            $this->adicionarParte($arquivoZip, "xl/worksheets/_rels/sheet1.xml.rels", $this->relacionamentosPlanilhaXml(1, []));
+            $this->adicionarParte($arquivoZip, "xl/worksheets/sheet2.xml", $detalhes["xml"]);
+            $this->adicionarParte(
+                $arquivoZip,
                 "xl/worksheets/_rels/sheet2.xml.rels",
-                $this->sheetRelationshipsXml(2, $details["relationships"])
+                $this->relacionamentosPlanilhaXml(2, $detalhes["relationships"])
             );
-            $this->addPart($zip, "xl/drawings/drawing1.xml", $this->drawingXml("Logo TI TECH - Resumo"));
-            $this->addPart(
-                $zip,
+            $this->adicionarParte($arquivoZip, "xl/drawings/drawing1.xml", $this->desenhoXml("Logo TI TECH - Resumo"));
+            $this->adicionarParte(
+                $arquivoZip,
                 "xl/drawings/_rels/drawing1.xml.rels",
-                $this->drawingRelationshipsXml("logo-summary.png")
+                $this->relacionamentosDesenhoXml("logo-summary.png")
             );
-            $this->addPart($zip, "xl/drawings/drawing2.xml", $this->drawingXml("Logo TI TECH - Ativos"));
-            $this->addPart(
-                $zip,
+            $this->adicionarParte($arquivoZip, "xl/drawings/drawing2.xml", $this->desenhoXml("Logo TI TECH - Ativos"));
+            $this->adicionarParte(
+                $arquivoZip,
                 "xl/drawings/_rels/drawing2.xml.rels",
-                $this->drawingRelationshipsXml("logo-details.png")
+                $this->relacionamentosDesenhoXml("logo-details.png")
             );
 
             if (
-                !$zip->addFile($logoPath, "xl/media/logo-summary.png")
-                || !$zip->addFile($logoPath, "xl/media/logo-details.png")
+                !$arquivoZip->addFile($caminhoLogo, "xl/media/logo-summary.png")
+                || !$arquivoZip->addFile($caminhoLogo, "xl/media/logo-details.png")
             ) {
                 throw new RuntimeException("Nao foi possivel incluir o logotipo na planilha.");
             }
 
-            if (!$zip->close()) {
+            if (!$arquivoZip->close()) {
                 throw new RuntimeException("Nao foi possivel finalizar o arquivo XLSX.");
             }
 
-            $binary = file_get_contents($temporaryPath);
+            $conteudoBinario = file_get_contents($caminhoTemporario);
 
-            if ($binary === false || $binary === "") {
+            if ($conteudoBinario === false || $conteudoBinario === "") {
                 throw new RuntimeException("A planilha gerada esta vazia.");
             }
 
-            return $binary;
+            return $conteudoBinario;
         } finally {
-            if (is_file($temporaryPath)) {
-                @unlink($temporaryPath);
+            if (is_file($caminhoTemporario)) {
+                @unlink($caminhoTemporario);
             }
         }
     }
 
-    private function columns(bool $includeResponsible): array
+    private function colunas(bool $incluirResponsavel): array
     {
-        $columns = [
+        $colunas = [
             ["key" => "id", "title" => "ID", "width" => 38.0, "kind" => "text"],
             ["key" => "nome", "title" => "Nome", "width" => 30.0, "kind" => "wrap"],
             ["key" => "descricao", "title" => "Descri\xc3\xa7\xc3\xa3o", "width" => 42.0, "kind" => "wrap"],
@@ -142,8 +142,8 @@ final class RelatorioAtivosXlsx
             ["key" => "localizacao", "title" => "Localiza\xc3\xa7\xc3\xa3o", "width" => 26.0, "kind" => "wrap"],
         ];
 
-        if ($includeResponsible) {
-            $columns[] = [
+        if ($incluirResponsavel) {
+            $colunas[] = [
                 "key" => "responsavel",
                 "title" => "Respons\xc3\xa1vel",
                 "width" => 26.0,
@@ -151,7 +151,7 @@ final class RelatorioAtivosXlsx
             ];
         }
 
-        return array_merge($columns, [
+        return array_merge($colunas, [
             ["key" => "status", "title" => "Status", "width" => 18.0, "kind" => "status"],
             ["key" => "datasheet", "title" => "Datasheet", "width" => 34.0, "kind" => "link"],
             ["key" => "criado_em", "title" => "Data de cadastro", "width" => 20.0, "kind" => "date"],
@@ -159,565 +159,565 @@ final class RelatorioAtivosXlsx
     }
 
     // A primeira planilha reúne identidade visual, métricas e filtros aplicados.
-    private function buildSummarySheet(
-        array $metrics,
-        array $filters,
-        DateTimeImmutable $generatedAt,
-        int $lastColumnIndex
+    private function montarPlanilhaResumo(
+        array $metricas,
+        array $filtros,
+        DateTimeImmutable $geradoEm,
+        int $indiceUltimaColuna
     ): array {
-        $lastColumn = $this->columnLetter($lastColumnIndex);
-        $rows = [];
-        $merges = [
+        $ultimaColuna = $this->letraColuna($indiceUltimaColuna);
+        $linhas = [];
+        $mesclagens = [
             "A1:B3",
             "C1:H1",
             "C2:H2",
-            "I1:{$lastColumn}1",
-            "I2:{$lastColumn}2",
-            "A6:{$lastColumn}6",
+            "I1:{$ultimaColuna}1",
+            "I2:{$ultimaColuna}2",
+            "A6:{$ultimaColuna}6",
             "A7:D7",
             "A8:D8",
             "E7:H7",
             "E8:H8",
-            "I7:{$lastColumn}7",
-            "I8:{$lastColumn}8",
-            "A10:{$lastColumn}10",
+            "I7:{$ultimaColuna}7",
+            "I8:{$ultimaColuna}8",
+            "A10:{$ultimaColuna}10",
             "A11:C11",
-            "D11:{$lastColumn}11",
+            "D11:{$ultimaColuna}11",
         ];
 
-        $rows[] = $this->styledRow(1, 28.0, $lastColumnIndex, self::STYLE_BRAND_NAVY, [
-            3 => $this->stringCell(3, 1, "RELAT\xc3\x93RIO DE ATIVOS", self::STYLE_TITLE),
-            9 => $this->stringCell(9, 1, "GERADO EM", self::STYLE_GENERATED_LABEL),
+        $linhas[] = $this->linhaEstilizada(1, 28.0, $indiceUltimaColuna, self::STYLE_BRAND_NAVY, [
+            3 => $this->celulaTexto(3, 1, "RELAT\xc3\x93RIO DE ATIVOS", self::STYLE_TITLE),
+            9 => $this->celulaTexto(9, 1, "GERADO EM", self::STYLE_GENERATED_LABEL),
         ]);
-        $rows[] = $this->styledRow(2, 22.0, $lastColumnIndex, self::STYLE_BRAND_NAVY, [
-            3 => $this->stringCell(3, 2, "Invent\xc3\xa1rio corporativo consolidado", self::STYLE_SUBTITLE),
-            9 => $this->stringCell(
+        $linhas[] = $this->linhaEstilizada(2, 22.0, $indiceUltimaColuna, self::STYLE_BRAND_NAVY, [
+            3 => $this->celulaTexto(3, 2, "Invent\xc3\xa1rio corporativo consolidado", self::STYLE_SUBTITLE),
+            9 => $this->celulaTexto(
                 9,
                 2,
-                $generatedAt->format("d/m/Y H:i"),
+                $geradoEm->format("d/m/Y H:i"),
                 self::STYLE_GENERATED_VALUE
             ),
         ]);
-        $rows[] = $this->styledRow(3, 18.0, $lastColumnIndex, self::STYLE_BRAND_NAVY);
-        $rows[] = $this->brandBarRow(4, $lastColumnIndex);
-        $rows[] = $this->styledRow(5, 9.0, $lastColumnIndex, self::STYLE_DEFAULT);
-        $rows[] = $this->styledRow(6, 24.0, $lastColumnIndex, self::STYLE_SECTION, [
-            1 => $this->stringCell(1, 6, "VIS\xc3\x83O GERAL DO INVENT\xc3\x81RIO", self::STYLE_SECTION),
+        $linhas[] = $this->linhaEstilizada(3, 18.0, $indiceUltimaColuna, self::STYLE_BRAND_NAVY);
+        $linhas[] = $this->linhaBarraMarca(4, $indiceUltimaColuna);
+        $linhas[] = $this->linhaEstilizada(5, 9.0, $indiceUltimaColuna, self::STYLE_DEFAULT);
+        $linhas[] = $this->linhaEstilizada(6, 24.0, $indiceUltimaColuna, self::STYLE_SECTION, [
+            1 => $this->celulaTexto(1, 6, "VIS\xc3\x83O GERAL DO INVENT\xc3\x81RIO", self::STYLE_SECTION),
         ]);
 
-        $metricLabels = [];
-        $metricValues = [];
-        $this->fillRange(
-            $metricLabels,
+        $rotulosMetricas = [];
+        $valoresMetricas = [];
+        $this->preencherIntervalo(
+            $rotulosMetricas,
             7,
             1,
             4,
             self::STYLE_METRIC_LABEL_NAVY,
             "Total de ativos"
         );
-        $this->fillRange(
-            $metricLabels,
+        $this->preencherIntervalo(
+            $rotulosMetricas,
             7,
             5,
             8,
             self::STYLE_METRIC_LABEL_BLUE,
             "Em estoque"
         );
-        $this->fillRange(
-            $metricLabels,
+        $this->preencherIntervalo(
+            $rotulosMetricas,
             7,
             9,
-            $lastColumnIndex,
+            $indiceUltimaColuna,
             self::STYLE_METRIC_LABEL_MINT,
             "Registros no relat\xc3\xb3rio"
         );
-        $this->fillRange(
-            $metricValues,
+        $this->preencherIntervalo(
+            $valoresMetricas,
             8,
             1,
             4,
             self::STYLE_METRIC_VALUE,
-            (string) max(0, (int) ($metrics["total"] ?? 0)),
+            (string) max(0, (int) ($metricas["total"] ?? 0)),
             true
         );
-        $this->fillRange(
-            $metricValues,
+        $this->preencherIntervalo(
+            $valoresMetricas,
             8,
             5,
             8,
             self::STYLE_METRIC_VALUE,
-            (string) max(0, (int) ($metrics["disponiveis"] ?? 0)),
+            (string) max(0, (int) ($metricas["disponiveis"] ?? 0)),
             true
         );
-        $this->fillRange(
-            $metricValues,
+        $this->preencherIntervalo(
+            $valoresMetricas,
             8,
             9,
-            $lastColumnIndex,
+            $indiceUltimaColuna,
             self::STYLE_METRIC_VALUE,
-            (string) max(0, (int) ($metrics["filtrados"] ?? 0)),
+            (string) max(0, (int) ($metricas["filtrados"] ?? 0)),
             true
         );
-        $rows[] = $this->styledRow(7, 22.0, $lastColumnIndex, self::STYLE_DEFAULT, $metricLabels);
-        $rows[] = $this->styledRow(8, 34.0, $lastColumnIndex, self::STYLE_DEFAULT, $metricValues);
-        $rows[] = $this->styledRow(9, 10.0, $lastColumnIndex, self::STYLE_DEFAULT);
-        $rows[] = $this->styledRow(10, 24.0, $lastColumnIndex, self::STYLE_SECTION, [
-            1 => $this->stringCell(1, 10, "FILTROS DO RELAT\xc3\x93RIO", self::STYLE_SECTION),
+        $linhas[] = $this->linhaEstilizada(7, 22.0, $indiceUltimaColuna, self::STYLE_DEFAULT, $rotulosMetricas);
+        $linhas[] = $this->linhaEstilizada(8, 34.0, $indiceUltimaColuna, self::STYLE_DEFAULT, $valoresMetricas);
+        $linhas[] = $this->linhaEstilizada(9, 10.0, $indiceUltimaColuna, self::STYLE_DEFAULT);
+        $linhas[] = $this->linhaEstilizada(10, 24.0, $indiceUltimaColuna, self::STYLE_SECTION, [
+            1 => $this->celulaTexto(1, 10, "FILTROS DO RELAT\xc3\x93RIO", self::STYLE_SECTION),
         ]);
 
-        $filterHeader = [];
-        $this->fillRange($filterHeader, 11, 1, 3, self::STYLE_FILTER_HEADER, "Filtro");
-        $this->fillRange($filterHeader, 11, 4, $lastColumnIndex, self::STYLE_FILTER_HEADER, "Valor");
-        $rows[] = $this->styledRow(11, 22.0, $lastColumnIndex, self::STYLE_DEFAULT, $filterHeader);
+        $cabecalhoFiltros = [];
+        $this->preencherIntervalo($cabecalhoFiltros, 11, 1, 3, self::STYLE_FILTER_HEADER, "Filtro");
+        $this->preencherIntervalo($cabecalhoFiltros, 11, 4, $indiceUltimaColuna, self::STYLE_FILTER_HEADER, "Valor");
+        $linhas[] = $this->linhaEstilizada(11, 22.0, $indiceUltimaColuna, self::STYLE_DEFAULT, $cabecalhoFiltros);
 
-        $filterRows = $filters === [] ? ["Filtros aplicados" => "Nenhum"] : $filters;
-        $rowNumber = 12;
+        $linhasFiltros = $filtros === [] ? ["Filtros aplicados" => "Nenhum"] : $filtros;
+        $numeroLinhaFiltro = 12;
 
-        foreach ($filterRows as $name => $value) {
-            $cells = [];
-            $this->fillRange(
-                $cells,
-                $rowNumber,
+        foreach ($linhasFiltros as $nome => $valorCelula) {
+            $celulas = [];
+            $this->preencherIntervalo(
+                $celulas,
+                $numeroLinhaFiltro,
                 1,
                 3,
                 self::STYLE_FILTER_VALUE,
-                (string) $name
+                (string) $nome
             );
-            $this->fillRange(
-                $cells,
-                $rowNumber,
+            $this->preencherIntervalo(
+                $celulas,
+                $numeroLinhaFiltro,
                 4,
-                $lastColumnIndex,
+                $indiceUltimaColuna,
                 self::STYLE_FILTER_VALUE,
-                (string) $value
+                (string) $valorCelula
             );
-            $rows[] = $this->styledRow(
-                $rowNumber,
+            $linhas[] = $this->linhaEstilizada(
+                $numeroLinhaFiltro,
                 28.0,
-                $lastColumnIndex,
+                $indiceUltimaColuna,
                 self::STYLE_DEFAULT,
-                $cells
+                $celulas
             );
-            $merges[] = "A{$rowNumber}:C{$rowNumber}";
-            $merges[] = "D{$rowNumber}:{$lastColumn}{$rowNumber}";
-            $rowNumber++;
+            $mesclagens[] = "A{$numeroLinhaFiltro}:C{$numeroLinhaFiltro}";
+            $mesclagens[] = "D{$numeroLinhaFiltro}:{$ultimaColuna}{$numeroLinhaFiltro}";
+            $numeroLinhaFiltro++;
         }
 
-        $lastRow = $rowNumber - 1;
-        $columnsXml = '<cols><col min="1" max="2" width="14" customWidth="1"/>'
-            . '<col min="3" max="' . $lastColumnIndex . '" width="13" customWidth="1"/></cols>';
-        $xml = $this->worksheetOpenXml("A1:{$lastColumn}{$lastRow}", $columnsXml, null)
-            . '<sheetData>' . implode("", $rows) . '</sheetData>'
-            . $this->mergeCellsXml($merges)
+        $ultimaLinha = $numeroLinhaFiltro - 1;
+        $colunasXml = '<cols><col min="1" max="2" width="14" customWidth="1"/>'
+            . '<col min="3" max="' . $indiceUltimaColuna . '" width="13" customWidth="1"/></cols>';
+        $conteudoXml = $this->abrirXmlPlanilha("A1:{$ultimaColuna}{$ultimaLinha}", $colunasXml, null)
+            . '<sheetData>' . implode("", $linhas) . '</sheetData>'
+            . $this->mesclarCelulasXml($mesclagens)
             . '<printOptions horizontalCentered="1"/>'
             . '<pageMargins left="0.35" right="0.35" top="0.45" bottom="0.45" header="0.2" footer="0.2"/>'
             . '<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="1"/>'
             . '<drawing r:id="rId1"/>'
             . '</worksheet>';
 
-        return ["xml" => $xml, "lastRow" => $lastRow];
+        return ["xml" => $conteudoXml, "lastRow" => $ultimaLinha];
     }
 
     // A segunda planilha contém os ativos e relacionamentos de hyperlinks externos.
-    private function buildDetailsSheet(
-        array $assets,
-        array $columns,
-        DateTimeImmutable $generatedAt
+    private function montarPlanilhaDetalhes(
+        array $ativos,
+        array $colunas,
+        DateTimeImmutable $geradoEm
     ): array {
-        $lastColumnIndex = count($columns);
-        $lastColumn = $this->columnLetter($lastColumnIndex);
-        $rows = [];
-        $merges = [
+        $indiceUltimaColuna = count($colunas);
+        $ultimaColuna = $this->letraColuna($indiceUltimaColuna);
+        $linhas = [];
+        $mesclagens = [
             "A1:B3",
             "C1:H1",
             "C2:H2",
-            "I1:{$lastColumn}1",
-            "I2:{$lastColumn}2",
+            "I1:{$ultimaColuna}1",
+            "I2:{$ultimaColuna}2",
         ];
 
-        $rows[] = $this->styledRow(1, 28.0, $lastColumnIndex, self::STYLE_BRAND_NAVY, [
-            3 => $this->stringCell(3, 1, "DADOS DOS ATIVOS", self::STYLE_TITLE),
-            9 => $this->stringCell(9, 1, "GERADO EM", self::STYLE_GENERATED_LABEL),
+        $linhas[] = $this->linhaEstilizada(1, 28.0, $indiceUltimaColuna, self::STYLE_BRAND_NAVY, [
+            3 => $this->celulaTexto(3, 1, "DADOS DOS ATIVOS", self::STYLE_TITLE),
+            9 => $this->celulaTexto(9, 1, "GERADO EM", self::STYLE_GENERATED_LABEL),
         ]);
-        $rows[] = $this->styledRow(2, 22.0, $lastColumnIndex, self::STYLE_BRAND_NAVY, [
-            3 => $this->stringCell(3, 2, "Invent\xc3\xa1rio corporativo | Registros filtrados", self::STYLE_SUBTITLE),
-            9 => $this->stringCell(
+        $linhas[] = $this->linhaEstilizada(2, 22.0, $indiceUltimaColuna, self::STYLE_BRAND_NAVY, [
+            3 => $this->celulaTexto(3, 2, "Invent\xc3\xa1rio corporativo | Registros filtrados", self::STYLE_SUBTITLE),
+            9 => $this->celulaTexto(
                 9,
                 2,
-                $generatedAt->format("d/m/Y H:i"),
+                $geradoEm->format("d/m/Y H:i"),
                 self::STYLE_GENERATED_VALUE
             ),
         ]);
-        $rows[] = $this->styledRow(3, 18.0, $lastColumnIndex, self::STYLE_BRAND_NAVY);
-        $rows[] = $this->brandBarRow(4, $lastColumnIndex);
+        $linhas[] = $this->linhaEstilizada(3, 18.0, $indiceUltimaColuna, self::STYLE_BRAND_NAVY);
+        $linhas[] = $this->linhaBarraMarca(4, $indiceUltimaColuna);
 
-        $headerCells = [];
-        foreach ($columns as $index => $column) {
-            $columnIndex = $index + 1;
-            $headerCells[$columnIndex] = $this->stringCell(
-                $columnIndex,
+        $celulasCabecalho = [];
+        foreach ($colunas as $indice => $coluna) {
+            $indiceColuna = $indice + 1;
+            $celulasCabecalho[$indiceColuna] = $this->celulaTexto(
+                $indiceColuna,
                 5,
-                (string) $column["title"],
+                (string) $coluna["title"],
                 self::STYLE_TABLE_HEADER
             );
         }
-        $rows[] = $this->styledRow(5, 32.0, $lastColumnIndex, self::STYLE_TABLE_HEADER, $headerCells);
+        $linhas[] = $this->linhaEstilizada(5, 32.0, $indiceUltimaColuna, self::STYLE_TABLE_HEADER, $celulasCabecalho);
 
-        $hyperlinks = [];
-        $relationships = [];
-        $relationshipId = 2;
-        $dataRow = 6;
+        $hiperlinks = [];
+        $relacionamentos = [];
+        $idRelacionamento = 2;
+        $linhaDados = 6;
 
-        foreach ($assets as $assetIndex => $asset) {
-            $asset = is_array($asset) ? $asset : [];
-            $isAlternate = $assetIndex % 2 === 1;
-            $cells = [];
+        foreach ($ativos as $indiceAtivo => $ativo) {
+            $ativo = is_array($ativo) ? $ativo : [];
+            $alternado = $indiceAtivo % 2 === 1;
+            $celulas = [];
 
-            foreach ($columns as $columnIndexZero => $column) {
-                $columnIndex = $columnIndexZero + 1;
-                $key = (string) $column["key"];
-                $kind = (string) $column["kind"];
-                $value = $asset[$key] ?? "";
-                $cells[$columnIndex] = $this->dataCell(
-                    $columnIndex,
-                    $dataRow,
-                    $value,
-                    $kind,
-                    $isAlternate,
-                    $generatedAt,
-                    $relationshipId,
-                    $hyperlinks,
-                    $relationships
+            foreach ($colunas as $indiceColunaZero => $coluna) {
+                $indiceColuna = $indiceColunaZero + 1;
+                $chaveItem = (string) $coluna["key"];
+                $tipo = (string) $coluna["kind"];
+                $valorCelula = $ativo[$chaveItem] ?? "";
+                $celulas[$indiceColuna] = $this->celulaDados(
+                    $indiceColuna,
+                    $linhaDados,
+                    $valorCelula,
+                    $tipo,
+                    $alternado,
+                    $geradoEm,
+                    $idRelacionamento,
+                    $hiperlinks,
+                    $relacionamentos
                 );
             }
 
-            $rows[] = $this->styledRow(
-                $dataRow,
+            $linhas[] = $this->linhaEstilizada(
+                $linhaDados,
                 30.0,
-                $lastColumnIndex,
-                $isAlternate ? self::STYLE_TEXT_ALT : self::STYLE_TEXT,
-                $cells
+                $indiceUltimaColuna,
+                $alternado ? self::STYLE_TEXT_ALT : self::STYLE_TEXT,
+                $celulas
             );
-            $dataRow++;
+            $linhaDados++;
         }
 
-        if ($assets === []) {
-            $emptyCells = [];
-            $this->fillRange(
-                $emptyCells,
+        if ($ativos === []) {
+            $celulasVazias = [];
+            $this->preencherIntervalo(
+                $celulasVazias,
                 6,
                 1,
-                $lastColumnIndex,
+                $indiceUltimaColuna,
                 self::STYLE_EMPTY,
                 "Nenhum ativo encontrado para os filtros aplicados."
             );
-            $rows[] = $this->styledRow(6, 34.0, $lastColumnIndex, self::STYLE_EMPTY, $emptyCells);
-            $merges[] = "A6:{$lastColumn}6";
-            $lastRow = 6;
+            $linhas[] = $this->linhaEstilizada(6, 34.0, $indiceUltimaColuna, self::STYLE_EMPTY, $celulasVazias);
+            $mesclagens[] = "A6:{$ultimaColuna}6";
+            $ultimaLinha = 6;
         } else {
-            $lastRow = $dataRow - 1;
+            $ultimaLinha = $linhaDados - 1;
         }
 
-        $columnsXml = '<cols>';
-        foreach ($columns as $index => $column) {
-            $columnNumber = $index + 1;
-            $columnsXml .= '<col min="' . $columnNumber . '" max="' . $columnNumber
-                . '" width="' . $this->decimal((float) $column["width"])
+        $colunasXml = '<cols>';
+        foreach ($colunas as $indice => $coluna) {
+            $numeroColuna = $indice + 1;
+            $colunasXml .= '<col min="' . $numeroColuna . '" max="' . $numeroColuna
+                . '" width="' . $this->decimal((float) $coluna["width"])
                 . '" customWidth="1"/>';
         }
-        $columnsXml .= '</cols>';
+        $colunasXml .= '</cols>';
 
-        $hyperlinksXml = $hyperlinks === []
+        $hiperlinksXml = $hiperlinks === []
             ? ""
-            : '<hyperlinks>' . implode("", $hyperlinks) . '</hyperlinks>';
-        $ignoredErrorsXml = $assets === []
+            : '<hyperlinks>' . implode("", $hiperlinks) . '</hyperlinks>';
+        $errosIgnoradosXml = $ativos === []
             ? ""
-            : '<ignoredErrors><ignoredError sqref="A6:F' . $lastRow
+            : '<ignoredErrors><ignoredError sqref="A6:F' . $ultimaLinha
                 . '" numberStoredAsText="1"/></ignoredErrors>';
-        $xml = $this->worksheetOpenXml(
-            "A1:{$lastColumn}{$lastRow}",
-            $columnsXml,
+        $conteudoXml = $this->abrirXmlPlanilha(
+            "A1:{$ultimaColuna}{$ultimaLinha}",
+            $colunasXml,
             '<pane ySplit="5" topLeftCell="A6" activePane="bottomLeft" state="frozen"/>'
                 . '<selection pane="bottomLeft" activeCell="A6" sqref="A6"/>'
         )
-            . '<sheetData>' . implode("", $rows) . '</sheetData>'
-            . '<autoFilter ref="A5:' . $lastColumn . $lastRow . '"/>'
-            . $this->mergeCellsXml($merges)
-            . $hyperlinksXml
+            . '<sheetData>' . implode("", $linhas) . '</sheetData>'
+            . '<autoFilter ref="A5:' . $ultimaColuna . $ultimaLinha . '"/>'
+            . $this->mesclarCelulasXml($mesclagens)
+            . $hiperlinksXml
             . '<printOptions horizontalCentered="1"/>'
             . '<pageMargins left="0.25" right="0.25" top="0.4" bottom="0.4" header="0.2" footer="0.2"/>'
             . '<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>'
-            . $ignoredErrorsXml
+            . $errosIgnoradosXml
             . '<drawing r:id="rId1"/>'
             . '</worksheet>';
 
         return [
-            "xml" => $xml,
-            "lastRow" => $lastRow,
-            "relationships" => $relationships,
+            "xml" => $conteudoXml,
+            "lastRow" => $ultimaLinha,
+            "relationships" => $relacionamentos,
         ];
     }
 
     // Escolhe tipo e estilo da célula sem permitir XML não escapado nos valores.
-    private function dataCell(
-        int $columnIndex,
-        int $row,
-        mixed $value,
-        string $kind,
-        bool $isAlternate,
-        DateTimeImmutable $generatedAt,
-        int &$relationshipId,
-        array &$hyperlinks,
-        array &$relationships
+    private function celulaDados(
+        int $indiceColuna,
+        int $numeroLinha,
+        mixed $valorCelula,
+        string $tipo,
+        bool $alternado,
+        DateTimeImmutable $geradoEm,
+        int &$idRelacionamento,
+        array &$hiperlinks,
+        array &$relacionamentos
     ): string {
-        $textStyle = $isAlternate ? self::STYLE_TEXT_ALT : self::STYLE_TEXT;
-        $wrapStyle = $isAlternate ? self::STYLE_WRAP_ALT : self::STYLE_WRAP;
+        $estiloTexto = $alternado ? self::STYLE_TEXT_ALT : self::STYLE_TEXT;
+        $estiloQuebra = $alternado ? self::STYLE_WRAP_ALT : self::STYLE_WRAP;
 
-        if ($kind === "date") {
-            $date = $this->dateValue($value, $generatedAt->getTimezone());
+        if ($tipo === "date") {
+            $data = $this->valorData($valorCelula, $geradoEm->getTimezone());
 
-            if ($date !== null) {
-                return $this->numberCell(
-                    $columnIndex,
-                    $row,
-                    $this->excelDateSerial($date),
-                    $isAlternate ? self::STYLE_DATE_ALT : self::STYLE_DATE
+            if ($data !== null) {
+                return $this->celulaNumero(
+                    $indiceColuna,
+                    $numeroLinha,
+                    $this->numeroSerialDataExcel($data),
+                    $alternado ? self::STYLE_DATE_ALT : self::STYLE_DATE
                 );
             }
 
-            return $this->stringCell($columnIndex, $row, "", $textStyle);
+            return $this->celulaTexto($indiceColuna, $numeroLinha, "", $estiloTexto);
         }
 
-        $text = trim((string) $value);
+        $texto = trim((string) $valorCelula);
 
-        if ($kind === "link" && $this->validExternalUrl($text)) {
-            $cellReference = $this->columnLetter($columnIndex) . $row;
-            $currentRelationship = "rId" . $relationshipId;
-            $hyperlinks[] = '<hyperlink ref="' . $cellReference . '" r:id="'
-                . $currentRelationship . '"/>';
-            $relationships[] = ["id" => $currentRelationship, "target" => $text];
-            $relationshipId++;
+        if ($tipo === "link" && $this->urlExternaValida($texto)) {
+            $referenciaCelula = $this->letraColuna($indiceColuna) . $numeroLinha;
+            $relacionamentoAtual = "rId" . $idRelacionamento;
+            $hiperlinks[] = '<hyperlink ref="' . $referenciaCelula . '" r:id="'
+                . $relacionamentoAtual . '"/>';
+            $relacionamentos[] = ["id" => $relacionamentoAtual, "target" => $texto];
+            $idRelacionamento++;
 
-            return $this->stringCell(
-                $columnIndex,
-                $row,
-                $text,
-                $isAlternate ? self::STYLE_LINK_ALT : self::STYLE_LINK
+            return $this->celulaTexto(
+                $indiceColuna,
+                $numeroLinha,
+                $texto,
+                $alternado ? self::STYLE_LINK_ALT : self::STYLE_LINK
             );
         }
 
-        if ($kind === "status" && $this->isAvailableStatus($text)) {
-            return $this->stringCell(
-                $columnIndex,
-                $row,
-                $text,
+        if ($tipo === "status" && $this->statusDisponivel($texto)) {
+            return $this->celulaTexto(
+                $indiceColuna,
+                $numeroLinha,
+                $texto,
                 self::STYLE_STATUS_AVAILABLE
             );
         }
 
-        return $this->stringCell(
-            $columnIndex,
-            $row,
-            $text,
-            $kind === "wrap" ? $wrapStyle : $textStyle
+        return $this->celulaTexto(
+            $indiceColuna,
+            $numeroLinha,
+            $texto,
+            $tipo === "wrap" ? $estiloQuebra : $estiloTexto
         );
     }
 
-    private function dateValue(mixed $value, DateTimeZone $timezone): ?DateTimeImmutable
+    private function valorData(mixed $valorCelula, DateTimeZone $fusoHorario): ?DateTimeImmutable
     {
-        if ($value instanceof DateTimeImmutable) {
-            return $value->setTimezone($timezone);
+        if ($valorCelula instanceof DateTimeImmutable) {
+            return $valorCelula->setTimezone($fusoHorario);
         }
 
-        if ($value instanceof DateTimeInterface) {
-            return (new DateTimeImmutable($value->format(DateTimeInterface::ATOM)))->setTimezone($timezone);
+        if ($valorCelula instanceof DateTimeInterface) {
+            return (new DateTimeImmutable($valorCelula->format(DateTimeInterface::ATOM)))->setTimezone($fusoHorario);
         }
 
-        $text = trim((string) $value);
+        $texto = trim((string) $valorCelula);
 
-        if ($text === "") {
+        if ($texto === "") {
             return null;
         }
 
         try {
-            return (new DateTimeImmutable($text))->setTimezone($timezone);
+            return (new DateTimeImmutable($texto))->setTimezone($fusoHorario);
         } catch (Throwable) {
             return null;
         }
     }
 
-    private function excelDateSerial(DateTimeImmutable $date): float
+    private function numeroSerialDataExcel(DateTimeImmutable $data): float
     {
-        $localTimestamp = gmmktime(
-            (int) $date->format("H"),
-            (int) $date->format("i"),
-            (int) $date->format("s"),
-            (int) $date->format("m"),
-            (int) $date->format("d"),
-            (int) $date->format("Y")
+        $marcaTempoLocal = gmmktime(
+            (int) $data->format("H"),
+            (int) $data->format("i"),
+            (int) $data->format("s"),
+            (int) $data->format("m"),
+            (int) $data->format("d"),
+            (int) $data->format("Y")
         );
 
-        return ($localTimestamp / 86400) + 25569;
+        return ($marcaTempoLocal / 86400) + 25569;
     }
 
-    private function validExternalUrl(string $value): bool
+    private function urlExternaValida(string $valorCelula): bool
     {
-        if ($value === "" || filter_var($value, FILTER_VALIDATE_URL) === false) {
+        if ($valorCelula === "" || filter_var($valorCelula, FILTER_VALIDATE_URL) === false) {
             return false;
         }
 
-        return in_array(strtolower((string) parse_url($value, PHP_URL_SCHEME)), ["http", "https"], true);
+        return in_array(strtolower((string) parse_url($valorCelula, PHP_URL_SCHEME)), ["http", "https"], true);
     }
 
-    private function isAvailableStatus(string $status): bool
+    private function statusDisponivel(string $status): bool
     {
-        $normalized = strtolower(trim($status));
+        $normalizado = strtolower(trim($status));
 
-        return str_starts_with($normalized, "dispon") || $normalized === "em estoque";
+        return str_starts_with($normalizado, "dispon") || $normalizado === "em estoque";
     }
 
-    private function worksheetOpenXml(string $dimension, string $columnsXml, ?string $paneXml): string
+    private function abrirXmlPlanilha(string $dimensao, string $colunasXml, ?string $painelXml): string
     {
-        $sheetView = '<sheetView showGridLines="0" zoomScale="90" zoomScaleNormal="90" workbookViewId="0">'
-            . ($paneXml ?? '<selection activeCell="A1" sqref="A1"/>')
+        $visualizacaoPlanilha = '<sheetView showGridLines="0" zoomScale="90" zoomScaleNormal="90" workbookViewId="0">'
+            . ($painelXml ?? '<selection activeCell="A1" sqref="A1"/>')
             . '</sheetView>';
 
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
             . 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
             . '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>'
-            . '<dimension ref="' . $dimension . '"/>'
-            . '<sheetViews>' . $sheetView . '</sheetViews>'
+            . '<dimension ref="' . $dimensao . '"/>'
+            . '<sheetViews>' . $visualizacaoPlanilha . '</sheetViews>'
             . '<sheetFormatPr defaultRowHeight="18"/>'
-            . $columnsXml;
+            . $colunasXml;
     }
 
-    private function styledRow(
-        int $row,
-        float $height,
-        int $lastColumnIndex,
-        int $baseStyle,
-        array $overrides = []
+    private function linhaEstilizada(
+        int $numeroLinha,
+        float $altura,
+        int $indiceUltimaColuna,
+        int $estiloBase,
+        array $substituicoes = []
     ): string {
-        $cells = "";
+        $celulas = "";
 
-        for ($column = 1; $column <= $lastColumnIndex; $column++) {
-            $cells .= $overrides[$column] ?? $this->blankCell($column, $row, $baseStyle);
+        for ($coluna = 1; $coluna <= $indiceUltimaColuna; $coluna++) {
+            $celulas .= $substituicoes[$coluna] ?? $this->celulaVazia($coluna, $numeroLinha, $estiloBase);
         }
 
-        return '<row r="' . $row . '" ht="' . $this->decimal($height)
-            . '" customHeight="1">' . $cells . '</row>';
+        return '<row r="' . $numeroLinha . '" ht="' . $this->decimal($altura)
+            . '" customHeight="1">' . $celulas . '</row>';
     }
 
-    private function brandBarRow(int $row, int $lastColumnIndex): string
+    private function linhaBarraMarca(int $numeroLinha, int $indiceUltimaColuna): string
     {
-        $firstBreak = max(1, (int) floor($lastColumnIndex * 0.4));
-        $secondBreak = max($firstBreak + 1, (int) floor($lastColumnIndex * 0.7));
-        $overrides = [];
+        $primeiraQuebra = max(1, (int) floor($indiceUltimaColuna * 0.4));
+        $segundaQuebra = max($primeiraQuebra + 1, (int) floor($indiceUltimaColuna * 0.7));
+        $substituicoes = [];
 
-        for ($column = 1; $column <= $lastColumnIndex; $column++) {
-            $style = $column <= $firstBreak
+        for ($coluna = 1; $coluna <= $indiceUltimaColuna; $coluna++) {
+            $estilo = $coluna <= $primeiraQuebra
                 ? self::STYLE_BRAND_NAVY
-                : ($column <= $secondBreak ? self::STYLE_BRAND_BLUE : self::STYLE_BRAND_MINT);
-            $overrides[$column] = $this->blankCell($column, $row, $style);
+                : ($coluna <= $segundaQuebra ? self::STYLE_BRAND_BLUE : self::STYLE_BRAND_MINT);
+            $substituicoes[$coluna] = $this->celulaVazia($coluna, $numeroLinha, $estilo);
         }
 
-        return $this->styledRow($row, 6.0, $lastColumnIndex, self::STYLE_DEFAULT, $overrides);
+        return $this->linhaEstilizada($numeroLinha, 6.0, $indiceUltimaColuna, self::STYLE_DEFAULT, $substituicoes);
     }
 
-    private function fillRange(
-        array &$cells,
-        int $row,
-        int $startColumn,
-        int $endColumn,
-        int $style,
-        string $value,
-        bool $numeric = false
+    private function preencherIntervalo(
+        array &$celulas,
+        int $numeroLinha,
+        int $colunaInicial,
+        int $colunaFinal,
+        int $estilo,
+        string $valorCelula,
+        bool $numerico = false
     ): void {
-        for ($column = $startColumn; $column <= $endColumn; $column++) {
-            if ($column === $startColumn) {
-                $cells[$column] = $numeric
-                    ? $this->numberCell($column, $row, (float) $value, $style)
-                    : $this->stringCell($column, $row, $value, $style);
+        for ($coluna = $colunaInicial; $coluna <= $colunaFinal; $coluna++) {
+            if ($coluna === $colunaInicial) {
+                $celulas[$coluna] = $numerico
+                    ? $this->celulaNumero($coluna, $numeroLinha, (float) $valorCelula, $estilo)
+                    : $this->celulaTexto($coluna, $numeroLinha, $valorCelula, $estilo);
                 continue;
             }
 
-            $cells[$column] = $this->blankCell($column, $row, $style);
+            $celulas[$coluna] = $this->celulaVazia($coluna, $numeroLinha, $estilo);
         }
     }
 
-    private function blankCell(int $column, int $row, int $style): string
+    private function celulaVazia(int $coluna, int $numeroLinha, int $estilo): string
     {
-        return '<c r="' . $this->columnLetter($column) . $row . '" s="' . $style . '"/>';
+        return '<c r="' . $this->letraColuna($coluna) . $numeroLinha . '" s="' . $estilo . '"/>';
     }
 
-    private function stringCell(int $column, int $row, string $value, int $style): string
+    private function celulaTexto(int $coluna, int $numeroLinha, string $valorCelula, int $estilo): string
     {
-        return '<c r="' . $this->columnLetter($column) . $row . '" s="' . $style
+        return '<c r="' . $this->letraColuna($coluna) . $numeroLinha . '" s="' . $estilo
             . '" t="inlineStr"><is><t xml:space="preserve">'
-            . $this->xml($value) . '</t></is></c>';
+            . $this->escaparXml($valorCelula) . '</t></is></c>';
     }
 
-    private function numberCell(int $column, int $row, float $value, int $style): string
+    private function celulaNumero(int $coluna, int $numeroLinha, float $valorCelula, int $estilo): string
     {
-        return '<c r="' . $this->columnLetter($column) . $row . '" s="' . $style
-            . '"><v>' . $this->decimal($value, 10) . '</v></c>';
+        return '<c r="' . $this->letraColuna($coluna) . $numeroLinha . '" s="' . $estilo
+            . '"><v>' . $this->decimal($valorCelula, 10) . '</v></c>';
     }
 
-    private function mergeCellsXml(array $merges): string
+    private function mesclarCelulasXml(array $mesclagens): string
     {
-        if ($merges === []) {
+        if ($mesclagens === []) {
             return "";
         }
 
-        $xml = '<mergeCells count="' . count($merges) . '">';
-        foreach ($merges as $reference) {
-            $xml .= '<mergeCell ref="' . $reference . '"/>';
+        $conteudoXml = '<mergeCells count="' . count($mesclagens) . '">';
+        foreach ($mesclagens as $referencia) {
+            $conteudoXml .= '<mergeCell ref="' . $referencia . '"/>';
         }
 
-        return $xml . '</mergeCells>';
+        return $conteudoXml . '</mergeCells>';
     }
 
-    private function columnLetter(int $index): string
+    private function letraColuna(int $indice): string
     {
-        if ($index < 1) {
+        if ($indice < 1) {
             throw new InvalidArgumentException("Indice de coluna invalido.");
         }
 
-        $letters = "";
-        while ($index > 0) {
-            $index--;
-            $letters = chr(65 + ($index % 26)) . $letters;
-            $index = intdiv($index, 26);
+        $letras = "";
+        while ($indice > 0) {
+            $indice--;
+            $letras = chr(65 + ($indice % 26)) . $letras;
+            $indice = intdiv($indice, 26);
         }
 
-        return $letters;
+        return $letras;
     }
 
-    private function decimal(float $value, int $precision = 2): string
+    private function decimal(float $valorCelula, int $precisao = 2): string
     {
-        return rtrim(rtrim(number_format($value, $precision, ".", ""), "0"), ".");
+        return rtrim(rtrim(number_format($valorCelula, $precisao, ".", ""), "0"), ".");
     }
 
-    private function xml(string $value): string
+    private function escaparXml(string $valorCelula): string
     {
-        $withoutControls = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', "", $value) ?? "";
+        $semCaracteresControle = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', "", $valorCelula) ?? "";
 
         return htmlspecialchars(
-            $withoutControls,
+            $semCaracteresControle,
             ENT_QUOTES | ENT_XML1 | ENT_SUBSTITUTE,
             "UTF-8"
         );
     }
 
-    private function addPart(ZipArchive $zip, string $path, string $contents): void
+    private function adicionarParte(ZipArchive $arquivoZip, string $caminho, string $conteudo): void
     {
-        if (!$zip->addFromString($path, $contents)) {
-            throw new RuntimeException("Nao foi possivel incluir {$path} no arquivo XLSX.");
+        if (!$arquivoZip->addFromString($caminho, $conteudo)) {
+            throw new RuntimeException("Nao foi possivel incluir {$caminho} no arquivo XLSX.");
         }
     }
 
-    private function contentTypesXml(): string
+    private function tiposConteudoXml(): string
     {
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
@@ -735,7 +735,7 @@ final class RelatorioAtivosXlsx
             . '</Types>';
     }
 
-    private function rootRelationshipsXml(): string
+    private function relacionamentosRaizXml(): string
     {
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
@@ -745,7 +745,7 @@ final class RelatorioAtivosXlsx
             . '</Relationships>';
     }
 
-    private function workbookRelationshipsXml(): string
+    private function relacionamentosPastaTrabalhoXml(): string
     {
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
@@ -755,9 +755,9 @@ final class RelatorioAtivosXlsx
             . '</Relationships>';
     }
 
-    private function workbookXml(int $summaryLastRow, int $detailsLastRow, int $lastColumnIndex): string
+    private function pastaTrabalhoXml(int $ultimaLinhaResumo, int $ultimaLinhaDetalhes, int $indiceUltimaColuna): string
     {
-        $lastColumn = $this->columnLetter($lastColumnIndex);
+        $ultimaColuna = $this->letraColuna($indiceUltimaColuna);
 
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
@@ -769,45 +769,45 @@ final class RelatorioAtivosXlsx
             . '</sheets>'
             . '<definedNames>'
             . '<definedName name="_xlnm.Print_Area" localSheetId="0">Resumo!$A$1:$'
-            . $lastColumn . '$' . $summaryLastRow . '</definedName>'
+            . $ultimaColuna . '$' . $ultimaLinhaResumo . '</definedName>'
             . '<definedName name="_xlnm.Print_Area" localSheetId="1">Ativos!$A$1:$'
-            . $lastColumn . '$' . $detailsLastRow . '</definedName>'
+            . $ultimaColuna . '$' . $ultimaLinhaDetalhes . '</definedName>'
             . '<definedName name="_xlnm.Print_Titles" localSheetId="1">Ativos!$5:$5</definedName>'
             . '</definedNames>'
             . '<calcPr calcId="191029" fullCalcOnLoad="1"/>'
             . '</workbook>';
     }
 
-    private function sheetRelationshipsXml(int $drawingNumber, array $hyperlinkRelationships): string
+    private function relacionamentosPlanilhaXml(int $numeroDesenho, array $relacionamentosHiperlinks): string
     {
-        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        $conteudoXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
             . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" '
-            . 'Target="../drawings/drawing' . $drawingNumber . '.xml"/>';
+            . 'Target="../drawings/drawing' . $numeroDesenho . '.xml"/>';
 
-        foreach ($hyperlinkRelationships as $relationship) {
-            $xml .= '<Relationship Id="' . $this->xml((string) $relationship["id"])
+        foreach ($relacionamentosHiperlinks as $relacionamento) {
+            $conteudoXml .= '<Relationship Id="' . $this->escaparXml((string) $relacionamento["id"])
                 . '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" '
-                . 'Target="' . $this->xml((string) $relationship["target"])
+                . 'Target="' . $this->escaparXml((string) $relacionamento["target"])
                 . '" TargetMode="External"/>';
         }
 
-        return $xml . '</Relationships>';
+        return $conteudoXml . '</Relationships>';
     }
 
-    private function drawingRelationshipsXml(string $mediaName): string
+    private function relacionamentosDesenhoXml(string $nomeMidia): string
     {
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
             . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/'
-            . $this->xml($mediaName) . '"/>'
+            . $this->escaparXml($nomeMidia) . '"/>'
             . '</Relationships>';
     }
 
-    private function drawingXml(string $description): string
+    private function desenhoXml(string $descricao): string
     {
-        $widthEmu = 185 * 9525;
-        $heightEmu = 64 * 9525;
+        $larguraEmu = 185 * 9525;
+        $alturaEmu = 64 * 9525;
 
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" '
@@ -815,16 +815,16 @@ final class RelatorioAtivosXlsx
             . 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
             . '<xdr:oneCellAnchor>'
             . '<xdr:from><xdr:col>0</xdr:col><xdr:colOff>76200</xdr:colOff><xdr:row>0</xdr:row><xdr:rowOff>38100</xdr:rowOff></xdr:from>'
-            . '<xdr:ext cx="' . $widthEmu . '" cy="' . $heightEmu . '"/>'
+            . '<xdr:ext cx="' . $larguraEmu . '" cy="' . $alturaEmu . '"/>'
             . '<xdr:pic><xdr:nvPicPr><xdr:cNvPr id="1" name="Logo TI TECH" descr="'
-            . $this->xml($description) . '"/><xdr:cNvPicPr/></xdr:nvPicPr>'
+            . $this->escaparXml($descricao) . '"/><xdr:cNvPicPr/></xdr:nvPicPr>'
             . '<xdr:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>'
-            . '<xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' . $widthEmu
-            . '" cy="' . $heightEmu . '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>'
+            . '<xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' . $larguraEmu
+            . '" cy="' . $alturaEmu . '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>'
             . '</xdr:pic><xdr:clientData/></xdr:oneCellAnchor></xdr:wsDr>';
     }
 
-    private function appPropertiesXml(): string
+    private function propriedadesAplicacaoXml(): string
     {
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" '
@@ -835,9 +835,9 @@ final class RelatorioAtivosXlsx
             . '</Properties>';
     }
 
-    private function corePropertiesXml(DateTimeImmutable $generatedAt): string
+    private function propriedadesPrincipaisXml(DateTimeImmutable $geradoEm): string
     {
-        $timestamp = $generatedAt->setTimezone(new DateTimeZone("UTC"))->format("Y-m-d\TH:i:s\Z");
+        $marcaTempo = $geradoEm->setTimezone(new DateTimeZone("UTC"))->format("Y-m-d\TH:i:s\Z");
 
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" '
@@ -847,12 +847,12 @@ final class RelatorioAtivosXlsx
             . 'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
             . '<dc:title>Relatorio de Ativos</dc:title><dc:subject>Inventario corporativo</dc:subject>'
             . '<dc:creator>TI TECH Solutions</dc:creator><cp:lastModifiedBy>Portal de Ativos</cp:lastModifiedBy>'
-            . '<dcterms:created xsi:type="dcterms:W3CDTF">' . $timestamp . '</dcterms:created>'
-            . '<dcterms:modified xsi:type="dcterms:W3CDTF">' . $timestamp . '</dcterms:modified>'
+            . '<dcterms:created xsi:type="dcterms:W3CDTF">' . $marcaTempo . '</dcterms:created>'
+            . '<dcterms:modified xsi:type="dcterms:W3CDTF">' . $marcaTempo . '</dcterms:modified>'
             . '</cp:coreProperties>';
     }
 
-    private function stylesXml(): string
+    private function estilosXml(): string
     {
         return <<<'XML'
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>

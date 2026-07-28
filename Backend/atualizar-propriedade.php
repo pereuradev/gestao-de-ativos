@@ -10,12 +10,12 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
-function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responder(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
     // Retorno padrao usado pelos scripts de edicao.
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -43,11 +43,11 @@ function csrfValido(): bool
 {
     // Garante que a requisicao veio da pagina carregada pelo usuario.
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
-    $tokenPost = campo("csrf_token");
+    $tokenRequisicao = campo("csrf_token");
 
     return is_string($tokenSessao)
         && $tokenSessao !== ""
-        && hash_equals($tokenSessao, $tokenPost);
+        && hash_equals($tokenSessao, $tokenRequisicao);
 }
 
 function uuidValido(string $valor): bool
@@ -111,7 +111,7 @@ try {
     require __DIR__ . "/Conexao.php";
 
     // Atualiza e devolve a propriedade para a interface substituir a linha.
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         update public.propriedade_ativos
            set nome = :nome,
                status = :status,
@@ -125,13 +125,13 @@ try {
                atualizado_em
     ");
 
-    $stmt->execute([
+    $consultaPreparada->execute([
         ":id" => $id,
         ":nome" => $nome,
         ":status" => $status,
     ]);
 
-    $propriedade = $stmt->fetch();
+    $propriedade = $consultaPreparada->fetch();
 
     if (!$propriedade) {
         responder(false, "Propriedade nao encontrada.", 404);

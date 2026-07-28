@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-function caminhoEnvLocal(): string
+function caminhoAmbienteLocal(): string
 {
-    $arquivoEnv = getenv("APP_ENV_FILE");
+    $arquivoAmbiente = getenv("APP_ENV_FILE");
 
-    if (is_string($arquivoEnv) && trim($arquivoEnv) !== "") {
-        return trim($arquivoEnv, "\"'");
+    if (is_string($arquivoAmbiente) && trim($arquivoAmbiente) !== "") {
+        return trim($arquivoAmbiente, "\"'");
     }
 
     // Mantem credenciais fora do DocumentRoot do XAMPP.
@@ -20,7 +20,7 @@ function caminhoEnvLocal(): string
 
 // Carrega variaveis de ambiente locais uma unica vez. Em producao, essas
 // mesmas chaves podem vir direto do servidor.
-function carregarEnvLocal(): void
+function carregarAmbienteLocal(): void
 {
     static $carregado = false;
 
@@ -29,13 +29,13 @@ function carregarEnvLocal(): void
     }
 
     $carregado = true;
-    $arquivoEnv = caminhoEnvLocal();
+    $arquivoAmbiente = caminhoAmbienteLocal();
 
-    if (!is_file($arquivoEnv) || !is_readable($arquivoEnv)) {
+    if (!is_file($arquivoAmbiente) || !is_readable($arquivoAmbiente)) {
         return;
     }
 
-    $linhas = file($arquivoEnv, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $linhas = file($arquivoAmbiente, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
     if ($linhas === false) {
         return;
@@ -64,7 +64,7 @@ function carregarEnvLocal(): void
 function configValor(string $chave, ?string $padrao = null): ?string
 {
     // Primeiro garante que o .env local foi lido, depois consulta o ambiente.
-    carregarEnvLocal();
+    carregarAmbienteLocal();
 
     $valor = getenv($chave);
 

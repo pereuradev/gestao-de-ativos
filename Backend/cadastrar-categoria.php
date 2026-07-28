@@ -10,11 +10,11 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
-function responderCategoria(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responderCategoria(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -38,11 +38,11 @@ function tamanhoTextoCategoria(string $valor): int
 function csrfCategoriaValido(): bool
 {
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
-    $tokenPost = campoCategoria("csrf_token");
+    $tokenRequisicao = campoCategoria("csrf_token");
 
     return is_string($tokenSessao)
         && $tokenSessao !== ""
-        && hash_equals($tokenSessao, $tokenPost);
+        && hash_equals($tokenSessao, $tokenRequisicao);
 }
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
@@ -89,7 +89,7 @@ if ($descricao !== null && tamanhoTextoCategoria($descricao) > 240) {
 try {
     require __DIR__ . "/Conexao.php";
 
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         insert into public.categorias_ativos (
             nome,
             descricao,
@@ -107,12 +107,12 @@ try {
             atualizado_em
     ");
 
-    $stmt->execute([
+    $consultaPreparada->execute([
         ":nome" => $nome,
         ":descricao" => $descricao,
     ]);
 
-    $categoria = $stmt->fetch();
+    $categoria = $consultaPreparada->fetch();
 
     responderCategoria(true, "Categoria cadastrada com sucesso.", 201, [
         "categoria" => $categoria,

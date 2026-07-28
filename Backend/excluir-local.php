@@ -10,12 +10,12 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
-function responder(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responder(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
     // Retorno padrao para o JavaScript.
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -31,11 +31,11 @@ function csrfValido(): bool
 {
     // Evita exclusoes disparadas sem o token da sessao.
     $tokenSessao = $_SESSION["csrf_token"] ?? "";
-    $tokenPost = campo("csrf_token");
+    $tokenRequisicao = campo("csrf_token");
 
     return is_string($tokenSessao)
         && $tokenSessao !== ""
-        && hash_equals($tokenSessao, $tokenPost);
+        && hash_equals($tokenSessao, $tokenRequisicao);
 }
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
@@ -65,14 +65,14 @@ try {
     require __DIR__ . "/Conexao.php";
 
     // Remove o local e retorna os dados basicos do registro removido.
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         delete from public.locais
          where id::text = :id
      returning id, nome
     ");
 
-    $stmt->execute([":id" => $id]);
-    $local = $stmt->fetch();
+    $consultaPreparada->execute([":id" => $id]);
+    $local = $consultaPreparada->fetch();
 
     if (!$local) {
         responder(false, "Local nao encontrado.", 404);
@@ -81,9 +81,9 @@ try {
     responder(true, "Local excluido com sucesso.", 200, [
         "local" => $local,
     ]);
-} catch (PDOException $exception) {
+} catch (PDOException $excecao) {
     // Se o local esta em uso por ativos, o banco bloqueia a exclusao.
-    if ($exception->getCode() === "23503") {
+    if ($excecao->getCode() === "23503") {
         responder(false, "Nao e possivel excluir este local porque ele esta vinculado a ativos.", 409);
     }
 

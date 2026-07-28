@@ -19,13 +19,13 @@ if ($_SERVER["REQUEST_METHOD"] !== "GET") {
     responderErroExportacao(405, "Metodo nao permitido.");
 }
 
-function responderErroExportacao(int $statusCode, string $message): void
+function responderErroExportacao(int $codigoStatusHttp, string $mensagemResposta): void
 {
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     header("Content-Type: application/json; charset=utf-8");
     echo json_encode([
         "ok" => false,
-        "message" => $message,
+        "message" => $mensagemResposta,
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
@@ -50,21 +50,21 @@ function uuidExportacaoValido(string $valor): bool
 
 function tabelaExportacaoExiste(PDO $pdo, string $tabela): bool
 {
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         select 1
           from information_schema.tables
          where table_schema = 'public'
            and table_name = :tabela
          limit 1
     ");
-    $stmt->execute([":tabela" => $tabela]);
+    $consultaPreparada->execute([":tabela" => $tabela]);
 
-    return $stmt->fetchColumn() !== false;
+    return $consultaPreparada->fetchColumn() !== false;
 }
 
 function colunaExportacaoExiste(PDO $pdo, string $tabela, string $coluna): bool
 {
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         select 1
           from information_schema.columns
          where table_schema = 'public'
@@ -72,12 +72,12 @@ function colunaExportacaoExiste(PDO $pdo, string $tabela, string $coluna): bool
            and column_name = :coluna
          limit 1
     ");
-    $stmt->execute([
+    $consultaPreparada->execute([
         ":tabela" => $tabela,
         ":coluna" => $coluna,
     ]);
 
-    return $stmt->fetchColumn() !== false;
+    return $consultaPreparada->fetchColumn() !== false;
 }
 
 // Mantém compatibilidade com versões do schema que armazenam o responsável de formas diferentes.
@@ -112,14 +112,14 @@ function contextoResponsavelExportacao(PDO $pdo): array
     ];
 }
 
-function formatarDataExportacao(?string $value): string
+function formatarDataExportacao(?string $valorEntrada): string
 {
-    if (!$value) {
+    if (!$valorEntrada) {
         return "";
     }
 
     try {
-        return (new DateTimeImmutable($value))
+        return (new DateTimeImmutable($valorEntrada))
             ->setTimezone(new DateTimeZone("America/Sao_Paulo"))
             ->format("d/m/Y H:i");
     } catch (Throwable) {
@@ -132,8 +132,8 @@ try {
 
     // Os filtros são convertidos em condições parametrizadas compartilhadas por todos os formatos.
     $responsavel = contextoResponsavelExportacao($pdo);
-    $where = [];
-    $params = [];
+    $condicoesSql = [];
+    $parametrosConsulta = [];
 
     $busca = filtroExportacao("busca");
     $status = filtroExportacao("status", "todos");
@@ -146,7 +146,7 @@ try {
     $responsavelId = filtroExportacao("responsavel_id");
 
     if ($busca !== "") {
-        $where[] = "(
+        $condicoesSql[] = "(
             lower(coalesce(a.nome, '')) like lower(:busca)
             or lower(coalesce(a.descricao, '')) like lower(:busca)
             or lower(coalesce(a.numero_serie, '')) like lower(:busca)
@@ -159,48 +159,48 @@ try {
             or lower(coalesce(c.nome, '')) like lower(:busca)
             or lower(coalesce(l.nome, '')) like lower(:busca)
         )";
-        $params[":busca"] = "%" . $busca . "%";
+        $parametrosConsulta[":busca"] = "%" . $busca . "%";
     }
 
     if (filtroAtivo($status)) {
-        $where[] = "a.status = :status";
-        $params[":status"] = $status;
+        $condicoesSql[] = "a.status = :status";
+        $parametrosConsulta[":status"] = $status;
     }
 
     if ($categoriaId !== "" && uuidExportacaoValido($categoriaId)) {
-        $where[] = "a.categoria_id::text = :categoria_id";
-        $params[":categoria_id"] = $categoriaId;
+        $condicoesSql[] = "a.categoria_id::text = :categoria_id";
+        $parametrosConsulta[":categoria_id"] = $categoriaId;
     } elseif (filtroAtivo($categoria)) {
-        $where[] = "c.nome = :categoria";
-        $params[":categoria"] = $categoria;
+        $condicoesSql[] = "c.nome = :categoria";
+        $parametrosConsulta[":categoria"] = $categoria;
     }
 
     if (filtroAtivo($marca)) {
-        $where[] = "a.marca = :marca";
-        $params[":marca"] = $marca;
+        $condicoesSql[] = "a.marca = :marca";
+        $parametrosConsulta[":marca"] = $marca;
     }
 
     if ($localId !== "" && uuidExportacaoValido($localId)) {
-        $where[] = "a.local_id::text = :local_id";
-        $params[":local_id"] = $localId;
+        $condicoesSql[] = "a.local_id::text = :local_id";
+        $parametrosConsulta[":local_id"] = $localId;
     } elseif ($localizacao === "sem-localizacao") {
-        $where[] = "a.local_id is null";
+        $condicoesSql[] = "a.local_id is null";
     } elseif (filtroAtivo($localizacao)) {
-        $where[] = "l.nome = :localizacao";
-        $params[":localizacao"] = $localizacao;
+        $condicoesSql[] = "l.nome = :localizacao";
+        $parametrosConsulta[":localizacao"] = $localizacao;
     }
 
     if ($responsavel["disponivel"] && $responsavelId !== "" && uuidExportacaoValido($responsavelId) && $responsavel["campo_id"] !== "") {
-        $where[] = $responsavel["campo_id"] . " = :responsavel_id";
-        $params[":responsavel_id"] = $responsavelId;
+        $condicoesSql[] = $responsavel["campo_id"] . " = :responsavel_id";
+        $parametrosConsulta[":responsavel_id"] = $responsavelId;
     } elseif ($responsavel["disponivel"] && filtroAtivo($responsavelFiltro) && $responsavel["campo_texto"] !== "") {
-        $where[] = "lower(" . $responsavel["campo_texto"] . ") like lower(:responsavel)";
-        $params[":responsavel"] = "%" . $responsavelFiltro . "%";
+        $condicoesSql[] = "lower(" . $responsavel["campo_texto"] . ") like lower(:responsavel)";
+        $parametrosConsulta[":responsavel"] = "%" . $responsavelFiltro . "%";
     }
 
-    $whereSql = $where ? " where " . implode(" and ", $where) : "";
+    $clausulaCondicoes = $condicoesSql ? " where " . implode(" and ", $condicoesSql) : "";
 
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         select
             a.id,
             a.nome,
@@ -220,27 +220,27 @@ try {
      left join public.categorias_ativos c on c.id = a.categoria_id
      left join public.locais l on l.id = a.local_id
             {$responsavel["join"]}
-            {$whereSql}
+            {$clausulaCondicoes}
       order by a.criado_em desc, a.nome asc
     ");
-    $stmt->execute($params);
-    $ativos = $stmt->fetchAll();
+    $consultaPreparada->execute($parametrosConsulta);
+    $ativos = $consultaPreparada->fetchAll();
 
     foreach ($ativos as &$ativo) {
         $ativo["criado_em_formatado"] = formatarDataExportacao((string) ($ativo["criado_em"] ?? ""));
     }
     unset($ativo);
 
-    $totalAtivosStmt = $pdo->query("select count(*)::int from public.ativos");
-    $totalAtivos = (int) $totalAtivosStmt->fetchColumn();
+    $consultaTotalAtivos = $pdo->query("select count(*)::int from public.ativos");
+    $totalAtivos = (int) $consultaTotalAtivos->fetchColumn();
 
-    $disponiveisStmt = $pdo->prepare("
+    $consultaDisponiveis = $pdo->prepare("
         select count(*)::int
           from public.ativos
          where status = :status
     ");
-    $disponiveisStmt->execute([":status" => statusAtivoPadrao()]);
-    $ativosDisponiveis = (int) $disponiveisStmt->fetchColumn();
+    $consultaDisponiveis->execute([":status" => statusAtivoPadrao()]);
+    $ativosDisponiveis = (int) $consultaDisponiveis->fetchColumn();
 
     $filtrosRelatorio = [];
 
@@ -288,7 +288,7 @@ $metricasRelatorio = [
 // Cada gerador devolve bytes prontos; este endpoint define os cabeçalhos e encerra a resposta.
 if ($formato === "xlsx") {
     try {
-        $xlsx = (new RelatorioAtivosXlsx())->generate(
+        $xlsx = (new RelatorioAtivosXlsx())->gerar(
             $ativos,
             $metricasRelatorio,
             $filtrosRelatorio,
@@ -299,11 +299,11 @@ if ($formato === "xlsx") {
         responderErroExportacao(500, "Nao foi possivel gerar a planilha Excel dos ativos agora.");
     }
 
-    $filename = "relatorio-ativos-" . $geradoEm->format("Y-m-d-His") . ".xlsx";
+    $nomeArquivoDownload = "relatorio-ativos-" . $geradoEm->format("Y-m-d-His") . ".xlsx";
 
     header_remove("Content-Type");
     header("Content-Type: " . RelatorioAtivosXlsx::CONTENT_TYPE);
-    header("Content-Disposition: attachment; filename=\"{$filename}\"");
+    header("Content-Disposition: attachment; filename=\"{$nomeArquivoDownload}\"");
     header("Content-Length: " . strlen($xlsx));
     header("Cache-Control: no-store, no-cache, must-revalidate");
     header("Pragma: no-cache");
@@ -324,11 +324,11 @@ if ($formato === "csv") {
         responderErroExportacao(500, "Nao foi possivel gerar o CSV dos ativos agora.");
     }
 
-    $filename = "ativos-titech-" . $geradoEm->format("Y-m-d-His") . ".csv";
+    $nomeArquivoDownload = "ativos-titech-" . $geradoEm->format("Y-m-d-His") . ".csv";
 
     header_remove("Content-Type");
     header("Content-Type: text/csv; charset=UTF-8");
-    header("Content-Disposition: attachment; filename=\"{$filename}\"");
+    header("Content-Disposition: attachment; filename=\"{$nomeArquivoDownload}\"");
     header("Content-Length: " . strlen($csv));
     header("Cache-Control: no-store, no-cache, must-revalidate");
     header("Pragma: no-cache");
@@ -338,10 +338,10 @@ if ($formato === "csv") {
     exit;
 }
 
-$filename = "relatorio-ativos-" . $geradoEm->format("Y-m-d-His") . ".pdf";
+$nomeArquivoDownload = "relatorio-ativos-" . $geradoEm->format("Y-m-d-His") . ".pdf";
 
 try {
-    $pdf = (new RelatorioAtivosPdf())->generate(
+    $pdf = (new RelatorioAtivosPdf())->gerar(
         $ativos,
         $metricasRelatorio,
         $filtrosRelatorio,
@@ -353,7 +353,7 @@ try {
 
 header_remove("Content-Type");
 header("Content-Type: application/pdf");
-header("Content-Disposition: attachment; filename=\"{$filename}\"");
+header("Content-Disposition: attachment; filename=\"{$nomeArquivoDownload}\"");
 header("Content-Length: " . strlen($pdf));
 header("Cache-Control: no-store, no-cache, must-revalidate");
 header("Pragma: no-cache");

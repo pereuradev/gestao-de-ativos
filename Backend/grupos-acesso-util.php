@@ -91,7 +91,7 @@ function permissoesGruposAcessoAgrupadas(): array
     }, $grupos);
 }
 
-function usuarioGrupoAcessoAdmin(?array $usuario = null): bool
+function usuarioGrupoAcessoAdministrador(?array $usuario = null): bool
 {
     $usuarioAtual = $usuario ?? ($_SESSION["usuario"] ?? []);
     $tipo = strtolower(trim((string) ($usuarioAtual["tipo_usuario"] ?? "")));
@@ -112,7 +112,7 @@ function permissoesUsuarioGrupoAcesso(PDO $pdo, ?array $usuario = null): array
     $usuarioAtual = $usuario ?? ($_SESSION["usuario"] ?? []);
     $permissoesDisponiveis = permissoesGruposAcesso();
 
-    if (usuarioGrupoAcessoAdmin($usuarioAtual)) {
+    if (usuarioGrupoAcessoAdministrador($usuarioAtual)) {
         return array_keys($permissoesDisponiveis);
     }
 
@@ -126,23 +126,23 @@ function permissoesUsuarioGrupoAcesso(PDO $pdo, ?array $usuario = null): array
     }
 
     $filtros = [];
-    $params = [];
+    $parametrosConsulta = [];
 
     if ($usuarioId !== "" && uuidGrupoAcessoValido($usuarioId)) {
         $filtros[] = "u.id = cast(:usuario_id as uuid)";
-        $params[":usuario_id"] = $usuarioId;
+        $parametrosConsulta[":usuario_id"] = $usuarioId;
     }
 
     if ($email !== "") {
         $filtros[] = "lower(btrim(u.email)) = lower(btrim(:email))";
-        $params[":email"] = $email;
+        $parametrosConsulta[":email"] = $email;
     }
 
     if (!$filtros) {
         return [];
     }
 
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         select distinct gp.permissao
           from public.perfis_usuarios u
           join public.grupos_acesso_membros gm on gm.usuario_id = u.id
@@ -152,13 +152,13 @@ function permissoesUsuarioGrupoAcesso(PDO $pdo, ?array $usuario = null): array
            and lower(coalesce(g.status, 'ativo')) = 'ativo'
       order by gp.permissao asc
     ");
-    $stmt->execute($params);
+    $consultaPreparada->execute($parametrosConsulta);
 
     $validas = array_flip(array_keys($permissoesDisponiveis));
 
     return array_values(array_filter(array_map(static function (array $linha): string {
         return (string) ($linha["permissao"] ?? "");
-    }, $stmt->fetchAll()), static function (string $permissao) use ($validas): bool {
+    }, $consultaPreparada->fetchAll()), static function (string $permissao) use ($validas): bool {
         return isset($validas[$permissao]);
     }));
 }
@@ -176,7 +176,7 @@ function sincronizarPermissoesUsuarioSessao(PDO $pdo): array
 
 function usuarioTemPermissaoGrupoAcesso(PDO $pdo, string $permissao, ?array $usuario = null): bool
 {
-    if (usuarioGrupoAcessoAdmin($usuario)) {
+    if (usuarioGrupoAcessoAdministrador($usuario)) {
         return true;
     }
 

@@ -8,11 +8,11 @@ session_start();
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
-function responderGrupo(bool $ok, string $message, int $statusCode = 200, array $extra = []): void
+function responderGrupo(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
-    http_response_code($statusCode);
+    http_response_code($codigoStatusHttp);
     echo json_encode(
-        array_merge(["ok" => $ok, "message" => $message], $extra),
+        array_merge(["ok" => $sucesso, "message" => $mensagemResposta], $dadosAdicionais),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;
@@ -32,7 +32,7 @@ function campoGrupo(string $nome): string
 }
 
 // Normaliza listas do formulário e elimina valores vazios ou repetidos antes da validação.
-function listaGrupoPost(string $nome): array
+function listaGrupoRequisicao(string $nome): array
 {
     $valor = $_POST[$nome] ?? [];
 
@@ -73,8 +73,8 @@ if (!csrfGrupoValido()) {
 
 $nome = campoGrupo("nome");
 $descricao = campoGrupo("descricao");
-$membros = listaGrupoPost("membros");
-$permissoes = listaGrupoPost("permissoes");
+$membros = listaGrupoRequisicao("membros");
+$permissoes = listaGrupoRequisicao("permissoes");
 
 if (strlen($nome) < 3 || strlen($nome) > 90) {
     responderGrupo(false, "Informe um nome de grupo entre 3 e 90 caracteres.", 422);
@@ -108,24 +108,24 @@ try {
         responderGrupo(false, "Existe uma permissao invalida na selecao.", 422);
     }
 
-    $placeholders = [];
-    $params = [];
+    $marcadoresConsulta = [];
+    $parametrosConsulta = [];
 
-    foreach ($membros as $index => $membroId) {
-        $key = ":membro_{$index}";
-        $placeholders[] = $key;
-        $params[$key] = $membroId;
+    foreach ($membros as $indice => $membroId) {
+        $chaveItem = ":membro_{$indice}";
+        $marcadoresConsulta[] = $chaveItem;
+        $parametrosConsulta[$chaveItem] = $membroId;
     }
 
-    $stmt = $pdo->prepare("
+    $consultaPreparada = $pdo->prepare("
         select count(*)::int
           from public.perfis_usuarios
-         where id in (" . implode(", ", $placeholders) . ")
+         where id in (" . implode(", ", $marcadoresConsulta) . ")
            and lower(coalesce(status, 'ativo')) = 'ativo'
     ");
-    $stmt->execute($params);
+    $consultaPreparada->execute($parametrosConsulta);
 
-    if ((int) $stmt->fetchColumn() !== count($membros)) {
+    if ((int) $consultaPreparada->fetchColumn() !== count($membros)) {
         responderGrupo(false, "Selecione apenas funcionarios ativos.", 422);
     }
 
@@ -136,7 +136,7 @@ try {
     // O grupo e seus vínculos são gravados na mesma transação para evitar cadastros parciais.
     $pdo->beginTransaction();
 
-    $grupoStmt = $pdo->prepare("
+    $consultaGrupo = $pdo->prepare("
         insert into public.grupos_acesso (
             id,
             nome,
@@ -152,33 +152,33 @@ try {
         )
         returning id, nome, descricao, status, criado_em
     ");
-    $grupoStmt->execute([
+    $consultaGrupo->execute([
         ":id" => $grupoId,
         ":nome" => $nome,
         ":descricao" => $descricao !== "" ? $descricao : null,
         ":criado_por" => $criadorId,
     ]);
-    $grupo = $grupoStmt->fetch();
+    $grupo = $consultaGrupo->fetch();
 
-    $membroStmt = $pdo->prepare("
+    $consultaMembro = $pdo->prepare("
         insert into public.grupos_acesso_membros (grupo_id, usuario_id)
         values (:grupo_id, :usuario_id)
     ");
 
     foreach ($membros as $membroId) {
-        $membroStmt->execute([
+        $consultaMembro->execute([
             ":grupo_id" => $grupoId,
             ":usuario_id" => $membroId,
         ]);
     }
 
-    $permissaoStmt = $pdo->prepare("
+    $consultaPermissao = $pdo->prepare("
         insert into public.grupos_acesso_permissoes (grupo_id, permissao)
         values (:grupo_id, :permissao)
     ");
 
     foreach ($permissoes as $permissao) {
-        $permissaoStmt->execute([
+        $consultaPermissao->execute([
             ":grupo_id" => $grupoId,
             ":permissao" => $permissao,
         ]);
