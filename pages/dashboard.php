@@ -97,7 +97,7 @@ exigirPermissaoPagina("visualizar_dashboard", "Dashboard");
               Semanalmente
             </button>
             <button type="button" data-stock-period="hoje" aria-pressed="false">
-              Diariamente
+              Hoje
             </button>
             <button type="button" data-stock-period="mes" aria-pressed="false">
               Mensalmente

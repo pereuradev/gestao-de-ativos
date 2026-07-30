@@ -155,6 +155,8 @@ document.addEventListener("DOMContentLoaded", () => {
   aplicarPreferenciasUsuario(obterPreferenciasUsuarioAtual());
   configurarAlternadorTema();
   hidratarPerfilBarraLateral();
+  configurarBarraLateral();
+  configurarGruposNavegacao();
   configurarAcionadoresPermissaoNegada();
 });
 

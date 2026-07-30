@@ -6,6 +6,15 @@ const LARGURA_MAXIMA_BARRA_LATERAL = 392;
 const CONSULTA_TELA_AMPLA_BARRA_LATERAL = "(min-width: 921px)";
 
 function configurarBarraLateral() {
+  const barraLateral = document.getElementById("sidebar");
+
+  // Algumas páginas ainda chamam esta função diretamente. A marca evita eventos duplicados.
+  if (!barraLateral || barraLateral.dataset.eventosConfigurados === "true") {
+    return;
+  }
+
+  barraLateral.dataset.eventosConfigurados = "true";
+
   const botaoAbrir = document.getElementById("openSidebar");
   const botaoFechar = document.getElementById("closeSidebar");
   const fundoModal = document.getElementById("sidebarBackdrop");
@@ -198,7 +207,9 @@ function configurarGruposNavegacao() {
   grupos.forEach((grupo) => {
     const botao = grupo.querySelector(".nav-toggle");
 
-    if (!botao) return;
+    if (!botao || botao.dataset.grupoNavegacaoConfigurado === "true") return;
+
+    botao.dataset.grupoNavegacaoConfigurado = "true";
 
     botao.addEventListener("click", () => {
       const deveAbrir = !grupo.classList.contains("open");
@@ -242,6 +253,14 @@ function definirItemBarraLateralSalvo(chave, valor) {
 }
 
 Object.assign(window, {
+  configurarBarraLateral,
+  abrirBarraLateral,
+  fecharBarraLateral,
+  aplicarLarguraBarraLateral,
+  aplicarLarguraSalvaBarraLateral,
+  configurarRedimensionamentoBarraLateral,
+  configurarGruposNavegacao,
+  // Os nomes antigos continuam disponíveis para páginas que ainda não foram migradas.
   setupSidebar: configurarBarraLateral,
   openSidebar: abrirBarraLateral,
   closeSidebar: fecharBarraLateral,
