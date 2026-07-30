@@ -347,6 +347,16 @@
   gap: 22px;
 }
 
+/* Grafico historico reaproveitado da pagina inicial dentro do dashboard. */
+.dashboard-products-page .dashboard-asset-evolution {
+  margin-top: 22px;
+}
+
+.dashboard-products-page .dashboard-asset-evolution.is-loading canvas {
+  opacity: 0.34;
+  filter: saturate(0.72);
+}
+
 /* Cabecalho interno dos paineis, com titulo e metricas auxiliares. */
 .dashboard-products-page .panel-heading {
   display: flex;

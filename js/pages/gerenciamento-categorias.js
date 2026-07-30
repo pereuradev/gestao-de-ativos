@@ -1,80 +1,80 @@
 // Valida e cadastra categorias, atualizando metricas e filtros no navegador.
 // O mesmo modulo tambem atende a pagina de visualizacao, onde o formulario pode nao existir.
 
-const CATEGORY_MESSAGE_HIDE_DELAY_MS = 2700;
+const ATRASO_OCULTACAO_MENSAGEM_CATEGORIA_MS = 2700;
 
-document.addEventListener("DOMContentLoaded", initCategoryPage);
+document.addEventListener("DOMContentLoaded", inicializarPaginaCategoria);
 
-function initCategoryPage() {
-  startPageAnimation();
-  loadSavedTheme();
-  setupThemeToggle();
-  setupSidebar();
-  setupNavGroups();
-  setupCategoryForm();
-  setupCategoryFilters();
+function inicializarPaginaCategoria() {
+  iniciarAnimacaoPagina();
+  carregarTemaSalvo();
+  configurarAlternadorTema();
+  configurarBarraLateral();
+  configurarGruposNavegacao();
+  configurarFormularioCategoria();
+  configurarFiltrosCategoria();
 }
 
-function setupCategoryForm() {
-  const form = document.getElementById("categoryForm");
+function configurarFormularioCategoria() {
+  const formulario = document.getElementById("categoryForm");
 
-  if (!form) return;
+  if (!formulario) return;
 
-  form.addEventListener("submit", submitCategoryForm);
-  form.addEventListener("reset", () => {
-    setTimeout(() => setCategoryMessage("", ""), 0);
+  formulario.addEventListener("submit", enviarFormularioCategoria);
+  formulario.addEventListener("reset", () => {
+    setTimeout(() => definirMensagemCategoria("", ""), 0);
   });
 }
 
-async function submitCategoryForm(event) {
-  event.preventDefault();
+async function enviarFormularioCategoria(evento) {
+  evento.preventDefault();
 
-  const form = event.currentTarget;
-  const submitButton = document.getElementById("categorySubmitButton");
-  const error = validateCategoryForm(form);
+  const formulario = evento.currentTarget;
+  const botaoEnviar = document.getElementById("categorySubmitButton");
+  const erro = validarFormularioCategoria(formulario);
 
-  if (error) {
-    setCategoryMessage(error, "error");
+  if (erro) {
+    definirMensagemCategoria(erro, "error");
     return;
   }
 
-  setCategoryButtonLoading(submitButton, true);
-  setCategoryMessage("", "");
+  definirCarregandoBotaoCategoria(botaoEnviar, true);
+  definirMensagemCategoria("", "");
 
   try {
-    const response = await fetch(form.action, {
+    const resposta = await fetch(formulario.action, {
       method: "POST",
-      body: new FormData(form),
+      body: new FormData(formulario),
       headers: { Accept: "application/json" },
     });
-    const result = await response.json().catch(() => ({
+    const resultado = await resposta.json().catch(() => ({
       ok: false,
       message: "Resposta invalida do servidor.",
     }));
 
-    if (!response.ok || !result.ok) {
-      throw new Error(result.message || "Nao foi possivel cadastrar a categoria.");
+    if (!resposta.ok || !resultado.ok) {
+      throw new Error(resultado.message || "Nao foi possivel cadastrar a categoria.");
     }
 
-    setCategoryMessage(result.message || "Categoria cadastrada com sucesso.", "success");
-    incrementCategoryMetric("totalCategoriesMetric");
-    incrementCategoryMetric("unlinkedCategoriesMetric");
-    form.reset();
+    definirMensagemCategoria(resultado.message || "Categoria cadastrada com sucesso.", "success");
+    incrementarMetricaCategoria("totalCategoriesMetric");
+    incrementarMetricaCategoria("unlinkedCategoriesMetric");
+    formulario.reset();
 
     setTimeout(() => {
-      setCategoryMessage("", "");
-    }, CATEGORY_MESSAGE_HIDE_DELAY_MS);
-  } catch (error) {
-    setCategoryMessage(error.message || "Nao foi possivel cadastrar a categoria.", "error");
+      definirMensagemCategoria("", "");
+    }, ATRASO_OCULTACAO_MENSAGEM_CATEGORIA_MS);
+  } catch (erro) {
+    definirMensagemCategoria(erro.message || "Nao foi possivel cadastrar a categoria.", "error");
   } finally {
-    setCategoryButtonLoading(submitButton, false);
+    definirCarregandoBotaoCategoria(botaoEnviar, false);
   }
 }
 
-function validateCategoryForm(form) {
-  const data = new FormData(form);
-  const nome = String(data.get("nome") || "").trim();
-  const descricao = String(data.get("descricao") || "").trim();
+function validarFormularioCategoria(formulario) {
+  const dados = new FormData(formulario);
+  const nome = String(dados.get("nome") || "").trim();
+  const descricao = String(dados.get("descricao") || "").trim();
 
   if (!nome) {
     return "Informe o nome da categoria.";
@@ -95,109 +95,109 @@ function validateCategoryForm(form) {
   return "";
 }
 
-function setCategoryButtonLoading(button, isLoading) {
-  if (!button) return;
+function definirCarregandoBotaoCategoria(botao, estaCarregando) {
+  if (!botao) return;
 
-  button.disabled = isLoading;
+  botao.disabled = estaCarregando;
 
-  if (isLoading) {
-    button.replaceChildren(
-      createCategoryElement("i", "bi bi-arrow-repeat"),
-      createCategoryElement("span", "", "Cadastrando..."),
+  if (estaCarregando) {
+    botao.replaceChildren(
+      criarElementoCategoria("i", "bi bi-arrow-repeat"),
+      criarElementoCategoria("span", "", "Cadastrando..."),
     );
     return;
   }
 
-  button.replaceChildren(
-    createCategoryElement("i", "bi bi-plus-circle"),
-    createCategoryElement("span", "", "Cadastrar categoria"),
+  botao.replaceChildren(
+    criarElementoCategoria("i", "bi bi-plus-circle"),
+    criarElementoCategoria("span", "", "Cadastrar categoria"),
   );
 }
 
-function setCategoryMessage(message, type) {
-  const element = document.getElementById("categoryFormMessage");
+function definirMensagemCategoria(mensagem, tipo) {
+  const elemento = document.getElementById("categoryFormMessage");
 
-  if (!element) return;
+  if (!elemento) return;
 
-  element.textContent = message;
-  element.classList.toggle("show", Boolean(message));
-  element.classList.toggle("error", type === "error");
-  element.classList.toggle("success", type === "success");
+  elemento.textContent = mensagem;
+  elemento.classList.toggle("show", Boolean(mensagem));
+  elemento.classList.toggle("error", tipo === "error");
+  elemento.classList.toggle("success", tipo === "success");
 }
 
-function setupCategoryFilters() {
-  document.getElementById("categorySearch")?.addEventListener("input", filterCategories);
-  document.getElementById("clearCategoryFilters")?.addEventListener("click", clearCategoryFilters);
+function configurarFiltrosCategoria() {
+  document.getElementById("categorySearch")?.addEventListener("input", filtrarCategorias);
+  document.getElementById("clearCategoryFilters")?.addEventListener("click", limparFiltrosCategoria);
 
-  filterCategories();
+  filtrarCategorias();
 }
 
-function clearCategoryFilters() {
-  const search = document.getElementById("categorySearch");
+function limparFiltrosCategoria() {
+  const busca = document.getElementById("categorySearch");
 
-  if (search) {
-    search.value = "";
+  if (busca) {
+    busca.value = "";
   }
 
-  filterCategories();
-  search?.focus();
+  filtrarCategorias();
+  busca?.focus();
 }
 
-function filterCategories() {
-  const rows = Array.from(document.querySelectorAll(".category-row"));
-  const search = normalizeText(document.getElementById("categorySearch")?.value || "");
-  let visibleCount = 0;
+function filtrarCategorias() {
+  const linhas = Array.from(document.querySelectorAll(".category-row"));
+  const busca = normalizarTexto(document.getElementById("categorySearch")?.value || "");
+  let quantidadeVisivel = 0;
 
-  rows.forEach((row) => {
-    const rowSearch = normalizeText(row.dataset.search || "");
-    const isVisible = !search || rowSearch.includes(search);
+  linhas.forEach((linha) => {
+    const buscaLinha = normalizarTexto(linha.dataset.search || "");
+    const ehVisivel = !busca || buscaLinha.includes(busca);
 
-    row.hidden = !isVisible;
+    linha.hidden = !ehVisivel;
 
-    if (isVisible) {
-      visibleCount += 1;
+    if (ehVisivel) {
+      quantidadeVisivel += 1;
     }
   });
 
-  updateCategoryResultCount(visibleCount);
-  updateCategoryEmptyState(rows.length === 0 || visibleCount === 0);
+  atualizarQuantidadeResultadoCategoria(quantidadeVisivel);
+  atualizarEstadoVazioCategoria(linhas.length === 0 || quantidadeVisivel === 0);
 }
 
-function incrementCategoryMetric(id) {
-  const element = document.getElementById(id);
-  const value = Number(element?.textContent || 0);
+function incrementarMetricaCategoria(id) {
+  const elemento = document.getElementById(id);
+  const valor = Number(elemento?.textContent || 0);
 
-  if (element) {
-    element.textContent = String(Number.isFinite(value) ? value + 1 : 1);
+  if (elemento) {
+    elemento.textContent = String(Number.isFinite(valor) ? valor + 1 : 1);
   }
 }
 
-function updateCategoryResultCount(count) {
-  const resultCount = document.getElementById("categoryResultCount");
+function atualizarQuantidadeResultadoCategoria(quantidade) {
+  const quantidadeResultado = document.getElementById("categoryResultCount");
 
-  if (!resultCount) return;
+  if (!quantidadeResultado) return;
 
-  resultCount.textContent = `${count.toLocaleString("pt-BR")} ${count === 1 ? "registro" : "registros"}`;
+  quantidadeResultado.textContent = `${quantidade.toLocaleString("pt-BR")} ${quantidade === 1 ? "registro" : "registros"}`;
 }
 
-function updateCategoryEmptyState(show) {
-  const emptyState = document.getElementById("categoryEmptyState");
+function atualizarEstadoVazioCategoria(exibir) {
+  const estadoVazio = document.getElementById("categoryEmptyState");
 
-  if (emptyState) {
-    emptyState.hidden = !show;
+  if (estadoVazio) {
+    estadoVazio.hidden = !exibir;
   }
 }
 
-function createCategoryElement(tag, className = "", text = "") {
-  const element = document.createElement(tag);
+function criarElementoCategoria(etiqueta, nomeClasse = "", texto = "") {
+  const elemento = document.createElement(etiqueta);
 
-  if (className) {
-    element.className = className;
+  if (nomeClasse) {
+    elemento.className = nomeClasse;
   }
 
-  if (text) {
-    element.textContent = text;
+  if (texto) {
+    elemento.textContent = texto;
   }
 
-  return element;
+  return elemento;
 }

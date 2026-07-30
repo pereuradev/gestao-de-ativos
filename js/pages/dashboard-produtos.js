@@ -1,1143 +1,1546 @@
 (function () {
-// Mantemos o dashboard dentro de uma funcao anonima para nao misturar variaveis
-// desta tela com os scripts globais usados nas outras paginas.
-const DASHBOARD_PRODUCTS_ENDPOINT = "../Backend/dashboard-produtos.php";
-const THEME_STORAGE_KEY = "titech-theme";
-const ACCENT_STORAGE_KEY = "titech-accent";
-const THEME_TRANSITION_MS = 660;
+  // Mantemos o dashboard dentro de uma funcao anonima para nao misturar variaveis
+  // desta tela com os scripts globais usados nas outras paginas.
+  const ENDPOINT_PRODUTOS_PAINEL = "../Backend/dashboard-produtos.php";
+  const ENDPOINT_METRICAS_GERAIS = "../Backend/dashboard-metricas.php";
+  const CHAVE_ARMAZENAMENTO_TEMA = "titech-theme";
+  const CHAVE_ARMAZENAMENTO_DESTAQUE = "titech-accent";
+  const TRANSICAO_TEMA_MS = 660;
 
-// Paletas aceitas pela tela de configuracoes. O dashboard usa as mesmas variaveis
-// para graficos, botoes e estados visuais.
-const ACCENT_THEMES = {
-  teal: {
-    cyan: "#4aa3c7",
-    teal: "#4fc7b1",
-    mint: "#66d5c2",
-    accent: "#66d5c2",
-  },
-  green: {
-    cyan: "#22c55e",
-    teal: "#16a34a",
-    mint: "#86efac",
-    accent: "#22c55e",
-  },
-  blue: {
-    cyan: "#38bdf8",
-    teal: "#2563eb",
-    mint: "#7dd3fc",
-    accent: "#38bdf8",
-  },
-  violet: {
-    cyan: "#a78bfa",
-    teal: "#7c3aed",
-    mint: "#c4b5fd",
-    accent: "#a78bfa",
-  },
-};
-
-// Estrutura vazia usada antes do banco responder ou quando ocorre algum erro.
-const DEFAULT_DASHBOARD_DATA = {
-  ok: false,
-  resumo: {
-    total_ativos: 0,
-    total_tipos: 0,
-    total_filtrado: 0,
-    maior_categoria: null,
-  },
-  categoria_selecionada: {
-    id: "todos",
-    nome: "Todos os tipos",
-    total: 0,
-    percentual: 0,
-  },
-  categoria_filtro: "todos",
-  marca_filtro: "todos",
-  local_filtro: "todos",
-  categorias: [],
-  marcas_filtro: [],
-  locais_filtro: [],
-  status: [],
-  status_por_categoria: {},
-  marcas: [],
-  marcas_por_categoria: {},
-  locais: [],
-  locais_por_categoria: {},
-  evolucao: [],
-};
-
-// Cada opcao do select "Dados do grafico" aponta para uma lista diferente do JSON.
-// Assim a renderizacao reaproveita o mesmo codigo para tipo, status, marca, local e evolucao.
-const METRIC_CONFIG = {
-  categorias: {
-    title: "Quantidade por tipo",
-    description:
-      "Distribuição dos ativos cadastrados por categoria de produto.",
-    totalLabel: "Ativos no inventário",
-    dataKey: "categorias",
-  },
-  status: {
-    title: "Quantidade por status",
-    description:
-      "Mostra como os ativos estão distribuídos por situação operacional.",
-    totalLabel: "Ativos analisados",
-    dataKey: "status",
-  },
-  marcas: {
-    title: "Quantidade por marca",
-    description:
-      "Mostra quantos ativos existem por marca no filtro atual.",
-    totalLabel: "Ativos analisados",
-    dataKey: "marcas",
-  },
-  locais: {
-    title: "Quantidade por localização",
-    description:
-      "Distribuição dos ativos por local, setor ou ponto de armazenamento.",
-    totalLabel: "Ativos analisados",
-    dataKey: "locais",
-  },
-  evolucao: {
-    title: "Evolução de cadastros",
-    description:
-      "Quantidade de ativos cadastrados por dia no período selecionado.",
-    totalLabel: "Novos cadastros",
-    dataKey: "evolucao",
-  },
-};
-
-let dashboardData = DEFAULT_DASHBOARD_DATA;
-let dashboardBaseData = DEFAULT_DASHBOARD_DATA;
-let productsChart = null;
-let themeTimer = null;
-let dashboardRequestController = null;
-let dashboardRequestId = 0;
-const dashboardCache = new Map();
-
-// Estado atual dos filtros da tela. Toda renderizacao le esses valores.
-const state = {
-  categoriaId: "todos",
-  marca: "todos",
-  localId: "todos",
-  metrica: "categorias",
-  tipoGrafico: "bar",
-  periodo: "30",
-};
-
-document.addEventListener("DOMContentLoaded", initDashboardProductsPage);
-
-function initDashboardProductsPage() {
-  // O tema e a sidebar seguem o base-interface.js; aqui so reagimos para redesenhar o grafico.
-  const previousThemeChanged = typeof window.onThemeChanged === "function" ? window.onThemeChanged : null;
-  window.onThemeChanged = () => {
-    previousThemeChanged?.();
-    renderCurrentChart();
+  // Paletas aceitas pela tela de configuracoes. O dashboard usa as mesmas variaveis
+  // para graficos, botoes e estados visuais.
+  const TEMAS_DESTAQUE = {
+    teal: {
+      cyan: "#4aa3c7",
+      teal: "#4fc7b1",
+      mint: "#66d5c2",
+      accent: "#66d5c2",
+    },
+    green: {
+      cyan: "#22c55e",
+      teal: "#16a34a",
+      mint: "#86efac",
+      accent: "#22c55e",
+    },
+    blue: {
+      cyan: "#38bdf8",
+      teal: "#2563eb",
+      mint: "#7dd3fc",
+      accent: "#38bdf8",
+    },
+    violet: {
+      cyan: "#a78bfa",
+      teal: "#7c3aed",
+      mint: "#c4b5fd",
+      accent: "#a78bfa",
+    },
   };
-  window.addEventListener("titech:motion-change", renderCurrentChart);
-  (window.startPageAnimation || startPageAnimation)();
-  (window.loadSavedTheme || loadSavedTheme)();
-  (window.setupThemeToggle || setupThemeToggle)();
-  (window.setupSidebar || setupSidebar)();
-  (window.setupNavGroups || setupNavGroups)();
-  setupDashboardControls();
-  loadDashboardProducts();
-}
 
-function startPageAnimation() {
-  requestAnimationFrame(() => {
-    document.body.classList.remove("page-loading");
-  });
-}
+  // Estrutura vazia usada antes do banco responder ou quando ocorre algum erro.
+  const DADOS_PAINEL_PADRAO = {
+    ok: false,
+    resumo: {
+      total_ativos: 0,
+      total_tipos: 0,
+      total_filtrado: 0,
+      maior_categoria: null,
+    },
+    categoria_selecionada: {
+      id: "todos",
+      nome: "Todos os tipos",
+      total: 0,
+      percentual: 0,
+    },
+    categoria_filtro: "todos",
+    marca_filtro: "todos",
+    local_filtro: "todos",
+    categorias: [],
+    marcas_filtro: [],
+    locais_filtro: [],
+    status: [],
+    status_por_categoria: {},
+    marcas: [],
+    marcas_por_categoria: {},
+    locais: [],
+    locais_por_categoria: {},
+    evolucao: [],
+  };
 
-function getSavedItem(key) {
-  // LocalStorage pode falhar em alguns modos privados; por isso o acesso fica protegido.
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
+  // Cada opcao do select "Dados do grafico" aponta para uma lista diferente do JSON.
+  // Assim a renderizacao reaproveita o mesmo codigo para tipo, status, marca, local e evolucao.
+  const CONFIGURACAO_METRICA = {
+    categorias: {
+      title: "Quantidade por tipo",
+      description:
+        "Distribuição dos ativos cadastrados por categoria de produto.",
+      totalLabel: "Ativos no inventário",
+      dataKey: "categorias",
+    },
+    status: {
+      title: "Quantidade por status",
+      description:
+        "Mostra como os ativos estão distribuídos por situação operacional.",
+      totalLabel: "Ativos analisados",
+      dataKey: "status",
+    },
+    marcas: {
+      title: "Quantidade por marca",
+      description: "Mostra quantos ativos existem por marca no filtro atual.",
+      totalLabel: "Ativos analisados",
+      dataKey: "marcas",
+    },
+    locais: {
+      title: "Quantidade por localização",
+      description:
+        "Distribuição dos ativos por local, setor ou ponto de armazenamento.",
+      totalLabel: "Ativos analisados",
+      dataKey: "locais",
+    },
+    evolucao: {
+      title: "Evolução de cadastros",
+      description:
+        "Quantidade de ativos cadastrados por dia no período selecionado.",
+      totalLabel: "Novos cadastros",
+      dataKey: "evolucao",
+    },
+  };
 
-function setSavedItem(key, value) {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    return;
-  }
-}
+  const PERIODOS_EVOLUCAO_ATIVOS = {
+    hoje: {
+      rotulo: "Diariamente",
+      detalhe: "por hora de hoje",
+    },
+    semana: {
+      rotulo: "Semanalmente",
+      detalhe: "nos \u00faltimos 7 dias",
+    },
+    mes: {
+      rotulo: "Mensalmente",
+      detalhe: "nos \u00faltimos 30 dias",
+    },
+    ano: {
+      rotulo: "Anualmente",
+      detalhe: "nos \u00faltimos 12 meses",
+    },
+  };
 
-function isReducedMotionEnabled() {
-  if (document.body?.dataset.motion === "reduced") {
-    return true;
-  }
+  let dadosPainel = DADOS_PAINEL_PADRAO;
+  let dadosBasePainel = DADOS_PAINEL_PADRAO;
+  let graficoProdutos = null;
+  let graficoEvolucaoAtivos = null;
+  let temporizadorTema = null;
+  let controladorRequisicaoPainel = null;
+  let controladorRequisicaoEvolucao = null;
+  let idRequisicaoPainel = 0;
+  let idRequisicaoEvolucao = 0;
+  const cachePainel = new Map();
+  let periodoEvolucaoAtivos = "semana";
+  let dadosEvolucaoAtivos = {
+    hoje: [],
+    semana: [],
+    mes: [],
+    ano: [],
+  };
 
-  if (getSavedItem("titech-motion") === "reduced") {
-    return true;
-  }
+  // Estado atual dos filtros da tela. Toda renderizacao le esses valores.
+  const estado = {
+    categoriaId: "todos",
+    marca: "todos",
+    localId: "todos",
+    metrica: "categorias",
+    tipoGrafico: "bar",
+    periodo: "30",
+  };
 
-  return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
-}
-
-function loadSavedTheme() {
-  // Fallback local caso o base-interface.js nao esteja disponivel por algum motivo.
-  applyAccent(getSavedItem(ACCENT_STORAGE_KEY) || "teal");
-  applyTheme(getSavedItem(THEME_STORAGE_KEY) || "dark");
-  window.applyFontSizePreference?.(getSavedItem("titech-font-size") || "default");
-  window.applyDensity?.(getSavedItem("titech-density") || "comfortable");
-  window.applyMotionPreference?.(getSavedItem("titech-motion") || "normal");
-  window.applyCursorPreference?.(getSavedItem("titech-cursor") || "enhanced");
-}
-
-function applyAccent(accent) {
-  const selectedAccent = Object.hasOwn(ACCENT_THEMES, accent) ? accent : "teal";
-  const palette = ACCENT_THEMES[selectedAccent];
-
-  document.body.dataset.accent = selectedAccent;
-  document.body.style.setProperty("--cyan", palette.cyan);
-  document.body.style.setProperty("--teal", palette.teal);
-  document.body.style.setProperty("--mint", palette.mint);
-  document.body.style.setProperty("--accent", palette.accent);
-}
-
-function setupThemeToggle() {
-  const themeToggle = document.getElementById("themeToggle");
-
-  if (!themeToggle) {
-    return;
-  }
-
-  themeToggle.addEventListener("click", () => {
-    const isDark = document.body.classList.contains("theme-dark");
-    const nextTheme = isDark ? "light" : "dark";
-
-    clearTimeout(themeTimer);
-    document.body.classList.add("theme-switching");
-
-    applyTheme(nextTheme);
-    setSavedItem(THEME_STORAGE_KEY, nextTheme);
-    renderCurrentChart();
-
-    themeTimer = window.setTimeout(() => {
-      document.body.classList.remove("theme-switching");
-    }, THEME_TRANSITION_MS);
-  });
-}
-
-function applyTheme(theme) {
-  const isDark = theme !== "light";
-  const themeToggle = document.getElementById("themeToggle");
-
-  document.body.classList.toggle("theme-dark", isDark);
-  document.body.classList.toggle("theme-light", !isDark);
-
-  document.querySelectorAll(".brand-logo").forEach((logo) => {
-    logo.src = isDark ? "../assets/logo-branca.png" : "../assets/Logo.png";
-  });
-
-  if (!themeToggle) {
-    return;
-  }
-
-  const icon = themeToggle.querySelector("i");
-  const label = themeToggle.querySelector("span");
-
-  if (icon) {
-    icon.className = isDark ? "bi bi-sun-fill" : "bi bi-moon-stars-fill";
-  }
-
-  if (label) {
-    label.textContent = isDark ? "Modo claro" : "Modo escuro";
-  }
-}
-
-function setupSidebar() {
-  const openButton = document.getElementById("openSidebar");
-  const closeButton = document.getElementById("closeSidebar");
-  const backdrop = document.getElementById("sidebarBackdrop");
-
-  openButton?.addEventListener("click", () =>
-    document.body.classList.add("sidebar-open"),
-  );
-  closeButton?.addEventListener("click", () =>
-    document.body.classList.remove("sidebar-open"),
-  );
-  backdrop?.addEventListener("click", () =>
-    document.body.classList.remove("sidebar-open"),
+  document.addEventListener(
+    "DOMContentLoaded",
+    inicializarPaginaProdutosPainel,
   );
 
-  window.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      document.body.classList.remove("sidebar-open");
+  function inicializarPaginaProdutosPainel() {
+    // O tema e a sidebar seguem o base-interface.js; aqui so reagimos para redesenhar o grafico.
+    const tratadorAnteriorAlteracaoTema =
+      typeof window.onThemeChanged === "function"
+        ? window.onThemeChanged
+        : null;
+    window.onThemeChanged = () => {
+      tratadorAnteriorAlteracaoTema?.();
+      renderizarGraficoAtual();
+      renderizarEvolucaoAtivos();
+    };
+    window.addEventListener("titech:motion-change", () => {
+      renderizarGraficoAtual();
+      renderizarEvolucaoAtivos();
+    });
+    (window.iniciarAnimacaoPagina || iniciarAnimacaoPagina)();
+    (window.carregarTemaSalvo || carregarTemaSalvo)();
+    (window.configurarAlternadorTema || configurarAlternadorTema)();
+    (window.configurarBarraLateral || configurarBarraLateral)();
+    (window.configurarGruposNavegacao || configurarGruposNavegacao)();
+    configurarControlesPainel();
+    configurarEvolucaoAtivos();
+    carregarProdutosPainel();
+    carregarEvolucaoAtivos();
+  }
+
+  function iniciarAnimacaoPagina() {
+    requestAnimationFrame(() => {
+      document.body.classList.remove("page-loading");
+    });
+  }
+
+  function obterItemSalvo(chave) {
+    // LocalStorage pode falhar em alguns modos privados; por isso o acesso fica protegido.
+    try {
+      return localStorage.getItem(chave);
+    } catch {
+      return null;
     }
-  });
+  }
 
-  document.querySelectorAll(".sidebar-nav a").forEach((link) => {
-    link.addEventListener("click", () => {
-      if (window.innerWidth <= 920) {
+  function definirItemSalvo(chave, valor) {
+    try {
+      localStorage.setItem(chave, valor);
+    } catch {
+      return;
+    }
+  }
+
+  function movimentoReduzidoEstaAtivado() {
+    if (document.body?.dataset.motion === "reduced") {
+      return true;
+    }
+
+    if (obterItemSalvo("titech-motion") === "reduced") {
+      return true;
+    }
+
+    return (
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false
+    );
+  }
+
+  function carregarTemaSalvo() {
+    // Fallback local caso o base-interface.js nao esteja disponivel por algum motivo.
+    aplicarDestaque(obterItemSalvo(CHAVE_ARMAZENAMENTO_DESTAQUE) || "teal");
+    aplicarTema(obterItemSalvo(CHAVE_ARMAZENAMENTO_TEMA) || "dark");
+    window.aplicarPreferenciaTamanhoFonte?.(
+      obterItemSalvo("titech-font-size") || "default",
+    );
+    window.aplicarDensidade?.(
+      obterItemSalvo("titech-density") || "comfortable",
+    );
+    window.aplicarPreferenciaMovimento?.(
+      obterItemSalvo("titech-motion") || "normal",
+    );
+    window.aplicarPreferenciaCursor?.(
+      obterItemSalvo("titech-cursor") || "enhanced",
+    );
+  }
+
+  function aplicarDestaque(destaque) {
+    const destaqueSelecionado = Object.hasOwn(TEMAS_DESTAQUE, destaque)
+      ? destaque
+      : "teal";
+    const paleta = TEMAS_DESTAQUE[destaqueSelecionado];
+
+    document.body.dataset.accent = destaqueSelecionado;
+    document.body.style.setProperty("--cyan", paleta.cyan);
+    document.body.style.setProperty("--teal", paleta.teal);
+    document.body.style.setProperty("--mint", paleta.mint);
+    document.body.style.setProperty("--accent", paleta.accent);
+  }
+
+  function configurarAlternadorTema() {
+    const alternadorTema = document.getElementById("themeToggle");
+
+    if (!alternadorTema) {
+      return;
+    }
+
+    alternadorTema.addEventListener("click", () => {
+      const ehEscuro = document.body.classList.contains("theme-dark");
+      const temaProximo = ehEscuro ? "light" : "dark";
+
+      clearTimeout(temporizadorTema);
+      document.body.classList.add("theme-switching");
+
+      aplicarTema(temaProximo);
+      definirItemSalvo(CHAVE_ARMAZENAMENTO_TEMA, temaProximo);
+      renderizarGraficoAtual();
+      renderizarEvolucaoAtivos();
+
+      temporizadorTema = window.setTimeout(() => {
+        document.body.classList.remove("theme-switching");
+      }, TRANSICAO_TEMA_MS);
+    });
+  }
+
+  function aplicarTema(tema) {
+    const ehEscuro = tema !== "light";
+    const alternadorTema = document.getElementById("themeToggle");
+
+    document.body.classList.toggle("theme-dark", ehEscuro);
+    document.body.classList.toggle("theme-light", !ehEscuro);
+
+    document.querySelectorAll(".brand-logo").forEach((logo) => {
+      logo.src = ehEscuro ? "../assets/logo-branca.png" : "../assets/Logo.png";
+    });
+
+    if (!alternadorTema) {
+      return;
+    }
+
+    const icone = alternadorTema.querySelector("i");
+    const rotulo = alternadorTema.querySelector("span");
+
+    if (icone) {
+      icone.className = ehEscuro ? "bi bi-sun-fill" : "bi bi-moon-stars-fill";
+    }
+
+    if (rotulo) {
+      rotulo.textContent = ehEscuro ? "Modo claro" : "Modo escuro";
+    }
+  }
+
+  function configurarBarraLateral() {
+    const botaoAbrir = document.getElementById("openSidebar");
+    const botaoFechar = document.getElementById("closeSidebar");
+    const fundoModal = document.getElementById("sidebarBackdrop");
+
+    botaoAbrir?.addEventListener("click", () =>
+      document.body.classList.add("sidebar-open"),
+    );
+    botaoFechar?.addEventListener("click", () =>
+      document.body.classList.remove("sidebar-open"),
+    );
+    fundoModal?.addEventListener("click", () =>
+      document.body.classList.remove("sidebar-open"),
+    );
+
+    window.addEventListener("keydown", (evento) => {
+      if (evento.key === "Escape") {
         document.body.classList.remove("sidebar-open");
       }
     });
-  });
-}
 
-function setupNavGroups() {
-  const groups = Array.from(document.querySelectorAll("[data-nav-group]"));
-
-  groups.forEach((group) => {
-    const button = group.querySelector(".nav-toggle");
-    const submenu = group.querySelector(".nav-submenu");
-
-    if (!button || !submenu) {
-      return;
-    }
-
-    button.addEventListener("click", () => {
-      const shouldOpen = !group.classList.contains("open");
-
-      groups.forEach((otherGroup) => {
-        if (otherGroup === group) {
-          return;
+    document.querySelectorAll(".sidebar-nav a").forEach((atalho) => {
+      atalho.addEventListener("click", () => {
+        if (window.innerWidth <= 920) {
+          document.body.classList.remove("sidebar-open");
         }
-
-        otherGroup.classList.remove("open");
-        otherGroup
-          .querySelector(".nav-toggle")
-          ?.setAttribute("aria-expanded", "false");
       });
-
-      group.classList.toggle("open", shouldOpen);
-      button.setAttribute("aria-expanded", String(shouldOpen));
     });
-  });
-}
+  }
 
-function setupDashboardControls() {
-  const categoryFilter = document.getElementById("categoryFilter");
-  const brandFilter = document.getElementById("brandFilter");
-  const locationFilter = document.getElementById("locationFilter");
-  const metricFilter = document.getElementById("metricFilter");
-  const chartTypeFilter = document.getElementById("chartTypeFilter");
-  const periodFilter = document.getElementById("periodFilter");
-  const refreshButton = document.getElementById("refreshDashboard");
+  function configurarGruposNavegacao() {
+    const grupos = Array.from(document.querySelectorAll("[data-nav-group]"));
 
-  categoryFilter?.addEventListener("change", () => {
-    state.categoriaId = categoryFilter.value || "todos";
-    setDashboardMetric(state.categoriaId === "todos" ? "categorias" : "marcas");
-    loadDashboardProducts();
-  });
+    grupos.forEach((grupo) => {
+      const botao = grupo.querySelector(".nav-toggle");
+      const submenu = grupo.querySelector(".nav-submenu");
 
-  brandFilter?.addEventListener("change", () => {
-    state.marca = brandFilter.value || "todos";
-    setDashboardMetric(state.marca === "todos" ? state.metrica : "categorias");
-    loadDashboardProducts();
-  });
+      if (!botao || !submenu) {
+        return;
+      }
 
-  locationFilter?.addEventListener("change", () => {
-    state.localId = locationFilter.value || "todos";
-    loadDashboardProducts();
-  });
+      botao.addEventListener("click", () => {
+        const deveAbrir = !grupo.classList.contains("open");
 
-  metricFilter?.addEventListener("change", () => {
-    setDashboardMetric(metricFilter.value || "categorias");
+        grupos.forEach((outroGrupo) => {
+          if (outroGrupo === grupo) {
+            return;
+          }
 
-    // Evolucao depende do periodo selecionado; por isso recarrega quando essa metrica entra.
-    if (state.metrica === "evolucao") {
-      loadDashboardProducts();
+          outroGrupo.classList.remove("open");
+          outroGrupo
+            .querySelector(".nav-toggle")
+            ?.setAttribute("aria-expanded", "false");
+        });
+
+        grupo.classList.toggle("open", deveAbrir);
+        botao.setAttribute("aria-expanded", String(deveAbrir));
+      });
+    });
+  }
+
+  function configurarControlesPainel() {
+    const filtroCategoria = document.getElementById("categoryFilter");
+    const filtroMarca = document.getElementById("brandFilter");
+    const filtroLocal = document.getElementById("locationFilter");
+    const filtroMetrica = document.getElementById("metricFilter");
+    const filtroTipoGrafico = document.getElementById("chartTypeFilter");
+    const filtroPeriodo = document.getElementById("periodFilter");
+    const botaoAtualizar = document.getElementById("refreshDashboard");
+
+    filtroCategoria?.addEventListener("change", () => {
+      estado.categoriaId = filtroCategoria.value || "todos";
+      definirMetricaPainel(
+        estado.categoriaId === "todos" ? "categorias" : "marcas",
+      );
+      carregarProdutosPainel();
+    });
+
+    filtroMarca?.addEventListener("change", () => {
+      estado.marca = filtroMarca.value || "todos";
+      definirMetricaPainel(
+        estado.marca === "todos" ? estado.metrica : "categorias",
+      );
+      carregarProdutosPainel();
+    });
+
+    filtroLocal?.addEventListener("change", () => {
+      estado.localId = filtroLocal.value || "todos";
+      carregarProdutosPainel();
+    });
+
+    filtroMetrica?.addEventListener("change", () => {
+      definirMetricaPainel(filtroMetrica.value || "categorias");
+
+      // Evolucao depende do periodo selecionado; por isso recarrega quando essa metrica entra.
+      if (estado.metrica === "evolucao") {
+        carregarProdutosPainel();
+        return;
+      }
+
+      renderizarGraficoAtual();
+    });
+
+    filtroTipoGrafico?.addEventListener("change", () => {
+      estado.tipoGrafico = filtroTipoGrafico.value || "bar";
+      renderizarGraficoAtual();
+    });
+
+    filtroPeriodo?.addEventListener("change", () => {
+      estado.periodo = filtroPeriodo.value || "30";
+
+      // O periodo so muda dados quando a metrica atual e evolucao.
+      if (estado.metrica === "evolucao") {
+        carregarProdutosPainel();
+        return;
+      }
+
+      definirStatus("Periodo atualizado.", "A evolucao usara esse filtro.");
+    });
+
+    botaoAtualizar?.addEventListener("click", () => {
+      carregarProdutosPainel(true, { forceRefresh: true });
+      carregarEvolucaoAtivos(true);
+    });
+  }
+
+  function configurarEvolucaoAtivos() {
+    const botoesPeriodo = Array.from(
+      document.querySelectorAll("[data-stock-period]"),
+    );
+
+    if (!botoesPeriodo.length) {
       return;
     }
 
-    renderCurrentChart();
-  });
+    botoesPeriodo.forEach((botao) => {
+      botao.addEventListener("click", () => {
+        definirPeriodoEvolucaoAtivos(botao.dataset.stockPeriod || "semana");
+      });
+    });
 
-  chartTypeFilter?.addEventListener("change", () => {
-    state.tipoGrafico = chartTypeFilter.value || "bar";
-    renderCurrentChart();
-  });
+    definirPeriodoEvolucaoAtivos(periodoEvolucaoAtivos, false);
+  }
 
-  periodFilter?.addEventListener("change", () => {
-    state.periodo = periodFilter.value || "30";
+  function definirPeriodoEvolucaoAtivos(periodo, deveRenderizar = true) {
+    const periodoSeguro = Object.hasOwn(PERIODOS_EVOLUCAO_ATIVOS, periodo)
+      ? periodo
+      : "semana";
 
-    // O periodo so muda dados quando a metrica atual e evolucao.
-    if (state.metrica === "evolucao") {
-      loadDashboardProducts();
-      return;
+    periodoEvolucaoAtivos = periodoSeguro;
+
+    document.querySelectorAll("[data-stock-period]").forEach((botao) => {
+      const estaAtivo = botao.dataset.stockPeriod === periodoSeguro;
+
+      botao.classList.toggle("is-active", estaAtivo);
+      botao.setAttribute("aria-pressed", String(estaAtivo));
+    });
+
+    definirTexto(
+      "assetEvolutionSubtitle",
+      `Acompanhe o acumulado do invent\u00e1rio e os novos cadastros ${PERIODOS_EVOLUCAO_ATIVOS[periodoSeguro].detalhe}.`,
+    );
+
+    if (deveRenderizar) {
+      renderizarEvolucaoAtivos();
+    }
+  }
+
+  function definirMetricaPainel(metrica) {
+    // Garante que o estado interno e o select continuem sincronizados.
+    const metricaProxima = Object.hasOwn(CONFIGURACAO_METRICA, metrica)
+      ? metrica
+      : "categorias";
+    const filtroMetrica = document.getElementById("metricFilter");
+
+    estado.metrica = metricaProxima;
+
+    if (filtroMetrica && filtroMetrica.value !== metricaProxima) {
+      filtroMetrica.value = metricaProxima;
+    }
+  }
+
+  function aplicarSelecaoCategoriaLocal() {
+    // Se ainda nao temos a carga completa, deixamos o backend buscar os dados.
+    if (!dadosBasePainel.ok) {
+      return false;
     }
 
-    setStatus("Periodo atualizado.", "A evolucao usara esse filtro.");
-  });
+    if (estado.categoriaId === "todos") {
+      // Voltar para "Todos" e instantaneo porque guardamos a resposta completa.
+      dadosPainel = dadosBasePainel;
+      renderizarGraficoAtual();
+      definirStatus("Dados exibidos.", "Filtro removido na tela.");
+      return true;
+    }
 
-  refreshButton?.addEventListener("click", () => {
-    loadDashboardProducts(true, { forceRefresh: true });
-  });
-}
+    const categoriaSelecionada = dadosBasePainel.categorias.find(
+      (categoria) => categoria.id === estado.categoriaId,
+    );
 
-function setDashboardMetric(metric) {
-  // Garante que o estado interno e o select continuem sincronizados.
-  const nextMetric = Object.hasOwn(METRIC_CONFIG, metric)
-    ? metric
-    : "categorias";
-  const metricFilter = document.getElementById("metricFilter");
+    if (!categoriaSelecionada) {
+      return false;
+    }
 
-  state.metrica = nextMetric;
+    const marcasCategoria =
+      dadosBasePainel.marcas_por_categoria?.[estado.categoriaId] || [];
+    const statusPorCategoria =
+      dadosBasePainel.status_por_categoria?.[estado.categoriaId] || [];
+    const locaisCategoria =
+      dadosBasePainel.locais_por_categoria?.[estado.categoriaId] || [];
 
-  if (metricFilter && metricFilter.value !== nextMetric) {
-    metricFilter.value = nextMetric;
-  }
-}
+    dadosPainel = {
+      // Preserva os dados gerais, mas troca as listas que dependem do tipo selecionado.
+      ...dadosBasePainel,
+      resumo: {
+        ...dadosBasePainel.resumo,
+        total_filtrado: categoriaSelecionada.total,
+      },
+      categoria_selecionada: {
+        id: categoriaSelecionada.id,
+        nome: categoriaSelecionada.nome,
+        total: categoriaSelecionada.total,
+        percentual: categoriaSelecionada.percentual,
+      },
+      status: statusPorCategoria,
+      marcas: marcasCategoria,
+      locais: locaisCategoria,
+    };
 
-function applyLocalCategorySelection() {
-  // Se ainda nao temos a carga completa, deixamos o backend buscar os dados.
-  if (!dashboardBaseData.ok) {
-    return false;
-  }
+    renderizarGraficoAtual();
+    definirStatus("Dados exibidos.", "Filtro aplicado na tela.");
 
-  if (state.categoriaId === "todos") {
-    // Voltar para "Todos" e instantaneo porque guardamos a resposta completa.
-    dashboardData = dashboardBaseData;
-    renderCurrentChart();
-    setStatus("Dados exibidos.", "Filtro removido na tela.");
     return true;
   }
 
-  const selectedCategory = dashboardBaseData.categorias.find(
-    (category) => category.id === state.categoriaId,
-  );
+  async function carregarProdutosPainel(
+    exibirCarregamento = true,
+    opcoes = {},
+  ) {
+    // Cache por categoria e periodo: evita buscar novamente dados que acabaram de ser carregados.
+    const chaveCache = `${estado.categoriaId}|${estado.marca}|${estado.localId}|${estado.periodo}`;
+    const forcarAtualizacao = Boolean(opcoes.forceRefresh);
 
-  if (!selectedCategory) {
-    return false;
+    if (forcarAtualizacao) {
+      cachePainel.delete(chaveCache);
+    }
+
+    if (!forcarAtualizacao && cachePainel.has(chaveCache)) {
+      aplicarDadosPainel(cachePainel.get(chaveCache));
+      definirStatus("Dados exibidos.", "Usando dados ja carregados.");
+      return;
+    }
+
+    controladorRequisicaoPainel?.abort();
+    controladorRequisicaoPainel = new AbortController();
+
+    // ID incremental evita que uma resposta antiga sobrescreva uma selecao mais recente.
+    const idRequisicao = ++idRequisicaoPainel;
+
+    if (exibirCarregamento) {
+      definirCarregandoPainel(true);
+      definirStatus("Carregando dados...", "Buscando informações no banco.");
+    }
+
+    const parametros = new URLSearchParams({
+      categoria_id: estado.categoriaId,
+      marca: estado.marca,
+      local_id: estado.localId,
+      periodo: estado.periodo,
+    });
+
+    try {
+      const resposta = await fetch(
+        `${ENDPOINT_PRODUTOS_PAINEL}?${parametros.toString()}`,
+        {
+          headers: {
+            Accept: "application/json",
+          },
+          signal: controladorRequisicaoPainel.signal,
+        },
+      );
+
+      if (idRequisicao !== idRequisicaoPainel) {
+        return;
+      }
+
+      if (resposta.status === 401) {
+        // Sessao expirada: manda o usuario para o login com mensagem adequada.
+        window.location.href = "Pagina-login.html?sessao=expirada";
+        return;
+      }
+
+      if (!resposta.ok) {
+        throw new Error("Falha ao carregar dashboard de produtos.");
+      }
+
+      const dadosResposta = await resposta.json();
+
+      if (idRequisicao !== idRequisicaoPainel) {
+        return;
+      }
+
+      cachePainel.set(chaveCache, dadosResposta);
+      aplicarDadosPainel(dadosResposta);
+      definirStatus(
+        "Dados sincronizados.",
+        formatarUltimaAtualizacao(dadosPainel.gerado_em),
+      );
+    } catch (erro) {
+      if (erro.name === "AbortError") {
+        return;
+      }
+
+      if (idRequisicao !== idRequisicaoPainel) {
+        return;
+      }
+
+      console.error(erro);
+      dadosPainel = DADOS_PAINEL_PADRAO;
+      renderizarGraficoAtual();
+      definirStatus(
+        "Não foi possível carregar os dados.",
+        "Confira a conexão com o banco e tente novamente.",
+      );
+    } finally {
+      if (idRequisicao === idRequisicaoPainel) {
+        controladorRequisicaoPainel = null;
+        definirCarregandoPainel(false);
+      }
+    }
   }
 
-  const categoryBrands =
-    dashboardBaseData.marcas_por_categoria?.[state.categoriaId] || [];
-  const categoryStatuses =
-    dashboardBaseData.status_por_categoria?.[state.categoriaId] || [];
-  const categoryLocations =
-    dashboardBaseData.locais_por_categoria?.[state.categoriaId] || [];
+  async function carregarEvolucaoAtivos(exibirCarregamento = true) {
+    controladorRequisicaoEvolucao?.abort();
+    controladorRequisicaoEvolucao = new AbortController();
 
-  dashboardData = {
-    // Preserva os dados gerais, mas troca as listas que dependem do tipo selecionado.
-    ...dashboardBaseData,
-    resumo: {
-      ...dashboardBaseData.resumo,
-      total_filtrado: selectedCategory.total,
-    },
-    categoria_selecionada: {
-      id: selectedCategory.id,
-      nome: selectedCategory.nome,
-      total: selectedCategory.total,
-      percentual: selectedCategory.percentual,
-    },
-    status: categoryStatuses,
-    marcas: categoryBrands,
-    locais: categoryLocations,
-  };
+    const idRequisicao = ++idRequisicaoEvolucao;
 
-  renderCurrentChart();
-  setStatus("Dados exibidos.", "Filtro aplicado na tela.");
+    if (exibirCarregamento) {
+      definirCarregandoEvolucao(true);
+    }
 
-  return true;
-}
-
-async function loadDashboardProducts(showLoading = true, options = {}) {
-  // Cache por categoria e periodo: evita buscar novamente dados que acabaram de ser carregados.
-  const cacheKey = `${state.categoriaId}|${state.marca}|${state.localId}|${state.periodo}`;
-  const forceRefresh = Boolean(options.forceRefresh);
-
-  if (forceRefresh) {
-    dashboardCache.delete(cacheKey);
-  }
-
-  if (!forceRefresh && dashboardCache.has(cacheKey)) {
-    applyDashboardPayload(dashboardCache.get(cacheKey));
-    setStatus("Dados exibidos.", "Usando dados ja carregados.");
-    return;
-  }
-
-  dashboardRequestController?.abort();
-  dashboardRequestController = new AbortController();
-
-  // ID incremental evita que uma resposta antiga sobrescreva uma selecao mais recente.
-  const requestId = ++dashboardRequestId;
-
-  if (showLoading) {
-    setDashboardLoading(true);
-    setStatus("Carregando dados...", "Buscando informações no banco.");
-  }
-
-  const params = new URLSearchParams({
-    categoria_id: state.categoriaId,
-    marca: state.marca,
-    local_id: state.localId,
-    periodo: state.periodo,
-  });
-
-  try {
-    const response = await fetch(
-      `${DASHBOARD_PRODUCTS_ENDPOINT}?${params.toString()}`,
-      {
+    try {
+      const resposta = await fetch(ENDPOINT_METRICAS_GERAIS, {
         headers: {
           Accept: "application/json",
         },
-        signal: dashboardRequestController.signal,
-      },
-    );
+        signal: controladorRequisicaoEvolucao.signal,
+      });
 
-    if (requestId !== dashboardRequestId) {
-      return;
-    }
-
-    if (response.status === 401) {
-      // Sessao expirada: manda o usuario para o login com mensagem adequada.
-      window.location.href = "Pagina-login.html?sessao=expirada";
-      return;
-    }
-
-    if (!response.ok) {
-      throw new Error("Falha ao carregar dashboard de produtos.");
-    }
-
-    const payload = await response.json();
-
-    if (requestId !== dashboardRequestId) {
-      return;
-    }
-
-    dashboardCache.set(cacheKey, payload);
-    applyDashboardPayload(payload);
-    setStatus(
-      "Dados sincronizados.",
-      formatLastUpdate(dashboardData.gerado_em),
-    );
-  } catch (error) {
-    if (error.name === "AbortError") {
-      return;
-    }
-
-    if (requestId !== dashboardRequestId) {
-      return;
-    }
-
-    console.error(error);
-    dashboardData = DEFAULT_DASHBOARD_DATA;
-    renderCurrentChart();
-    setStatus(
-      "Não foi possível carregar os dados.",
-      "Confira a conexão com o banco e tente novamente.",
-    );
-  } finally {
-    if (requestId === dashboardRequestId) {
-      dashboardRequestController = null;
-      setDashboardLoading(false);
-    }
-  }
-}
-
-function setDashboardLoading(isLoading) {
-  document.body.classList.toggle("dashboard-filtering", isLoading);
-
-  const mainArea = document.querySelector(".dashboard-products-page .app-main");
-  const chartCard = document.querySelector(".main-chart-card");
-  const refreshButton = document.getElementById("refreshDashboard");
-
-  mainArea?.setAttribute("aria-busy", String(isLoading));
-  chartCard?.setAttribute("aria-busy", String(isLoading));
-
-  if (refreshButton) {
-    refreshButton.disabled = isLoading;
-  }
-}
-
-function applyDashboardPayload(payload) {
-  // Normaliza o JSON antes de qualquer componente tentar usar os dados.
-  dashboardData = normalizeDashboardPayload(payload);
-  syncStateWithDashboardPayload();
-
-  if (
-    dashboardData.categoria_filtro === "todos" &&
-    dashboardData.marca_filtro === "todos" &&
-    dashboardData.local_filtro === "todos"
-  ) {
-    // A resposta geral vira a base para filtros instantaneos por categoria.
-    dashboardBaseData = dashboardData;
-  }
-
-  populateCategoryFilter(dashboardData.categorias);
-  populateBrandFilter(dashboardData.marcas_filtro);
-  populateLocationFilter(dashboardData.locais_filtro);
-  renderCurrentChart();
-}
-
-function normalizeDashboardPayload(payload) {
-  // Nunca confiamos totalmente no formato vindo da rede; cada campo recebe fallback.
-  const data =
-    payload && typeof payload === "object" ? payload : DEFAULT_DASHBOARD_DATA;
-  const resumo =
-    data.resumo && typeof data.resumo === "object"
-      ? data.resumo
-      : DEFAULT_DASHBOARD_DATA.resumo;
-  const categoriaSelecionada =
-    data.categoria_selecionada && typeof data.categoria_selecionada === "object"
-      ? data.categoria_selecionada
-      : DEFAULT_DASHBOARD_DATA.categoria_selecionada;
-
-  return {
-    ok: Boolean(data.ok),
-    gerado_em: data.gerado_em || null,
-    periodo: normalizeNumber(data.periodo) || Number(state.periodo),
-    categoria_filtro: String(data.categoria_filtro || state.categoriaId || "todos"),
-    resumo: {
-      total_ativos: normalizeNumber(resumo.total_ativos),
-      total_tipos: normalizeNumber(resumo.total_tipos),
-      total_filtrado: normalizeNumber(resumo.total_filtrado),
-      maior_categoria: resumo.maior_categoria || null,
-    },
-    categoria_selecionada: {
-      id: String(categoriaSelecionada.id || "todos"),
-      nome: String(categoriaSelecionada.nome || "Todos os tipos"),
-      total: normalizeNumber(categoriaSelecionada.total),
-      percentual: normalizePercent(categoriaSelecionada.percentual),
-    },
-    marca_filtro: String(data.marca_filtro || state.marca || "todos"),
-    local_filtro: String(data.local_filtro || state.localId || "todos"),
-    categorias: normalizeDataRows(data.categorias, true),
-    marcas_filtro: normalizeFilterOptions(data.marcas_filtro),
-    locais_filtro: normalizeFilterOptions(data.locais_filtro),
-    status: normalizeDataRows(data.status),
-    status_por_categoria: normalizeRowsByCategory(data.status_por_categoria),
-    marcas: normalizeDataRows(data.marcas),
-    marcas_por_categoria: normalizeRowsByCategory(data.marcas_por_categoria),
-    locais: normalizeDataRows(data.locais),
-    locais_por_categoria: normalizeRowsByCategory(data.locais_por_categoria),
-    evolucao: normalizeDataRows(data.evolucao),
-  };
-}
-
-function syncStateWithDashboardPayload() {
-  state.categoriaId = dashboardData.categoria_filtro || "todos";
-  state.marca = dashboardData.marca_filtro || "todos";
-  state.localId = dashboardData.local_filtro || "todos";
-  state.periodo = String(dashboardData.periodo || state.periodo || "30");
-}
-
-function normalizeFilterOptions(rows) {
-  if (!Array.isArray(rows)) {
-    return [];
-  }
-
-  return rows
-    .map((row) => ({
-      id: String(row?.id || row?.nome || "").trim(),
-      nome: String(row?.nome || "Sem nome").trim(),
-      total: normalizeNumber(row?.total),
-    }))
-    .filter((row) => row.id !== "" && row.nome !== "" && row.total > 0);
-}
-
-function normalizeRowsByCategory(groups) {
-  // Transforma objetos de grupos em listas normalizadas, mantendo o id da categoria como chave.
-  if (!groups || typeof groups !== "object" || Array.isArray(groups)) {
-    return {};
-  }
-
-  return Object.entries(groups).reduce((normalized, [categoryId, rows]) => {
-    normalized[String(categoryId)] = normalizeDataRows(rows);
-    return normalized;
-  }, {});
-}
-
-function normalizeDataRows(rows, keepId = false) {
-  // Padroniza cada linha usada por graficos, ranking e tabela.
-  if (!Array.isArray(rows)) {
-    return [];
-  }
-
-  return rows
-    .map((row) => {
-      const item = {
-        nome: String(row?.nome || "Sem nome").trim(),
-        total: normalizeNumber(row?.total),
-        percentual: normalizePercent(row?.percentual),
-      };
-
-      if (keepId) {
-        item.id = String(row?.id || "");
+      if (idRequisicao !== idRequisicaoEvolucao) {
+        return;
       }
 
-      return item;
-    })
-    .filter((row) => row.nome !== "" && row.total !== null);
-}
+      if (resposta.status === 401) {
+        window.location.href = "Pagina-login.html?sessao=expirada";
+        return;
+      }
 
-function normalizeNumber(value) {
-  const number = Number(value);
+      if (!resposta.ok) {
+        throw new Error("Falha ao carregar evolucao de ativos.");
+      }
 
-  return Number.isFinite(number) && number >= 0 ? number : 0;
-}
+      const dadosResposta = await resposta.json();
+      dadosEvolucaoAtivos = normalizarEvolucoesAtivos(
+        dadosResposta?.ativos_evolucao,
+        dadosResposta?.estoque_evolucao,
+      );
+      renderizarEvolucaoAtivos();
+    } catch (erro) {
+      if (erro.name === "AbortError") {
+        return;
+      }
 
-function normalizePercent(value) {
-  const number = Number(value);
+      if (idRequisicao !== idRequisicaoEvolucao) {
+        return;
+      }
 
-  return Number.isFinite(number) && number >= 0 ? number : 0;
-}
-
-function populateCategoryFilter(categories) {
-  // Recria o select de tipos mantendo a escolha atual sempre que ela ainda existe.
-  const categoryFilter = document.getElementById("categoryFilter");
-
-  if (!categoryFilter) {
-    return;
+      console.error(erro);
+      dadosEvolucaoAtivos = normalizarEvolucoesAtivos(null, null);
+      renderizarEvolucaoAtivos();
+      definirStatus(
+        "Nao foi possivel carregar a evolucao.",
+        "O grafico principal continua disponivel.",
+      );
+    } finally {
+      if (idRequisicao === idRequisicaoEvolucao) {
+        controladorRequisicaoEvolucao = null;
+        definirCarregandoEvolucao(false);
+      }
+    }
   }
 
-  const previousValue = categoryFilter.value || state.categoriaId;
+  function normalizarEvolucoesAtivos(evolucoes, fallbackSemanal) {
+    const origem = evolucoes && typeof evolucoes === "object" ? evolucoes : {};
 
-  categoryFilter.innerHTML = "";
-  categoryFilter.appendChild(createOption("todos", "Todos os tipos"));
+    return Object.keys(PERIODOS_EVOLUCAO_ATIVOS).reduce(
+      (normalizado, periodo) => {
+        const linhasPeriodo =
+          periodo === "semana" && !Array.isArray(origem[periodo])
+            ? fallbackSemanal
+            : origem[periodo];
 
-  categories.forEach((category) => {
-    categoryFilter.appendChild(
-      createOption(
-        category.id,
-        `${formatCategoryLabel(category.nome)} (${formatNumber(category.total)})`,
-      ),
+        normalizado[periodo] = normalizarLinhasEvolucaoAtivos(linhasPeriodo);
+
+        return normalizado;
+      },
+      {},
     );
-  });
-
-  categoryFilter.value = categories.some(
-    (category) => category.id === previousValue,
-  )
-    ? previousValue
-    : "todos";
-  state.categoriaId = categoryFilter.value;
-}
-
-function populateBrandFilter(brands) {
-  populateDashboardSelect({
-    elementId: "brandFilter",
-    defaultValue: "todos",
-    defaultLabel: "Todas as marcas",
-    selectedValue: state.marca,
-    rows: brands,
-    onUpdate(value) {
-      state.marca = value;
-    },
-  });
-}
-
-function populateLocationFilter(locations) {
-  populateDashboardSelect({
-    elementId: "locationFilter",
-    defaultValue: "todos",
-    defaultLabel: "Todos os locais",
-    selectedValue: state.localId,
-    rows: locations,
-    onUpdate(value) {
-      state.localId = value;
-    },
-  });
-}
-
-function populateDashboardSelect(config) {
-  const select = document.getElementById(config.elementId);
-
-  if (!select) {
-    return;
   }
 
-  const previousValue = select.value || config.selectedValue || config.defaultValue;
+  function normalizarLinhasEvolucaoAtivos(linhas) {
+    if (!Array.isArray(linhas)) {
+      return [];
+    }
 
-  select.innerHTML = "";
-  select.appendChild(createOption(config.defaultValue, config.defaultLabel));
+    return linhas.map((linha) => ({
+      label: String(linha?.label || linha?.nome || "--"),
+      total: normalizarNumero(linha?.total),
+      novos: normalizarNumero(linha?.novos ?? linha?.total),
+    }));
+  }
 
-  config.rows.forEach((row) => {
-    select.appendChild(
-      createOption(row.id, `${row.nome} (${formatNumber(row.total)})`),
+  function definirCarregandoPainel(estaCarregando) {
+    document.body.classList.toggle("dashboard-filtering", estaCarregando);
+
+    const areaPrincipal = document.querySelector(
+      ".dashboard-products-page .app-main",
     );
-  });
+    const cartaoGrafico = document.querySelector(".main-chart-card");
+    const botaoAtualizar = document.getElementById("refreshDashboard");
 
-  select.value = config.rows.some((row) => row.id === previousValue)
-    ? previousValue
-    : config.defaultValue;
+    areaPrincipal?.setAttribute("aria-busy", String(estaCarregando));
+    cartaoGrafico?.setAttribute("aria-busy", String(estaCarregando));
 
-  config.onUpdate(select.value);
-}
-
-function createOption(value, label) {
-  const option = document.createElement("option");
-  option.value = value;
-  option.textContent = label;
-
-  return option;
-}
-
-function buildActiveFilterLabels(selectedCategory) {
-  const labels = [];
-
-  if (selectedCategory.id !== "todos") {
-    labels.push(formatCategoryLabel(selectedCategory.nome));
+    if (botaoAtualizar) {
+      botaoAtualizar.disabled = estaCarregando;
+    }
   }
 
-  if (state.marca !== "todos") {
-    labels.push(getSelectedOptionLabel("brandFilter"));
+  function definirCarregandoEvolucao(estaCarregando) {
+    const cartaoEvolucao = document.querySelector(".dashboard-asset-evolution");
+
+    cartaoEvolucao?.setAttribute("aria-busy", String(estaCarregando));
+    cartaoEvolucao?.classList.toggle("is-loading", estaCarregando);
   }
 
-  if (state.localId !== "todos") {
-    labels.push(getSelectedOptionLabel("locationFilter"));
+  function aplicarDadosPainel(dadosResposta) {
+    // Normaliza o JSON antes de qualquer componente tentar usar os dados.
+    dadosPainel = normalizarDadosPainel(dadosResposta);
+    sincronizarEstadoComDadosPainel();
+
+    if (
+      dadosPainel.categoria_filtro === "todos" &&
+      dadosPainel.marca_filtro === "todos" &&
+      dadosPainel.local_filtro === "todos"
+    ) {
+      // A resposta geral vira a base para filtros instantaneos por categoria.
+      dadosBasePainel = dadosPainel;
+    }
+
+    preencherFiltroCategoria(dadosPainel.categorias);
+    preencherFiltroMarca(dadosPainel.marcas_filtro);
+    preencherFiltroLocal(dadosPainel.locais_filtro);
+    renderizarGraficoAtual();
   }
 
-  if (!labels.length) {
+  function normalizarDadosPainel(dadosResposta) {
+    // Nunca confiamos totalmente no formato vindo da rede; cada campo recebe fallback.
+    const dados =
+      dadosResposta && typeof dadosResposta === "object"
+        ? dadosResposta
+        : DADOS_PAINEL_PADRAO;
+    const resumo =
+      dados.resumo && typeof dados.resumo === "object"
+        ? dados.resumo
+        : DADOS_PAINEL_PADRAO.resumo;
+    const categoriaSelecionada =
+      dados.categoria_selecionada &&
+      typeof dados.categoria_selecionada === "object"
+        ? dados.categoria_selecionada
+        : DADOS_PAINEL_PADRAO.categoria_selecionada;
+
     return {
-      title: "Todos",
-      detail: "",
+      ok: Boolean(dados.ok),
+      gerado_em: dados.gerado_em || null,
+      periodo: normalizarNumero(dados.periodo) || Number(estado.periodo),
+      categoria_filtro: String(
+        dados.categoria_filtro || estado.categoriaId || "todos",
+      ),
+      resumo: {
+        total_ativos: normalizarNumero(resumo.total_ativos),
+        total_tipos: normalizarNumero(resumo.total_tipos),
+        total_filtrado: normalizarNumero(resumo.total_filtrado),
+        maior_categoria: resumo.maior_categoria || null,
+      },
+      categoria_selecionada: {
+        id: String(categoriaSelecionada.id || "todos"),
+        nome: String(categoriaSelecionada.nome || "Todos os tipos"),
+        total: normalizarNumero(categoriaSelecionada.total),
+        percentual: normalizarPercentual(categoriaSelecionada.percentual),
+      },
+      marca_filtro: String(dados.marca_filtro || estado.marca || "todos"),
+      local_filtro: String(dados.local_filtro || estado.localId || "todos"),
+      categorias: normalizarLinhasDados(dados.categorias, true),
+      marcas_filtro: normalizarOpcoesFiltro(dados.marcas_filtro),
+      locais_filtro: normalizarOpcoesFiltro(dados.locais_filtro),
+      status: normalizarLinhasDados(dados.status),
+      status_por_categoria: normalizarLinhasPorCategoria(
+        dados.status_por_categoria,
+      ),
+      marcas: normalizarLinhasDados(dados.marcas),
+      marcas_por_categoria: normalizarLinhasPorCategoria(
+        dados.marcas_por_categoria,
+      ),
+      locais: normalizarLinhasDados(dados.locais),
+      locais_por_categoria: normalizarLinhasPorCategoria(
+        dados.locais_por_categoria,
+      ),
+      evolucao: normalizarLinhasDados(dados.evolucao),
     };
   }
 
-  return {
-    title: labels[0],
-    detail: labels.join(" em "),
-  };
-}
-
-function getSelectedOptionLabel(selectId) {
-  const select = document.getElementById(selectId);
-  const option = select?.selectedOptions?.[0];
-  const text = option?.textContent || "";
-
-  return text.replace(/\s+\([0-9.]+\)$/u, "").trim() || "Filtro selecionado";
-}
-
-function renderCurrentChart() {
-  // Um unico fluxo renderiza grafico e ranking para todas as metricas.
-  const config = METRIC_CONFIG[state.metrica] || METRIC_CONFIG.categorias;
-  const rows = getCurrentRows(config);
-  const total = calculateRowsTotal(rows);
-  const visibleRows = getVisibleRows(rows);
-
-  setText("mainChartTitle", config.title);
-  setText("mainChartDescription", buildChartDescription(config));
-  setText("chartTotalLabel", config.totalLabel);
-  setText("chartTotalMetric", formatNumber(total));
-
-  renderChart(rows, config);
-  renderRanking(visibleRows, total);
-}
-
-function getCurrentRows(config) {
-  // Evolucao conserva dias zerados no grafico; as demais metricas escondem zeros.
-  const rows = Array.isArray(dashboardData[config.dataKey])
-    ? dashboardData[config.dataKey]
-    : [];
-
-  if (state.metrica === "evolucao") {
-    return rows;
+  function sincronizarEstadoComDadosPainel() {
+    estado.categoriaId = dadosPainel.categoria_filtro || "todos";
+    estado.marca = dadosPainel.marca_filtro || "todos";
+    estado.localId = dadosPainel.local_filtro || "todos";
+    estado.periodo = String(dadosPainel.periodo || estado.periodo || "30");
   }
 
-  return rows.filter((row) => row.total > 0);
-}
+  function normalizarOpcoesFiltro(linhas) {
+    if (!Array.isArray(linhas)) {
+      return [];
+    }
 
-function buildChartDescription(config) {
-  const selected =
-    dashboardData.categoria_selecionada ||
-    DEFAULT_DASHBOARD_DATA.categoria_selecionada;
-  const activeFilters = buildActiveFilterLabels(selected);
-
-  if (!activeFilters.detail) {
-    return config.description;
+    return linhas
+      .map((linha) => ({
+        id: String(linha?.id || linha?.nome || "").trim(),
+        nome: String(linha?.nome || "Sem nome").trim(),
+        total: normalizarNumero(linha?.total),
+      }))
+      .filter(
+        (linha) => linha.id !== "" && linha.nome !== "" && linha.total > 0,
+      );
   }
 
-  return `${config.description} Filtro ativo: ${activeFilters.detail}.`;
-}
+  function normalizarLinhasPorCategoria(grupos) {
+    // Transforma objetos de grupos em listas normalizadas, mantendo o id da categoria como chave.
+    if (!grupos || typeof grupos !== "object" || Array.isArray(grupos)) {
+      return {};
+    }
 
-function calculateRowsTotal(rows) {
-  return rows.reduce((sum, row) => sum + normalizeNumber(row.total), 0);
-}
-
-function getVisibleRows(rows) {
-  // Ranking e tabela devem mostrar apenas itens/datas com dados reais.
-  return rows.filter((row) => normalizeNumber(row.total) > 0);
-}
-
-function renderChart(rows, config) {
-  // Chart.js redesenha do zero para evitar sobras visuais ao trocar filtros ou tipo.
-  const canvas = document.getElementById("productsChart");
-
-  if (!canvas || !window.Chart) {
-    return;
-  }
-
-  if (productsChart) {
-    productsChart.destroy();
-  }
-
-  const chartRows = rows.length ? rows : [{ nome: "Sem dados", total: 0 }];
-  const chartType = getSafeChartType(state.tipoGrafico, state.metrica);
-  const styles = getComputedStyle(document.body);
-  const textColor = styles.getPropertyValue("--text").trim() || "#f6fbff";
-  const mutedColor = styles.getPropertyValue("--muted").trim() || "#9cb8c9";
-  const gridColor =
-    styles.getPropertyValue("--line").trim() || "rgba(255,255,255,.13)";
-  const palette = buildChartPalette(chartRows.length);
-  const isLine = chartType === "line";
-  const isCircular = ["pie", "doughnut", "polarArea"].includes(chartType);
-
-  productsChart = new Chart(canvas, {
-    type: chartType,
-    data: {
-      labels: chartRows.map((row) => formatRowLabel(row.nome)),
-      datasets: [
-        {
-          label: config.title,
-          data: chartRows.map((row) => row.total),
-          backgroundColor: isLine ? "rgba(79, 199, 177, 0.18)" : palette,
-          borderColor: isLine
-            ? styles.getPropertyValue("--mint").trim() || "#66d5c2"
-            : palette,
-          borderWidth: isLine ? 3 : 1,
-          fill: isLine,
-          tension: 0.36,
-          pointRadius: isLine ? 4 : 0,
-          pointHoverRadius: isLine ? 7 : 0,
-          borderRadius: chartType === "bar" ? 12 : 0,
-          hoverOffset: isCircular ? 8 : 0,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: isReducedMotionEnabled() ? false : {
-        duration: 240,
-        easing: "easeOutQuart",
+    return Object.entries(grupos).reduce(
+      (normalizado, [idCategoria, linhas]) => {
+        normalizado[String(idCategoria)] = normalizarLinhasDados(linhas);
+        return normalizado;
       },
-      indexAxis: chartType === "bar" && chartRows.length >= 7 ? "y" : "x",
-      plugins: {
-        legend: {
-          display: isCircular,
-          position: "bottom",
-          labels: {
-            color: textColor,
-            boxWidth: 12,
-            boxHeight: 12,
-            padding: 18,
-            font: {
-              family: "Inter, system-ui, sans-serif",
-              weight: "700",
+      {},
+    );
+  }
+
+  function normalizarLinhasDados(linhas, manterId = false) {
+    // Padroniza cada linha usada por graficos, ranking e tabela.
+    if (!Array.isArray(linhas)) {
+      return [];
+    }
+
+    return linhas
+      .map((linha) => {
+        const item = {
+          nome: String(linha?.nome || "Sem nome").trim(),
+          total: normalizarNumero(linha?.total),
+          percentual: normalizarPercentual(linha?.percentual),
+        };
+
+        if (manterId) {
+          item.id = String(linha?.id || "");
+        }
+
+        return item;
+      })
+      .filter((linha) => linha.nome !== "" && linha.total !== null);
+  }
+
+  function normalizarNumero(valor) {
+    const numero = Number(valor);
+
+    return Number.isFinite(numero) && numero >= 0 ? numero : 0;
+  }
+
+  function normalizarPercentual(valor) {
+    const numero = Number(valor);
+
+    return Number.isFinite(numero) && numero >= 0 ? numero : 0;
+  }
+
+  function preencherFiltroCategoria(categorias) {
+    // Recria o select de tipos mantendo a escolha atual sempre que ela ainda existe.
+    const filtroCategoria = document.getElementById("categoryFilter");
+
+    if (!filtroCategoria) {
+      return;
+    }
+
+    const valorAnterior = filtroCategoria.value || estado.categoriaId;
+
+    filtroCategoria.innerHTML = "";
+    filtroCategoria.appendChild(criarOpcao("todos", "Todos os tipos"));
+
+    categorias.forEach((categoria) => {
+      filtroCategoria.appendChild(
+        criarOpcao(
+          categoria.id,
+          `${formatarRotuloCategoria(categoria.nome)} (${formatarNumero(categoria.total)})`,
+        ),
+      );
+    });
+
+    filtroCategoria.value = categorias.some(
+      (categoria) => categoria.id === valorAnterior,
+    )
+      ? valorAnterior
+      : "todos";
+    estado.categoriaId = filtroCategoria.value;
+  }
+
+  function preencherFiltroMarca(marcas) {
+    preencherSeletorPainel({
+      elementId: "brandFilter",
+      defaultValue: "todos",
+      defaultLabel: "Todas as marcas",
+      selectedValue: estado.marca,
+      rows: marcas,
+      onUpdate(valor) {
+        estado.marca = valor;
+      },
+    });
+  }
+
+  function preencherFiltroLocal(locais) {
+    preencherSeletorPainel({
+      elementId: "locationFilter",
+      defaultValue: "todos",
+      defaultLabel: "Todos os locais",
+      selectedValue: estado.localId,
+      rows: locais,
+      onUpdate(valor) {
+        estado.localId = valor;
+      },
+    });
+  }
+
+  function preencherSeletorPainel(configuracao) {
+    const seletor = document.getElementById(configuracao.elementId);
+
+    if (!seletor) {
+      return;
+    }
+
+    const valorAnterior =
+      seletor.value || configuracao.selectedValue || configuracao.defaultValue;
+
+    seletor.innerHTML = "";
+    seletor.appendChild(
+      criarOpcao(configuracao.defaultValue, configuracao.defaultLabel),
+    );
+
+    configuracao.rows.forEach((linha) => {
+      seletor.appendChild(
+        criarOpcao(linha.id, `${linha.nome} (${formatarNumero(linha.total)})`),
+      );
+    });
+
+    seletor.value = configuracao.rows.some(
+      (linha) => linha.id === valorAnterior,
+    )
+      ? valorAnterior
+      : configuracao.defaultValue;
+
+    configuracao.onUpdate(seletor.value);
+  }
+
+  function criarOpcao(valor, rotulo) {
+    const opcao = document.createElement("option");
+    opcao.value = valor;
+    opcao.textContent = rotulo;
+
+    return opcao;
+  }
+
+  function montarRotulosFiltroAtivo(categoriaSelecionada) {
+    const rotulos = [];
+
+    if (categoriaSelecionada.id !== "todos") {
+      rotulos.push(formatarRotuloCategoria(categoriaSelecionada.nome));
+    }
+
+    if (estado.marca !== "todos") {
+      rotulos.push(obterRotuloOpcaoSelecionada("brandFilter"));
+    }
+
+    if (estado.localId !== "todos") {
+      rotulos.push(obterRotuloOpcaoSelecionada("locationFilter"));
+    }
+
+    if (!rotulos.length) {
+      return {
+        title: "Todos",
+        detail: "",
+      };
+    }
+
+    return {
+      title: rotulos[0],
+      detail: rotulos.join(" em "),
+    };
+  }
+
+  function obterRotuloOpcaoSelecionada(idSeletor) {
+    const seletor = document.getElementById(idSeletor);
+    const opcao = seletor?.selectedOptions?.[0];
+    const texto = opcao?.textContent || "";
+
+    return texto.replace(/\s+\([0-9.]+\)$/u, "").trim() || "Filtro selecionado";
+  }
+
+  function renderizarGraficoAtual() {
+    // Um unico fluxo renderiza grafico e ranking para todas as metricas.
+    const configuracao =
+      CONFIGURACAO_METRICA[estado.metrica] || CONFIGURACAO_METRICA.categorias;
+    const linhas = obterLinhasAtuais(configuracao);
+    const total = calcularTotalLinhas(linhas);
+    const linhasVisiveis = obterLinhasVisiveis(linhas);
+
+    definirTexto("mainChartTitle", configuracao.title);
+    definirTexto("mainChartDescription", montarDescricaoGrafico(configuracao));
+    definirTexto("chartTotalLabel", configuracao.totalLabel);
+    definirTexto("chartTotalMetric", formatarNumero(total));
+
+    renderizarGrafico(linhas, configuracao);
+    renderizarRanking(linhasVisiveis, total);
+  }
+
+  function obterLinhasAtuais(configuracao) {
+    // Evolucao conserva dias zerados no grafico; as demais metricas escondem zeros.
+    const linhas = Array.isArray(dadosPainel[configuracao.dataKey])
+      ? dadosPainel[configuracao.dataKey]
+      : [];
+
+    if (estado.metrica === "evolucao") {
+      return linhas;
+    }
+
+    return linhas.filter((linha) => linha.total > 0);
+  }
+
+  function montarDescricaoGrafico(configuracao) {
+    const selecionado =
+      dadosPainel.categoria_selecionada ||
+      DADOS_PAINEL_PADRAO.categoria_selecionada;
+    const filtrosAtivos = montarRotulosFiltroAtivo(selecionado);
+
+    if (!filtrosAtivos.detail) {
+      return configuracao.description;
+    }
+
+    return `${configuracao.description} Filtro ativo: ${filtrosAtivos.detail}.`;
+  }
+
+  function calcularTotalLinhas(linhas) {
+    return linhas.reduce(
+      (soma, linha) => soma + normalizarNumero(linha.total),
+      0,
+    );
+  }
+
+  function obterLinhasVisiveis(linhas) {
+    // Ranking e tabela devem mostrar apenas itens/datas com dados reais.
+    return linhas.filter((linha) => normalizarNumero(linha.total) > 0);
+  }
+
+  function renderizarGrafico(linhas, configuracao) {
+    // Chart.js redesenha do zero para evitar sobras visuais ao trocar filtros ou tipo.
+    const telaGrafico = document.getElementById("productsChart");
+
+    if (!telaGrafico || !window.Chart) {
+      return;
+    }
+
+    if (graficoProdutos) {
+      graficoProdutos.destroy();
+    }
+
+    const linhasGrafico = linhas.length
+      ? linhas
+      : [{ nome: "Sem dados", total: 0 }];
+    const tipoGrafico = obterTipoGraficoSeguro(
+      estado.tipoGrafico,
+      estado.metrica,
+    );
+    const estilos = getComputedStyle(document.body);
+    const corTexto = estilos.getPropertyValue("--text").trim() || "#f6fbff";
+    const corSuave = estilos.getPropertyValue("--muted").trim() || "#9cb8c9";
+    const corGrade =
+      estilos.getPropertyValue("--line").trim() || "rgba(255,255,255,.13)";
+    const paleta = montarPaletaGrafico(linhasGrafico.length);
+    const ehLinha = tipoGrafico === "line";
+    const ehCircular = ["pie", "doughnut", "polarArea"].includes(tipoGrafico);
+
+    graficoProdutos = new Chart(telaGrafico, {
+      type: tipoGrafico,
+      data: {
+        labels: linhasGrafico.map((linha) => formatarRotuloLinha(linha.nome)),
+        datasets: [
+          {
+            label: configuracao.title,
+            data: linhasGrafico.map((linha) => linha.total),
+            backgroundColor: ehLinha ? "rgba(79, 199, 177, 0.18)" : paleta,
+            borderColor: ehLinha
+              ? estilos.getPropertyValue("--mint").trim() || "#66d5c2"
+              : paleta,
+            borderWidth: ehLinha ? 3 : 1,
+            fill: ehLinha,
+            tension: 0.36,
+            pointRadius: ehLinha ? 4 : 0,
+            pointHoverRadius: ehLinha ? 7 : 0,
+            borderRadius: tipoGrafico === "bar" ? 12 : 0,
+            hoverOffset: ehCircular ? 8 : 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: movimentoReduzidoEstaAtivado()
+          ? false
+          : {
+              duration: 240,
+              easing: "easeOutQuart",
+            },
+        indexAxis:
+          tipoGrafico === "bar" && linhasGrafico.length >= 7 ? "y" : "x",
+        plugins: {
+          legend: {
+            display: ehCircular,
+            position: "bottom",
+            labels: {
+              color: corTexto,
+              boxWidth: 12,
+              boxHeight: 12,
+              padding: 18,
+              font: {
+                family: "Inter, system-ui, sans-serif",
+                weight: "700",
+              },
             },
           },
-        },
-        tooltip: {
-          backgroundColor: "rgba(3, 16, 29, 0.92)",
-          borderColor: "rgba(79, 199, 177, 0.28)",
-          borderWidth: 1,
-          titleColor: "#f8feff",
-          bodyColor: "#d9fbf6",
-          displayColors: false,
-          padding: 14,
-          cornerRadius: 14,
-          callbacks: {
-            label(context) {
-              const chart = context.chart;
-              const indexAxis = chart?.options?.indexAxis;
+          tooltip: {
+            backgroundColor: "rgba(3, 16, 29, 0.92)",
+            borderColor: "rgba(79, 199, 177, 0.28)",
+            borderWidth: 1,
+            titleColor: "#f8feff",
+            bodyColor: "#d9fbf6",
+            displayColors: false,
+            padding: 14,
+            cornerRadius: 14,
+            callbacks: {
+              label(contexto) {
+                const grafico = contexto.chart;
+                const eixoIndice = grafico?.options?.indexAxis;
 
-              let value = 0;
+                let valor = 0;
 
-              if (typeof context.raw === "number") {
-                value = context.raw;
-              } else if (indexAxis === "y") {
-                value = Number(context.parsed?.x ?? 0);
-              } else {
-                value = Number(context.parsed?.y ?? context.parsed ?? 0);
-              }
-
-              const dataset = context.dataset;
-              const data = Array.isArray(dataset.data) ? dataset.data : [];
-
-              const total = data.reduce((sum, item) => {
-                if (typeof item === "number") {
-                  return sum + item;
+                if (typeof contexto.raw === "number") {
+                  valor = contexto.raw;
+                } else if (eixoIndice === "y") {
+                  valor = Number(contexto.parsed?.x ?? 0);
+                } else {
+                  valor = Number(contexto.parsed?.y ?? contexto.parsed ?? 0);
                 }
 
-                return (
-                  sum +
-                  Number(item?.value ?? item?.total ?? item?.quantidade ?? 0)
-                );
-              }, 0);
+                const dadosElemento = contexto.dataset;
+                const dados = Array.isArray(dadosElemento.data)
+                  ? dadosElemento.data
+                  : [];
 
-              const percent =
-                total > 0 ? ((value / total) * 100).toFixed(1) : "0.0";
+                const total = dados.reduce((soma, item) => {
+                  if (typeof item === "number") {
+                    return soma + item;
+                  }
 
-              return `${formatNumber(value)} ativos - ${percent}%`;
+                  return (
+                    soma +
+                    Number(item?.value ?? item?.total ?? item?.quantidade ?? 0)
+                  );
+                }, 0);
+
+                const percentual =
+                  total > 0 ? ((valor / total) * 100).toFixed(1) : "0.0";
+
+                return `${formatarNumero(valor)} ativos - ${percentual}%`;
+              },
+            },
+          },
+        },
+        scales: ehCircular
+          ? {}
+          : {
+              x: {
+                ticks: {
+                  color: corSuave,
+                  font: {
+                    weight: "700",
+                  },
+                },
+                grid: {
+                  display: false,
+                },
+              },
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  color: corSuave,
+                  precision: 0,
+                  font: {
+                    weight: "700",
+                  },
+                },
+                grid: {
+                  color: corGrade,
+                },
+              },
+            },
+      },
+    });
+  }
+
+  function renderizarEvolucaoAtivos() {
+    const telaGrafico = document.getElementById("stockEvolutionChart");
+
+    if (!telaGrafico) {
+      return;
+    }
+
+    const linhas = dadosEvolucaoAtivos[periodoEvolucaoAtivos] || [];
+    const linhasGrafico = linhas.length
+      ? linhas
+      : [{ label: "Sem dados", total: 0, novos: 0 }];
+
+    atualizarResumoEvolucaoAtivos(linhas);
+
+    if (!window.Chart) {
+      return;
+    }
+
+    if (graficoEvolucaoAtivos) {
+      graficoEvolucaoAtivos.destroy();
+    }
+
+    const estilos = getComputedStyle(document.body);
+    const corTexto = estilos.getPropertyValue("--text").trim() || "#f6fbff";
+    const corSuave = estilos.getPropertyValue("--muted").trim() || "#9cb8c9";
+    const corGrade =
+      estilos.getPropertyValue("--line").trim() || "rgba(255,255,255,.13)";
+    const corPrimaria = estilos.getPropertyValue("--mint").trim() || "#66d5c2";
+    const corSecundaria =
+      estilos.getPropertyValue("--cyan").trim() || "#4aa3c7";
+
+    graficoEvolucaoAtivos = new Chart(telaGrafico, {
+      type: "bar",
+      data: {
+        labels: linhasGrafico.map((linha) => linha.label),
+        datasets: [
+          {
+            type: "line",
+            label: "Total acumulado",
+            data: linhasGrafico.map((linha) => linha.total),
+            borderColor: corPrimaria,
+            backgroundColor: "rgba(102, 213, 194, 0.16)",
+            borderWidth: 3,
+            fill: true,
+            tension: 0.36,
+            pointRadius: 3,
+            pointHoverRadius: 6,
+            yAxisID: "total",
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: movimentoReduzidoEstaAtivado()
+          ? false
+          : {
+              duration: 260,
+              easing: "easeOutQuart",
+            },
+        interaction: {
+          mode: "index",
+          intersect: false,
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: "bottom",
+            labels: {
+              color: corTexto,
+              boxWidth: 12,
+              boxHeight: 12,
+              padding: 18,
+              font: {
+                family: "Inter, system-ui, sans-serif",
+                weight: "800",
+              },
+            },
+          },
+          tooltip: {
+            backgroundColor: "rgba(3, 16, 29, 0.92)",
+            borderColor: "rgba(79, 199, 177, 0.28)",
+            borderWidth: 1,
+            titleColor: "#f8feff",
+            bodyColor: "#d9fbf6",
+            padding: 14,
+            cornerRadius: 14,
+            callbacks: {
+              label(contexto) {
+                const valor = Number(contexto.parsed?.y ?? contexto.raw ?? 0);
+
+                return `${contexto.dataset.label}: ${formatarNumero(valor)}`;
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: corSuave,
+              font: {
+                weight: "700",
+              },
+            },
+            grid: {
+              display: false,
+            },
+          },
+          total: {
+            beginAtZero: true,
+            position: "left",
+            ticks: {
+              color: corSuave,
+              precision: 0,
+              font: {
+                weight: "700",
+              },
+            },
+            grid: {
+              color: corGrade,
+            },
+          },
+          novos: {
+            beginAtZero: true,
+            position: "right",
+            ticks: {
+              color: corSuave,
+              precision: 0,
+              font: {
+                weight: "700",
+              },
+            },
+            grid: {
+              drawOnChartArea: false,
             },
           },
         },
       },
-      scales: isCircular
-        ? {}
-        : {
-            x: {
-              ticks: {
-                color: mutedColor,
-                font: {
-                  weight: "700",
-                },
-              },
-              grid: {
-                display: false,
-              },
-            },
-            y: {
-              beginAtZero: true,
-              ticks: {
-                color: mutedColor,
-                precision: 0,
-                font: {
-                  weight: "700",
-                },
-              },
-              grid: {
-                color: gridColor,
-              },
-            },
-          },
-    },
-  });
-}
-
-function getSafeChartType(chartType, metric) {
-  // Protege contra valores inesperados vindos do DOM ou de alteracoes manuais.
-  if (["bar", "pie", "doughnut", "line", "polarArea"].includes(chartType)) {
-    return chartType;
+    });
   }
 
-  return "bar";
-}
+  function atualizarResumoEvolucaoAtivos(linhas) {
+    const primeiraLinha = linhas[0] || { total: 0, novos: 0 };
+    const ultimaLinha = linhas[linhas.length - 1] || { total: 0 };
+    const totalAtual = normalizarNumero(ultimaLinha.total);
+    const novosPeriodo = linhas.reduce(
+      (soma, linha) => soma + normalizarNumero(linha.novos),
+      0,
+    );
+    const totalAntesPeriodo = Math.max(
+      0,
+      normalizarNumero(primeiraLinha.total) -
+        normalizarNumero(primeiraLinha.novos),
+    );
+    const crescimentoPeriodo = Math.max(0, totalAtual - totalAntesPeriodo);
 
-function buildChartPalette(size) {
-  const styles = getComputedStyle(document.body);
-  const baseColors = [
-    styles.getPropertyValue("--mint").trim() || "#66d5c2",
-    styles.getPropertyValue("--cyan").trim() || "#4aa3c7",
-    styles.getPropertyValue("--teal").trim() || "#4fc7b1",
-    "#38bdf8",
-    "#8b5cf6",
-    "#f59e0b",
-    "#22c55e",
-    "#ef4444",
-    "#14b8a6",
-    "#6366f1",
-    "#ec4899",
-    "#84cc16",
-  ];
-
-  return Array.from(
-    { length: size },
-    (_item, index) => baseColors[index % baseColors.length],
-  );
-}
-
-function renderRanking(rows, total) {
-  // Leitura rapida lateral: mostra os principais itens ja filtrados.
-  const container = document.getElementById("dashboardRanking");
-
-  if (!container) {
-    return;
+    definirTexto("stockPeriodTotal", formatarNumero(totalAtual));
+    definirTexto("stockPeriodNew", formatarNumero(novosPeriodo));
+    definirTexto("stockPeriodDelta", `+${formatarNumero(crescimentoPeriodo)}`);
   }
 
-  container.innerHTML = "";
+  function obterTipoGraficoSeguro(tipoGrafico, metrica) {
+    // Protege contra valores inesperados vindos do DOM ou de alteracoes manuais.
+    if (["bar", "pie", "doughnut", "line", "polarArea"].includes(tipoGrafico)) {
+      return tipoGrafico;
+    }
 
-  if (!rows.length || total === 0) {
-    container.innerHTML =
-      '<div class="ranking-empty">Nenhum dado encontrado para o filtro atual.</div>';
-    return;
+    return "bar";
   }
 
-  rows.slice(0, 8).forEach((row, index) => {
-    const percent = total ? (row.total / total) * 100 : 0;
-    const item = document.createElement("div");
-    item.className = "ranking-item";
+  function montarPaletaGrafico(tamanho) {
+    const estilos = getComputedStyle(document.body);
+    const coresBase = [
+      estilos.getPropertyValue("--mint").trim() || "#66d5c2",
+      estilos.getPropertyValue("--cyan").trim() || "#4aa3c7",
+      estilos.getPropertyValue("--teal").trim() || "#4fc7b1",
+      "#38bdf8",
+      "#8b5cf6",
+      "#f59e0b",
+      "#22c55e",
+      "#ef4444",
+      "#14b8a6",
+      "#6366f1",
+      "#ec4899",
+      "#84cc16",
+    ];
 
-    item.innerHTML = `
+    return Array.from(
+      { length: tamanho },
+      (itemIgnorado, indice) => coresBase[indice % coresBase.length],
+    );
+  }
+
+  function renderizarRanking(linhas, total) {
+    // Leitura rapida lateral: mostra os principais itens ja filtrados.
+    const conteiner = document.getElementById("dashboardRanking");
+
+    if (!conteiner) {
+      return;
+    }
+
+    conteiner.innerHTML = "";
+
+    if (!linhas.length || total === 0) {
+      conteiner.innerHTML =
+        '<div class="ranking-empty">Nenhum dado encontrado para o filtro atual.</div>';
+      return;
+    }
+
+    linhas.slice(0, 8).forEach((linha, indice) => {
+      const percentual = total ? (linha.total / total) * 100 : 0;
+      const item = document.createElement("div");
+      item.className = "ranking-item";
+
+      item.innerHTML = `
             <div class="ranking-item-head">
-                <span>${index + 1}. ${escapeHtml(formatRowLabel(row.nome))}</span>
-                <strong>${formatNumber(row.total)}</strong>
+                <span>${indice + 1}. ${escaparHtml(formatarRotuloLinha(linha.nome))}</span>
+                <strong>${formatarNumero(linha.total)}</strong>
             </div>
             <div class="ranking-progress" aria-hidden="true">
-                <span style="width: ${Math.min(percent, 100)}%"></span>
+                <span style="width: ${Math.min(percentual, 100)}%"></span>
             </div>
-            <small>${formatPercent(percent)} de participação</small>
+            <small>${formatarPercentual(percentual)} de participação</small>
         `;
 
-    container.appendChild(item);
-  });
-}
-
-function setStatus(title, detail) {
-  setText("dashboardStatusText", `${title} ${detail}`.trim());
-}
-
-function setText(id, value) {
-  const element = document.getElementById(id);
-
-  if (element) {
-    element.textContent = value;
-  }
-}
-
-function formatRowLabel(value) {
-  if (state.metrica === "categorias") {
-    return formatCategoryLabel(value);
+      conteiner.appendChild(item);
+    });
   }
 
-  return String(value || "--");
-}
-
-function formatCategoryLabel(value) {
-  const text = String(value || "").trim();
-
-  if (text === "" || text === "--") {
-    return "--";
+  function definirStatus(titulo, detalhe) {
+    definirTexto("dashboardStatusText", `${titulo} ${detalhe}`.trim());
   }
 
-  const lowerText = text.toLocaleLowerCase("pt-BR");
+  function definirTexto(id, valor) {
+    const elemento = document.getElementById(id);
 
-  return lowerText.charAt(0).toLocaleUpperCase("pt-BR") + lowerText.slice(1);
-}
-
-function formatNumber(value) {
-  return new Intl.NumberFormat("pt-BR").format(normalizeNumber(value));
-}
-
-function formatPercent(value) {
-  return `${Number(value || 0).toLocaleString("pt-BR", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  })}%`;
-}
-
-function formatLastUpdate(dateValue) {
-  if (!dateValue) {
-    return "Dados carregados do banco.";
+    if (elemento) {
+      elemento.textContent = valor;
+    }
   }
 
-  const date = new Date(dateValue);
+  function formatarRotuloLinha(valor) {
+    if (estado.metrica === "categorias") {
+      return formatarRotuloCategoria(valor);
+    }
 
-  if (Number.isNaN(date.getTime())) {
-    return "Dados carregados do banco.";
+    return String(valor || "--");
   }
 
-  return `Atualizado em ${date.toLocaleDateString("pt-BR")} às ${date.toLocaleTimeString(
-    "pt-BR",
-    {
-      hour: "2-digit",
-      minute: "2-digit",
-    },
-  )}.`;
-}
+  function formatarRotuloCategoria(valor) {
+    const texto = String(valor || "").trim();
 
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+    if (texto === "" || texto === "--") {
+      return "--";
+    }
+
+    const textoMinusculo = texto.toLocaleLowerCase("pt-BR");
+
+    return (
+      textoMinusculo.charAt(0).toLocaleUpperCase("pt-BR") +
+      textoMinusculo.slice(1)
+    );
+  }
+
+  function formatarNumero(valor) {
+    return new Intl.NumberFormat("pt-BR").format(normalizarNumero(valor));
+  }
+
+  function formatarPercentual(valor) {
+    return `${Number(valor || 0).toLocaleString("pt-BR", {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    })}%`;
+  }
+
+  function formatarUltimaAtualizacao(valorData) {
+    if (!valorData) {
+      return "Dados carregados do banco.";
+    }
+
+    const data = new Date(valorData);
+
+    if (Number.isNaN(data.getTime())) {
+      return "Dados carregados do banco.";
+    }
+
+    return `Atualizado em ${data.toLocaleDateString("pt-BR")} às ${data.toLocaleTimeString(
+      "pt-BR",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+      },
+    )}.`;
+  }
+
+  function escaparHtml(valor) {
+    return String(valor)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
 })();

@@ -1,149 +1,149 @@
 // Valida e envia o cadastro de ativos, atualizando a lista recente sem recarregar a página.
 // Usa os diálogos e avisos globais fornecidos pelos módulos compartilhados da interface.
 
-const REDIRECT_DELAY_MS = 900;
-const PN_QUANTITY_MIN = 1;
-const PN_QUANTITY_MAX = 100;
+const ATRASO_REDIRECIONAMENTO_MS = 900;
+const QUANTIDADE_PN_MINIMA = 1;
+const QUANTIDADE_PN_MAXIMA = 100;
 // Cada modo informa quais campos de identificacao devem ficar disponiveis no formulario.
-const TRACEABILITY_CONFIG = {
+const CONFIGURACAO_RASTREABILIDADE = {
   nao_possui: { pn: false, sn: false },
   somente_pn: { pn: true, sn: false },
   somente_sn: { pn: false, sn: true },
   ambos: { pn: true, sn: true },
 };
 
-document.addEventListener("DOMContentLoaded", initPage);
+document.addEventListener("DOMContentLoaded", inicializarPagina);
 
-let preserveMessageOnNextReset = false;
+let preservarMensagemNaProximaRedefinicao = false;
 
-function initPage() {
-  runPageHelper("startPageAnimation");
-  runPageHelper("loadSavedTheme");
-  runPageHelper("setupThemeToggle");
-  runPageHelper("setupSidebar");
-  runPageHelper("setupNavGroups");
-  setupAssetForm();
+function inicializarPagina() {
+  executarAuxiliarPagina("iniciarAnimacaoPagina");
+  executarAuxiliarPagina("carregarTemaSalvo");
+  executarAuxiliarPagina("configurarAlternadorTema");
+  executarAuxiliarPagina("configurarBarraLateral");
+  executarAuxiliarPagina("configurarGruposNavegacao");
+  configurarFormularioAtivo();
 }
 
-function runPageHelper(helperName) {
-  const helper = window[helperName];
+function executarAuxiliarPagina(nomeAuxiliar) {
+  const auxiliar = window[nomeAuxiliar];
 
-  if (typeof helper === "function") {
-    helper();
+  if (typeof auxiliar === "function") {
+    auxiliar();
   }
 }
 
 // O formulário mantém o envio tradicional como fallback, mas usa AJAX quando o JavaScript está ativo.
-function setupAssetForm() {
-  const form = document.getElementById("assetForm");
+function configurarFormularioAtivo() {
+  const formulario = document.getElementById("assetForm");
 
-  if (!form) return;
+  if (!formulario) return;
 
-  form.addEventListener("submit", submitAssetForm);
-  form.addEventListener("reset", () => {
-    setTimeout(() => updateTraceabilityFields(form), 0);
+  formulario.addEventListener("submit", enviarFormularioAtivo);
+  formulario.addEventListener("reset", () => {
+    setTimeout(() => atualizarCamposRastreabilidade(formulario), 0);
 
-    if (preserveMessageOnNextReset) {
-      preserveMessageOnNextReset = false;
+    if (preservarMensagemNaProximaRedefinicao) {
+      preservarMensagemNaProximaRedefinicao = false;
       return;
     }
 
-    setTimeout(() => setFormMessage("", ""), 0);
+    setTimeout(() => definirMensagemFormulario("", ""), 0);
   });
-  setupTraceabilityControls(form);
-  setupQuantityControls(form);
+  configurarControlesRastreabilidade(formulario);
+  configurarControlesQuantidade(formulario);
 }
 
 // Só atualiza métricas e registros recentes depois de receber confirmação do backend.
-async function submitAssetForm(event) {
-  event.preventDefault();
+async function enviarFormularioAtivo(evento) {
+  evento.preventDefault();
 
-  const form = event.currentTarget;
-  const submitButton = document.getElementById("assetSubmitButton");
-  const error = validateAssetForm(form);
+  const formulario = evento.currentTarget;
+  const botaoEnviar = document.getElementById("assetSubmitButton");
+  const erro = validarFormularioAtivo(formulario);
 
-  if (error) {
-    setFormMessage(error, "error");
+  if (erro) {
+    definirMensagemFormulario(erro, "error");
     return;
   }
 
-  const confirmed = await confirmAssetRegistration(form);
+  const confirmado = await confirmarCadastroAtivo(formulario);
 
-  if (!confirmed) {
+  if (!confirmado) {
     return;
   }
 
-  setButtonLoading(submitButton, true);
-  setFormMessage("", "");
+  definirCarregandoBotao(botaoEnviar, true);
+  definirMensagemFormulario("", "");
 
   try {
-    const response = await fetch(form.action, {
+    const resposta = await fetch(formulario.action, {
       method: "POST",
-      body: new FormData(form),
+      body: new FormData(formulario),
       headers: { Accept: "application/json" },
     });
-    const result = await response.json().catch(() => ({
+    const resultado = await resposta.json().catch(() => ({
       ok: false,
       message: "Resposta invalida do servidor.",
     }));
 
-    if (!response.ok || !result.ok) {
-      throw new Error(result.message || "Nao foi possivel cadastrar o ativo.");
+    if (!resposta.ok || !resultado.ok) {
+      throw new Error(resultado.message || "Nao foi possivel cadastrar o ativo.");
     }
 
-    setFormMessage(result.message || "Ativo cadastrado com sucesso.", "success");
-    const createdAssets = Array.isArray(result.ativos)
-      ? result.ativos.filter(Boolean)
-      : [result.ativo].filter(Boolean);
+    definirMensagemFormulario(resultado.message || "Ativo cadastrado com sucesso.", "success");
+    const ativosCriados = Array.isArray(resultado.ativos)
+      ? resultado.ativos.filter(Boolean)
+      : [resultado.ativo].filter(Boolean);
 
-    createdAssets.forEach(prependRecentAsset);
-    updateAssetMetrics(createdAssets);
-    preserveMessageOnNextReset = true;
-    form.reset();
+    ativosCriados.forEach(inserirInicioAtivoRecente);
+    atualizarMetricasAtivo(ativosCriados);
+    preservarMensagemNaProximaRedefinicao = true;
+    formulario.reset();
 
     setTimeout(() => {
-      setFormMessage("", "");
-    }, REDIRECT_DELAY_MS * 3);
-  } catch (error) {
-    setFormMessage(error.message || "Nao foi possivel cadastrar o ativo.", "error");
+      definirMensagemFormulario("", "");
+    }, ATRASO_REDIRECIONAMENTO_MS * 3);
+  } catch (erro) {
+    definirMensagemFormulario(erro.message || "Nao foi possivel cadastrar o ativo.", "error");
   } finally {
-    setButtonLoading(submitButton, false);
+    definirCarregandoBotao(botaoEnviar, false);
   }
 }
 
 // A confirmação compartilhada evita cadastros acidentais antes do envio dos dados.
-async function confirmAssetRegistration(form) {
-  const data = new FormData(form);
-  const assetName = String(data.get("nome") || "este ativo").trim() || "este ativo";
-  const traceability = getSelectedTraceability(form);
-  const quantity = traceability === "somente_pn" ? getPnQuantity(form) : PN_QUANTITY_MIN;
-  const confirmationText = quantity > PN_QUANTITY_MIN
-    ? `Confirme para cadastrar ${quantity} unidades de ${assetName} no inventario.`
-    : `Confirme para cadastrar ${assetName} no inventario.`;
+async function confirmarCadastroAtivo(formulario) {
+  const dados = new FormData(formulario);
+  const nomeAtivo = String(dados.get("nome") || "este ativo").trim() || "este ativo";
+  const rastreabilidade = obterRastreabilidadeSelecionada(formulario);
+  const quantidade = rastreabilidade === "somente_pn" ? obterQuantidadePn(formulario) : QUANTIDADE_PN_MINIMA;
+  const textoConfirmacao = quantidade > QUANTIDADE_PN_MINIMA
+    ? `Confirme para cadastrar ${quantidade} unidades de ${nomeAtivo} no inventario.`
+    : `Confirme para cadastrar ${nomeAtivo} no inventario.`;
 
   if (typeof window.titechConfirm === "function") {
     return window.titechConfirm({
       title: "Cadastrar ativo?",
-      text: confirmationText,
+      text: textoConfirmacao,
       confirmButtonText: "Cadastrar ativo",
       cancelButtonText: "Revisar dados",
       icon: "info",
     });
   }
 
-  return window.confirm(confirmationText);
+  return window.confirm(textoConfirmacao);
 }
 
-function validateAssetForm(form) {
-  const data = new FormData(form);
-  const nome = String(data.get("nome") || "").trim();
-  const categoria = String(data.get("categoria_id") || "").trim();
-  const status = String(data.get("status") || "").trim();
-  const traceability = getSelectedTraceability(form);
-  const config = TRACEABILITY_CONFIG[traceability];
-  const partNumber = String(data.get("part_number") || "").trim();
-  const serial = String(data.get("numero_serie") || "").trim();
-  const quantity = getPnQuantity(form);
+function validarFormularioAtivo(formulario) {
+  const dados = new FormData(formulario);
+  const nome = String(dados.get("nome") || "").trim();
+  const categoria = String(dados.get("categoria_id") || "").trim();
+  const status = String(dados.get("status") || "").trim();
+  const rastreabilidade = obterRastreabilidadeSelecionada(formulario);
+  const configuracao = CONFIGURACAO_RASTREABILIDADE[rastreabilidade];
+  const numeroParte = String(dados.get("part_number") || "").trim();
+  const numeroSerie = String(dados.get("numero_serie") || "").trim();
+  const quantidade = obterQuantidadePn(formulario);
 
   if (!nome || !categoria || !status) {
     return "Preencha nome, categoria e status para cadastrar o ativo.";
@@ -153,233 +153,233 @@ function validateAssetForm(form) {
     return "O nome do ativo precisa ter pelo menos 2 caracteres.";
   }
 
-  if (!config) {
+  if (!configuracao) {
     return "Selecione uma opcao de rastreabilidade valida.";
   }
 
-  if (config.pn && !partNumber) {
+  if (configuracao.pn && !numeroParte) {
     return "Informe o PN para a rastreabilidade escolhida.";
   }
 
-  if (config.sn && !serial) {
+  if (configuracao.sn && !numeroSerie) {
     return "Informe o numero de serie para a rastreabilidade escolhida.";
   }
 
-  if (traceability === "somente_pn" && !quantity) {
-    return `Informe uma quantidade entre ${PN_QUANTITY_MIN} e ${PN_QUANTITY_MAX}.`;
+  if (rastreabilidade === "somente_pn" && !quantidade) {
+    return `Informe uma quantidade entre ${QUANTIDADE_PN_MINIMA} e ${QUANTIDADE_PN_MAXIMA}.`;
   }
 
   return "";
 }
 
-function setupTraceabilityControls(form) {
-  form.querySelectorAll('input[name="rastreabilidade"]').forEach((option) => {
-    option.addEventListener("change", () => updateTraceabilityFields(form));
+function configurarControlesRastreabilidade(formulario) {
+  formulario.querySelectorAll('input[name="rastreabilidade"]').forEach((opcao) => {
+    opcao.addEventListener("change", () => atualizarCamposRastreabilidade(formulario));
   });
 
-  updateTraceabilityFields(form);
+  atualizarCamposRastreabilidade(formulario);
 }
 
-function getSelectedTraceability(form) {
-  return form.querySelector('input[name="rastreabilidade"]:checked')?.value || "nao_possui";
+function obterRastreabilidadeSelecionada(formulario) {
+  return formulario.querySelector('input[name="rastreabilidade"]:checked')?.value || "nao_possui";
 }
 
-function updateTraceabilityFields(form) {
-  const traceability = getSelectedTraceability(form);
-  const config = TRACEABILITY_CONFIG[traceability] || TRACEABILITY_CONFIG.nao_possui;
+function atualizarCamposRastreabilidade(formulario) {
+  const rastreabilidade = obterRastreabilidadeSelecionada(formulario);
+  const configuracao = CONFIGURACAO_RASTREABILIDADE[rastreabilidade] || CONFIGURACAO_RASTREABILIDADE.nao_possui;
 
   // Desabilitar campos escondidos impede que valores antigos sejam enviados ao backend.
-  toggleTraceabilityField(form, "pn", config.pn);
-  toggleTraceabilityField(form, "sn", config.sn);
-  togglePnQuantityField(form, traceability === "somente_pn");
+  alternarCampoRastreabilidade(formulario, "pn", configuracao.pn);
+  alternarCampoRastreabilidade(formulario, "sn", configuracao.sn);
+  alternarCampoQuantidadePn(formulario, rastreabilidade === "somente_pn");
 }
 
-function toggleTraceabilityField(form, field, shouldShow) {
-  const wrapper = form.querySelector(`[data-traceability-field="${field}"]`);
-  const input = form.querySelector(`[data-traceability-input="${field}"]`);
+function alternarCampoRastreabilidade(formulario, campo, deveExibir) {
+  const envoltorio = formulario.querySelector(`[data-traceability-field="${campo}"]`);
+  const campoEntrada = formulario.querySelector(`[data-traceability-input="${campo}"]`);
 
-  if (wrapper) {
-    wrapper.hidden = !shouldShow;
+  if (envoltorio) {
+    envoltorio.hidden = !deveExibir;
   }
 
-  if (!input) {
+  if (!campoEntrada) {
     return;
   }
 
-  input.disabled = !shouldShow;
-  input.required = shouldShow;
+  campoEntrada.disabled = !deveExibir;
+  campoEntrada.required = deveExibir;
 }
 
-function setupQuantityControls(form) {
-  const decrementButton = form.querySelector("[data-quantity-decrement]");
-  const incrementButton = form.querySelector("[data-quantity-increment]");
-  const input = form.querySelector("[data-quantity-input]");
+function configurarControlesQuantidade(formulario) {
+  const botaoDecrementar = formulario.querySelector("[data-quantity-decrement]");
+  const botaoIncrementar = formulario.querySelector("[data-quantity-increment]");
+  const campoEntrada = formulario.querySelector("[data-quantity-input]");
 
-  if (!(input instanceof HTMLInputElement)) {
+  if (!(campoEntrada instanceof HTMLInputElement)) {
     return;
   }
 
-  decrementButton?.addEventListener("click", () => setPnQuantity(form, getPnQuantity(form) - 1));
-  incrementButton?.addEventListener("click", () => setPnQuantity(form, getPnQuantity(form) + 1));
-  input.addEventListener("input", () => setPnQuantity(form, input.value));
-  setPnQuantity(form, input.value);
+  botaoDecrementar?.addEventListener("click", () => definirQuantidadePn(formulario, obterQuantidadePn(formulario) - 1));
+  botaoIncrementar?.addEventListener("click", () => definirQuantidadePn(formulario, obterQuantidadePn(formulario) + 1));
+  campoEntrada.addEventListener("input", () => definirQuantidadePn(formulario, campoEntrada.value));
+  definirQuantidadePn(formulario, campoEntrada.value);
 }
 
-function togglePnQuantityField(form, shouldShow) {
-  const wrapper = form.querySelector("[data-pn-quantity-field]");
-  const input = form.querySelector("[data-quantity-input]");
+function alternarCampoQuantidadePn(formulario, deveExibir) {
+  const envoltorio = formulario.querySelector("[data-pn-quantity-field]");
+  const campoEntrada = formulario.querySelector("[data-quantity-input]");
 
-  if (wrapper) {
-    wrapper.hidden = !shouldShow;
+  if (envoltorio) {
+    envoltorio.hidden = !deveExibir;
   }
 
-  if (!(input instanceof HTMLInputElement)) {
+  if (!(campoEntrada instanceof HTMLInputElement)) {
     return;
   }
 
-  input.disabled = !shouldShow;
+  campoEntrada.disabled = !deveExibir;
 
-  if (!shouldShow) {
-    setPnQuantity(form, PN_QUANTITY_MIN);
+  if (!deveExibir) {
+    definirQuantidadePn(formulario, QUANTIDADE_PN_MINIMA);
   }
 }
 
-function getPnQuantity(form) {
-  const input = form.querySelector("[data-quantity-input]");
+function obterQuantidadePn(formulario) {
+  const campoEntrada = formulario.querySelector("[data-quantity-input]");
 
-  if (!(input instanceof HTMLInputElement)) {
-    return PN_QUANTITY_MIN;
+  if (!(campoEntrada instanceof HTMLInputElement)) {
+    return QUANTIDADE_PN_MINIMA;
   }
 
-  const quantity = Number.parseInt(input.value || "", 10);
+  const quantidade = Number.parseInt(campoEntrada.value || "", 10);
 
-  return Number.isInteger(quantity) ? quantity : 0;
+  return Number.isInteger(quantidade) ? quantidade : 0;
 }
 
-function setPnQuantity(form, value) {
-  const input = form.querySelector("[data-quantity-input]");
-  const decrementButton = form.querySelector("[data-quantity-decrement]");
-  const incrementButton = form.querySelector("[data-quantity-increment]");
-  const quantity = Math.min(
-    PN_QUANTITY_MAX,
-    Math.max(PN_QUANTITY_MIN, Number.parseInt(String(value || ""), 10) || PN_QUANTITY_MIN),
+function definirQuantidadePn(formulario, valor) {
+  const campoEntrada = formulario.querySelector("[data-quantity-input]");
+  const botaoDecrementar = formulario.querySelector("[data-quantity-decrement]");
+  const botaoIncrementar = formulario.querySelector("[data-quantity-increment]");
+  const quantidade = Math.min(
+    QUANTIDADE_PN_MAXIMA,
+    Math.max(QUANTIDADE_PN_MINIMA, Number.parseInt(String(valor || ""), 10) || QUANTIDADE_PN_MINIMA),
   );
 
-  if (input instanceof HTMLInputElement) {
-    input.value = String(quantity);
+  if (campoEntrada instanceof HTMLInputElement) {
+    campoEntrada.value = String(quantidade);
   }
 
-  if (decrementButton instanceof HTMLButtonElement) {
-    decrementButton.disabled = quantity <= PN_QUANTITY_MIN;
+  if (botaoDecrementar instanceof HTMLButtonElement) {
+    botaoDecrementar.disabled = quantidade <= QUANTIDADE_PN_MINIMA;
   }
 
-  if (incrementButton instanceof HTMLButtonElement) {
-    incrementButton.disabled = quantity >= PN_QUANTITY_MAX;
+  if (botaoIncrementar instanceof HTMLButtonElement) {
+    botaoIncrementar.disabled = quantidade >= QUANTIDADE_PN_MAXIMA;
   }
 }
 
-function setButtonLoading(button, isLoading) {
-  if (!button) return;
+function definirCarregandoBotao(botao, estaCarregando) {
+  if (!botao) return;
 
-  button.disabled = isLoading;
+  botao.disabled = estaCarregando;
 
-  if (isLoading) {
-    button.replaceChildren(
-      createElement("i", "bi bi-arrow-repeat"),
-      createElement("span", "", "Cadastrando..."),
+  if (estaCarregando) {
+    botao.replaceChildren(
+      criarElemento("i", "bi bi-arrow-repeat"),
+      criarElemento("span", "", "Cadastrando..."),
     );
     return;
   }
 
-  button.replaceChildren(
-    createElement("i", "bi bi-plus-circle"),
-    createElement("span", "", "Cadastrar ativo"),
+  botao.replaceChildren(
+    criarElemento("i", "bi bi-plus-circle"),
+    criarElemento("span", "", "Cadastrar ativo"),
   );
 }
 
-function setFormMessage(message, type) {
-  const element = document.getElementById("assetFormMessage");
+function definirMensagemFormulario(mensagem, tipo) {
+  const elemento = document.getElementById("assetFormMessage");
 
-  if (!element) return;
+  if (!elemento) return;
 
-  element.textContent = message;
-  element.classList.toggle("show", Boolean(message));
-  element.classList.toggle("error", type === "error");
-  element.classList.toggle("success", type === "success");
+  elemento.textContent = mensagem;
+  elemento.classList.toggle("show", Boolean(mensagem));
+  elemento.classList.toggle("error", tipo === "error");
+  elemento.classList.toggle("success", tipo === "success");
 }
 
-function prependRecentAsset(asset) {
-  const list = document.getElementById("recentAssetList");
+function inserirInicioAtivoRecente(ativo) {
+  const lista = document.getElementById("recentAssetList");
 
-  if (!list || !asset) return;
+  if (!lista || !ativo) return;
 
-  list.querySelector(".empty-state")?.remove();
+  lista.querySelector(".empty-state")?.remove();
 
-  const item = createElement("div", "recent-asset-item");
-  const content = createElement("div");
-  const title = createElement("strong", "", String(asset.nome || "Novo ativo"));
-  const partNumber = String(asset.part_number || "").trim();
-  const details = [String(asset.status || "Disponivel")];
+  const item = criarElemento("div", "recent-asset-item");
+  const conteudo = criarElemento("div");
+  const titulo = criarElemento("strong", "", String(ativo.nome || "Novo ativo"));
+  const numeroParte = String(ativo.part_number || "").trim();
+  const detalhes = [String(ativo.status || "Disponivel")];
 
-  if (partNumber) {
-    details.push(`PN ${partNumber}`);
+  if (numeroParte) {
+    detalhes.push(`PN ${numeroParte}`);
   }
 
-  const detail = createElement("span", "", details.join(" - "));
-  const date = createElement("small", "", "Agora");
+  const detalhe = criarElemento("span", "", detalhes.join(" - "));
+  const data = criarElemento("small", "", "Agora");
 
-  content.append(title, detail);
-  item.append(content, date);
-  list.prepend(item);
+  conteudo.append(titulo, detalhe);
+  item.append(conteudo, data);
+  lista.prepend(item);
 }
 
-function updateAssetMetrics(assets) {
-  const createdCount = assets.length;
+function atualizarMetricasAtivo(ativos) {
+  const quantidadeCriados = ativos.length;
 
-  if (createdCount <= 0) {
+  if (quantidadeCriados <= 0) {
     return;
   }
 
-  incrementMetric("totalAssetsMetric", createdCount);
-  incrementMetric("availableAssetsMetric", assets.filter(isAvailableAsset).length);
+  incrementarMetrica("totalAssetsMetric", quantidadeCriados);
+  incrementarMetrica("availableAssetsMetric", ativos.filter(ehAtivoDisponivel).length);
 }
 
-function incrementMetric(id, amount) {
-  const element = document.getElementById(id);
+function incrementarMetrica(id, quantidade) {
+  const elemento = document.getElementById(id);
 
-  if (!element || amount <= 0) {
+  if (!elemento || quantidade <= 0) {
     return;
   }
 
-  const current = Number.parseInt(element.textContent || "0", 10);
+  const atual = Number.parseInt(elemento.textContent || "0", 10);
 
-  element.textContent = String((Number.isFinite(current) ? current : 0) + amount);
+  elemento.textContent = String((Number.isFinite(atual) ? atual : 0) + quantidade);
 }
 
-function isAvailableAsset(asset) {
-  return normalizeAssetText(asset?.status) === "disponivel";
+function ehAtivoDisponivel(ativo) {
+  return normalizarTextoAtivo(ativo?.status) === "disponivel";
 }
 
-function normalizeAssetText(value) {
-  return String(value || "")
+function normalizarTextoAtivo(valor) {
+  return String(valor || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
 }
 
-function createElement(tag, className = "", text = "") {
-  const element = document.createElement(tag);
+function criarElemento(etiqueta, nomeClasse = "", texto = "") {
+  const elemento = document.createElement(etiqueta);
 
-  if (className) {
-    element.className = className;
+  if (nomeClasse) {
+    elemento.className = nomeClasse;
   }
 
-  if (text) {
-    element.textContent = text;
+  if (texto) {
+    elemento.textContent = texto;
   }
 
-  return element;
+  return elemento;
 }
 
 

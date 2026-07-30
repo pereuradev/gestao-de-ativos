@@ -1,315 +1,315 @@
 // Gerencia seleção de membros e permissões durante o cadastro de grupos de acesso.
 // Usa confirmações e avisos globais definidos pelos módulos compartilhados.
 
-document.addEventListener("DOMContentLoaded", initGroupRegistrationPage);
+document.addEventListener("DOMContentLoaded", inicializarPaginaCadastroGrupo);
 
-function initGroupRegistrationPage() {
-  callGroupGlobal("startPageAnimation");
-  callGroupGlobal("loadSavedTheme");
-  callGroupGlobal("setupThemeToggle");
-  callGroupGlobal("setupSidebar");
-  callGroupGlobal("setupNavGroups");
-  setupGroupEmployeeSearch();
-  setupGroupForm();
-  setupGroupFormReset();
+function inicializarPaginaCadastroGrupo() {
+  chamarGlobalGrupo("iniciarAnimacaoPagina");
+  chamarGlobalGrupo("carregarTemaSalvo");
+  chamarGlobalGrupo("configurarAlternadorTema");
+  chamarGlobalGrupo("configurarBarraLateral");
+  chamarGlobalGrupo("configurarGruposNavegacao");
+  configurarBuscaFuncionarioGrupo();
+  configurarFormularioGrupo();
+  configurarRedefinicaoFormularioGrupo();
 }
 
-function callGroupGlobal(functionName) {
-  if (typeof window[functionName] === "function") {
-    window[functionName]();
+function chamarGlobalGrupo(nomeFuncao) {
+  if (typeof window[nomeFuncao] === "function") {
+    window[nomeFuncao]();
   }
 }
 
-function getGroupElement(id) {
+function obterElementoGrupo(id) {
   return document.getElementById(id);
 }
 
-function createGroupElement(tag, className = "", text = "") {
-  const element = document.createElement(tag);
+function criarElementoGrupo(etiqueta, nomeClasse = "", texto = "") {
+  const elemento = document.createElement(etiqueta);
 
-  if (className) {
-    element.className = className;
+  if (nomeClasse) {
+    elemento.className = nomeClasse;
   }
 
-  if (text) {
-    element.textContent = text;
+  if (texto) {
+    elemento.textContent = texto;
   }
 
-  return element;
+  return elemento;
 }
 
 // A busca atua apenas sobre os funcionários já carregados pelo PHP.
-function setupGroupEmployeeSearch() {
-  const search = getGroupElement("groupEmployeeSearch");
-  const clearButton = getGroupElement("clearGroupEmployees");
+function configurarBuscaFuncionarioGrupo() {
+  const busca = obterElementoGrupo("groupEmployeeSearch");
+  const botaoLimpar = obterElementoGrupo("clearGroupEmployees");
 
-  search?.addEventListener("input", filterGroupEmployees);
+  busca?.addEventListener("input", filtrarFuncionariosGrupo);
 
-  clearButton?.addEventListener("click", () => {
-    if (search) {
-      search.value = "";
+  botaoLimpar?.addEventListener("click", () => {
+    if (busca) {
+      busca.value = "";
     }
 
     document
       .querySelectorAll('#groupEmployeeList input[type="checkbox"]')
-      .forEach((input) => {
-        input.checked = false;
+      .forEach((campoEntrada) => {
+        campoEntrada.checked = false;
       });
 
-    filterGroupEmployees();
+    filtrarFuncionariosGrupo();
   });
 }
 
-function filterGroupEmployees() {
-  const search = normalizeGroupText(getGroupElement("groupEmployeeSearch")?.value || "");
+function filtrarFuncionariosGrupo() {
+  const busca = normalizarTextoGrupo(obterElementoGrupo("groupEmployeeSearch")?.value || "");
 
-  document.querySelectorAll(".group-check-card").forEach((card) => {
-    const haystack = normalizeGroupText(card.dataset.search || "");
-    card.hidden = search !== "" && !haystack.includes(search);
+  document.querySelectorAll(".group-check-card").forEach((cartao) => {
+    const textoPesquisa = normalizarTextoGrupo(cartao.dataset.search || "");
+    cartao.hidden = busca !== "" && !textoPesquisa.includes(busca);
   });
 }
 
-function normalizeGroupText(value) {
-  return String(value)
+function normalizarTextoGrupo(valor) {
+  return String(valor)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
 }
 
-function setupGroupForm() {
-  const form = getGroupElement("groupForm");
+function configurarFormularioGrupo() {
+  const formulario = obterElementoGrupo("groupForm");
 
-  if (!form) {
+  if (!formulario) {
     return;
   }
 
-  form.addEventListener("submit", handleGroupSubmit);
+  formulario.addEventListener("submit", tratarEnvioGrupo);
 }
 
-function setupGroupFormReset() {
-  const form = getGroupElement("groupForm");
+function configurarRedefinicaoFormularioGrupo() {
+  const formulario = obterElementoGrupo("groupForm");
 
-  if (!form) {
+  if (!formulario) {
     return;
   }
 
-  form.addEventListener("reset", () => {
+  formulario.addEventListener("reset", () => {
     requestAnimationFrame(() => {
-      setGroupMessage("");
-      filterGroupEmployees();
+      definirMensagemGrupo("");
+      filtrarFuncionariosGrupo();
     });
   });
 }
 
 // Membros e permissões são enviados juntos para o backend gravar o grupo de forma atômica.
-async function handleGroupSubmit(event) {
-  event.preventDefault();
+async function tratarEnvioGrupo(evento) {
+  evento.preventDefault();
 
-  const form = event.currentTarget;
-  const submitButton = getGroupElement("groupSubmitButton");
-  const validationError = validateGroupForm(form);
+  const formulario = evento.currentTarget;
+  const botaoEnviar = obterElementoGrupo("groupSubmitButton");
+  const erroValidacao = validarFormularioGrupo(formulario);
 
-  if (validationError) {
-    setGroupMessage(validationError, "error");
-    window.titechToast?.(validationError, "error");
+  if (erroValidacao) {
+    definirMensagemGrupo(erroValidacao, "error");
+    window.titechToast?.(erroValidacao, "error");
     return;
   }
 
-  const groupName = getGroupElement("groupName")?.value.trim() || "este grupo";
-  const confirmed = await confirmGroupCreate(groupName);
+  const nomeGrupo = obterElementoGrupo("groupName")?.value.trim() || "este grupo";
+  const confirmado = await confirmarCriacaoGrupo(nomeGrupo);
 
-  if (!confirmed) {
+  if (!confirmado) {
     return;
   }
 
-  setGroupMessage("");
-  setGroupSubmitLoading(submitButton, true);
+  definirMensagemGrupo("");
+  definirCarregandoEnviarGrupo(botaoEnviar, true);
 
   try {
-    const response = await fetch(form.action, {
+    const resposta = await fetch(formulario.action, {
       method: "POST",
-      body: new FormData(form),
+      body: new FormData(formulario),
       headers: {
         Accept: "application/json",
       },
     });
-    const result = await response.json().catch(() => ({
+    const resultado = await resposta.json().catch(() => ({
       ok: false,
       message: "Resposta invalida do servidor.",
     }));
 
-    if (result.redirect && response.status === 401) {
-      window.location.href = result.redirect;
+    if (resultado.redirect && resposta.status === 401) {
+      window.location.href = resultado.redirect;
       return;
     }
 
-    if (!response.ok || !result.ok) {
-      throw new Error(result.message || "Nao foi possivel cadastrar o grupo.");
+    if (!resposta.ok || !resultado.ok) {
+      throw new Error(resultado.message || "Nao foi possivel cadastrar o grupo.");
     }
 
-    setGroupMessage(result.message || "Grupo criado com sucesso.", "success");
-    window.titechToast?.(result.message || "Grupo criado com sucesso.");
-    updateGroupMetrics(result.grupo);
-    prependRecentGroup(result.grupo);
-    form.reset();
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Nao foi possivel cadastrar o grupo.";
+    definirMensagemGrupo(resultado.message || "Grupo criado com sucesso.", "success");
+    window.titechToast?.(resultado.message || "Grupo criado com sucesso.");
+    atualizarMetricasGrupo(resultado.grupo);
+    inserirInicioGrupoRecente(resultado.grupo);
+    formulario.reset();
+  } catch (erro) {
+    const mensagem =
+      erro instanceof Error ? erro.message : "Nao foi possivel cadastrar o grupo.";
 
-    setGroupMessage(message, "error");
-    window.titechToast?.(message, "error");
+    definirMensagemGrupo(mensagem, "error");
+    window.titechToast?.(mensagem, "error");
   } finally {
-    setGroupSubmitLoading(submitButton, false);
+    definirCarregandoEnviarGrupo(botaoEnviar, false);
   }
 }
 
-function validateGroupForm(form) {
-  const name = getGroupElement("groupName")?.value.trim() || "";
-  const members = form.querySelectorAll('input[name="membros[]"]:checked');
-  const permissions = form.querySelectorAll('input[name="permissoes[]"]:checked');
+function validarFormularioGrupo(formulario) {
+  const nome = obterElementoGrupo("groupName")?.value.trim() || "";
+  const membros = formulario.querySelectorAll('input[name="membros[]"]:checked');
+  const permissoes = formulario.querySelectorAll('input[name="permissoes[]"]:checked');
 
-  if (name.length < 3) {
+  if (nome.length < 3) {
     return "Informe um nome de grupo com pelo menos 3 caracteres.";
   }
 
-  if (!members.length) {
+  if (!membros.length) {
     return "Selecione pelo menos um funcionario para o grupo.";
   }
 
-  if (!permissions.length) {
+  if (!permissoes.length) {
     return "Selecione pelo menos uma permissao para o grupo.";
   }
 
   return "";
 }
 
-async function confirmGroupCreate(groupName) {
+async function confirmarCriacaoGrupo(nomeGrupo) {
   if (typeof window.titechConfirm === "function") {
     return window.titechConfirm({
       title: "Cadastrar grupo?",
-      text: `Confirme para criar o grupo ${groupName} com os funcionarios e permissoes selecionados.`,
+      text: `Confirme para criar o grupo ${nomeGrupo} com os funcionarios e permissoes selecionados.`,
       confirmButtonText: "Cadastrar grupo",
       cancelButtonText: "Revisar",
       icon: "info",
     });
   }
 
-  return window.confirm(`Criar o grupo ${groupName}?`);
+  return window.confirm(`Criar o grupo ${nomeGrupo}?`);
 }
 
-function setGroupMessage(message, type = "") {
-  const element = getGroupElement("groupFormMessage");
+function definirMensagemGrupo(mensagem, tipo = "") {
+  const elemento = obterElementoGrupo("groupFormMessage");
 
-  if (!element) {
+  if (!elemento) {
     return;
   }
 
-  element.textContent = message;
-  element.classList.remove("is-error", "is-success");
+  elemento.textContent = mensagem;
+  elemento.classList.remove("is-error", "is-success");
 
-  if (type === "error") {
-    element.classList.add("is-error");
+  if (tipo === "error") {
+    elemento.classList.add("is-error");
   }
 
-  if (type === "success") {
-    element.classList.add("is-success");
+  if (tipo === "success") {
+    elemento.classList.add("is-success");
   }
 }
 
-function setGroupSubmitLoading(button, isLoading) {
-  if (!button) {
+function definirCarregandoEnviarGrupo(botao, estaCarregando) {
+  if (!botao) {
     return;
   }
 
-  button.disabled = isLoading;
+  botao.disabled = estaCarregando;
 
-  if (isLoading) {
-    button.replaceChildren(
-      createGroupElement("span", "spinner-border spinner-border-sm"),
-      createGroupElement("span", "", "Cadastrando grupo..."),
+  if (estaCarregando) {
+    botao.replaceChildren(
+      criarElementoGrupo("span", "spinner-border spinner-border-sm"),
+      criarElementoGrupo("span", "", "Cadastrando grupo..."),
     );
     return;
   }
 
-  button.replaceChildren(
-    createGroupElement("i", "bi bi-plus-lg"),
-    createGroupElement("span", "", "Cadastrar grupo"),
+  botao.replaceChildren(
+    criarElementoGrupo("i", "bi bi-plus-lg"),
+    criarElementoGrupo("span", "", "Cadastrar grupo"),
   );
 }
 
-function updateGroupMetrics(group) {
-  if (!group || typeof group !== "object") {
+function atualizarMetricasGrupo(grupo) {
+  if (!grupo || typeof grupo !== "object") {
     return;
   }
 
-  incrementGroupMetric("groupMetricTotal", 1);
-  incrementGroupMetric("groupMetricMembers", Number(group.total_membros || 0));
-  incrementGroupMetric("groupMetricPermissions", Number(group.total_permissoes || 0));
+  incrementarMetricaGrupo("groupMetricTotal", 1);
+  incrementarMetricaGrupo("groupMetricMembers", Number(grupo.total_membros || 0));
+  incrementarMetricaGrupo("groupMetricPermissions", Number(grupo.total_permissoes || 0));
 }
 
-function incrementGroupMetric(id, amount) {
-  const element = getGroupElement(id);
-  const current = Number.parseInt(element?.textContent || "0", 10);
+function incrementarMetricaGrupo(id, quantidade) {
+  const elemento = obterElementoGrupo(id);
+  const atual = Number.parseInt(elemento?.textContent || "0", 10);
 
-  if (!element || Number.isNaN(current)) {
+  if (!elemento || Number.isNaN(atual)) {
     return;
   }
 
-  element.textContent = String(current + amount);
+  elemento.textContent = String(atual + quantidade);
 }
 
 // O novo cartão usa APIs de DOM para manter os valores da resposta como texto.
-function prependRecentGroup(group) {
-  if (!group || typeof group !== "object") {
+function inserirInicioGrupoRecente(grupo) {
+  if (!grupo || typeof grupo !== "object") {
     return;
   }
 
-  const list = getGroupElement("recentGroupList");
+  const lista = obterElementoGrupo("recentGroupList");
 
-  if (!list) {
+  if (!lista) {
     return;
   }
 
-  list.querySelector(".compact-empty-state")?.remove();
+  lista.querySelector(".compact-empty-state")?.remove();
 
-  const article = createGroupElement(
+  const artigo = criarElementoGrupo(
     "article",
     "recent-asset-item recent-employee-card group-recent-card",
   );
-  const topLine = createGroupElement("div", "recent-asset-topline");
-  const title = createGroupElement("strong", "", group.nome || "Novo grupo");
-  const status = createGroupElement("span", "status-badge status-active", group.status || "Ativo");
-  const footer = createGroupElement("div", "recent-asset-footer");
-  const members = createGroupElement("span", "", `${group.total_membros || 0} membros`);
-  const permissions = createGroupElement(
+  const linhaSuperior = criarElementoGrupo("div", "recent-asset-topline");
+  const titulo = criarElementoGrupo("strong", "", grupo.nome || "Novo grupo");
+  const status = criarElementoGrupo("span", "status-badge status-active", grupo.status || "Ativo");
+  const rodape = criarElementoGrupo("div", "recent-asset-footer");
+  const membros = criarElementoGrupo("span", "", `${grupo.total_membros || 0} membros`);
+  const permissoes = criarElementoGrupo(
     "span",
     "",
-    `${group.total_permissoes || 0} permissoes`,
+    `${grupo.total_permissoes || 0} permissoes`,
   );
-  const time = document.createElement("time");
+  const tempo = document.createElement("time");
 
-  time.dateTime = group.criado_em || "";
-  time.textContent = formatGroupDateTime(group.criado_em || "");
+  tempo.dateTime = grupo.criado_em || "";
+  tempo.textContent = formatarDataHoraGrupo(grupo.criado_em || "");
 
-  topLine.append(title, status);
-  footer.append(members, permissions, time);
-  article.append(topLine, footer);
-  list.prepend(article);
+  linhaSuperior.append(titulo, status);
+  rodape.append(membros, permissoes, tempo);
+  artigo.append(linhaSuperior, rodape);
+  lista.prepend(artigo);
 
-  [...list.querySelectorAll(".group-recent-card")]
+  [...lista.querySelectorAll(".group-recent-card")]
     .slice(6)
-    .forEach((card) => card.remove());
+    .forEach((cartao) => cartao.remove());
 }
 
-function formatGroupDateTime(value) {
-  if (!value) {
+function formatarDataHoraGrupo(valor) {
+  if (!valor) {
     return "--";
   }
 
-  const date = new Date(value);
+  const data = new Date(valor);
 
-  if (Number.isNaN(date.getTime())) {
+  if (Number.isNaN(data.getTime())) {
     return "--";
   }
 
@@ -317,5 +317,5 @@ function formatGroupDateTime(value) {
     dateStyle: "short",
     timeStyle: "short",
     timeZone: "America/Sao_Paulo",
-  }).format(date);
+  }).format(data);
 }

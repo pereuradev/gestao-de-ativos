@@ -1,74 +1,74 @@
 // Filtra grupos já renderizados e mantém contador e estado vazio sincronizados.
 // A normalização permite buscar por nomes, membros e permissões sem nova consulta ao servidor.
 
-document.addEventListener("DOMContentLoaded", initGroupViewPage);
+document.addEventListener("DOMContentLoaded", inicializarPaginaVisualizacaoGrupo);
 
-function initGroupViewPage() {
-  callGroupViewGlobal("startPageAnimation");
-  callGroupViewGlobal("loadSavedTheme");
-  callGroupViewGlobal("setupThemeToggle");
-  callGroupViewGlobal("setupSidebar");
-  callGroupViewGlobal("setupNavGroups");
-  setupGroupViewSearch();
+function inicializarPaginaVisualizacaoGrupo() {
+  chamarGlobalVisualizacaoGrupo("iniciarAnimacaoPagina");
+  chamarGlobalVisualizacaoGrupo("carregarTemaSalvo");
+  chamarGlobalVisualizacaoGrupo("configurarAlternadorTema");
+  chamarGlobalVisualizacaoGrupo("configurarBarraLateral");
+  chamarGlobalVisualizacaoGrupo("configurarGruposNavegacao");
+  configurarBuscaVisualizacaoGrupo();
 }
 
-function callGroupViewGlobal(functionName) {
-  if (typeof window[functionName] === "function") {
-    window[functionName]();
+function chamarGlobalVisualizacaoGrupo(nomeFuncao) {
+  if (typeof window[nomeFuncao] === "function") {
+    window[nomeFuncao]();
   }
 }
 
-function setupGroupViewSearch() {
-  document.getElementById("groupViewSearch")?.addEventListener("input", filterGroupViewItems);
-  filterGroupViewItems();
+function configurarBuscaVisualizacaoGrupo() {
+  document.getElementById("groupViewSearch")?.addEventListener("input", filtrarItensVisualizacaoGrupo);
+  filtrarItensVisualizacaoGrupo();
 }
 
 // A busca considera o texto agregado de grupo, membros e permissões renderizado pelo PHP.
-function filterGroupViewItems() {
-  const search = normalizeGroupViewText(document.getElementById("groupViewSearch")?.value || "");
-  const cards = Array.from(document.querySelectorAll("#groupViewList .group-edit-item"));
-  let visible = 0;
+function filtrarItensVisualizacaoGrupo() {
+  const busca = normalizarTextoVisualizacaoGrupo(document.getElementById("groupViewSearch")?.value || "");
+  const cartoes = Array.from(document.querySelectorAll("#groupViewList .group-edit-item"));
+  let visivel = 0;
 
-  cards.forEach((card) => {
-    const matches = !search || normalizeGroupViewText(card.dataset.search || "").includes(search);
+  cartoes.forEach((cartao) => {
+    const correspondencias = !busca || normalizarTextoVisualizacaoGrupo(cartao.dataset.search || "").includes(busca);
 
-    card.hidden = !matches;
+    cartao.hidden = !correspondencias;
 
-    if (matches) {
-      visible += 1;
+    if (correspondencias) {
+      visivel += 1;
     }
   });
 
-  updateGroupViewCount(visible);
-  updateGroupViewEmptyState();
+  atualizarQuantidadeVisualizacaoGrupo(visivel);
+  atualizarEstadoVazioVisualizacaoGrupo();
 }
 
-function updateGroupViewCount(total) {
-  const counter = document.getElementById("groupViewResultCount");
+function atualizarQuantidadeVisualizacaoGrupo(total) {
+  const contador = document.getElementById("groupViewResultCount");
 
-  if (!counter) {
+  if (!contador) {
     return;
   }
 
-  counter.textContent = `${total.toLocaleString("pt-BR")} ${total === 1 ? "registro" : "registros"}`;
+  contador.textContent = `${total.toLocaleString("pt-BR")} ${total === 1 ? "registro" : "registros"}`;
 }
 
-function updateGroupViewEmptyState() {
-  const empty = document.getElementById("groupViewEmptyState");
-  const visibleCards = Array.from(document.querySelectorAll("#groupViewList .group-edit-item"))
-    .filter((card) => !card.hidden);
+function atualizarEstadoVazioVisualizacaoGrupo() {
+  const vazio = document.getElementById("groupViewEmptyState");
+  const cartoesVisiveis = Array.from(document.querySelectorAll("#groupViewList .group-edit-item"))
+    .filter((cartao) => !cartao.hidden);
 
-  if (empty) {
-    empty.hidden = visibleCards.length > 0;
+  if (vazio) {
+    vazio.hidden = cartoesVisiveis.length > 0;
   }
 }
 
-function normalizeGroupViewText(value) {
-  if (typeof window.normalizeText === "function") {
-    return window.normalizeText(value);
+function normalizarTextoVisualizacaoGrupo(valor) {
+  if (typeof window.normalizarTexto === "function") {
+    return window.normalizarTexto(valor);
   }
 
-  return String(value || "")
+  return String(valor || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()

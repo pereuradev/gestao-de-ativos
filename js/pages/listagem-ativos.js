@@ -1,34 +1,34 @@
 // Controla os filtros enviados ao servidor e o download dos relatórios de ativos.
 // Depende dos helpers globais de interface carregados por base-interface.js e feedback-interface.js.
 
-document.addEventListener("DOMContentLoaded", initPage);
+document.addEventListener("DOMContentLoaded", inicializarPagina);
 
-let assetSearchTimer = null;
-let assetExporting = false;
+let temporizadorBuscaAtivo = null;
+let exportacaoAtivoEmAndamento = false;
 
-function initPage() {
-  startPageAnimation();
-  loadSavedTheme();
-  setupThemeToggle();
-  setupSidebar();
-  setupNavGroups();
-  setupAssetFilters();
-  setupAssetExports();
+function inicializarPagina() {
+  iniciarAnimacaoPagina();
+  carregarTemaSalvo();
+  configurarAlternadorTema();
+  configurarBarraLateral();
+  configurarGruposNavegacao();
+  configurarFiltrosAtivo();
+  configurarExportacoesAtivos();
 }
 
 // Os filtros são enviados ao servidor; a busca usa atraso curto para evitar requisições a cada tecla.
-function setupAssetFilters() {
-  const form = document.getElementById("assetFiltersForm");
+function configurarFiltrosAtivo() {
+  const formulario = document.getElementById("assetFiltersForm");
 
-  if (!form) {
+  if (!formulario) {
     return;
   }
 
   document.getElementById("assetSearch")?.addEventListener("input", () => {
-    window.clearTimeout(assetSearchTimer);
+    window.clearTimeout(temporizadorBuscaAtivo);
 
-    assetSearchTimer = window.setTimeout(() => {
-      resetAssetPageAndSubmit(form);
+    temporizadorBuscaAtivo = window.setTimeout(() => {
+      redefinirPaginaAtivoEEnviar(formulario);
     }, 450);
   });
 
@@ -38,9 +38,9 @@ function setupAssetFilters() {
     "assetBrandFilter",
     "assetLocationFilter",
     "assetPerPage",
-  ].forEach((fieldId) => {
-    document.getElementById(fieldId)?.addEventListener("change", () => {
-      resetAssetPageAndSubmit(form);
+  ].forEach((idCampo) => {
+    document.getElementById(idCampo)?.addEventListener("change", () => {
+      redefinirPaginaAtivoEEnviar(formulario);
     });
   });
 
@@ -51,79 +51,79 @@ function setupAssetFilters() {
     });
 }
 
-function resetAssetPageAndSubmit(form) {
-  const pageInput = form.querySelector('input[name="pagina"]');
+function redefinirPaginaAtivoEEnviar(formulario) {
+  const campoEntradaPagina = formulario.querySelector('input[name="pagina"]');
 
-  if (pageInput) {
-    pageInput.value = "1";
+  if (campoEntradaPagina) {
+    campoEntradaPagina.value = "1";
   }
 
-  if (typeof form.requestSubmit === "function") {
-    form.requestSubmit();
+  if (typeof formulario.requestSubmit === "function") {
+    formulario.requestSubmit();
     return;
   }
 
-  form.submit();
+  formulario.submit();
 }
 
 // A exportação reutiliza a URL filtrada renderizada pelo PHP e bloqueia downloads concorrentes.
-function setupAssetExports() {
-  document.querySelectorAll("[data-asset-export]").forEach((button) => {
-    button.addEventListener("click", () => exportAssetsFile(button));
+function configurarExportacoesAtivos() {
+  document.querySelectorAll("[data-asset-export]").forEach((botao) => {
+    botao.addEventListener("click", () => exportarArquivoAtivos(botao));
   });
 }
 
-async function exportAssetsFile(button) {
-  if (assetExporting) {
+async function exportarArquivoAtivos(botao) {
+  if (exportacaoAtivoEmAndamento) {
     return;
   }
 
-  const exportUrl = button.dataset.exportUrl;
-  const config = getAssetExportConfig(button.dataset.exportFormat);
+  const urlExportacao = botao.dataset.exportUrl;
+  const configuracao = obterConfiguracaoExportacaoAtivo(botao.dataset.exportFormat);
 
-  if (!exportUrl || !config) {
-    notifyAssetExport("O endereco de exportacao nao esta disponivel.", true);
+  if (!urlExportacao || !configuracao) {
+    notificarExportacaoAtivo("O endereco de exportacao nao esta disponivel.", true);
     return;
   }
 
-  assetExporting = true;
-  setAssetExportButtonsLoading(button, true);
-  clearAssetExportStatus();
+  exportacaoAtivoEmAndamento = true;
+  definirCarregandoBotoesExportacaoAtivo(botao, true);
+  limparStatusExportacaoAtivo();
 
   try {
-    const response = await fetch(exportUrl, {
+    const resposta = await fetch(urlExportacao, {
       method: "GET",
       credentials: "same-origin",
-      headers: { Accept: `${config.contentType}, application/json` },
+      headers: { Accept: `${configuracao.contentType}, application/json` },
     });
-    const contentType = response.headers.get("content-type") || "";
+    const tipoConteudo = resposta.headers.get("content-type") || "";
 
-    if (!response.ok || !contentType.includes(config.contentType)) {
-      throw new Error(await readAssetExportError(response, config.label));
+    if (!resposta.ok || !tipoConteudo.includes(configuracao.contentType)) {
+      throw new Error(await lerErroExportacaoAtivo(resposta, configuracao.label));
     }
 
-    const fileBlob = await response.blob();
+    const blobArquivo = await resposta.blob();
 
-    if (!fileBlob.size) {
-      throw new Error(`O servidor retornou um ${config.label} vazio. Tente novamente.`);
+    if (!blobArquivo.size) {
+      throw new Error(`O servidor retornou um ${configuracao.label} vazio. Tente novamente.`);
     }
 
-    downloadAssetFile(fileBlob, getAssetExportFilename(response, config.fallbackFilename));
-    notifyAssetExport(`${config.label} gerado com sucesso.`, false);
-  } catch (error) {
-    const message = error instanceof TypeError
-      ? `Servidor indisponivel. Nao foi possivel gerar o ${config.label} agora.`
-      : error?.message || `Nao foi possivel gerar o ${config.label} agora.`;
+    baixarArquivoAtivo(blobArquivo, obterNomeArquivoExportacaoAtivo(resposta, configuracao.fallbackFilename));
+    notificarExportacaoAtivo(`${configuracao.label} gerado com sucesso.`, false);
+  } catch (erro) {
+    const mensagem = erro instanceof TypeError
+      ? `Servidor indisponivel. Nao foi possivel gerar o ${configuracao.label} agora.`
+      : erro?.message || `Nao foi possivel gerar o ${configuracao.label} agora.`;
 
-    notifyAssetExport(message, true);
+    notificarExportacaoAtivo(mensagem, true);
   } finally {
-    assetExporting = false;
-    setAssetExportButtonsLoading(button, false);
+    exportacaoAtivoEmAndamento = false;
+    definirCarregandoBotoesExportacaoAtivo(botao, false);
   }
 }
 
-function getAssetExportConfig(format) {
-  if (format === "xlsx") {
+function obterConfiguracaoExportacaoAtivo(formato) {
+  if (formato === "xlsx") {
     return {
       contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       fallbackFilename: "relatorio-ativos.xlsx",
@@ -131,7 +131,7 @@ function getAssetExportConfig(format) {
     };
   }
 
-  if (format === "csv") {
+  if (formato === "csv") {
     return {
       contentType: "text/csv",
       fallbackFilename: "ativos-titech.csv",
@@ -139,7 +139,7 @@ function getAssetExportConfig(format) {
     };
   }
 
-  if (format === "pdf") {
+  if (formato === "pdf") {
     return {
       contentType: "application/pdf",
       fallbackFilename: "relatorio-ativos.pdf",
@@ -150,80 +150,80 @@ function getAssetExportConfig(format) {
   return null;
 }
 
-async function readAssetExportError(response, formatLabel) {
-  const contentType = response.headers.get("content-type") || "";
+async function lerErroExportacaoAtivo(resposta, rotuloFormato) {
+  const tipoConteudo = resposta.headers.get("content-type") || "";
 
-  if (contentType.includes("application/json")) {
-    const payload = await response.json().catch(() => null);
+  if (tipoConteudo.includes("application/json")) {
+    const dadosErro = await resposta.json().catch(() => null);
 
-    if (payload?.message) {
-      return payload.message;
+    if (dadosErro?.message) {
+      return dadosErro.message;
     }
   }
 
-  if (response.status === 401) {
-    return `Sua sessao expirou. Entre novamente antes de exportar o ${formatLabel}.`;
+  if (resposta.status === 401) {
+    return `Sua sessao expirou. Entre novamente antes de exportar o ${rotuloFormato}.`;
   }
 
-  if (response.status === 403) {
+  if (resposta.status === 403) {
     return "Voce nao tem permissao para exportar este relatorio.";
   }
 
-  return `Nao foi possivel gerar o ${formatLabel}. Atualize a pagina e tente novamente.`;
+  return `Nao foi possivel gerar o ${rotuloFormato}. Atualize a pagina e tente novamente.`;
 }
 
-function getAssetExportFilename(response, fallbackFilename) {
-  const disposition = response.headers.get("content-disposition") || "";
-  const encodedMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+function obterNomeArquivoExportacaoAtivo(resposta, nomeArquivoPadrao) {
+  const disposicao = resposta.headers.get("content-disposition") || "";
+  const correspondenciaCodificada = disposicao.match(/filename\*=UTF-8''([^;]+)/i);
 
-  if (encodedMatch?.[1]) {
-    return decodeURIComponent(encodedMatch[1]).replace(/[\\/:*?"<>|]/g, "-");
+  if (correspondenciaCodificada?.[1]) {
+    return decodeURIComponent(correspondenciaCodificada[1]).replace(/[\\/:*?"<>|]/g, "-");
   }
 
-  const filenameMatch = disposition.match(/filename="?([^";]+)"?/i);
+  const correspondenciaNomeArquivo = disposicao.match(/filename="?([^";]+)"?/i);
 
-  return filenameMatch?.[1]?.replace(/[\\/:*?"<>|]/g, "-") || fallbackFilename;
+  return correspondenciaNomeArquivo?.[1]?.replace(/[\\/:*?"<>|]/g, "-") || nomeArquivoPadrao;
 }
 
 // O arquivo recebido vira uma URL temporária, revogada logo após iniciar o download.
-function downloadAssetFile(blob, filename) {
-  const objectUrl = URL.createObjectURL(blob);
-  const link = document.createElement("a");
+function baixarArquivoAtivo(blob, nomeArquivo) {
+  const urlObjeto = URL.createObjectURL(blob);
+  const atalho = document.createElement("a");
 
-  link.href = objectUrl;
-  link.download = filename;
-  link.hidden = true;
-  document.body.append(link);
-  link.click();
-  link.remove();
+  atalho.href = urlObjeto;
+  atalho.download = nomeArquivo;
+  atalho.hidden = true;
+  document.body.append(atalho);
+  atalho.click();
+  atalho.remove();
 
-  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  window.setTimeout(() => URL.revokeObjectURL(urlObjeto), 1000);
 }
 
-function setAssetExportButtonsLoading(activeButton, isLoading) {
-  document.querySelectorAll("[data-asset-export]").forEach((button) => {
-    const icon = button.querySelector("i");
-    const label = button.querySelector("span");
-    const isActive = button === activeButton;
+function definirCarregandoBotoesExportacaoAtivo(botaoAtivo, estaCarregando) {
+  document.querySelectorAll("[data-asset-export]").forEach((botao) => {
+    const icone = botao.querySelector("i");
+    const rotulo = botao.querySelector("span");
+    const ehAtivo = botao === botaoAtivo;
 
-    button.disabled = isLoading;
-    button.setAttribute("aria-busy", isLoading && isActive ? "true" : "false");
+    botao.disabled = estaCarregando;
+    botao.setAttribute("aria-busy", estaCarregando && ehAtivo ? "true" : "false");
 
-    if (icon) {
-      icon.className = isLoading && isActive
+    if (icone) {
+      icone.className = estaCarregando && ehAtivo
         ? "bi bi-arrow-repeat asset-export-spinner"
-        : button.dataset.defaultIcon || "bi bi-download";
+        : botao.dataset.defaultIcon || "bi bi-download";
     }
 
-    if (label) {
-      label.textContent = isLoading && isActive
-        ? `Gerando ${getAssetExportConfig(button.dataset.exportFormat)?.label || "arquivo"}...`
-        : button.dataset.defaultLabel || "Exportar";
+    if (rotulo) {
+      rotulo.textContent = estaCarregando && ehAtivo
+        ? `Gerando ${obterConfiguracaoExportacaoAtivo(botao.dataset.exportFormat)?.label || "arquivo"}...`
+        : botao.dataset.defaultLabel || "Exportar";
     }
   });
 }
 
-function clearAssetExportStatus() {
+function limparStatusExportacaoAtivo() {
   const status = document.getElementById("assetExportStatus");
 
   if (!status) {
@@ -235,16 +235,16 @@ function clearAssetExportStatus() {
   status.textContent = "";
 }
 
-function notifyAssetExport(message, isError) {
+function notificarExportacaoAtivo(mensagem, ocorreuErro) {
   const status = document.getElementById("assetExportStatus");
-  const type = isError ? "error" : "success";
+  const tipo = ocorreuErro ? "error" : "success";
 
   if (status) {
     status.hidden = false;
-    status.classList.toggle("is-error", isError);
-    status.classList.toggle("is-success", !isError);
-    status.textContent = message;
+    status.classList.toggle("is-error", ocorreuErro);
+    status.classList.toggle("is-success", !ocorreuErro);
+    status.textContent = mensagem;
   }
 
-  window.titechToast?.(message, type);
+  window.titechToast?.(mensagem, tipo);
 }

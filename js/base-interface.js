@@ -1,14 +1,14 @@
 (function () {
 // Script base carregado nas paginas internas. Ele concentra preferencias,
 // permissoes, tema e pequenos helpers usados por varios modulos.
-const THEME_TRANSITION_MS = 660;
-const FONT_SIZE_OPTIONS = {
+const TRANSICAO_TEMA_MS = 660;
+const OPCOES_TAMANHO_FONTE = {
   small: 15,
   default: 16,
   large: 17,
   extra: 18,
 };
-const USER_PREFERENCE_DEFAULTS = {
+const PADROES_PREFERENCIA_USUARIO = {
   theme: "dark",
   accent: "teal",
   fontSize: "default",
@@ -16,12 +16,12 @@ const USER_PREFERENCE_DEFAULTS = {
   motion: "normal",
   cursor: "enhanced",
 };
-const THEME_MODE_OPTIONS = {
+const OPCOES_MODO_TEMA = {
   light: { label: "Claro", icon: "bi-sun-fill" },
   dark: { label: "Escuro", icon: "bi-moon-stars-fill" },
   auto: { label: "Sistema", icon: "bi-display" },
 };
-const USER_PREFERENCE_STORAGE_KEYS = {
+const CHAVES_ARMAZENAMENTO_PREFERENCIA_USUARIO = {
   theme: "titech-theme",
   accent: "titech-accent",
   fontSize: "titech-font-size",
@@ -29,8 +29,8 @@ const USER_PREFERENCE_STORAGE_KEYS = {
   motion: "titech-motion",
   cursor: "titech-cursor",
 };
-const USER_PREFERENCE_ENDPOINT = "../Backend/preferencias-usuario.php";
-const CUSTOM_CURSOR_INTERACTIVE_SELECTOR = [
+const ENDPOINT_PREFERENCIA_USUARIO = "../Backend/preferencias-usuario.php";
+const SELETOR_INTERATIVO_CURSOR_PERSONALIZADO = [
   "a",
   "button",
   "input",
@@ -47,7 +47,7 @@ const CUSTOM_CURSOR_INTERACTIVE_SELECTOR = [
   "[role='tab']",
   "[tabindex]:not([tabindex='-1'])",
 ].join(", ");
-const PAGE_PERMISSION_RULES = {
+const REGRAS_PERMISSAO_PAGINA = {
   "dashboard.php": { permission: "visualizar_dashboard", resource: "Dashboard" },
   "ativos.php": { permission: "visualizar_ativos", resource: "Ativos" },
   "cadastro-ativos.php": { permission: "cadastrar_ativos", resource: "Cadastro de ativos" },
@@ -71,7 +71,7 @@ const PAGE_PERMISSION_RULES = {
   "cadastro-grupos.php": { permission: "cadastrar_grupos", resource: "Cadastro de grupos" },
   "edicao-grupos.php": { permission: "editar_grupos", resource: "Edicao de grupos" },
 };
-const DISABLED_PERMISSION_LINKS = {
+const ATALHOS_PERMISSAO_DESABILITADOS = {
   Funcionarios: { permission: "visualizar_funcionarios", href: "funcionarios.php" },
   Grupos: { permission: "visualizar_grupos", href: "grupos-visualizacao.php" },
   Categorias: { permission: "visualizar_categorias", href: "categorias-visualizacao.php" },
@@ -84,7 +84,7 @@ const DISABLED_PERMISSION_LINKS = {
 };
 
 // Paletas que podem ser escolhidas nas configuracoes do usuario.
-const ACCENT_THEMES = {
+const TEMAS_DESTAQUE = {
   teal: {
     cyan: "#4aa3c7",
     teal: "#4fc7b1",
@@ -110,482 +110,482 @@ const ACCENT_THEMES = {
     accent: "#a78bfa",
   },
 };
-const CUSTOM_ACCENT_FALLBACK = ACCENT_THEMES.teal.accent;
+const PADRAO_DESTAQUE_PERSONALIZADO = TEMAS_DESTAQUE.teal.accent;
 
-let themeTimer = null;
-let systemThemeListenerAttached = false;
-let customCursorReady = false;
-let customCursorElement = null;
-let permissionDialogElement = null;
-let permissionDialogPreviousFocus = null;
+let temporizadorTema = null;
+let observadorTemaSistemaRegistrado = false;
+let cursorPersonalizadoPronto = false;
+let elementoCursorPersonalizado = null;
+let elementoDialogoPermissao = null;
+let focoAnteriorDialogoPermissao = null;
 
-const getSavedItem = typeof window.getSavedItem === "function" ? window.getSavedItem : () => null;
-const setSavedItem =
-  typeof window.setSavedItem === "function"
-    ? window.setSavedItem
+const obterItemSalvo = typeof window.obterItemSalvo === "function" ? window.obterItemSalvo : () => null;
+const definirItemSalvo =
+  typeof window.definirItemSalvo === "function"
+    ? window.definirItemSalvo
     : () => undefined;
-const normalizeChoice =
-  typeof window.normalizeChoice === "function"
-    ? window.normalizeChoice
-    : (value, allowedValues, fallback) => {
-        const normalized = String(value ?? "").trim();
+const normalizarEscolha =
+  typeof window.normalizarEscolha === "function"
+    ? window.normalizarEscolha
+    : (valor, valoresPermitidos, padrao) => {
+        const normalizado = String(valor ?? "").trim();
 
-        return allowedValues.includes(normalized) ? normalized : fallback;
+        return valoresPermitidos.includes(normalizado) ? normalizado : padrao;
       };
-const startPageAnimation =
-  typeof window.startPageAnimation === "function"
-    ? window.startPageAnimation
+const iniciarAnimacaoPagina =
+  typeof window.iniciarAnimacaoPagina === "function"
+    ? window.iniciarAnimacaoPagina
     : () => {
         requestAnimationFrame(() => {
           document.body.classList.remove("page-loading");
         });
       };
-const setupSidebar = typeof window.setupSidebar === "function" ? window.setupSidebar : () => undefined;
-const openSidebar = typeof window.openSidebar === "function" ? window.openSidebar : () => undefined;
-const closeSidebar = typeof window.closeSidebar === "function" ? window.closeSidebar : () => undefined;
-const applySidebarWidth =
-  typeof window.applySidebarWidth === "function" ? window.applySidebarWidth : () => undefined;
-const applySavedSidebarWidth =
-  typeof window.applySavedSidebarWidth === "function" ? window.applySavedSidebarWidth : () => undefined;
-const setupSidebarResize =
-  typeof window.setupSidebarResize === "function" ? window.setupSidebarResize : () => undefined;
-const setupNavGroups = typeof window.setupNavGroups === "function" ? window.setupNavGroups : () => undefined;
+const configurarBarraLateral = typeof window.configurarBarraLateral === "function" ? window.configurarBarraLateral : () => undefined;
+const abrirBarraLateral = typeof window.abrirBarraLateral === "function" ? window.abrirBarraLateral : () => undefined;
+const fecharBarraLateral = typeof window.fecharBarraLateral === "function" ? window.fecharBarraLateral : () => undefined;
+const aplicarLarguraBarraLateral =
+  typeof window.aplicarLarguraBarraLateral === "function" ? window.aplicarLarguraBarraLateral : () => undefined;
+const aplicarLarguraSalvaBarraLateral =
+  typeof window.aplicarLarguraSalvaBarraLateral === "function" ? window.aplicarLarguraSalvaBarraLateral : () => undefined;
+const configurarRedimensionamentoBarraLateral =
+  typeof window.configurarRedimensionamentoBarraLateral === "function" ? window.configurarRedimensionamentoBarraLateral : () => undefined;
+const configurarGruposNavegacao = typeof window.configurarGruposNavegacao === "function" ? window.configurarGruposNavegacao : () => undefined;
 
 document.addEventListener("DOMContentLoaded", () => {
-  applyUserPreferences(getCurrentUserPreferences());
-  setupThemeToggle();
-  hydrateSidebarProfile();
-  setupPermissionDeniedTriggers();
+  aplicarPreferenciasUsuario(obterPreferenciasUsuarioAtual());
+  configurarAlternadorTema();
+  hidratarPerfilBarraLateral();
+  configurarAcionadoresPermissaoNegada();
 });
 
-function normalizeUserPreferences(preferences = {}) {
+function normalizarPreferenciasUsuario(preferencias = {}) {
   // Aceita tanto nomes usados no JavaScript quanto nomes vindos das colunas do banco.
-  const source = preferences && typeof preferences === "object" ? preferences : {};
+  const origem = preferencias && typeof preferencias === "object" ? preferencias : {};
 
   return {
-    theme: normalizeChoice(
-      source.theme ?? source.preferencia_tema,
+    theme: normalizarEscolha(
+      origem.theme ?? origem.preferencia_tema,
       ["dark", "light", "auto"],
-      USER_PREFERENCE_DEFAULTS.theme,
+      PADROES_PREFERENCIA_USUARIO.theme,
     ),
-    accent: normalizeAccentPreference(source.accent ?? source.preferencia_cor),
-    fontSize: normalizeChoice(
-      source.fontSize ?? source.font_size ?? source.preferencia_tamanho_fonte,
-      Object.keys(FONT_SIZE_OPTIONS),
-      USER_PREFERENCE_DEFAULTS.fontSize,
+    accent: normalizarPreferenciaDestaque(origem.accent ?? origem.preferencia_cor),
+    fontSize: normalizarEscolha(
+      origem.fontSize ?? origem.font_size ?? origem.preferencia_tamanho_fonte,
+      Object.keys(OPCOES_TAMANHO_FONTE),
+      PADROES_PREFERENCIA_USUARIO.fontSize,
     ),
-    density: normalizeChoice(
-      source.density ?? source.preferencia_densidade,
+    density: normalizarEscolha(
+      origem.density ?? origem.preferencia_densidade,
       ["comfortable", "compact"],
-      USER_PREFERENCE_DEFAULTS.density,
+      PADROES_PREFERENCIA_USUARIO.density,
     ),
-    motion: normalizeChoice(
-      source.motion ?? source.preferencia_movimento,
+    motion: normalizarEscolha(
+      origem.motion ?? origem.preferencia_movimento,
       ["normal", "reduced"],
-      USER_PREFERENCE_DEFAULTS.motion,
+      PADROES_PREFERENCIA_USUARIO.motion,
     ),
-    cursor: normalizeChoice(
-      source.cursor ?? source.preferencia_cursor,
+    cursor: normalizarEscolha(
+      origem.cursor ?? origem.preferencia_cursor,
       ["enhanced", "normal"],
-      USER_PREFERENCE_DEFAULTS.cursor,
+      PADROES_PREFERENCIA_USUARIO.cursor,
     ),
   };
 }
 
-function normalizeAccentPreference(value) {
-  const accent = String(value ?? "").trim();
+function normalizarPreferenciaDestaque(valor) {
+  const destaque = String(valor ?? "").trim();
 
-  if (Object.hasOwn(ACCENT_THEMES, accent)) {
-    return accent;
+  if (Object.hasOwn(TEMAS_DESTAQUE, destaque)) {
+    return destaque;
   }
 
-  if (isHexColor(accent)) {
-    return accent.toLowerCase();
+  if (ehCorHexadecimal(destaque)) {
+    return destaque.toLowerCase();
   }
 
-  return USER_PREFERENCE_DEFAULTS.accent;
+  return PADROES_PREFERENCIA_USUARIO.accent;
 }
 
-function isHexColor(value) {
-  return /^#[0-9a-f]{6}$/i.test(String(value ?? "").trim());
+function ehCorHexadecimal(valor) {
+  return /^#[0-9a-f]{6}$/i.test(String(valor ?? "").trim());
 }
 
-function getServerUserPreferences() {
+function obterPreferenciasUsuarioServidor() {
   return window.TITECH_USER_PREFERENCES && typeof window.TITECH_USER_PREFERENCES === "object"
     ? window.TITECH_USER_PREFERENCES
     : {};
 }
 
-function getStoredUserPreferences() {
-  const preferences = {};
+function obterPreferenciasUsuarioArmazenadas() {
+  const preferencias = {};
 
-  Object.entries(USER_PREFERENCE_STORAGE_KEYS).forEach(([name, key]) => {
-    const value = getSavedItem(key);
+  Object.entries(CHAVES_ARMAZENAMENTO_PREFERENCIA_USUARIO).forEach(([nome, chave]) => {
+    const valor = obterItemSalvo(chave);
 
-    if (value !== null) {
-      preferences[name] = value;
+    if (valor !== null) {
+      preferencias[nome] = valor;
     }
   });
 
-  return preferences;
+  return preferencias;
 }
 
-function getCurrentUserPreferences() {
+function obterPreferenciasUsuarioAtual() {
   // A sessao PHP tem prioridade para evitar que usuarios diferentes herdem o mesmo navegador.
-  return normalizeUserPreferences({
-    ...getStoredUserPreferences(),
-    ...getServerUserPreferences(),
+  return normalizarPreferenciasUsuario({
+    ...obterPreferenciasUsuarioArmazenadas(),
+    ...obterPreferenciasUsuarioServidor(),
   });
 }
 
-function cacheUserPreferences(preferences) {
-  const normalized = normalizeUserPreferences(preferences);
+function armazenarCachePreferenciasUsuario(preferencias) {
+  const normalizado = normalizarPreferenciasUsuario(preferencias);
 
-  window.TITECH_USER_PREFERENCES = normalized;
-  Object.entries(USER_PREFERENCE_STORAGE_KEYS).forEach(([name, key]) => {
-    setSavedItem(key, normalized[name]);
+  window.TITECH_USER_PREFERENCES = normalizado;
+  Object.entries(CHAVES_ARMAZENAMENTO_PREFERENCIA_USUARIO).forEach(([nome, chave]) => {
+    definirItemSalvo(chave, normalizado[nome]);
   });
 
-  return normalized;
+  return normalizado;
 }
 
-function applyUserPreferences(preferences) {
-  const normalized = cacheUserPreferences(preferences);
+function aplicarPreferenciasUsuario(preferencias) {
+  const normalizado = armazenarCachePreferenciasUsuario(preferencias);
 
-  applyTheme(normalized.theme);
-  applyAccent(normalized.accent);
-  applyFontSizePreference(normalized.fontSize);
-  applyDensity(normalized.density);
-  applyMotionPreference(normalized.motion);
-  applyCursorPreference(normalized.cursor);
-  applySavedSidebarWidth();
+  aplicarTema(normalizado.theme);
+  aplicarDestaque(normalizado.accent);
+  aplicarPreferenciaTamanhoFonte(normalizado.fontSize);
+  aplicarDensidade(normalizado.density);
+  aplicarPreferenciaMovimento(normalizado.motion);
+  aplicarPreferenciaCursor(normalizado.cursor);
+  aplicarLarguraSalvaBarraLateral();
 
-  return normalized;
+  return normalizado;
 }
 
-async function saveUserPreferences(preferences) {
-  const normalized = cacheUserPreferences({
-    ...getCurrentUserPreferences(),
-    ...preferences,
+async function salvarPreferenciasUsuario(preferencias) {
+  const normalizado = armazenarCachePreferenciasUsuario({
+    ...obterPreferenciasUsuarioAtual(),
+    ...preferencias,
   });
 
   try {
-    const response = await fetch(USER_PREFERENCE_ENDPOINT, {
+    const resposta = await fetch(ENDPOINT_PREFERENCIA_USUARIO, {
       method: "POST",
       credentials: "same-origin",
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(normalized),
+      body: JSON.stringify(normalizado),
     });
-    const result = await response.json().catch(() => null);
+    const resultado = await resposta.json().catch(() => null);
 
-    if (!response.ok || !result?.ok) {
-      throw new Error(result?.message || "Nao foi possivel salvar as preferencias.");
+    if (!resposta.ok || !resultado?.ok) {
+      throw new Error(resultado?.message || "Nao foi possivel salvar as preferencias.");
     }
 
     return {
       ok: true,
-      preferences: cacheUserPreferences(result.preferences || normalized),
+      preferences: armazenarCachePreferenciasUsuario(resultado.preferences || normalizado),
     };
-  } catch (error) {
+  } catch (erro) {
     return {
       ok: false,
-      error,
-      preferences: normalized,
+      error: erro,
+      preferences: normalizado,
     };
   }
 }
 
-async function hydrateSidebarProfile() {
+async function hidratarPerfilBarraLateral() {
   // A sidebar nasce com dados da sessao PHP, mas este refresh corrige sessoes antigas sem novo login.
   if (!document.querySelector(".sidebar-user-info")) {
     return;
   }
 
   try {
-    const response = await fetch("../Backend/usuario-sessao.php", {
+    const resposta = await fetch("../Backend/usuario-sessao.php", {
       method: "GET",
       credentials: "same-origin",
       headers: { Accept: "application/json" },
     });
-    const result = await response.json().catch(() => null);
+    const resultado = await resposta.json().catch(() => null);
 
-    if (!response.ok || !result?.ok || !result.usuario) {
+    if (!resposta.ok || !resultado?.ok || !resultado.usuario) {
       return;
     }
 
-    updateSidebarProfile(result.usuario);
-    applyNavigationPermissions(result.usuario);
+    atualizarPerfilBarraLateral(resultado.usuario);
+    aplicarPermissoesNavegacao(resultado.usuario);
 
-    if (result.usuario.preferencias) {
-      applyUserPreferences(result.usuario.preferencias);
+    if (resultado.usuario.preferencias) {
+      aplicarPreferenciasUsuario(resultado.usuario.preferencias);
     }
   } catch {
     return;
   }
 }
 
-function updateSidebarProfile(usuario) {
-  const summary = document.querySelector(".sidebar-user-info");
+function atualizarPerfilBarraLateral(usuario) {
+  const resumo = document.querySelector(".sidebar-user-info");
   const avatar = document.querySelector(".sidebar-avatar");
 
-  if (!summary) {
+  if (!resumo) {
     return;
   }
 
-  const name = String(usuario.nome_completo || "Usuario").trim() || "Usuario";
+  const nome = String(usuario.nome_completo || "Usuario").trim() || "Usuario";
   const email = String(usuario.email || "").trim();
-  const department = String(usuario.departamento || "").trim() || "Sem departamento";
-  const nameElement = summary.querySelector("strong");
-  const smalls = summary.querySelectorAll("small");
+  const departamento = String(usuario.departamento || "").trim() || "Sem departamento";
+  const elementoNome = resumo.querySelector("strong");
+  const textosAuxiliares = resumo.querySelectorAll("small");
 
   if (avatar) {
-    updateSidebarAvatar(avatar, usuario.foto_cracha_url || "", usuario.iniciais || "");
+    atualizarAvatarBarraLateral(avatar, usuario.foto_cracha_url || "", usuario.iniciais || "");
   }
 
-  if (nameElement) {
-    nameElement.textContent = name;
-    nameElement.title = name;
+  if (elementoNome) {
+    elementoNome.textContent = nome;
+    elementoNome.title = nome;
   }
 
-  if (smalls[0]) {
-    smalls[0].textContent = email || "Email nao informado";
-    smalls[0].title = email || "Email nao informado";
+  if (textosAuxiliares[0]) {
+    textosAuxiliares[0].textContent = email || "Email nao informado";
+    textosAuxiliares[0].title = email || "Email nao informado";
   }
 
-  if (smalls[1]) {
-    smalls[1].textContent = department;
-    smalls[1].title = department;
+  if (textosAuxiliares[1]) {
+    textosAuxiliares[1].textContent = departamento;
+    textosAuxiliares[1].title = departamento;
   }
 }
 
-function updateSidebarAvatar(avatar, photoUrl, initials) {
-  avatar.classList.toggle("has-photo", Boolean(photoUrl));
+function atualizarAvatarBarraLateral(avatar, urlFoto, iniciais) {
+  avatar.classList.toggle("has-photo", Boolean(urlFoto));
 
-  if (photoUrl) {
+  if (urlFoto) {
     avatar.textContent = "";
 
-    const image = document.createElement("img");
-    image.src = photoUrl;
-    image.alt = "";
-    avatar.appendChild(image);
+    const imagem = document.createElement("img");
+    imagem.src = urlFoto;
+    imagem.alt = "";
+    avatar.appendChild(imagem);
     return;
   }
 
-  if (initials) {
-    avatar.textContent = initials;
+  if (iniciais) {
+    avatar.textContent = iniciais;
   }
 }
 
-function applyNavigationPermissions(usuario) {
-  const permissions = new Set(Array.isArray(usuario?.permissoes) ? usuario.permissoes : []);
+function aplicarPermissoesNavegacao(usuario) {
+  const permissoes = new Set(Array.isArray(usuario?.permissoes) ? usuario.permissoes : []);
 
   if (usuario?.is_admin) {
-    ensureGroupViewNavigationLink(permissions);
+    garantirAtalhoNavegacaoVisualizacaoGrupo(permissoes);
     return;
   }
 
-  enableAllowedDisabledLinks(permissions);
-  ensureGroupViewNavigationLink(permissions);
+  habilitarAtalhosPermitidosDesabilitados(permissoes);
+  garantirAtalhoNavegacaoVisualizacaoGrupo(permissoes);
 
-  document.querySelectorAll(".sidebar-nav a[href]").forEach((link) => {
-    const rule = PAGE_PERMISSION_RULES[getPageNameFromHref(link.getAttribute("href"))];
+  document.querySelectorAll(".sidebar-nav a[href]").forEach((atalho) => {
+    const regra = REGRAS_PERMISSAO_PAGINA[obterNomePaginaPeloEndereco(atalho.getAttribute("href"))];
 
-    if (!rule || permissionRuleIsAllowed(permissions, rule)) {
+    if (!regra || regraPermissaoEhPermitida(permissoes, regra)) {
       return;
     }
 
-    disableNavigationLink(link, rule.resource);
+    desabilitarAtalhoNavegacao(atalho, regra.resource);
   });
 
-  setupPermissionDeniedTriggers();
+  configurarAcionadoresPermissaoNegada();
 }
 
-function enableAllowedDisabledLinks(permissions) {
+function habilitarAtalhosPermitidosDesabilitados(permissoes) {
   document.querySelectorAll(".nav-link-disabled, .disabled-action").forEach((item) => {
-    const rule = DISABLED_PERMISSION_LINKS[item.dataset.permissionResource];
+    const regra = ATALHOS_PERMISSAO_DESABILITADOS[item.dataset.permissionResource];
 
-    if (!rule || !permissionRuleIsAllowed(permissions, rule)) {
+    if (!regra || !regraPermissaoEhPermitida(permissoes, regra)) {
       return;
     }
 
-    const link = document.createElement("a");
-    link.href = rule.href;
-    link.className = item.className;
-    link.classList.remove("nav-link-disabled", "disabled-action");
+    const atalho = document.createElement("a");
+    atalho.href = regra.href;
+    atalho.className = item.className;
+    atalho.classList.remove("nav-link-disabled", "disabled-action");
 
     if (item.classList.contains("nav-submenu-disabled")) {
-      link.classList.remove("nav-submenu-disabled");
+      atalho.classList.remove("nav-submenu-disabled");
     }
 
-    link.innerHTML = item.innerHTML;
-    item.replaceWith(link);
+    atalho.innerHTML = item.innerHTML;
+    item.replaceWith(atalho);
   });
 }
 
-function ensureGroupViewNavigationLink(permissions) {
-  if (!permissions.has("visualizar_grupos") || document.querySelector('.sidebar-nav a[href="grupos-visualizacao.php"]')) {
+function garantirAtalhoNavegacaoVisualizacaoGrupo(permissoes) {
+  if (!permissoes.has("visualizar_grupos") || document.querySelector('.sidebar-nav a[href="grupos-visualizacao.php"]')) {
     return;
   }
 
-  const sidebarNav = document.querySelector(".sidebar-nav");
-  const reference = document.querySelector('.sidebar-nav a[href="funcionarios.php"], .sidebar-nav [data-permission-resource="Funcionarios"]')
+  const navegacaoBarraLateral = document.querySelector(".sidebar-nav");
+  const referencia = document.querySelector('.sidebar-nav a[href="funcionarios.php"], .sidebar-nav [data-permission-resource="Funcionarios"]')
     || document.querySelector('.sidebar-nav a[href="dashboard.php"]');
 
-  if (!sidebarNav || !reference) {
+  if (!navegacaoBarraLateral || !referencia) {
     return;
   }
 
-  const link = document.createElement("a");
-  link.className = "nav-link";
-  link.href = "grupos-visualizacao.php";
+  const atalho = document.createElement("a");
+  atalho.className = "nav-link";
+  atalho.href = "grupos-visualizacao.php";
 
-  if (getPageNameFromHref(window.location.href) === "grupos-visualizacao.php") {
-    link.classList.add("active");
+  if (obterNomePaginaPeloEndereco(window.location.href) === "grupos-visualizacao.php") {
+    atalho.classList.add("active");
   }
 
-  link.innerHTML = '<i class="bi bi-collection-fill"></i><span>Grupos</span>';
-  reference.insertAdjacentElement("afterend", link);
+  atalho.innerHTML = '<i class="bi bi-collection-fill"></i><span>Grupos</span>';
+  referencia.insertAdjacentElement("afterend", atalho);
 }
 
-function permissionRuleIsAllowed(permissions, rule) {
-  const requiredPermissions = Array.isArray(rule.permissions)
-    ? rule.permissions
-    : [rule.permission].filter(Boolean);
+function regraPermissaoEhPermitida(permissoes, regra) {
+  const permissoesObrigatorias = Array.isArray(regra.permissions)
+    ? regra.permissions
+    : [regra.permission].filter(Boolean);
 
-  return requiredPermissions.some((permission) => permissions.has(permission));
+  return permissoesObrigatorias.some((permissao) => permissoes.has(permissao));
 }
 
-function getPageNameFromHref(href) {
+function obterNomePaginaPeloEndereco(enderecoDestino) {
   try {
-    const url = new URL(href || "", window.location.href);
-    const parts = url.pathname.split("/").filter(Boolean);
+    const url = new URL(enderecoDestino || "", window.location.href);
+    const partes = url.pathname.split("/").filter(Boolean);
 
-    return (parts.pop() || "").toLowerCase();
+    return (partes.pop() || "").toLowerCase();
   } catch {
-    return String(href || "").split("?")[0].split("/").pop().toLowerCase();
+    return String(enderecoDestino || "").split("?")[0].split("/").pop().toLowerCase();
   }
 }
 
-function disableNavigationLink(link, resource) {
-  const disabled = document.createElement("span");
-  const isTopLevel = link.classList.contains("nav-link");
+function desabilitarAtalhoNavegacao(atalho, recurso) {
+  const desativado = document.createElement("span");
+  const ehNivelSuperior = atalho.classList.contains("nav-link");
 
-  disabled.className = link.className || "nav-submenu-disabled";
-  disabled.classList.remove("active", "active-submenu");
-  disabled.classList.add("nav-link-disabled");
+  desativado.className = atalho.className || "nav-submenu-disabled";
+  desativado.classList.remove("active", "active-submenu");
+  desativado.classList.add("nav-link-disabled");
 
-  if (!isTopLevel) {
-    disabled.classList.add("nav-submenu-disabled");
+  if (!ehNivelSuperior) {
+    desativado.classList.add("nav-submenu-disabled");
   }
 
-  disabled.innerHTML = link.innerHTML;
-  disabled.setAttribute("aria-disabled", "true");
-  disabled.setAttribute("data-permission-resource", resource);
-  disabled.setAttribute("title", `Voce nao tem permissao para acessar ${resource}`);
-  link.replaceWith(disabled);
+  desativado.innerHTML = atalho.innerHTML;
+  desativado.setAttribute("aria-disabled", "true");
+  desativado.setAttribute("data-permission-resource", recurso);
+  desativado.setAttribute("title", `Voce nao tem permissao para acessar ${recurso}`);
+  atalho.replaceWith(desativado);
 }
 
-function updateBrandLogo(isDark) {
+function atualizarLogoMarca(ehEscuro) {
   // Troca o logo para manter contraste correto no modo claro e escuro.
   document.querySelectorAll(".brand-logo").forEach((logo) => {
-    logo.src = isDark ? "../assets/logo-branca.png" : "../assets/Logo.png";
+    logo.src = ehEscuro ? "../assets/logo-branca.png" : "../assets/Logo.png";
   });
 }
 
-function loadSavedTheme() {
+function carregarTemaSalvo() {
   // Restaura tema e preferencias antes de configurar os controles da pagina.
-  applyUserPreferences(getCurrentUserPreferences());
-  setupSystemThemeListener();
+  aplicarPreferenciasUsuario(obterPreferenciasUsuarioAtual());
+  configurarObservadorTemaSistema();
 }
 
-function setupThemeToggle() {
-  const themeToggle = document.getElementById("themeToggle");
+function configurarAlternadorTema() {
+  const alternadorTema = document.getElementById("themeToggle");
 
-  if (!themeToggle) return;
-  if (themeToggle.dataset.themeMenuReady === "true") return;
+  if (!alternadorTema) return;
+  if (alternadorTema.dataset.themeMenuReady === "true") return;
 
-  const picker = createThemePicker(themeToggle);
-  const themeMenu = picker.querySelector(".theme-menu");
+  const seletor = criarSeletorTema(alternadorTema);
+  const menuTema = seletor.querySelector(".theme-menu");
 
-  themeToggle.dataset.themeMenuReady = "true";
-  themeToggle.classList.add("theme-toggle-menu-button");
-  themeToggle.setAttribute("aria-haspopup", "menu");
-  themeToggle.setAttribute("aria-expanded", "false");
-  themeToggle.setAttribute("aria-label", "Selecionar tema da interface");
-  ensureThemeToggleCaret(themeToggle);
+  alternadorTema.dataset.themeMenuReady = "true";
+  alternadorTema.classList.add("theme-toggle-menu-button");
+  alternadorTema.setAttribute("aria-haspopup", "menu");
+  alternadorTema.setAttribute("aria-expanded", "false");
+  alternadorTema.setAttribute("aria-label", "Selecionar tema da interface");
+  garantirIndicadorAlternadorTema(alternadorTema);
 
-  themeToggle.addEventListener("click", (event) => {
-    event.stopPropagation();
-    toggleThemeMenu(picker);
+  alternadorTema.addEventListener("click", (evento) => {
+    evento.stopPropagation();
+    alternarMenuTema(seletor);
   });
 
-  themeToggle.addEventListener("keydown", (event) => {
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      openThemeMenu(picker);
-      focusActiveThemeOption(themeMenu);
+  alternadorTema.addEventListener("keydown", (evento) => {
+    if (evento.key === "ArrowDown" || evento.key === "ArrowUp") {
+      evento.preventDefault();
+      abrirMenuTema(seletor);
+      focarOpcaoTemaAtivo(menuTema);
     }
 
-    if (event.key === "Escape") {
-      closeThemeMenu(picker);
+    if (evento.key === "Escape") {
+      fecharMenuTema(seletor);
     }
   });
 
-  themeMenu.querySelectorAll("[data-theme-value]").forEach((option) => {
-    option.addEventListener("click", () => {
-      closeThemeMenu(picker);
-      selectThemePreference(option.dataset.themeValue);
-      themeToggle.focus();
+  menuTema.querySelectorAll("[data-theme-value]").forEach((opcao) => {
+    opcao.addEventListener("click", () => {
+      fecharMenuTema(seletor);
+      selecionarPreferenciaTema(opcao.dataset.themeValue);
+      alternadorTema.focus();
     });
   });
 
-  themeMenu.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      closeThemeMenu(picker);
-      themeToggle.focus();
+  menuTema.addEventListener("keydown", (evento) => {
+    if (evento.key === "Escape") {
+      evento.preventDefault();
+      fecharMenuTema(seletor);
+      alternadorTema.focus();
     }
 
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      focusAdjacentThemeOption(themeMenu, event.key === "ArrowDown" ? 1 : -1);
-    }
-  });
-
-  document.addEventListener("click", (event) => {
-    if (!picker.contains(event.target)) {
-      closeThemeMenu(picker);
+    if (evento.key === "ArrowDown" || evento.key === "ArrowUp") {
+      evento.preventDefault();
+      focarOpcaoTemaAdjacente(menuTema, evento.key === "ArrowDown" ? 1 : -1);
     }
   });
 
-  updateThemeMenuState(getCurrentUserPreferences().theme);
+  document.addEventListener("click", (evento) => {
+    if (!seletor.contains(evento.target)) {
+      fecharMenuTema(seletor);
+    }
+  });
+
+  atualizarEstadoMenuTema(obterPreferenciasUsuarioAtual().theme);
 }
 
-function createThemePicker(themeToggle) {
-  const existingPicker = themeToggle.closest(".theme-picker");
+function criarSeletorTema(alternadorTema) {
+  const seletorExistente = alternadorTema.closest(".theme-picker");
 
-  if (existingPicker) {
-    if (!existingPicker.querySelector(".theme-menu")) {
-      existingPicker.appendChild(createThemeMenu());
+  if (seletorExistente) {
+    if (!seletorExistente.querySelector(".theme-menu")) {
+      seletorExistente.appendChild(criarMenuTema());
     }
 
-    return existingPicker;
+    return seletorExistente;
   }
 
-  const picker = document.createElement("div");
-  picker.className = "theme-picker";
+  const seletor = document.createElement("div");
+  seletor.className = "theme-picker";
 
-  themeToggle.parentNode.insertBefore(picker, themeToggle);
-  picker.appendChild(themeToggle);
-  picker.appendChild(createThemeMenu());
+  alternadorTema.parentNode.insertBefore(seletor, alternadorTema);
+  seletor.appendChild(alternadorTema);
+  seletor.appendChild(criarMenuTema());
 
-  return picker;
+  return seletor;
 }
 
-function createThemeMenu() {
+function criarMenuTema() {
   const menu = document.createElement("div");
 
   menu.className = "theme-menu";
@@ -593,412 +593,412 @@ function createThemeMenu() {
   menu.setAttribute("aria-label", "Opcoes de tema");
   menu.hidden = true;
 
-  Object.entries(THEME_MODE_OPTIONS).forEach(([value, option]) => {
-    const button = document.createElement("button");
-    const icon = document.createElement("i");
-    const label = document.createElement("span");
-    const check = document.createElement("i");
+  Object.entries(OPCOES_MODO_TEMA).forEach(([valor, opcao]) => {
+    const botao = document.createElement("button");
+    const icone = document.createElement("i");
+    const rotulo = document.createElement("span");
+    const verificacao = document.createElement("i");
 
-    button.type = "button";
-    button.className = "theme-menu-option";
-    button.dataset.themeValue = value;
-    button.setAttribute("role", "menuitemradio");
-    button.setAttribute("aria-checked", "false");
+    botao.type = "button";
+    botao.className = "theme-menu-option";
+    botao.dataset.themeValue = valor;
+    botao.setAttribute("role", "menuitemradio");
+    botao.setAttribute("aria-checked", "false");
 
-    icon.className = `bi ${option.icon}`;
-    icon.setAttribute("aria-hidden", "true");
+    icone.className = `bi ${opcao.icon}`;
+    icone.setAttribute("aria-hidden", "true");
 
-    label.textContent = option.label;
+    rotulo.textContent = opcao.label;
 
-    check.className = "bi bi-check-lg theme-menu-check";
-    check.setAttribute("aria-hidden", "true");
+    verificacao.className = "bi bi-check-lg theme-menu-check";
+    verificacao.setAttribute("aria-hidden", "true");
 
-    button.append(icon, label, check);
-    menu.appendChild(button);
+    botao.append(icone, rotulo, verificacao);
+    menu.appendChild(botao);
   });
 
   return menu;
 }
 
-function ensureThemeToggleCaret(themeToggle) {
-  if (themeToggle.querySelector(".theme-toggle-caret")) return;
+function garantirIndicadorAlternadorTema(alternadorTema) {
+  if (alternadorTema.querySelector(".theme-toggle-caret")) return;
 
-  const caret = document.createElement("i");
-  caret.className = "bi bi-chevron-down theme-toggle-caret";
-  caret.setAttribute("aria-hidden", "true");
-  themeToggle.appendChild(caret);
+  const indicadorSeta = document.createElement("i");
+  indicadorSeta.className = "bi bi-chevron-down theme-toggle-caret";
+  indicadorSeta.setAttribute("aria-hidden", "true");
+  alternadorTema.appendChild(indicadorSeta);
 }
 
-function toggleThemeMenu(picker) {
-  const isOpen = picker.classList.contains("is-open");
+function alternarMenuTema(seletor) {
+  const estaAberto = seletor.classList.contains("is-open");
 
-  if (isOpen) {
-    closeThemeMenu(picker);
+  if (estaAberto) {
+    fecharMenuTema(seletor);
     return;
   }
 
-  openThemeMenu(picker);
+  abrirMenuTema(seletor);
 }
 
-function openThemeMenu(picker) {
-  const themeToggle = picker.querySelector("#themeToggle");
-  const themeMenu = picker.querySelector(".theme-menu");
+function abrirMenuTema(seletor) {
+  const alternadorTema = seletor.querySelector("#themeToggle");
+  const menuTema = seletor.querySelector(".theme-menu");
 
-  picker.classList.add("is-open");
-  themeMenu.hidden = false;
-  themeToggle.setAttribute("aria-expanded", "true");
-  updateThemeMenuState(getCurrentUserPreferences().theme);
+  seletor.classList.add("is-open");
+  menuTema.hidden = false;
+  alternadorTema.setAttribute("aria-expanded", "true");
+  atualizarEstadoMenuTema(obterPreferenciasUsuarioAtual().theme);
 }
 
-function closeThemeMenu(picker) {
-  const themeToggle = picker.querySelector("#themeToggle");
-  const themeMenu = picker.querySelector(".theme-menu");
+function fecharMenuTema(seletor) {
+  const alternadorTema = seletor.querySelector("#themeToggle");
+  const menuTema = seletor.querySelector(".theme-menu");
 
-  picker.classList.remove("is-open");
-  themeMenu.hidden = true;
-  themeToggle.setAttribute("aria-expanded", "false");
+  seletor.classList.remove("is-open");
+  menuTema.hidden = true;
+  alternadorTema.setAttribute("aria-expanded", "false");
 }
 
-function selectThemePreference(theme) {
-  const nextTheme = normalizeChoice(theme, Object.keys(THEME_MODE_OPTIONS), USER_PREFERENCE_DEFAULTS.theme);
+function selecionarPreferenciaTema(tema) {
+  const temaProximo = normalizarEscolha(tema, Object.keys(OPCOES_MODO_TEMA), PADROES_PREFERENCIA_USUARIO.theme);
 
-  clearTimeout(themeTimer);
+  clearTimeout(temporizadorTema);
   document.body.classList.add("theme-switching");
-  applyTheme(nextTheme);
-  void saveUserPreferences({ theme: nextTheme });
-  notifyThemeChanged(nextTheme);
+  aplicarTema(temaProximo);
+  void salvarPreferenciasUsuario({ theme: temaProximo });
+  notificarAlteracaoTema(temaProximo);
 
-  themeTimer = setTimeout(() => {
+  temporizadorTema = setTimeout(() => {
     document.body.classList.remove("theme-switching");
-  }, THEME_TRANSITION_MS);
+  }, TRANSICAO_TEMA_MS);
 }
 
-function focusAdjacentThemeOption(themeMenu, direction) {
-  const options = Array.from(themeMenu.querySelectorAll(".theme-menu-option"));
-  const currentIndex = options.indexOf(document.activeElement);
-  const nextIndex = currentIndex === -1
+function focarOpcaoTemaAdjacente(menuTema, direcao) {
+  const opcoes = Array.from(menuTema.querySelectorAll(".theme-menu-option"));
+  const indiceAtual = opcoes.indexOf(document.activeElement);
+  const indiceProximo = indiceAtual === -1
     ? 0
-    : (currentIndex + direction + options.length) % options.length;
+    : (indiceAtual + direcao + opcoes.length) % opcoes.length;
 
-  options[nextIndex]?.focus();
+  opcoes[indiceProximo]?.focus();
 }
 
-function focusActiveThemeOption(themeMenu) {
-  const activeOption = themeMenu.querySelector(".theme-menu-option.active")
-    || themeMenu.querySelector(".theme-menu-option");
+function focarOpcaoTemaAtivo(menuTema) {
+  const opcaoAtiva = menuTema.querySelector(".theme-menu-option.active")
+    || menuTema.querySelector(".theme-menu-option");
 
-  activeOption?.focus();
+  opcaoAtiva?.focus();
 }
 
-function applyTheme(theme) {
+function aplicarTema(tema) {
   // Aceita dark, light ou auto. Qualquer outro valor volta para dark.
-  const themeToggle = document.getElementById("themeToggle");
-  const nextTheme = ["dark", "light", "auto"].includes(theme) ? theme : "dark";
-  const isDark = resolveThemeMode(nextTheme) === "dark";
-  const themeOption = THEME_MODE_OPTIONS[nextTheme];
+  const alternadorTema = document.getElementById("themeToggle");
+  const temaProximo = ["dark", "light", "auto"].includes(tema) ? tema : "dark";
+  const ehEscuro = resolverModoTema(temaProximo) === "dark";
+  const opcaoTema = OPCOES_MODO_TEMA[temaProximo];
 
-  document.body.classList.toggle("theme-dark", isDark);
-  document.body.classList.toggle("theme-light", !isDark);
-  document.body.dataset.themePreference = nextTheme;
-  updateBrandLogo(isDark);
+  document.body.classList.toggle("theme-dark", ehEscuro);
+  document.body.classList.toggle("theme-light", !ehEscuro);
+  document.body.dataset.themePreference = temaProximo;
+  atualizarLogoMarca(ehEscuro);
 
-  if (!themeToggle) return;
+  if (!alternadorTema) return;
 
-  const icon = themeToggle.querySelector("i");
-  const label = themeToggle.querySelector("span");
+  const icone = alternadorTema.querySelector("i");
+  const rotulo = alternadorTema.querySelector("span");
 
-  if (icon) {
-    icon.className = `bi ${themeOption.icon}`;
+  if (icone) {
+    icone.className = `bi ${opcaoTema.icon}`;
   }
 
-  if (label) {
-    label.textContent = themeOption.label;
+  if (rotulo) {
+    rotulo.textContent = opcaoTema.label;
   }
 
-  themeToggle.title = `Tema: ${themeOption.label}`;
-  updateThemeMenuState(nextTheme);
+  alternadorTema.title = `Tema: ${opcaoTema.label}`;
+  atualizarEstadoMenuTema(temaProximo);
 }
 
-function updateThemeMenuState(theme) {
-  const activeTheme = normalizeChoice(theme, Object.keys(THEME_MODE_OPTIONS), USER_PREFERENCE_DEFAULTS.theme);
+function atualizarEstadoMenuTema(tema) {
+  const temaAtivo = normalizarEscolha(tema, Object.keys(OPCOES_MODO_TEMA), PADROES_PREFERENCIA_USUARIO.theme);
 
-  document.querySelectorAll(".theme-menu-option").forEach((option) => {
-    const isActive = option.dataset.themeValue === activeTheme;
+  document.querySelectorAll(".theme-menu-option").forEach((opcao) => {
+    const ehAtivo = opcao.dataset.themeValue === temaAtivo;
 
-    option.classList.toggle("active", isActive);
-    option.setAttribute("aria-checked", String(isActive));
+    opcao.classList.toggle("active", ehAtivo);
+    opcao.setAttribute("aria-checked", String(ehAtivo));
   });
 }
 
-function notifyThemeChanged(theme) {
-  const resolvedTheme = resolveThemeMode(theme);
+function notificarAlteracaoTema(tema) {
+  const temaResolvido = resolverModoTema(tema);
 
   window.dispatchEvent(new CustomEvent("titech:theme-change", {
-    detail: { theme, resolvedTheme },
+    detail: { theme: tema, resolvedTheme: temaResolvido },
   }));
 
   if (typeof window.onThemeChanged === "function") {
-    window.onThemeChanged(theme);
+    window.onThemeChanged(tema);
   }
 }
 
-function resolveThemeMode(theme) {
+function resolverModoTema(tema) {
   // No modo auto, o navegador informa se o sistema prefere tema claro.
-  if (theme !== "auto") {
-    return theme === "light" ? "light" : "dark";
+  if (tema !== "auto") {
+    return tema === "light" ? "light" : "dark";
   }
 
   return window.matchMedia?.("(prefers-color-scheme: light)")?.matches ? "light" : "dark";
 }
 
-function setupSystemThemeListener() {
+function configurarObservadorTemaSistema() {
   // Quando o usuario escolhe auto, reagimos se o tema do sistema mudar.
-  if (systemThemeListenerAttached || !window.matchMedia) return;
+  if (observadorTemaSistemaRegistrado || !window.matchMedia) return;
 
-  const mediaQuery = window.matchMedia("(prefers-color-scheme: light)");
-  const updateAutoTheme = () => {
-    if (getCurrentUserPreferences().theme === "auto") {
-      applyTheme("auto");
-      notifyThemeChanged("auto");
+  const consultaMidia = window.matchMedia("(prefers-color-scheme: light)");
+  const atualizarTemaAutomatico = () => {
+    if (obterPreferenciasUsuarioAtual().theme === "auto") {
+      aplicarTema("auto");
+      notificarAlteracaoTema("auto");
     }
   };
 
-  mediaQuery.addEventListener?.("change", updateAutoTheme);
-  systemThemeListenerAttached = true;
+  consultaMidia.addEventListener?.("change", atualizarTemaAutomatico);
+  observadorTemaSistemaRegistrado = true;
 }
 
-function loadInterfacePreferences() {
+function carregarPreferenciasInterface() {
   // Preferencias salvas deixam as paginas com a mesma aparencia escolhida pelo usuario.
-  const preferences = getCurrentUserPreferences();
+  const preferencias = obterPreferenciasUsuarioAtual();
 
-  applyAccent(preferences.accent);
-  applyFontSizePreference(preferences.fontSize);
-  applyDensity(preferences.density);
-  applyMotionPreference(preferences.motion);
-  applyCursorPreference(preferences.cursor);
-  applySavedSidebarWidth();
+  aplicarDestaque(preferencias.accent);
+  aplicarPreferenciaTamanhoFonte(preferencias.fontSize);
+  aplicarDensidade(preferencias.density);
+  aplicarPreferenciaMovimento(preferencias.motion);
+  aplicarPreferenciaCursor(preferencias.cursor);
+  aplicarLarguraSalvaBarraLateral();
 }
 
-function applyAccent(accent) {
+function aplicarDestaque(destaque) {
   // Atualiza variaveis CSS globais para botoes, graficos e detalhes visuais.
-  const nextAccent = normalizeAccentPreference(accent);
-  const palette = getAccentPalette(nextAccent);
+  const destaqueProximo = normalizarPreferenciaDestaque(destaque);
+  const paleta = obterPaletaDestaque(destaqueProximo);
 
-  document.body.dataset.accent = isHexColor(nextAccent) ? "custom" : nextAccent;
-  document.body.style.setProperty("--cyan", palette.cyan);
-  document.body.style.setProperty("--teal", palette.teal);
-  document.body.style.setProperty("--mint", palette.mint);
-  document.body.style.setProperty("--accent", palette.accent);
-  document.body.style.setProperty("--accent-strong", getAccentStrongColor(palette.accent));
-  document.body.style.setProperty("--accent-contrast", getAccentContrastColor(palette.accent));
+  document.body.dataset.accent = ehCorHexadecimal(destaqueProximo) ? "custom" : destaqueProximo;
+  document.body.style.setProperty("--cyan", paleta.cyan);
+  document.body.style.setProperty("--teal", paleta.teal);
+  document.body.style.setProperty("--mint", paleta.mint);
+  document.body.style.setProperty("--accent", paleta.accent);
+  document.body.style.setProperty("--accent-strong", obterCorForteDestaque(paleta.accent));
+  document.body.style.setProperty("--accent-contrast", obterCorContrasteDestaque(paleta.accent));
 
   window.dispatchEvent(new CustomEvent("titech:accent-change", {
-    detail: { accent: nextAccent, palette },
+    detail: { accent: destaqueProximo, palette: paleta },
   }));
 }
 
-function getAccentPalette(accent) {
-  if (Object.hasOwn(ACCENT_THEMES, accent)) {
-    return ACCENT_THEMES[accent];
+function obterPaletaDestaque(destaque) {
+  if (Object.hasOwn(TEMAS_DESTAQUE, destaque)) {
+    return TEMAS_DESTAQUE[destaque];
   }
 
-  const rgb = hexToRgb(isHexColor(accent) ? accent : CUSTOM_ACCENT_FALLBACK);
+  const rgb = converterHexParaRgb(ehCorHexadecimal(destaque) ? destaque : PADRAO_DESTAQUE_PERSONALIZADO);
 
   return {
-    cyan: rgbToHex(mixRgb(rgb, hexToRgb("#ffffff"), 0.28)),
-    teal: rgbToHex(mixRgb(rgb, hexToRgb("#03101d"), 0.22)),
-    mint: rgbToHex(mixRgb(rgb, hexToRgb("#ffffff"), 0.42)),
-    accent: rgbToHex(rgb),
+    cyan: converterRgbParaHex(misturarRgb(rgb, converterHexParaRgb("#ffffff"), 0.28)),
+    teal: converterRgbParaHex(misturarRgb(rgb, converterHexParaRgb("#03101d"), 0.22)),
+    mint: converterRgbParaHex(misturarRgb(rgb, converterHexParaRgb("#ffffff"), 0.42)),
+    accent: converterRgbParaHex(rgb),
   };
 }
 
 // Cores muito claras ou escuras precisam de apoio para continuarem legíveis nos dois temas.
-function getAccentStrongColor(accent) {
-  const rgb = hexToRgb(accent);
-  const luminance = getRelativeLuminance(rgb);
+function obterCorForteDestaque(destaque) {
+  const rgb = converterHexParaRgb(destaque);
+  const luminancia = obterLuminanciaRelativa(rgb);
 
-  if (luminance > 0.62) {
-    return rgbToHex(mixRgb(rgb, hexToRgb("#0a253c"), 0.46));
+  if (luminancia > 0.62) {
+    return converterRgbParaHex(misturarRgb(rgb, converterHexParaRgb("#0a253c"), 0.46));
   }
 
-  if (luminance < 0.1) {
-    return rgbToHex(mixRgb(rgb, hexToRgb("#ffffff"), 0.35));
+  if (luminancia < 0.1) {
+    return converterRgbParaHex(misturarRgb(rgb, converterHexParaRgb("#ffffff"), 0.35));
   }
 
-  return rgbToHex(rgb);
+  return converterRgbParaHex(rgb);
 }
 
-  function getAccentContrastColor(accent) {
-    return getRelativeLuminance(hexToRgb(accent)) > 0.18 ? "#05291f" : "#ffffff";
+  function obterCorContrasteDestaque(destaque) {
+    return obterLuminanciaRelativa(converterHexParaRgb(destaque)) > 0.18 ? "#05291f" : "#ffffff";
   }
 
-function getRelativeLuminance({ r, g, b }) {
-  const [red, green, blue] = [r, g, b].map((channel) => {
-    const normalized = channel / 255;
+function obterLuminanciaRelativa({ r, g, b }) {
+  const [vermelho, verde, azul] = [r, g, b].map((canal) => {
+    const normalizado = canal / 255;
 
-    return normalized <= 0.04045
-      ? normalized / 12.92
-      : ((normalized + 0.055) / 1.055) ** 2.4;
+    return normalizado <= 0.04045
+      ? normalizado / 12.92
+      : ((normalizado + 0.055) / 1.055) ** 2.4;
   });
 
-  return (0.2126 * red) + (0.7152 * green) + (0.0722 * blue);
+  return (0.2126 * vermelho) + (0.7152 * verde) + (0.0722 * azul);
 }
 
-function hexToRgb(hex) {
-  const normalized = String(hex).replace("#", "");
+function converterHexParaRgb(hex) {
+  const normalizado = String(hex).replace("#", "");
 
   return {
-    r: parseInt(normalized.slice(0, 2), 16),
-    g: parseInt(normalized.slice(2, 4), 16),
-    b: parseInt(normalized.slice(4, 6), 16),
+    r: parseInt(normalizado.slice(0, 2), 16),
+    g: parseInt(normalizado.slice(2, 4), 16),
+    b: parseInt(normalizado.slice(4, 6), 16),
   };
 }
 
-function mixRgb(base, target, targetWeight) {
-  const baseWeight = 1 - targetWeight;
+function misturarRgb(base, destino, pesoDestino) {
+  const pesoBase = 1 - pesoDestino;
 
   return {
-    r: Math.round(base.r * baseWeight + target.r * targetWeight),
-    g: Math.round(base.g * baseWeight + target.g * targetWeight),
-    b: Math.round(base.b * baseWeight + target.b * targetWeight),
+    r: Math.round(base.r * pesoBase + destino.r * pesoDestino),
+    g: Math.round(base.g * pesoBase + destino.g * pesoDestino),
+    b: Math.round(base.b * pesoBase + destino.b * pesoDestino),
   };
 }
 
-function rgbToHex(rgb) {
+function converterRgbParaHex(rgb) {
   return `#${[rgb.r, rgb.g, rgb.b]
-    .map((channel) => Math.max(0, Math.min(255, channel)).toString(16).padStart(2, "0"))
+    .map((canal) => Math.max(0, Math.min(255, canal)).toString(16).padStart(2, "0"))
     .join("")}`;
 }
 
-function applyDensity(density) {
+function aplicarDensidade(densidade) {
   // Densidade compacta reduz espacamentos sem criar outro CSS completo.
-  document.body.dataset.density = density === "compact" ? "compact" : "comfortable";
+  document.body.dataset.density = densidade === "compact" ? "compact" : "comfortable";
 }
 
-function applyFontSizePreference(size) {
+function aplicarPreferenciaTamanhoFonte(tamanho) {
   // A escala fica no html para que todos os textos em rem acompanhem a preferencia.
-  const nextSize = Object.hasOwn(FONT_SIZE_OPTIONS, size) ? size : "default";
+  const tamanhoProximo = Object.hasOwn(OPCOES_TAMANHO_FONTE, tamanho) ? tamanho : "default";
 
-  document.documentElement.dataset.fontSize = nextSize;
-  document.documentElement.style.fontSize = `${FONT_SIZE_OPTIONS[nextSize]}px`;
+  document.documentElement.dataset.fontSize = tamanhoProximo;
+  document.documentElement.style.fontSize = `${OPCOES_TAMANHO_FONTE[tamanhoProximo]}px`;
 
   window.dispatchEvent(new CustomEvent("titech:font-size-change", {
-    detail: { size: nextSize, pixels: FONT_SIZE_OPTIONS[nextSize] },
+    detail: { size: tamanhoProximo, pixels: OPCOES_TAMANHO_FONTE[tamanhoProximo] },
   }));
 }
 
-function applyMotionPreference(motion) {
+function aplicarPreferenciaMovimento(movimento) {
   // Preferencia de movimento reduz animacoes para quem precisa de menos movimento.
-  const nextMotion = motion === "reduced" ? "reduced" : "normal";
+  const movimentoProximo = movimento === "reduced" ? "reduced" : "normal";
 
-  document.body.dataset.motion = nextMotion;
+  document.body.dataset.motion = movimentoProximo;
 
   window.dispatchEvent(new CustomEvent("titech:motion-change", {
-    detail: { motion: nextMotion },
+    detail: { motion: movimentoProximo },
   }));
 }
 
-function applyCursorPreference(cursor) {
+function aplicarPreferenciaCursor(cursor) {
   // O cursor personalizado segue o estilo do login e pode ser desligado nas configuracoes.
-  const isEnhanced = cursor === "enhanced";
+  const estaAprimorado = cursor === "enhanced";
 
   if (!document.body) {
     return;
   }
 
-  document.body.dataset.cursor = isEnhanced ? "enhanced" : "normal";
-  setCustomCursorEnabled(isEnhanced);
+  document.body.dataset.cursor = estaAprimorado ? "enhanced" : "normal";
+  definirCursorPersonalizadoAtivado(estaAprimorado);
 }
 
-function setCustomCursorEnabled(isEnabled) {
-  const shouldEnable = Boolean(isEnabled && isCustomCursorSupported());
+function definirCursorPersonalizadoAtivado(ehAtivado) {
+  const deveHabilitar = Boolean(ehAtivado && cursorPersonalizadoEhCompativel());
 
-  if (shouldEnable) {
-    setupCustomCursor();
+  if (deveHabilitar) {
+    configurarCursorPersonalizado();
   }
 
-  document.documentElement.classList.toggle("custom-cursor-enabled", shouldEnable);
-  document.body.classList.toggle("custom-cursor-enabled", shouldEnable);
+  document.documentElement.classList.toggle("custom-cursor-enabled", deveHabilitar);
+  document.body.classList.toggle("custom-cursor-enabled", deveHabilitar);
 
-  if (!shouldEnable) {
+  if (!deveHabilitar) {
     document.body.classList.remove("cursor-visible", "cursor-hover", "cursor-click");
   }
 }
 
-function setupCustomCursor() {
-  if (customCursorReady || !document.body || !isCustomCursorSupported()) {
+function configurarCursorPersonalizado() {
+  if (cursorPersonalizadoPronto || !document.body || !cursorPersonalizadoEhCompativel()) {
     return;
   }
 
-  customCursorElement = document.querySelector(".custom-cursor");
+  elementoCursorPersonalizado = document.querySelector(".custom-cursor");
 
-  if (!customCursorElement) {
-    customCursorElement = document.createElement("div");
-    customCursorElement.className = "custom-cursor";
-    customCursorElement.setAttribute("aria-hidden", "true");
-    document.body.appendChild(customCursorElement);
+  if (!elementoCursorPersonalizado) {
+    elementoCursorPersonalizado = document.createElement("div");
+    elementoCursorPersonalizado.className = "custom-cursor";
+    elementoCursorPersonalizado.setAttribute("aria-hidden", "true");
+    document.body.appendChild(elementoCursorPersonalizado);
   }
 
-  customCursorReady = true;
+  cursorPersonalizadoPronto = true;
 
-  window.addEventListener("mousemove", updateCustomCursorPosition, { passive: true });
-  window.addEventListener("mouseleave", hideCustomCursor);
-  window.addEventListener("blur", hideCustomCursor);
-  window.addEventListener("mousedown", pressCustomCursor);
-  window.addEventListener("mouseup", releaseCustomCursor);
-  document.addEventListener("mouseover", updateCustomCursorHover);
-  document.addEventListener("mouseout", clearCustomCursorHover);
+  window.addEventListener("mousemove", atualizarPosicaoCursorPersonalizado, { passive: true });
+  window.addEventListener("mouseleave", ocultarCursorPersonalizado);
+  window.addEventListener("blur", ocultarCursorPersonalizado);
+  window.addEventListener("mousedown", pressionarCursorPersonalizado);
+  window.addEventListener("mouseup", liberarCursorPersonalizado);
+  document.addEventListener("mouseover", atualizarSobreElementoCursorPersonalizado);
+  document.addEventListener("mouseout", limparSobreElementoCursorPersonalizado);
 }
 
-function updateCustomCursorPosition(event) {
-  if (!isCustomCursorActive() || !customCursorElement) {
+function atualizarPosicaoCursorPersonalizado(evento) {
+  if (!cursorPersonalizadoEstaAtivo() || !elementoCursorPersonalizado) {
     return;
   }
 
   document.body.classList.add("cursor-visible");
-  customCursorElement.style.left = `${event.clientX}px`;
-  customCursorElement.style.top = `${event.clientY}px`;
+  elementoCursorPersonalizado.style.left = `${evento.clientX}px`;
+  elementoCursorPersonalizado.style.top = `${evento.clientY}px`;
 }
 
-function hideCustomCursor() {
+function ocultarCursorPersonalizado() {
   document.body.classList.remove("cursor-visible", "cursor-hover", "cursor-click");
 }
 
-function pressCustomCursor() {
-  if (isCustomCursorActive()) {
+function pressionarCursorPersonalizado() {
+  if (cursorPersonalizadoEstaAtivo()) {
     document.body.classList.add("cursor-click");
   }
 }
 
-function releaseCustomCursor() {
+function liberarCursorPersonalizado() {
   document.body.classList.remove("cursor-click");
 }
 
-function updateCustomCursorHover(event) {
-  if (!isCustomCursorActive()) {
+function atualizarSobreElementoCursorPersonalizado(evento) {
+  if (!cursorPersonalizadoEstaAtivo()) {
     return;
   }
 
-  if (event.target instanceof Element && event.target.closest(CUSTOM_CURSOR_INTERACTIVE_SELECTOR)) {
+  if (evento.target instanceof Element && evento.target.closest(SELETOR_INTERATIVO_CURSOR_PERSONALIZADO)) {
     document.body.classList.add("cursor-hover");
   }
 }
 
-function clearCustomCursorHover(event) {
-  if (!isCustomCursorActive()) {
+function limparSobreElementoCursorPersonalizado(evento) {
+  if (!cursorPersonalizadoEstaAtivo()) {
     return;
   }
 
-  if (event.target instanceof Element && event.target.closest(CUSTOM_CURSOR_INTERACTIVE_SELECTOR)) {
+  if (evento.target instanceof Element && evento.target.closest(SELETOR_INTERATIVO_CURSOR_PERSONALIZADO)) {
     document.body.classList.remove("cursor-hover");
   }
 }
 
-function isCustomCursorActive() {
+function cursorPersonalizadoEstaAtivo() {
   return document.documentElement.classList.contains("custom-cursor-enabled");
 }
 
-function isCustomCursorSupported() {
+function cursorPersonalizadoEhCompativel() {
   if (!window.matchMedia) {
     return true;
   }
@@ -1006,19 +1006,19 @@ function isCustomCursorSupported() {
   return window.matchMedia("(pointer: fine)").matches && !window.matchMedia("(hover: none)").matches;
 }
 
-function setupPermissionDeniedTriggers() {
-  const restrictedItems = Array.from(document.querySelectorAll(".nav-link-disabled, .disabled-action"));
+function configurarAcionadoresPermissaoNegada() {
+  const itensRestritos = Array.from(document.querySelectorAll(".nav-link-disabled, .disabled-action"));
 
-  restrictedItems.forEach((item) => {
-    setupPermissionDeniedTrigger(item);
+  itensRestritos.forEach((item) => {
+    configurarAcionadorPermissaoNegada(item);
   });
 
   if (document.body.dataset.permissionDialogOpen === "true") {
-    openPermissionDeniedDialog(document.body);
+    abrirDialogoPermissaoNegada(document.body);
   }
 }
 
-function setupPermissionDeniedTrigger(item) {
+function configurarAcionadorPermissaoNegada(item) {
   if (item.dataset.permissionTriggerReady === "true") {
     return;
   }
@@ -1027,45 +1027,45 @@ function setupPermissionDeniedTrigger(item) {
   item.setAttribute("role", "button");
   item.setAttribute("tabindex", "0");
 
-  item.addEventListener("click", (event) => {
-    event.preventDefault();
-    openPermissionDeniedDialog(item);
+  item.addEventListener("click", (evento) => {
+    evento.preventDefault();
+    abrirDialogoPermissaoNegada(item);
   });
 
-  item.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
+  item.addEventListener("keydown", (evento) => {
+    if (evento.key !== "Enter" && evento.key !== " ") return;
 
-    event.preventDefault();
-    openPermissionDeniedDialog(item);
+    evento.preventDefault();
+    abrirDialogoPermissaoNegada(item);
   });
 }
 
-function openPermissionDeniedDialog(source) {
+function abrirDialogoPermissaoNegada(origem) {
   document.getElementById("uxToastRegion")?.remove();
   document.getElementById("settingsToast")?.classList.remove("show");
 
-  const event = new CustomEvent("titech:permission-denied", {
+  const evento = new CustomEvent("titech:permission-denied", {
     cancelable: true,
     detail: {
-      resource: source?.dataset?.permissionResource || document.body.dataset.permissionResource || "esta area",
+      resource: origem?.dataset?.permissionResource || document.body.dataset.permissionResource || "esta area",
     },
   });
 
-  window.dispatchEvent(event);
+  window.dispatchEvent(evento);
 
-  if (!event.defaultPrevented) {
-    showPermissionDeniedDialog(event.detail.resource);
+  if (!evento.defaultPrevented) {
+    exibirDialogoPermissaoNegada(evento.detail.resource);
   }
 }
 
-function showPermissionDeniedDialog(resource = "esta area") {
-  closePermissionDeniedDialog();
+function exibirDialogoPermissaoNegada(recurso = "esta area") {
+  fecharDialogoPermissaoNegada();
 
-  permissionDialogPreviousFocus = document.activeElement;
-  permissionDialogElement = document.createElement("div");
-  permissionDialogElement.className = "permission-dialog-layer";
-  permissionDialogElement.setAttribute("role", "presentation");
-  permissionDialogElement.innerHTML = `
+  focoAnteriorDialogoPermissao = document.activeElement;
+  elementoDialogoPermissao = document.createElement("div");
+  elementoDialogoPermissao.className = "permission-dialog-layer";
+  elementoDialogoPermissao.setAttribute("role", "presentation");
+  elementoDialogoPermissao.innerHTML = `
     <div class="permission-dialog-backdrop" data-permission-close></div>
     <section class="permission-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="permissionDialogTitle" aria-describedby="permissionDialogDescription">
       <div class="permission-dialog-icon" aria-hidden="true">
@@ -1073,7 +1073,7 @@ function showPermissionDeniedDialog(resource = "esta area") {
       </div>
       <p class="section-tag">Permissao necessaria</p>
       <h2 id="permissionDialogTitle">Acesso restrito</h2>
-      <p id="permissionDialogDescription">Voce nao tem permissao para acessar ${escapeHtml(resource)}. Solicite liberacao a um administrador para continuar.</p>
+      <p id="permissionDialogDescription">Voce nao tem permissao para acessar ${escaparHtml(recurso)}. Solicite liberacao a um administrador para continuar.</p>
       <button type="button" class="primary-button permission-dialog-close" data-permission-close>
         <i class="bi bi-check2-circle" aria-hidden="true"></i>
         <span>Entendi</span>
@@ -1081,66 +1081,66 @@ function showPermissionDeniedDialog(resource = "esta area") {
     </section>
   `;
 
-  permissionDialogElement.addEventListener("click", (event) => {
-    if (event.target?.closest?.("[data-permission-close]")) {
-      closePermissionDeniedDialog();
+  elementoDialogoPermissao.addEventListener("click", (evento) => {
+    if (evento.target?.closest?.("[data-permission-close]")) {
+      fecharDialogoPermissaoNegada();
     }
   });
 
-  document.addEventListener("keydown", handlePermissionDialogKeydown);
-  document.body.append(permissionDialogElement);
-  permissionDialogElement.querySelector(".permission-dialog-close")?.focus();
+  document.addEventListener("keydown", tratarTeclaDialogoPermissao);
+  document.body.append(elementoDialogoPermissao);
+  elementoDialogoPermissao.querySelector(".permission-dialog-close")?.focus();
 }
 
-function closePermissionDeniedDialog() {
-  if (!permissionDialogElement) return;
+function fecharDialogoPermissaoNegada() {
+  if (!elementoDialogoPermissao) return;
 
-  permissionDialogElement.remove();
-  permissionDialogElement = null;
-  document.removeEventListener("keydown", handlePermissionDialogKeydown);
-  permissionDialogPreviousFocus?.focus?.();
-  permissionDialogPreviousFocus = null;
+  elementoDialogoPermissao.remove();
+  elementoDialogoPermissao = null;
+  document.removeEventListener("keydown", tratarTeclaDialogoPermissao);
+  focoAnteriorDialogoPermissao?.focus?.();
+  focoAnteriorDialogoPermissao = null;
 }
 
-function handlePermissionDialogKeydown(event) {
-  if (event.key === "Escape") {
-    event.preventDefault();
-    closePermissionDeniedDialog();
+function tratarTeclaDialogoPermissao(evento) {
+  if (evento.key === "Escape") {
+    evento.preventDefault();
+    fecharDialogoPermissaoNegada();
   }
 }
 
-function escapeHtml(value) {
-  const text = document.createElement("span");
+function escaparHtml(valor) {
+  const texto = document.createElement("span");
 
-  text.textContent = String(value || "");
+  texto.textContent = String(valor || "");
 
-  return text.innerHTML;
+  return texto.innerHTML;
 }
 
-function setInputValue(id, value) {
+function definirValorCampoEntrada(id, valor) {
   // Helper pequeno para preencher inputs por id sem repetir verificacao de null.
-  const element = document.getElementById(id);
+  const elemento = document.getElementById(id);
 
-  if (element) {
-    element.value = value;
+  if (elemento) {
+    elemento.value = valor;
   }
 }
 
-function setText(element, text) {
+function definirTexto(elemento, texto) {
   // Atualiza texto quando o elemento existe.
-  if (element) {
-    element.textContent = text;
+  if (elemento) {
+    elemento.textContent = texto;
   }
 }
 
-function updateText(id, text) {
+function atualizarTexto(id, texto) {
   // Versao por id do setText, usada em paginas que atualizam contadores.
-  setText(document.getElementById(id), text);
+  definirTexto(document.getElementById(id), texto);
 }
 
-function normalizeText(value) {
+function normalizarTexto(valor) {
   // Remove acentos e padroniza caixa para buscas locais.
-  return String(value || "")
+  return String(valor || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
@@ -1149,40 +1149,40 @@ function normalizeText(value) {
 
 Object.assign(window, {
   // Expomos os helpers no window porque as paginas antigas ainda chamam essas funcoes.
-  getSavedItem,
-  setSavedItem,
-  normalizeUserPreferences,
-  getCurrentUserPreferences,
-  cacheUserPreferences,
-  applyUserPreferences,
-  saveUserPreferences,
-  updateBrandLogo,
-  startPageAnimation,
-  loadSavedTheme,
-  setupThemeToggle,
-  applyTheme,
-  resolveThemeMode,
-  loadInterfacePreferences,
-  applyAccent,
-  applyFontSizePreference,
-  applyDensity,
-  applyMotionPreference,
-  applyCursorPreference,
-  setupCustomCursor,
-  setupSidebar,
-  openSidebar,
-  closeSidebar,
-  applySidebarWidth,
-  applySavedSidebarWidth,
-  setupSidebarResize,
-  setupNavGroups,
-  setupPermissionDeniedTriggers,
-  openPermissionDeniedDialog,
-  showPermissionDeniedDialog,
-  closePermissionDeniedDialog,
-  setInputValue,
-  setText,
-  updateText,
-  normalizeText,
+  getSavedItem: obterItemSalvo,
+  setSavedItem: definirItemSalvo,
+  normalizeUserPreferences: normalizarPreferenciasUsuario,
+  getCurrentUserPreferences: obterPreferenciasUsuarioAtual,
+  cacheUserPreferences: armazenarCachePreferenciasUsuario,
+  applyUserPreferences: aplicarPreferenciasUsuario,
+  saveUserPreferences: salvarPreferenciasUsuario,
+  updateBrandLogo: atualizarLogoMarca,
+  startPageAnimation: iniciarAnimacaoPagina,
+  loadSavedTheme: carregarTemaSalvo,
+  setupThemeToggle: configurarAlternadorTema,
+  applyTheme: aplicarTema,
+  resolveThemeMode: resolverModoTema,
+  loadInterfacePreferences: carregarPreferenciasInterface,
+  applyAccent: aplicarDestaque,
+  applyFontSizePreference: aplicarPreferenciaTamanhoFonte,
+  applyDensity: aplicarDensidade,
+  applyMotionPreference: aplicarPreferenciaMovimento,
+  applyCursorPreference: aplicarPreferenciaCursor,
+  setupCustomCursor: configurarCursorPersonalizado,
+  setupSidebar: configurarBarraLateral,
+  openSidebar: abrirBarraLateral,
+  closeSidebar: fecharBarraLateral,
+  applySidebarWidth: aplicarLarguraBarraLateral,
+  applySavedSidebarWidth: aplicarLarguraSalvaBarraLateral,
+  setupSidebarResize: configurarRedimensionamentoBarraLateral,
+  setupNavGroups: configurarGruposNavegacao,
+  setupPermissionDeniedTriggers: configurarAcionadoresPermissaoNegada,
+  openPermissionDeniedDialog: abrirDialogoPermissaoNegada,
+  showPermissionDeniedDialog: exibirDialogoPermissaoNegada,
+  closePermissionDeniedDialog: fecharDialogoPermissaoNegada,
+  setInputValue: definirValorCampoEntrada,
+  setText: definirTexto,
+  updateText: atualizarTexto,
+  normalizeText: normalizarTexto,
 });
 })();

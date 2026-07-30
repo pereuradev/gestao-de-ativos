@@ -1,82 +1,82 @@
 // Valida e cadastra propriedades, atualizando métricas e filtros no navegador.
 // O mesmo módulo também atende a página de visualização, onde o formulário pode não existir.
 
-const MESSAGE_HIDE_DELAY_MS = 2700;
+const ATRASO_OCULTACAO_MENSAGEM_MS = 2700;
 
-document.addEventListener("DOMContentLoaded", initPage);
+document.addEventListener("DOMContentLoaded", inicializarPagina);
 
-function initPage() {
-  startPageAnimation();
-  loadSavedTheme();
-  setupThemeToggle();
-  setupSidebar();
-  setupNavGroups();
-  setupBrandForm();
-  setupBrandFilters();
+function inicializarPagina() {
+  iniciarAnimacaoPagina();
+  carregarTemaSalvo();
+  configurarAlternadorTema();
+  configurarBarraLateral();
+  configurarGruposNavegacao();
+  configurarFormularioMarca();
+  configurarFiltrosMarca();
 }
 
-function setupBrandForm() {
-  const form = document.getElementById("brandForm");
+function configurarFormularioMarca() {
+  const formulario = document.getElementById("brandForm");
 
-  if (!form) return;
+  if (!formulario) return;
 
-  form.addEventListener("submit", submitBrandForm);
-  form.addEventListener("reset", () => {
-    setTimeout(() => setBrandMessage("", ""), 0);
+  formulario.addEventListener("submit", enviarFormularioMarca);
+  formulario.addEventListener("reset", () => {
+    setTimeout(() => definirMensagemMarca("", ""), 0);
   });
 }
 
 // A interface só inclui a nova propriedade após confirmação do cadastro pelo backend.
-async function submitBrandForm(event) {
-  event.preventDefault();
+async function enviarFormularioMarca(evento) {
+  evento.preventDefault();
 
-  const form = event.currentTarget;
-  const submitButton = document.getElementById("brandSubmitButton");
-  const error = validateBrandForm(form);
+  const formulario = evento.currentTarget;
+  const botaoEnviar = document.getElementById("brandSubmitButton");
+  const erro = validarFormularioMarca(formulario);
 
-  if (error) {
-    setBrandMessage(error, "error");
+  if (erro) {
+    definirMensagemMarca(erro, "error");
     return;
   }
 
-  setButtonLoading(submitButton, true);
-  setBrandMessage("", "");
+  definirCarregandoBotao(botaoEnviar, true);
+  definirMensagemMarca("", "");
 
   try {
-    const response = await fetch(form.action, {
+    const resposta = await fetch(formulario.action, {
       method: "POST",
-      body: new FormData(form),
+      body: new FormData(formulario),
       headers: { Accept: "application/json" },
     });
-    const result = await response.json().catch(() => ({
+    const resultado = await resposta.json().catch(() => ({
       ok: false,
       message: "Resposta invalida do servidor.",
     }));
 
-    if (!response.ok || !result.ok) {
-      throw new Error(result.message || "Nao foi possivel cadastrar a propriedade.");
+    if (!resposta.ok || !resultado.ok) {
+      throw new Error(resultado.message || "Nao foi possivel cadastrar a propriedade.");
     }
 
-    setBrandMessage(result.message || "Propriedade cadastrada com sucesso.", "success");
-    prependBrandRow(result.propriedade);
-    updateMetricsAfterCreate(result.propriedade);
-    form.reset();
-    filterBrands();
+    definirMensagemMarca(resultado.message || "Propriedade cadastrada com sucesso.", "success");
+    inserirInicioLinhaMarca(resultado.propriedade);
+    atualizarMetricasAposCadastro(resultado.propriedade);
+    formulario.reset();
+    filtrarMarcas();
 
     setTimeout(() => {
-      setBrandMessage("", "");
-    }, MESSAGE_HIDE_DELAY_MS);
-  } catch (error) {
-    setBrandMessage(error.message || "Nao foi possivel cadastrar a propriedade.", "error");
+      definirMensagemMarca("", "");
+    }, ATRASO_OCULTACAO_MENSAGEM_MS);
+  } catch (erro) {
+    definirMensagemMarca(erro.message || "Nao foi possivel cadastrar a propriedade.", "error");
   } finally {
-    setButtonLoading(submitButton, false);
+    definirCarregandoBotao(botaoEnviar, false);
   }
 }
 
-function validateBrandForm(form) {
-  const data = new FormData(form);
-  const nome = String(data.get("nome") || "").trim();
-  const status = String(data.get("status") || "").trim();
+function validarFormularioMarca(formulario) {
+  const dados = new FormData(formulario);
+  const nome = String(dados.get("nome") || "").trim();
+  const status = String(dados.get("status") || "").trim();
 
   if (!nome || !status) {
     return "Informe nome e status para cadastrar a propriedade.";
@@ -93,163 +93,163 @@ function validateBrandForm(form) {
   return "";
 }
 
-function setButtonLoading(button, isLoading) {
-  if (!button) return;
+function definirCarregandoBotao(botao, estaCarregando) {
+  if (!botao) return;
 
-  button.disabled = isLoading;
+  botao.disabled = estaCarregando;
 
-  if (isLoading) {
-    button.replaceChildren(
-      createElement("i", "bi bi-arrow-repeat"),
-      createElement("span", "", "Cadastrando..."),
+  if (estaCarregando) {
+    botao.replaceChildren(
+      criarElemento("i", "bi bi-arrow-repeat"),
+      criarElemento("span", "", "Cadastrando..."),
     );
     return;
   }
 
-  button.replaceChildren(
-    createElement("i", "bi bi-plus-circle"),
-    createElement("span", "", "Cadastrar propriedade"),
+  botao.replaceChildren(
+    criarElemento("i", "bi bi-plus-circle"),
+    criarElemento("span", "", "Cadastrar propriedade"),
   );
 }
 
-function setBrandMessage(message, type) {
-  const element = document.getElementById("brandFormMessage");
+function definirMensagemMarca(mensagem, tipo) {
+  const elemento = document.getElementById("brandFormMessage");
 
-  if (!element) return;
+  if (!elemento) return;
 
-  element.textContent = message;
-  element.classList.toggle("show", Boolean(message));
-  element.classList.toggle("error", type === "error");
-  element.classList.toggle("success", type === "success");
+  elemento.textContent = mensagem;
+  elemento.classList.toggle("show", Boolean(mensagem));
+  elemento.classList.toggle("error", tipo === "error");
+  elemento.classList.toggle("success", tipo === "success");
 }
 
-function setupBrandFilters() {
-  document.getElementById("brandSearch")?.addEventListener("input", filterBrands);
-  document.getElementById("brandStatusFilter")?.addEventListener("change", filterBrands);
-  document.getElementById("clearBrandFilters")?.addEventListener("click", clearBrandFilters);
+function configurarFiltrosMarca() {
+  document.getElementById("brandSearch")?.addEventListener("input", filtrarMarcas);
+  document.getElementById("brandStatusFilter")?.addEventListener("change", filtrarMarcas);
+  document.getElementById("clearBrandFilters")?.addEventListener("click", limparFiltrosMarca);
 
-  filterBrands();
+  filtrarMarcas();
 }
 
-function clearBrandFilters() {
-  const search = document.getElementById("brandSearch");
+function limparFiltrosMarca() {
+  const busca = document.getElementById("brandSearch");
   const status = document.getElementById("brandStatusFilter");
 
-  if (search) {
-    search.value = "";
+  if (busca) {
+    busca.value = "";
   }
 
   if (status) {
     status.value = "todos";
   }
 
-  filterBrands();
-  search?.focus();
+  filtrarMarcas();
+  busca?.focus();
 }
 
 // Os filtros atuam nas linhas existentes e atualizam contador e estado vazio juntos.
-function filterBrands() {
-  const rows = Array.from(document.querySelectorAll(".brand-row"));
-  const search = normalizeText(document.getElementById("brandSearch")?.value || "");
-  const status = normalizeText(document.getElementById("brandStatusFilter")?.value || "todos");
-  let visibleCount = 0;
+function filtrarMarcas() {
+  const linhas = Array.from(document.querySelectorAll(".brand-row"));
+  const busca = normalizarTexto(document.getElementById("brandSearch")?.value || "");
+  const status = normalizarTexto(document.getElementById("brandStatusFilter")?.value || "todos");
+  let quantidadeVisivel = 0;
 
-  rows.forEach((row) => {
-    const rowStatus = normalizeText(row.dataset.status || "");
-    const rowSearch = normalizeText(row.dataset.search || "");
-    const matchesStatus = status === "todos" || rowStatus === status;
-    const matchesSearch = !search || rowSearch.includes(search);
-    const isVisible = matchesStatus && matchesSearch;
+  linhas.forEach((linha) => {
+    const statusLinha = normalizarTexto(linha.dataset.status || "");
+    const buscaLinha = normalizarTexto(linha.dataset.search || "");
+    const correspondeStatus = status === "todos" || statusLinha === status;
+    const correspondeBusca = !busca || buscaLinha.includes(busca);
+    const ehVisivel = correspondeStatus && correspondeBusca;
 
-    row.hidden = !isVisible;
+    linha.hidden = !ehVisivel;
 
-    if (isVisible) {
-      visibleCount += 1;
+    if (ehVisivel) {
+      quantidadeVisivel += 1;
     }
   });
 
-  updateResultCount(visibleCount);
-  updateEmptyState(rows.length === 0 || visibleCount === 0);
+  atualizarQuantidadeResultado(quantidadeVisivel);
+  atualizarEstadoVazio(linhas.length === 0 || quantidadeVisivel === 0);
 }
 
-function prependBrandRow(brand) {
-  const tbody = document.getElementById("brandTableBody");
+function inserirInicioLinhaMarca(marca) {
+  const corpoTabela = document.getElementById("brandTableBody");
 
-  if (!tbody || !brand) return;
+  if (!corpoTabela || !marca) return;
 
   document.getElementById("brandEmptyState")?.setAttribute("hidden", "");
 
-  const name = String(brand.nome || "Nova propriedade");
-  const status = String(brand.status || "Ativa");
-  const row = createElement("tr", "registration-row brand-row");
-  const nameCell = createElement("td");
-  const statusCell = createElement("td");
-  const createdCell = createElement("td", "", "Agora");
-  const nameStrong = createElement("strong", "", name);
-  const badge = createElement(
+  const nome = String(marca.nome || "Nova propriedade");
+  const status = String(marca.status || "Ativa");
+  const linha = criarElemento("tr", "registration-row brand-row");
+  const celulaNome = criarElemento("td");
+  const celulaStatus = criarElemento("td");
+  const celulaCriacao = criarElemento("td", "", "Agora");
+  const nomeDestacado = criarElemento("strong", "", nome);
+  const indicador = criarElemento(
     "span",
     `status-badge ${status === "Ativa" ? "status-active" : "status-inactive"}`,
     status,
   );
 
-  row.dataset.status = normalizeText(status);
-  row.dataset.search = normalizeText(name);
-  nameCell.dataset.label = "Propriedade";
-  statusCell.dataset.label = "Status";
-  createdCell.dataset.label = "Criada em";
+  linha.dataset.status = normalizarTexto(status);
+  linha.dataset.search = normalizarTexto(nome);
+  celulaNome.dataset.label = "Propriedade";
+  celulaStatus.dataset.label = "Status";
+  celulaCriacao.dataset.label = "Criada em";
 
-  nameCell.append(nameStrong);
-  statusCell.append(badge);
-  row.append(nameCell, statusCell, createdCell);
-  tbody.prepend(row);
+  celulaNome.append(nomeDestacado);
+  celulaStatus.append(indicador);
+  linha.append(celulaNome, celulaStatus, celulaCriacao);
+  corpoTabela.prepend(linha);
 }
 
-function updateMetricsAfterCreate(brand) {
-  incrementMetric("totalBrandsMetric");
+function atualizarMetricasAposCadastro(marca) {
+  incrementarMetrica("totalBrandsMetric");
 
-  if (String(brand?.status || "") === "Inativa") {
-    incrementMetric("inactiveBrandsMetric");
+  if (String(marca?.status || "") === "Inativa") {
+    incrementarMetrica("inactiveBrandsMetric");
     return;
   }
 
-  incrementMetric("activeBrandsMetric");
+  incrementarMetrica("activeBrandsMetric");
 }
 
-function incrementMetric(id) {
-  const element = document.getElementById(id);
-  const value = Number(element?.textContent || 0);
+function incrementarMetrica(id) {
+  const elemento = document.getElementById(id);
+  const valor = Number(elemento?.textContent || 0);
 
-  if (element) {
-    element.textContent = String(Number.isFinite(value) ? value + 1 : 1);
+  if (elemento) {
+    elemento.textContent = String(Number.isFinite(valor) ? valor + 1 : 1);
   }
 }
 
-function updateResultCount(count) {
-  const resultCount = document.getElementById("brandResultCount");
+function atualizarQuantidadeResultado(quantidade) {
+  const quantidadeResultado = document.getElementById("brandResultCount");
 
-  if (!resultCount) return;
+  if (!quantidadeResultado) return;
 
-  resultCount.textContent = `${count.toLocaleString("pt-BR")} ${count === 1 ? "registro" : "registros"}`;
+  quantidadeResultado.textContent = `${quantidade.toLocaleString("pt-BR")} ${quantidade === 1 ? "registro" : "registros"}`;
 }
 
-function updateEmptyState(show) {
-  const emptyState = document.getElementById("brandEmptyState");
+function atualizarEstadoVazio(exibir) {
+  const estadoVazio = document.getElementById("brandEmptyState");
 
-  if (emptyState) {
-    emptyState.hidden = !show;
+  if (estadoVazio) {
+    estadoVazio.hidden = !exibir;
   }
 }
 
-function createElement(tag, className = "", text = "") {
-  const element = document.createElement(tag);
+function criarElemento(etiqueta, nomeClasse = "", texto = "") {
+  const elemento = document.createElement(etiqueta);
 
-  if (className) {
-    element.className = className;
+  if (nomeClasse) {
+    elemento.className = nomeClasse;
   }
 
-  if (text) {
-    element.textContent = text;
+  if (texto) {
+    elemento.textContent = texto;
   }
 
-  return element;
+  return elemento;
 }

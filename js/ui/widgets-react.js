@@ -2,100 +2,100 @@
 // React e ReactDOM são dependências globais; sem elas, o módulo encerra sem afetar a página.
 
 (function () {
-  function onReady(callback) {
+  function aoCarregar(funcaoRetorno) {
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", callback, { once: true });
+      document.addEventListener("DOMContentLoaded", funcaoRetorno, { once: true });
       return;
     }
 
-    callback();
+    funcaoRetorno();
   }
 
-  function initReactWidgets() {
+  function inicializarWidgetsReact() {
     // O widget é progressivo: a página continua funcional quando React não está disponível.
     if (!window.React || !window.ReactDOM) {
       return;
     }
 
-    const root = document.createElement("div");
-    root.id = "reactResponsiveRoot";
-    root.dataset.reactRoot = "responsive-tools";
-    document.body.appendChild(root);
+    const raiz = document.createElement("div");
+    raiz.id = "reactResponsiveRoot";
+    raiz.dataset.reactRoot = "responsive-tools";
+    document.body.appendChild(raiz);
 
-    const h = window.React.createElement;
+    const criarElementoReact = window.React.createElement;
     const { useEffect, useRef, useState } = window.React;
 
-    function HeadlessPermissionDialog() {
-      const [isOpen, setIsOpen] = useState(false);
-      const [resource, setResource] = useState("esta area");
-      const closeButtonRef = useRef(null);
+    function DialogoPermissaoSemCabecalho() {
+      const [estaAberto, definirAberto] = useState(false);
+      const [recurso, definirRecurso] = useState("esta area");
+      const referenciaBotaoFechar = useRef(null);
 
-      function closeDialog() {
-        setIsOpen(false);
+      function fecharDialogo() {
+        definirAberto(false);
       }
 
       // Escuta o evento global usado pelas rotas para abrir o aviso de permissão.
       useEffect(() => {
-        function openDialog(event) {
-          event.preventDefault?.();
+        function abrirDialogo(evento) {
+          evento.preventDefault?.();
           document.getElementById("uxToastRegion")?.remove();
           document.getElementById("settingsToast")?.classList.remove("show");
-          setResource(event.detail?.resource || "esta area");
-          setIsOpen(true);
+          definirRecurso(evento.detail?.resource || "esta area");
+          definirAberto(true);
         }
 
-        window.addEventListener("titech:permission-denied", openDialog);
+        window.addEventListener("titech:permission-denied", abrirDialogo);
 
         if (document.body.dataset.permissionDialogOpen === "true") {
-          openDialog({
+          abrirDialogo({
             detail: {
               resource: document.body.dataset.permissionResource || "esta area",
             },
           });
         }
 
-        return () => window.removeEventListener("titech:permission-denied", openDialog);
+        return () => window.removeEventListener("titech:permission-denied", abrirDialogo);
       }, []);
 
       // Ao abrir, controla Escape e restaura o foco no elemento anterior ao fechar.
       useEffect(() => {
-        if (!isOpen) {
+        if (!estaAberto) {
           return undefined;
         }
 
-        const previousFocus = document.activeElement;
-        closeButtonRef.current?.focus();
+        const focoAnterior = document.activeElement;
+        referenciaBotaoFechar.current?.focus();
 
-        function handleKeydown(event) {
-          if (event.key === "Escape") {
-            event.preventDefault();
-            closeDialog();
+        function tratarTeclaPressionada(evento) {
+          if (evento.key === "Escape") {
+            evento.preventDefault();
+            fecharDialogo();
           }
         }
 
-        document.addEventListener("keydown", handleKeydown);
+        document.addEventListener("keydown", tratarTeclaPressionada);
 
         return () => {
-          document.removeEventListener("keydown", handleKeydown);
-          previousFocus?.focus?.();
+          document.removeEventListener("keydown", tratarTeclaPressionada);
+          focoAnterior?.focus?.();
         };
-      }, [isOpen]);
+      }, [estaAberto]);
 
-      if (!isOpen) {
+      if (!estaAberto) {
         return null;
       }
 
-      return h(
+      return criarElementoReact(
         "div",
         {
           className: "permission-dialog-layer",
           role: "presentation",
         },
-        h("div", {
+        criarElementoReact("div", {
           className: "permission-dialog-backdrop",
-          onClick: closeDialog,
+          onClick: fecharDialogo,
         }),
-        h(
+        criarElementoReact(
           "section",
           {
             className: "permission-dialog-panel",
@@ -104,39 +104,39 @@
             "aria-labelledby": "permissionDialogTitle",
             "aria-describedby": "permissionDialogDescription",
           },
-          h(
+          criarElementoReact(
             "div",
             { className: "permission-dialog-icon", "aria-hidden": "true" },
-            h("i", { className: "bi bi-shield-lock-fill" }),
+            criarElementoReact("i", { className: "bi bi-shield-lock-fill" }),
           ),
-          h("p", { className: "section-tag" }, "Permissao necessaria"),
-          h("h2", { id: "permissionDialogTitle" }, "Acesso restrito"),
-          h(
+          criarElementoReact("p", { className: "section-tag" }, "Permissao necessaria"),
+          criarElementoReact("h2", { id: "permissionDialogTitle" }, "Acesso restrito"),
+          criarElementoReact(
             "p",
             { id: "permissionDialogDescription" },
-            `Voce nao tem permissao para acessar ${resource}. Solicite liberacao a um administrador para continuar.`,
+            `Voce nao tem permissao para acessar ${recurso}. Solicite liberacao a um administrador para continuar.`,
           ),
-          h(
+          criarElementoReact(
             "button",
             {
-              ref: closeButtonRef,
+              ref: referenciaBotaoFechar,
               type: "button",
               className: "primary-button permission-dialog-close",
-              onClick: closeDialog,
+              onClick: fecharDialogo,
             },
-            h("i", { className: "bi bi-check2-circle", "aria-hidden": "true" }),
-            h("span", null, "Entendi"),
+            criarElementoReact("i", { className: "bi bi-check2-circle", "aria-hidden": "true" }),
+            criarElementoReact("span", null, "Entendi"),
           ),
         ),
       );
     }
 
-    function ReactWidgetsApp() {
-      return h(HeadlessPermissionDialog);
+    function AplicacaoWidgetsReact() {
+      return criarElementoReact(DialogoPermissaoSemCabecalho);
     }
 
-    window.ReactDOM.createRoot(root).render(h(ReactWidgetsApp));
+    window.ReactDOM.createRoot(raiz).render(criarElementoReact(AplicacaoWidgetsReact));
   }
 
-  onReady(initReactWidgets);
+  aoCarregar(inicializarWidgetsReact);
 })();

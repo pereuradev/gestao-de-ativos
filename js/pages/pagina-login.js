@@ -1,11 +1,11 @@
 // Controla autenticação, tema, perfil lembrado e estados acessíveis da página de login.
 // Dados sensíveis não são persistidos; o armazenamento local guarda apenas preferências de interface.
 
-const state = {
+const estado = {
   role: "Colaborador",
 };
 
-const STORAGE_KEYS = {
+const CHAVES_ARMAZENAMENTO = {
   theme: "titech-theme",
   accent: "titech-accent",
   fontSize: "titech-font-size",
@@ -16,7 +16,7 @@ const STORAGE_KEYS = {
   profile: "titech-profile",
 };
 
-const CONFIG = {
+const CONFIGURACAO = {
   loginUrl: "../Backend/login-usuario.php",
   redirectUrl: "pagina-inicial.php",
   inactiveAccountMessage:
@@ -30,7 +30,7 @@ const CONFIG = {
   serverUnavailableMessage: "Servidor indisponivel. Tente novamente em instantes.",
 };
 
-const ROLE_CONTENT = {
+const CONTEUDO_TIPO_USUARIO = {
   Administrador: {
     badge: "Controle total do ambiente",
     title: "Acesso administrativo",
@@ -45,107 +45,107 @@ const ROLE_CONTENT = {
   },
 };
 
-let themeTimer = null;
-let toastTimer = null;
-let toastRemoveTimer = null;
-let inactiveDialogLastFocus = null;
-let roleSwitchAnimating = false;
+let temporizadorTema = null;
+let temporizadorNotificacao = null;
+let temporizadorRemoverNotificacao = null;
+let focoUltimoDialogoInativo = null;
+let animandoTrocaTipoUsuario = false;
 
-document.addEventListener("DOMContentLoaded", init);
+document.addEventListener("DOMContentLoaded", inicializar);
 
-function getEl(id) {
+function obterElemento(id) {
   return document.getElementById(id);
 }
 
 // O acesso ao armazenamento é protegido porque o navegador pode bloqueá-lo por privacidade.
-function getSavedItem(key) {
+function obterItemSalvo(chave) {
   try {
-    return localStorage.getItem(key);
+    return localStorage.getItem(chave);
   } catch {
     return null;
   }
 }
 
-function setSavedItem(key, value) {
+function definirItemSalvo(chave, valor) {
   try {
-    localStorage.setItem(key, value);
+    localStorage.setItem(chave, valor);
   } catch {
     return;
   }
 }
 
-function normalizeLoginPreference(value, allowedValues, fallback) {
-  const normalized = String(value ?? "").trim();
+function normalizarPreferenciaLogin(valor, valoresPermitidos, padrao) {
+  const normalizado = String(valor ?? "").trim();
 
-  return allowedValues.includes(normalized) ? normalized : fallback;
+  return valoresPermitidos.includes(normalizado) ? normalizado : padrao;
 }
 
-function saveInterfacePreferencesFromLogin(preferences) {
-  if (!preferences || typeof preferences !== "object") {
+function salvarPreferenciasInterfacePeloLogin(preferencias) {
+  if (!preferencias || typeof preferencias !== "object") {
     return;
   }
 
-  setSavedItem(
-    STORAGE_KEYS.theme,
-    normalizeLoginPreference(preferences.theme, ["dark", "light", "auto"], "dark"),
+  definirItemSalvo(
+    CHAVES_ARMAZENAMENTO.theme,
+    normalizarPreferenciaLogin(preferencias.theme, ["dark", "light", "auto"], "dark"),
   );
-  setSavedItem(
-    STORAGE_KEYS.accent,
-    normalizeLoginPreference(preferences.accent, ["teal", "green", "blue", "violet"], "teal"),
+  definirItemSalvo(
+    CHAVES_ARMAZENAMENTO.accent,
+    normalizarPreferenciaLogin(preferencias.accent, ["teal", "green", "blue", "violet"], "teal"),
   );
-  setSavedItem(
-    STORAGE_KEYS.fontSize,
-    normalizeLoginPreference(preferences.fontSize, ["small", "default", "large", "extra"], "default"),
+  definirItemSalvo(
+    CHAVES_ARMAZENAMENTO.fontSize,
+    normalizarPreferenciaLogin(preferencias.fontSize, ["small", "default", "large", "extra"], "default"),
   );
-  setSavedItem(
-    STORAGE_KEYS.density,
-    normalizeLoginPreference(preferences.density, ["comfortable", "compact"], "comfortable"),
+  definirItemSalvo(
+    CHAVES_ARMAZENAMENTO.density,
+    normalizarPreferenciaLogin(preferencias.density, ["comfortable", "compact"], "comfortable"),
   );
-  setSavedItem(
-    STORAGE_KEYS.motion,
-    normalizeLoginPreference(preferences.motion, ["normal", "reduced"], "normal"),
+  definirItemSalvo(
+    CHAVES_ARMAZENAMENTO.motion,
+    normalizarPreferenciaLogin(preferencias.motion, ["normal", "reduced"], "normal"),
   );
-  setSavedItem(
-    STORAGE_KEYS.cursor,
-    normalizeLoginPreference(preferences.cursor, ["enhanced", "normal"], "enhanced"),
+  definirItemSalvo(
+    CHAVES_ARMAZENAMENTO.cursor,
+    normalizarPreferenciaLogin(preferencias.cursor, ["enhanced", "normal"], "enhanced"),
   );
 }
 
-function removeSavedItem(key) {
+function removerItemSalvo(chave) {
   try {
-    localStorage.removeItem(key);
+    localStorage.removeItem(chave);
   } catch {
     return;
   }
 }
 
-function removeLegacyPassword() {
-  removeSavedItem("titech-password");
+function removerSenhaLegado() {
+  removerItemSalvo("titech-password");
 }
 
-function createElement(tag, className, text = "") {
-  const element = document.createElement(tag);
+function criarElemento(etiqueta, nomeClasse, texto = "") {
+  const elemento = document.createElement(etiqueta);
 
-  if (className) {
-    element.className = className;
+  if (nomeClasse) {
+    elemento.className = nomeClasse;
   }
 
-  if (text) {
-    element.textContent = text;
+  if (texto) {
+    elemento.textContent = texto;
   }
 
-  return element;
+  return elemento;
 }
 
-function createPageTransitionLayer() {
+function criarCamadaTransicaoPagina() {
   if (document.querySelector(".page-transition-layer")) return;
 
-  const layer = createElement("div", "page-transition-layer");
-  document.body.appendChild(layer);
+  const camada = criarElemento("div", "page-transition-layer");
+  document.body.appendChild(camada);
 }
 
-function startPageEntrance() {
-  createPageTransitionLayer();
+function iniciarEntradaPagina() {
+  criarCamadaTransicaoPagina();
 
   requestAnimationFrame(() => {
     document.body.classList.remove("page-loading");
@@ -153,133 +153,133 @@ function startPageEntrance() {
 }
 
 // A transição respeita a preferência de movimento reduzido antes de navegar.
-function navigateWithTransition(url) {
+function navegarComTransicao(url) {
   if (!url) return;
 
   document.body.classList.add("page-leaving");
 
   setTimeout(() => {
     window.location.href = new URL(url, window.location.href).href;
-  }, CONFIG.pageTransitionDelay);
+  }, CONFIGURACAO.pageTransitionDelay);
 }
 
-function updateThemeButton(button, isDark) {
-  const label = button.querySelector(".label");
-  const description = button.querySelector("small");
-  const icon = button.querySelector("i");
+function atualizarBotaoTema(botao, ehEscuro) {
+  const rotulo = botao.querySelector(".label");
+  const descricao = botao.querySelector("small");
+  const icone = botao.querySelector("i");
 
-  if (label) {
-    label.textContent = isDark ? "Modo claro" : "Modo escuro";
+  if (rotulo) {
+    rotulo.textContent = ehEscuro ? "Modo claro" : "Modo escuro";
   }
 
-  if (description) {
-    description.textContent = "Trocar tema";
+  if (descricao) {
+    descricao.textContent = "Trocar tema";
   }
 
-  if (icon) {
-    icon.className = isDark ? "bi bi-sun" : "bi bi-moon-stars";
+  if (icone) {
+    icone.className = ehEscuro ? "bi bi-sun" : "bi bi-moon-stars";
   }
 
-  button.setAttribute(
+  botao.setAttribute(
     "aria-label",
-    isDark ? "Alternar para modo claro" : "Alternar para modo escuro",
+    ehEscuro ? "Alternar para modo claro" : "Alternar para modo escuro",
   );
 }
 
-function resolveLoginTheme(theme) {
-  if (theme === "auto") {
+function resolverTemaLogin(tema) {
+  if (tema === "auto") {
     return window.matchMedia?.("(prefers-color-scheme: light)")?.matches ? "light" : "dark";
   }
 
-  return theme === "light" ? "light" : "dark";
+  return tema === "light" ? "light" : "dark";
 }
 
-function setTheme(theme) {
-  const selectedTheme = ["dark", "light", "auto"].includes(theme) ? theme : "dark";
-  const isDark = resolveLoginTheme(selectedTheme) === "dark";
+function definirTema(tema) {
+  const temaSelecionado = ["dark", "light", "auto"].includes(tema) ? tema : "dark";
+  const ehEscuro = resolverTemaLogin(temaSelecionado) === "dark";
 
-  document.body.classList.toggle("theme-dark", isDark);
-  setSavedItem(STORAGE_KEYS.theme, selectedTheme);
+  document.body.classList.toggle("theme-dark", ehEscuro);
+  definirItemSalvo(CHAVES_ARMAZENAMENTO.theme, temaSelecionado);
 
-  document.querySelectorAll(".theme-toggle").forEach((button) => {
-    updateThemeButton(button, isDark);
+  document.querySelectorAll(".theme-toggle").forEach((botao) => {
+    atualizarBotaoTema(botao, ehEscuro);
   });
 }
 
-function toggleTheme() {
-  const isDark = document.body.classList.contains("theme-dark");
-  const nextTheme = isDark ? "light" : "dark";
+function alternarTema() {
+  const ehEscuro = document.body.classList.contains("theme-dark");
+  const temaProximo = ehEscuro ? "light" : "dark";
 
-  clearTimeout(themeTimer);
+  clearTimeout(temporizadorTema);
   document.body.classList.add("theme-switching");
 
   requestAnimationFrame(() => {
-    setTheme(nextTheme);
+    definirTema(temaProximo);
 
-    themeTimer = setTimeout(() => {
+    temporizadorTema = setTimeout(() => {
       document.body.classList.remove("theme-switching");
-    }, CONFIG.themeTransitionDelay);
+    }, CONFIGURACAO.themeTransitionDelay);
   });
 }
 
-function buildToast(message, type) {
-  const toast = createElement("div", `toastx toastx-${type}`);
-  toast.setAttribute("role", type === "error" ? "alert" : "status");
-  const icon = createElement(
+function montarNotificacao(mensagem, tipo) {
+  const notificacao = criarElemento("div", `toastx toastx-${tipo}`);
+  notificacao.setAttribute("role", tipo === "error" ? "alert" : "status");
+  const icone = criarElemento(
     "i",
-    type === "error" ? "bi bi-x-circle" : "bi bi-check-circle",
+    tipo === "error" ? "bi bi-x-circle" : "bi bi-check-circle",
   );
-  icon.setAttribute("aria-hidden", "true");
-  const text = createElement("span", "", message);
+  icone.setAttribute("aria-hidden", "true");
+  const texto = criarElemento("span", "", mensagem);
 
-  toast.append(icon, text);
+  notificacao.append(icone, texto);
 
-  return toast;
+  return notificacao;
 }
 
-function showToast(message, type = "success") {
-  const toastStack = getEl("toastStack");
+function exibirNotificacao(mensagem, tipo = "success") {
+  const pilhaNotificacoes = obterElemento("toastStack");
 
-  if (!toastStack || !message) return;
+  if (!pilhaNotificacoes || !mensagem) return;
 
-  clearTimeout(toastTimer);
-  clearTimeout(toastRemoveTimer);
+  clearTimeout(temporizadorNotificacao);
+  clearTimeout(temporizadorRemoverNotificacao);
 
-  let toast = toastStack.querySelector(".toastx");
+  let notificacao = pilhaNotificacoes.querySelector(".toastx");
 
-  if (!toast) {
-    toast = buildToast(message, type);
-    toastStack.appendChild(toast);
+  if (!notificacao) {
+    notificacao = montarNotificacao(mensagem, tipo);
+    pilhaNotificacoes.appendChild(notificacao);
   } else {
-    const icon = toast.querySelector("i");
-    const text = toast.querySelector("span");
+    const icone = notificacao.querySelector("i");
+    const texto = notificacao.querySelector("span");
 
-    if (icon) {
-      icon.className =
-        type === "error" ? "bi bi-x-circle" : "bi bi-check-circle";
+    if (icone) {
+      icone.className =
+        tipo === "error" ? "bi bi-x-circle" : "bi bi-check-circle";
     }
 
-    if (text) {
-      text.textContent = message;
+    if (texto) {
+      texto.textContent = mensagem;
     }
 
-    toast.className = `toastx toastx-${type}`;
+    notificacao.className = `toastx toastx-${tipo}`;
   }
 
-  toast.classList.remove("hide");
-  toast.classList.add("show");
+  notificacao.classList.remove("hide");
+  notificacao.classList.add("show");
 
-  toastTimer = setTimeout(() => {
-    toast.classList.remove("show");
-    toast.classList.add("hide");
+  temporizadorNotificacao = setTimeout(() => {
+    notificacao.classList.remove("show");
+    notificacao.classList.add("hide");
 
-    toastRemoveTimer = setTimeout(() => {
-      toast.remove();
-    }, CONFIG.toastRemoveDelay);
-  }, CONFIG.toastDuration);
+    temporizadorRemoverNotificacao = setTimeout(() => {
+      notificacao.remove();
+    }, CONFIGURACAO.toastRemoveDelay);
+  }, CONFIGURACAO.toastDuration);
 }
 
-function validateLogin(email, password) {
+function validarLogin(email, senha) {
   if (!email) {
     return {
       ok: false,
@@ -296,7 +296,7 @@ function validateLogin(email, password) {
     };
   }
 
-  if (!isCorporateEmail(email)) {
+  if (!ehEmailCorporativo(email)) {
     return {
       ok: false,
       field: "email",
@@ -304,7 +304,7 @@ function validateLogin(email, password) {
     };
   }
 
-  if (!password) {
+  if (!senha) {
     return {
       ok: false,
       field: "password",
@@ -312,7 +312,7 @@ function validateLogin(email, password) {
     };
   }
 
-  if (password.length < 4) {
+  if (senha.length < 4) {
     return {
       ok: false,
       field: "password",
@@ -323,583 +323,583 @@ function validateLogin(email, password) {
   return { ok: true, field: "", message: "" };
 }
 
-function isCorporateEmail(email) {
+function ehEmailCorporativo(email) {
   return email.toLowerCase().endsWith("@titechsolutions.com.br");
 }
 
-function setFieldError(fieldId, message) {
-  const input = getEl(fieldId);
-  const error = getEl(`${fieldId}Error`);
-  const wrap = input?.closest(".input-wrap");
+function definirErroCampo(idCampo, mensagem) {
+  const campoEntrada = obterElemento(idCampo);
+  const erro = obterElemento(`${idCampo}Error`);
+  const recipiente = campoEntrada?.closest(".input-wrap");
 
-  if (!input || !error || !wrap) return;
+  if (!campoEntrada || !erro || !recipiente) return;
 
-  input.setAttribute("aria-invalid", "true");
-  wrap.classList.add("field-invalid");
-  error.textContent = message;
-  error.hidden = false;
+  campoEntrada.setAttribute("aria-invalid", "true");
+  recipiente.classList.add("field-invalid");
+  erro.textContent = mensagem;
+  erro.hidden = false;
 }
 
-function clearFieldError(fieldId) {
-  const input = getEl(fieldId);
-  const error = getEl(`${fieldId}Error`);
-  const wrap = input?.closest(".input-wrap");
+function limparErroCampo(idCampo) {
+  const campoEntrada = obterElemento(idCampo);
+  const erro = obterElemento(`${idCampo}Error`);
+  const recipiente = campoEntrada?.closest(".input-wrap");
 
-  if (!input || !error || !wrap) return;
+  if (!campoEntrada || !erro || !recipiente) return;
 
-  input.setAttribute("aria-invalid", "false");
-  wrap.classList.remove("field-invalid");
-  error.textContent = "";
-  error.hidden = true;
+  campoEntrada.setAttribute("aria-invalid", "false");
+  recipiente.classList.remove("field-invalid");
+  erro.textContent = "";
+  erro.hidden = true;
 }
 
-function clearLoginValidation() {
-  clearFieldError("email");
-  clearFieldError("password");
+function limparValidacaoLogin() {
+  limparErroCampo("email");
+  limparErroCampo("password");
 }
 
-function getLoginFailureMessage(response, data) {
-  if (response.status >= 500) {
-    return CONFIG.serverUnavailableMessage;
+function obterMensagemFalhaLogin(resposta, dados) {
+  if (resposta.status >= 500) {
+    return CONFIGURACAO.serverUnavailableMessage;
   }
 
-  if (response.status === 401) {
-    return CONFIG.invalidCredentialsMessage;
+  if (resposta.status === 401) {
+    return CONFIGURACAO.invalidCredentialsMessage;
   }
 
-  return data.message || CONFIG.invalidCredentialsMessage;
+  return dados.message || CONFIGURACAO.invalidCredentialsMessage;
 }
 
-function setLoginButtonLoading(button, isLoading) {
-  if (!button) return;
+function definirCarregandoBotaoLogin(botao, estaCarregando) {
+  if (!botao) return;
 
-  button.disabled = isLoading;
-  button.setAttribute("aria-busy", isLoading ? "true" : "false");
-  button.dataset.loading = isLoading ? "true" : "false";
+  botao.disabled = estaCarregando;
+  botao.setAttribute("aria-busy", estaCarregando ? "true" : "false");
+  botao.dataset.loading = estaCarregando ? "true" : "false";
 
-  if (!isLoading) {
-    const icon = createElement("i", "bi bi-lock");
-    icon.setAttribute("aria-hidden", "true");
-    const text = createElement("span", "", button.dataset.defaultLabel || "Entrar");
+  if (!estaCarregando) {
+    const icone = criarElemento("i", "bi bi-lock");
+    icone.setAttribute("aria-hidden", "true");
+    const texto = criarElemento("span", "", botao.dataset.defaultLabel || "Entrar");
 
-    button.replaceChildren(icon, text);
+    botao.replaceChildren(icone, texto);
     return;
   }
 
-  const spinner = createElement("i", "bi bi-arrow-repeat button-spinner");
-  spinner.setAttribute("aria-hidden", "true");
-  const text = createElement("span", "", "Validando acesso...");
+  const indicadorCarregamento = criarElemento("i", "bi bi-arrow-repeat button-spinner");
+  indicadorCarregamento.setAttribute("aria-hidden", "true");
+  const texto = criarElemento("span", "", "Validando acesso...");
 
-  button.replaceChildren(spinner, text);
+  botao.replaceChildren(indicadorCarregamento, texto);
 }
 
-function saveProfilePreference(email, role, shouldSave) {
-  removeLegacyPassword();
+function salvarPreferenciaPerfil(email, tipoUsuario, deveSalvar) {
+  removerSenhaLegado();
 
-  if (shouldSave) {
-    setSavedItem(STORAGE_KEYS.email, email);
-    setSavedItem(STORAGE_KEYS.profile, role);
+  if (deveSalvar) {
+    definirItemSalvo(CHAVES_ARMAZENAMENTO.email, email);
+    definirItemSalvo(CHAVES_ARMAZENAMENTO.profile, tipoUsuario);
     return;
   }
 
-  removeSavedItem(STORAGE_KEYS.email);
-  removeSavedItem(STORAGE_KEYS.profile);
+  removerItemSalvo(CHAVES_ARMAZENAMENTO.email);
+  removerItemSalvo(CHAVES_ARMAZENAMENTO.profile);
 }
 
-function openInactiveAccountDialog(message) {
-  const dialog = getEl("inactiveAccountDialog");
-  const text = getEl("inactiveAccountText");
+function abrirDialogoContaInativa(mensagem) {
+  const dialogo = obterElemento("inactiveAccountDialog");
+  const texto = obterElemento("inactiveAccountText");
 
-  if (!dialog) {
-    showToast(message || CONFIG.inactiveAccountMessage, "error");
+  if (!dialogo) {
+    exibirNotificacao(mensagem || CONFIGURACAO.inactiveAccountMessage, "error");
     return;
   }
 
-  inactiveDialogLastFocus =
+  focoUltimoDialogoInativo =
     document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
-  if (text) {
-    text.textContent = message || CONFIG.inactiveAccountMessage;
+  if (texto) {
+    texto.textContent = mensagem || CONFIGURACAO.inactiveAccountMessage;
   }
 
-  dialog.hidden = false;
+  dialogo.hidden = false;
   document.body.classList.add("login-modal-open");
-  dialog.querySelector("[data-close-inactive-dialog]")?.focus();
+  dialogo.querySelector("[data-close-inactive-dialog]")?.focus();
 }
 
-function closeInactiveAccountDialog() {
-  const dialog = getEl("inactiveAccountDialog");
+function fecharDialogoContaInativa() {
+  const dialogo = obterElemento("inactiveAccountDialog");
 
-  if (!dialog) {
+  if (!dialogo) {
     return;
   }
 
-  dialog.hidden = true;
+  dialogo.hidden = true;
   document.body.classList.remove("login-modal-open");
-  inactiveDialogLastFocus?.focus?.();
-  inactiveDialogLastFocus = null;
+  focoUltimoDialogoInativo?.focus?.();
+  focoUltimoDialogoInativo = null;
 }
 
 // O diálogo controla foco e tecla Escape para manter a navegação acessível.
-function initInactiveAccountDialog() {
-  const dialog = getEl("inactiveAccountDialog");
+function inicializarDialogoContaInativo() {
+  const dialogo = obterElemento("inactiveAccountDialog");
 
-  if (!dialog) {
+  if (!dialogo) {
     return;
   }
 
-  dialog.querySelectorAll("[data-close-inactive-dialog]").forEach((button) => {
-    button.addEventListener("click", closeInactiveAccountDialog);
+  dialogo.querySelectorAll("[data-close-inactive-dialog]").forEach((botao) => {
+    botao.addEventListener("click", fecharDialogoContaInativa);
   });
 
-  dialog.addEventListener("click", (event) => {
-    if (event.target === dialog) {
-      closeInactiveAccountDialog();
+  dialogo.addEventListener("click", (evento) => {
+    if (evento.target === dialogo) {
+      fecharDialogoContaInativa();
     }
   });
 
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !dialog.hidden) {
-      closeInactiveAccountDialog();
+  document.addEventListener("keydown", (evento) => {
+    if (evento.key === "Escape" && !dialogo.hidden) {
+      fecharDialogoContaInativa();
     }
   });
 }
 
 // A navegação para o portal ocorre somente após autenticação confirmada pelo backend.
-async function handleLogin(event) {
-  event.preventDefault();
+async function tratarLogin(evento) {
+  evento.preventDefault();
 
-  const emailInput = getEl("email");
-  const passwordInput = getEl("password");
-  const rememberProfile = getEl("rememberProfile");
-  const loginError = getEl("loginError");
-  const loginButton = getEl("loginButton");
+  const campoEntradaEmail = obterElemento("email");
+  const campoEntradaSenha = obterElemento("password");
+  const lembrarPerfil = obterElemento("rememberProfile");
+  const erroLogin = obterElemento("loginError");
+  const botaoLogin = obterElemento("loginButton");
 
   if (
-    !emailInput ||
-    !passwordInput ||
-    !rememberProfile ||
-    !loginError ||
-    !loginButton
+    !campoEntradaEmail ||
+    !campoEntradaSenha ||
+    !lembrarPerfil ||
+    !erroLogin ||
+    !botaoLogin
   ) {
     return;
   }
 
-  const email = emailInput.value.trim();
-  const password = passwordInput.value;
-  const validation = validateLogin(email, password);
+  const email = campoEntradaEmail.value.trim();
+  const senha = campoEntradaSenha.value;
+  const validacao = validarLogin(email, senha);
 
-  clearLoginValidation();
+  limparValidacaoLogin();
 
-  if (!validation.ok) {
-    loginError.textContent = validation.message;
-    setFieldError(validation.field, validation.message);
-    getEl(validation.field)?.focus();
-    showToast(validation.message, "error");
+  if (!validacao.ok) {
+    erroLogin.textContent = validacao.message;
+    definirErroCampo(validacao.field, validacao.message);
+    obterElemento(validacao.field)?.focus();
+    exibirNotificacao(validacao.message, "error");
     return;
   }
 
-  loginError.textContent = "";
-  setLoginButtonLoading(loginButton, true);
+  erroLogin.textContent = "";
+  definirCarregandoBotaoLogin(botaoLogin, true);
 
   try {
-    const formData = new FormData();
+    const dadosFormulario = new FormData();
 
-    formData.append("email", email);
-    formData.append("senha", password);
-    formData.append("tipo_usuario", state.role);
+    dadosFormulario.append("email", email);
+    dadosFormulario.append("senha", senha);
+    dadosFormulario.append("tipo_usuario", estado.role);
 
-    const loginUrl = event.target.getAttribute("action") || CONFIG.loginUrl;
-    const response = await fetch(new URL(loginUrl, window.location.href), {
+    const urlLogin = evento.target.getAttribute("action") || CONFIGURACAO.loginUrl;
+    const resposta = await fetch(new URL(urlLogin, window.location.href), {
       method: "POST",
-      body: formData,
+      body: dadosFormulario,
       headers: { Accept: "application/json" },
     });
-    const data = await response.json().catch(() => ({}));
+    const dados = await resposta.json().catch(() => ({}));
 
-    if (!response.ok || !data.ok) {
-      if (data.reason === "inactive_account") {
-        loginError.textContent = "";
-        setLoginButtonLoading(loginButton, false);
-        openInactiveAccountDialog();
+    if (!resposta.ok || !dados.ok) {
+      if (dados.reason === "inactive_account") {
+        erroLogin.textContent = "";
+        definirCarregandoBotaoLogin(botaoLogin, false);
+        abrirDialogoContaInativa();
         return;
       }
 
-      throw new Error(getLoginFailureMessage(response, data));
+      throw new Error(obterMensagemFalhaLogin(resposta, dados));
     }
 
-    saveProfilePreference(email, state.role, rememberProfile.checked);
-    saveInterfacePreferencesFromLogin(data.preferences);
-    showToast(data.message || "Login realizado com sucesso.");
+    salvarPreferenciaPerfil(email, estado.role, lembrarPerfil.checked);
+    salvarPreferenciasInterfacePeloLogin(dados.preferences);
+    exibirNotificacao(dados.message || "Login realizado com sucesso.");
 
     setTimeout(() => {
-      navigateWithTransition(data.redirect || CONFIG.redirectUrl);
-    }, CONFIG.redirectDelay);
-  } catch (error) {
-    const message =
-      error instanceof TypeError
-        ? CONFIG.serverUnavailableMessage
-        : error.message || CONFIG.serverUnavailableMessage;
+      navegarComTransicao(dados.redirect || CONFIGURACAO.redirectUrl);
+    }, CONFIGURACAO.redirectDelay);
+  } catch (erro) {
+    const mensagem =
+      erro instanceof TypeError
+        ? CONFIGURACAO.serverUnavailableMessage
+        : erro.message || CONFIGURACAO.serverUnavailableMessage;
 
-    loginError.textContent = message;
-    showToast(message, "error");
-    setLoginButtonLoading(loginButton, false);
+    erroLogin.textContent = mensagem;
+    exibirNotificacao(mensagem, "error");
+    definirCarregandoBotaoLogin(botaoLogin, false);
   }
 }
 
-function initTheme() {
-  const savedTheme = getSavedItem(STORAGE_KEYS.theme) || "dark";
+function inicializarTema() {
+  const temaSalvo = obterItemSalvo(CHAVES_ARMAZENAMENTO.theme) || "dark";
 
-  setTheme(savedTheme);
+  definirTema(temaSalvo);
 
-  document.querySelectorAll(".theme-toggle").forEach((button) => {
-    button.addEventListener("click", toggleTheme);
+  document.querySelectorAll(".theme-toggle").forEach((botao) => {
+    botao.addEventListener("click", alternarTema);
   });
 }
 
-function updateRememberProfileStatus() {
-  const rememberProfile = getEl("rememberProfile");
-  const status = getEl("rememberProfileStatus");
+function atualizarStatusLembrarPerfil() {
+  const lembrarPerfil = obterElemento("rememberProfile");
+  const status = obterElemento("rememberProfileStatus");
 
-  if (!rememberProfile || !status) return;
+  if (!lembrarPerfil || !status) return;
 
-  status.textContent = rememberProfile.checked
-    ? `E-mail e perfil ${state.role} ser\u00e3o lembrados`
-    : `Perfil selecionado: ${state.role}`;
+  status.textContent = lembrarPerfil.checked
+    ? `E-mail e perfil ${estado.role} ser\u00e3o lembrados`
+    : `Perfil selecionado: ${estado.role}`;
 }
 
-function initSavedProfile() {
-  const rememberProfile = getEl("rememberProfile");
-  const emailInput = getEl("email");
-  const savedEmail = getSavedItem(STORAGE_KEYS.email);
-  const savedProfile = getSavedItem(STORAGE_KEYS.profile);
+function inicializarPerfilSalvo() {
+  const lembrarPerfil = obterElemento("rememberProfile");
+  const campoEntradaEmail = obterElemento("email");
+  const emailSalvo = obterItemSalvo(CHAVES_ARMAZENAMENTO.email);
+  const perfilSalvo = obterItemSalvo(CHAVES_ARMAZENAMENTO.profile);
 
-  removeLegacyPassword();
+  removerSenhaLegado();
 
-  if (!rememberProfile) return;
+  if (!lembrarPerfil) return;
 
-  if (savedEmail && emailInput) {
-    emailInput.value = savedEmail;
+  if (emailSalvo && campoEntradaEmail) {
+    campoEntradaEmail.value = emailSalvo;
   }
 
-  rememberProfile.checked = Boolean(savedEmail || savedProfile);
-  updateRememberProfileStatus();
+  lembrarPerfil.checked = Boolean(emailSalvo || perfilSalvo);
+  atualizarStatusLembrarPerfil();
 
-  rememberProfile.addEventListener("change", () => {
-    saveProfilePreference(
-      emailInput?.value.trim() || "",
-      state.role,
-      rememberProfile.checked,
+  lembrarPerfil.addEventListener("change", () => {
+    salvarPreferenciaPerfil(
+      campoEntradaEmail?.value.trim() || "",
+      estado.role,
+      lembrarPerfil.checked,
     );
-    updateRememberProfileStatus();
+    atualizarStatusLembrarPerfil();
 
-    showToast(
-      rememberProfile.checked
+    exibirNotificacao(
+      lembrarPerfil.checked
         ? "E-mail e perfil ser\u00e3o lembrados."
         : "Dados lembrados removidos.",
     );
   });
 
-  emailInput?.addEventListener("input", () => {
-    if (!rememberProfile.checked) return;
+  campoEntradaEmail?.addEventListener("input", () => {
+    if (!lembrarPerfil.checked) return;
 
-    saveProfilePreference(emailInput.value.trim(), state.role, true);
+    salvarPreferenciaPerfil(campoEntradaEmail.value.trim(), estado.role, true);
   });
 }
 
-function initSessionMessage() {
-  const params = new URLSearchParams(window.location.search);
-  const sessionStatus = params.get("sessao");
+function inicializarMensagemSessao() {
+  const parametros = new URLSearchParams(window.location.search);
+  const statusSessao = parametros.get("sessao");
 
-  if (sessionStatus === "expirada") {
-    showToast("Sessao expirada. Faca login novamente.", "error");
+  if (statusSessao === "expirada") {
+    exibirNotificacao("Sessao expirada. Faca login novamente.", "error");
   }
 
-  if (sessionStatus === "encerrada") {
-    showToast("Sessao encerrada com sucesso.");
+  if (statusSessao === "encerrada") {
+    exibirNotificacao("Sessao encerrada com sucesso.");
   }
 }
 
-function shouldReduceMotion() {
+function deveReduzirMovimento() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function updateRolePanelContent(role) {
-  const content = ROLE_CONTENT[role] || ROLE_CONTENT.Colaborador;
-  const badge = getEl("roleBadge");
-  const title = getEl("roleTitle");
-  const description = getEl("roleDescription");
+function atualizarConteudoPainelTipoUsuario(tipoUsuario) {
+  const conteudo = CONTEUDO_TIPO_USUARIO[tipoUsuario] || CONTEUDO_TIPO_USUARIO.Colaborador;
+  const indicador = obterElemento("roleBadge");
+  const titulo = obterElemento("roleTitle");
+  const descricao = obterElemento("roleDescription");
 
-  if (badge) {
-    badge.textContent = content.badge;
+  if (indicador) {
+    indicador.textContent = conteudo.badge;
   }
 
-  if (title) {
-    title.textContent = content.title;
+  if (titulo) {
+    titulo.textContent = conteudo.title;
   }
 
-  if (description) {
-    description.textContent = content.description;
-  }
-}
-
-function syncRoleInput(role) {
-  const roleInput = getEl("roleInput");
-
-  if (roleInput) {
-    roleInput.value = role;
+  if (descricao) {
+    descricao.textContent = conteudo.description;
   }
 }
 
-function updateRoleButtonState(buttons, selectedButton) {
-  buttons.forEach((button) => {
-    const isSelected = button === selectedButton;
+function sincronizarCampoEntradaTipoUsuario(tipoUsuario) {
+  const campoEntradaTipoUsuario = obterElemento("roleInput");
 
-    button.classList.toggle("active", isSelected);
-    button.setAttribute("aria-checked", isSelected ? "true" : "false");
+  if (campoEntradaTipoUsuario) {
+    campoEntradaTipoUsuario.value = tipoUsuario;
+  }
+}
+
+function atualizarEstadoBotaoTipoUsuario(botoes, botaoSelecionado) {
+  botoes.forEach((botao) => {
+    const ehSelecionado = botao === botaoSelecionado;
+
+    botao.classList.toggle("active", ehSelecionado);
+    botao.setAttribute("aria-checked", ehSelecionado ? "true" : "false");
   });
 }
 
-function animateRolePanelChange(role, direction, segmentControl) {
-  const panel = getEl("rolePanel");
-  const gsapInstance = window.gsap;
+function animarAlteracaoPainelTipoUsuario(tipoUsuario, direcao, controleSegmentado) {
+  const painel = obterElemento("rolePanel");
+  const instanciaGsap = window.gsap;
 
-  if (!panel || !gsapInstance || shouldReduceMotion()) {
-    updateRolePanelContent(role);
-    roleSwitchAnimating = false;
-    segmentControl?.removeAttribute("data-switching");
+  if (!painel || !instanciaGsap || deveReduzirMovimento()) {
+    atualizarConteudoPainelTipoUsuario(tipoUsuario);
+    animandoTrocaTipoUsuario = false;
+    controleSegmentado?.removeAttribute("data-switching");
     return;
   }
 
-  const exitX = direction === "left" ? -28 : 28;
-  const enterX = direction === "left" ? 28 : -28;
+  const saidaX = direcao === "left" ? -28 : 28;
+  const entradaX = direcao === "left" ? 28 : -28;
 
-  roleSwitchAnimating = true;
+  animandoTrocaTipoUsuario = true;
 
-  gsapInstance
+  instanciaGsap
     .timeline({
       defaults: {
         duration: 0.32,
         ease: "power2.out",
       },
       onComplete: () => {
-        roleSwitchAnimating = false;
-        segmentControl?.removeAttribute("data-switching");
-        gsapInstance.set(panel, { clearProps: "transform,opacity" });
+        animandoTrocaTipoUsuario = false;
+        controleSegmentado?.removeAttribute("data-switching");
+        instanciaGsap.set(painel, { clearProps: "transform,opacity" });
       },
     })
-    .to(panel, {
-      x: exitX,
+    .to(painel, {
+      x: saidaX,
       opacity: 0,
       duration: 0.28,
     })
-    .add(() => updateRolePanelContent(role))
+    .add(() => atualizarConteudoPainelTipoUsuario(tipoUsuario))
     .fromTo(
-      panel,
-      { x: enterX, opacity: 0 },
+      painel,
+      { x: entradaX, opacity: 0 },
       { x: 0, opacity: 1, duration: 0.34, ease: "power3.out" },
     );
 }
 
-function updateSecurityMeter(role) {
-  const meter = getEl("securityMeter");
+function atualizarIndicadorSeguranca(tipoUsuario) {
+  const indicador = obterElemento("securityMeter");
 
-  if (!meter) return;
+  if (!indicador) return;
 
-  meter.style.width = role === "Administrador" ? "84%" : "72%";
+  indicador.style.width = tipoUsuario === "Administrador" ? "84%" : "72%";
 }
 
-function setActiveRole(buttons, selectedButton, segmentControl) {
-  if (roleSwitchAnimating) {
+function definirTipoUsuarioAtivo(botoes, botaoSelecionado, controleSegmentado) {
+  if (animandoTrocaTipoUsuario) {
     return;
   }
 
-  const selectedRole = selectedButton.dataset.role;
+  const tipoUsuarioSelecionado = botaoSelecionado.dataset.role;
 
-  if (!selectedRole) return;
+  if (!tipoUsuarioSelecionado) return;
 
-  const previousRole = state.role;
-  const direction = selectedRole === "Administrador" ? "left" : "right";
+  const tipoUsuarioAnterior = estado.role;
+  const direcao = tipoUsuarioSelecionado === "Administrador" ? "left" : "right";
 
-  updateRoleButtonState(buttons, selectedButton);
+  atualizarEstadoBotaoTipoUsuario(botoes, botaoSelecionado);
 
-  roleSwitchAnimating = true;
-  segmentControl.dataset.switching = "true";
-  state.role = selectedRole;
-  syncRoleInput(selectedRole);
-  segmentControl.dataset.active = selectedRole;
-  updateSecurityMeter(selectedRole);
+  animandoTrocaTipoUsuario = true;
+  controleSegmentado.dataset.switching = "true";
+  estado.role = tipoUsuarioSelecionado;
+  sincronizarCampoEntradaTipoUsuario(tipoUsuarioSelecionado);
+  controleSegmentado.dataset.active = tipoUsuarioSelecionado;
+  atualizarIndicadorSeguranca(tipoUsuarioSelecionado);
 
-  const rememberProfile = getEl("rememberProfile");
-  const emailInput = getEl("email");
+  const lembrarPerfil = obterElemento("rememberProfile");
+  const campoEntradaEmail = obterElemento("email");
 
-  if (rememberProfile?.checked) {
-    saveProfilePreference(emailInput?.value.trim() || "", selectedRole, true);
+  if (lembrarPerfil?.checked) {
+    salvarPreferenciaPerfil(campoEntradaEmail?.value.trim() || "", tipoUsuarioSelecionado, true);
   }
 
-  updateRememberProfileStatus();
-  showToast(
-    rememberProfile?.checked
-      ? `Perfil ${selectedRole} atualizado e salvo.`
-      : `Perfil selecionado: ${selectedRole}`,
+  atualizarStatusLembrarPerfil();
+  exibirNotificacao(
+    lembrarPerfil?.checked
+      ? `Perfil ${tipoUsuarioSelecionado} atualizado e salvo.`
+      : `Perfil selecionado: ${tipoUsuarioSelecionado}`,
   );
 
-  if (previousRole !== selectedRole) {
-    animateRolePanelChange(selectedRole, direction, segmentControl);
+  if (tipoUsuarioAnterior !== tipoUsuarioSelecionado) {
+    animarAlteracaoPainelTipoUsuario(tipoUsuarioSelecionado, direcao, controleSegmentado);
   } else {
-    roleSwitchAnimating = false;
-    segmentControl.removeAttribute("data-switching");
+    animandoTrocaTipoUsuario = false;
+    controleSegmentado.removeAttribute("data-switching");
   }
 }
 
 // A troca de perfil mantém botão, campo enviado e conteúdo explicativo sincronizados.
-function initRoleSelector() {
-  const segmentControl = document.querySelector(".segment-control");
-  const buttons = [...document.querySelectorAll(".segment-control button")];
+function inicializarSeletorTipoUsuario() {
+  const controleSegmentado = document.querySelector(".segment-control");
+  const botoes = [...document.querySelectorAll(".segment-control button")];
 
-  if (!segmentControl || !buttons.length) return;
+  if (!controleSegmentado || !botoes.length) return;
 
-  const savedProfile = getSavedItem(STORAGE_KEYS.profile);
-  const activeButton = buttons.find((button) =>
-    button.classList.contains("active"),
+  const perfilSalvo = obterItemSalvo(CHAVES_ARMAZENAMENTO.profile);
+  const botaoAtivo = botoes.find((botao) =>
+    botao.classList.contains("active"),
   );
-  const savedButton = buttons.find(
-    (button) => button.dataset.role === savedProfile,
+  const botaoSalvo = botoes.find(
+    (botao) => botao.dataset.role === perfilSalvo,
   );
-  const selectedButton = savedButton || activeButton || buttons[0];
+  const botaoSelecionado = botaoSalvo || botaoAtivo || botoes[0];
 
-  if (selectedButton?.dataset.role) {
-    state.role = selectedButton.dataset.role;
+  if (botaoSelecionado?.dataset.role) {
+    estado.role = botaoSelecionado.dataset.role;
   }
 
-  updateRoleButtonState(buttons, selectedButton);
-  syncRoleInput(state.role);
+  atualizarEstadoBotaoTipoUsuario(botoes, botaoSelecionado);
+  sincronizarCampoEntradaTipoUsuario(estado.role);
 
-  segmentControl.dataset.active = state.role;
-  updateSecurityMeter(state.role);
-  updateRolePanelContent(state.role);
+  controleSegmentado.dataset.active = estado.role;
+  atualizarIndicadorSeguranca(estado.role);
+  atualizarConteudoPainelTipoUsuario(estado.role);
 
-  buttons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const selectedRole = button.dataset.role;
-      const isAlreadyActive =
-        state.role === selectedRole && button.classList.contains("active");
+  botoes.forEach((botao) => {
+    botao.addEventListener("click", () => {
+      const tipoUsuarioSelecionado = botao.dataset.role;
+      const jaEstaAtivo =
+        estado.role === tipoUsuarioSelecionado && botao.classList.contains("active");
 
-      if (isAlreadyActive) return;
+      if (jaEstaAtivo) return;
 
-      setActiveRole(buttons, button, segmentControl);
+      definirTipoUsuarioAtivo(botoes, botao, controleSegmentado);
     });
 
-    button.addEventListener("keydown", (event) => {
-      const keys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"];
+    botao.addEventListener("keydown", (evento) => {
+      const chaves = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"];
 
-      if (!keys.includes(event.key)) return;
+      if (!chaves.includes(evento.key)) return;
 
-      event.preventDefault();
+      evento.preventDefault();
 
-      const currentIndex = buttons.indexOf(button);
-      const step = event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1;
-      const nextIndex = (currentIndex + step + buttons.length) % buttons.length;
-      const nextButton = buttons[nextIndex];
+      const indiceAtual = botoes.indexOf(botao);
+      const etapa = evento.key === "ArrowRight" || evento.key === "ArrowDown" ? 1 : -1;
+      const indiceProximo = (indiceAtual + etapa + botoes.length) % botoes.length;
+      const botaoProximo = botoes[indiceProximo];
 
-      nextButton.focus();
-      setActiveRole(buttons, nextButton, segmentControl);
+      botaoProximo.focus();
+      definirTipoUsuarioAtivo(botoes, botaoProximo, controleSegmentado);
     });
   });
 }
 
-function initPasswordToggle() {
-  const passwordToggle = getEl("passwordToggle");
-  const passwordInput = getEl("password");
+function inicializarAlternadorSenha() {
+  const alternadorSenha = obterElemento("passwordToggle");
+  const campoEntradaSenha = obterElemento("password");
 
-  if (!passwordToggle || !passwordInput) return;
+  if (!alternadorSenha || !campoEntradaSenha) return;
 
-  passwordToggle.addEventListener("click", () => {
-    const icon = passwordToggle.querySelector("i");
-    const isHidden = passwordInput.type === "password";
+  alternadorSenha.addEventListener("click", () => {
+    const icone = alternadorSenha.querySelector("i");
+    const ehOculto = campoEntradaSenha.type === "password";
 
-    passwordInput.type = isHidden ? "text" : "password";
+    campoEntradaSenha.type = ehOculto ? "text" : "password";
 
-    if (icon) {
-      icon.className = isHidden ? "bi bi-eye-slash" : "bi bi-eye";
+    if (icone) {
+      icone.className = ehOculto ? "bi bi-eye-slash" : "bi bi-eye";
     }
 
-    passwordToggle.setAttribute(
+    alternadorSenha.setAttribute(
       "aria-label",
-      isHidden ? "Ocultar senha" : "Mostrar senha",
+      ehOculto ? "Ocultar senha" : "Mostrar senha",
     );
-    passwordToggle.setAttribute("aria-pressed", isHidden ? "true" : "false");
+    alternadorSenha.setAttribute("aria-pressed", ehOculto ? "true" : "false");
   });
 }
 
-function initFieldValidation() {
-  ["email", "password"].forEach((fieldId) => {
-    getEl(fieldId)?.addEventListener("input", () => clearFieldError(fieldId));
+function inicializarValidacaoCampo() {
+  ["email", "password"].forEach((idCampo) => {
+    obterElemento(idCampo)?.addEventListener("input", () => limparErroCampo(idCampo));
   });
 }
 
-function initRequestAccess() {
-  const requestAccess = getEl("requestAccess");
+function inicializarSolicitacaoAcesso() {
+  const solicitarAcesso = obterElemento("requestAccess");
 
-  if (!requestAccess) return;
+  if (!solicitarAcesso) return;
 
-  requestAccess.addEventListener("click", (event) => {
-    event.preventDefault();
-    showToast("Fluxo de recupera\u00e7\u00e3o de senha ainda n\u00e3o configurado.");
+  solicitarAcesso.addEventListener("click", (evento) => {
+    evento.preventDefault();
+    exibirNotificacao("Fluxo de recupera\u00e7\u00e3o de senha ainda n\u00e3o configurado.");
   });
 }
 
-function initSupportLinks() {
-  const forgotPasswordLink = getEl("forgotPasswordLink");
+function inicializarAtalhosSuporte() {
+  const atalhoEsqueciSenha = obterElemento("forgotPasswordLink");
 
-  if (forgotPasswordLink) {
-    forgotPasswordLink.addEventListener("click", (event) => {
-      event.preventDefault();
-      showToast("Fluxo de recupera\u00e7\u00e3o de senha ainda n\u00e3o configurado.");
+  if (atalhoEsqueciSenha) {
+    atalhoEsqueciSenha.addEventListener("click", (evento) => {
+      evento.preventDefault();
+      exibirNotificacao("Fluxo de recupera\u00e7\u00e3o de senha ainda n\u00e3o configurado.");
     });
   }
 }
 
-function initBenefitCards() {
-  const cards = [...document.querySelectorAll(".benefit-card")];
+function inicializarCartoesBeneficio() {
+  const cartoes = [...document.querySelectorAll(".benefit-card")];
 
-  if (!cards.length) return;
+  if (!cartoes.length) return;
 
-  cards.forEach((card) => {
-    card.addEventListener("click", () => {
-      cards.forEach((item) => {
-        item.classList.toggle("active", item === card);
+  cartoes.forEach((cartao) => {
+    cartao.addEventListener("click", () => {
+      cartoes.forEach((item) => {
+        item.classList.toggle("active", item === cartao);
       });
 
-      if (card.dataset.benefit) {
-        showToast(card.dataset.benefit);
+      if (cartao.dataset.benefit) {
+        exibirNotificacao(cartao.dataset.benefit);
       }
     });
   });
 }
 
-function initLoginForm() {
-  const loginForm = getEl("loginForm");
+function inicializarFormularioLogin() {
+  const formularioLogin = obterElemento("loginForm");
 
-  if (!loginForm) return;
+  if (!formularioLogin) return;
 
-  loginForm.addEventListener("submit", handleLogin);
+  formularioLogin.addEventListener("submit", tratarLogin);
 }
 
-function initCustomCursor() {
+function inicializarCursorPersonalizado() {
   const cursor = document.querySelector(".custom-cursor");
-  const isTouchDevice = window.matchMedia("(pointer: coarse)").matches;
+  const ehDispositivoToque = window.matchMedia("(pointer: coarse)").matches;
 
-  if (!cursor || isTouchDevice) return;
+  if (!cursor || ehDispositivoToque) return;
 
   document.documentElement.classList.add("custom-cursor-enabled");
   document.body.classList.add("custom-cursor-enabled");
 
-  window.addEventListener("mousemove", (event) => {
+  window.addEventListener("mousemove", (evento) => {
     document.body.classList.add("cursor-visible");
 
-    cursor.style.left = `${event.clientX}px`;
-    cursor.style.top = `${event.clientY}px`;
+    cursor.style.left = `${evento.clientX}px`;
+    cursor.style.top = `${evento.clientY}px`;
   });
 
   window.addEventListener("mouseleave", () => {
@@ -914,9 +914,9 @@ function initCustomCursor() {
     document.body.classList.remove("cursor-click");
   });
 
-  document.addEventListener("mouseover", (event) => {
+  document.addEventListener("mouseover", (evento) => {
     if (
-      event.target.closest(
+      evento.target.closest(
         "a, button, input, label, .form-control, [role='button']",
       )
     ) {
@@ -924,9 +924,9 @@ function initCustomCursor() {
     }
   });
 
-  document.addEventListener("mouseout", (event) => {
+  document.addEventListener("mouseout", (evento) => {
     if (
-      event.target.closest(
+      evento.target.closest(
         "a, button, input, label, .form-control, [role='button']",
       )
     ) {
@@ -936,18 +936,18 @@ function initCustomCursor() {
 }
 
 // A inicialização restaura preferências antes de ativar as interações da página.
-function init() {
-  initTheme();
-  initInactiveAccountDialog();
-  initRoleSelector();
-  initSavedProfile();
-  initPasswordToggle();
-  initFieldValidation();
-  initSupportLinks();
-  initRequestAccess();
-  initBenefitCards();
-  initLoginForm();
-  initCustomCursor();
-  startPageEntrance();
-  initSessionMessage();
+function inicializar() {
+  inicializarTema();
+  inicializarDialogoContaInativo();
+  inicializarSeletorTipoUsuario();
+  inicializarPerfilSalvo();
+  inicializarAlternadorSenha();
+  inicializarValidacaoCampo();
+  inicializarAtalhosSuporte();
+  inicializarSolicitacaoAcesso();
+  inicializarCartoesBeneficio();
+  inicializarFormularioLogin();
+  inicializarCursorPersonalizado();
+  iniciarEntradaPagina();
+  inicializarMensagemSessao();
 }

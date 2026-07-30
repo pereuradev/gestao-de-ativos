@@ -1,107 +1,107 @@
 // Coordena edição, remoção de membros e exclusão de grupos de acesso.
 // As mudanças confirmadas pelo backend são refletidas nos cartões e métricas da página.
 
-const GROUP_EDIT_MESSAGE_HIDE_DELAY_MS = 2800;
+const ATRASO_OCULTACAO_MENSAGEM_EDICAO_GRUPO_MS = 2800;
 
-document.addEventListener("DOMContentLoaded", initGroupEditPage);
+document.addEventListener("DOMContentLoaded", inicializarPaginaEdicaoGrupo);
 
-function initGroupEditPage() {
-  callGroupEditGlobal("startPageAnimation");
-  callGroupEditGlobal("loadSavedTheme");
-  callGroupEditGlobal("setupThemeToggle");
-  callGroupEditGlobal("setupSidebar");
-  callGroupEditGlobal("setupNavGroups");
-  setupGroupEditSearch();
-  setupGroupEditActions();
-  setupGroupEditModal();
-  updateGroupEditEmptyState();
+function inicializarPaginaEdicaoGrupo() {
+  chamarGlobalEdicaoGrupo("iniciarAnimacaoPagina");
+  chamarGlobalEdicaoGrupo("carregarTemaSalvo");
+  chamarGlobalEdicaoGrupo("configurarAlternadorTema");
+  chamarGlobalEdicaoGrupo("configurarBarraLateral");
+  chamarGlobalEdicaoGrupo("configurarGruposNavegacao");
+  configurarBuscaEdicaoGrupo();
+  configurarAcoesEdicaoGrupo();
+  configurarModalEdicaoGrupo();
+  atualizarEstadoVazioEdicaoGrupo();
 }
 
-function callGroupEditGlobal(functionName) {
-  if (typeof window[functionName] === "function") {
-    window[functionName]();
+function chamarGlobalEdicaoGrupo(nomeFuncao) {
+  if (typeof window[nomeFuncao] === "function") {
+    window[nomeFuncao]();
   }
 }
 
-function setupGroupEditSearch() {
-  document.getElementById("groupEditSearch")?.addEventListener("input", filterGroupEditItems);
-  filterGroupEditItems();
+function configurarBuscaEdicaoGrupo() {
+  document.getElementById("groupEditSearch")?.addEventListener("input", filtrarItensEdicaoGrupo);
+  filtrarItensEdicaoGrupo();
 }
 
-function setupGroupEditActions() {
-  document.getElementById("groupEditList")?.addEventListener("click", (event) => {
-    const editButton = event.target.closest("[data-group-action='edit']");
-    const removeButton = event.target.closest("[data-member-action='remove']");
-    const deleteButton = event.target.closest("[data-group-action='delete']");
+function configurarAcoesEdicaoGrupo() {
+  document.getElementById("groupEditList")?.addEventListener("click", (evento) => {
+    const botaoEdicao = evento.target.closest("[data-group-action='edit']");
+    const botaoRemover = evento.target.closest("[data-member-action='remove']");
+    const botaoExcluir = evento.target.closest("[data-group-action='delete']");
 
-    if (editButton) {
-      openGroupEditModal(editButton.closest(".group-edit-item"));
+    if (botaoEdicao) {
+      abrirModalEdicaoGrupo(botaoEdicao.closest(".group-edit-item"));
       return;
     }
 
-    if (removeButton) {
-      removeGroupMember(removeButton);
+    if (botaoRemover) {
+      removerMembroGrupo(botaoRemover);
       return;
     }
 
-    if (deleteButton) {
-      deleteGroup(deleteButton);
+    if (botaoExcluir) {
+      excluirGrupo(botaoExcluir);
     }
   });
 }
 
-function setupGroupEditModal() {
+function configurarModalEdicaoGrupo() {
   const modal = document.getElementById("groupEditModal");
-  const form = document.getElementById("groupModalForm");
-  const search = document.getElementById("editGroupEmployeeSearch");
+  const formulario = document.getElementById("groupModalForm");
+  const busca = document.getElementById("editGroupEmployeeSearch");
 
-  form?.addEventListener("submit", submitGroupModal);
-  search?.addEventListener("input", filterGroupModalMembers);
+  formulario?.addEventListener("submit", enviarModalGrupo);
+  busca?.addEventListener("input", filtrarMembrosModalGrupo);
 
-  document.querySelectorAll("[data-close-group-modal]").forEach((button) => {
-    button.addEventListener("click", closeGroupEditModal);
+  document.querySelectorAll("[data-close-group-modal]").forEach((botao) => {
+    botao.addEventListener("click", fecharModalEdicaoGrupo);
   });
 
-  modal?.addEventListener("click", (event) => {
-    if (event.target === modal) {
-      closeGroupEditModal();
+  modal?.addEventListener("click", (evento) => {
+    if (evento.target === modal) {
+      fecharModalEdicaoGrupo();
     }
   });
 }
 
 // O modal recebe membros e permissões serializados no cartão selecionado.
-function openGroupEditModal(card) {
+function abrirModalEdicaoGrupo(cartao) {
   const modal = document.getElementById("groupEditModal");
 
-  if (!modal || !card) {
+  if (!modal || !cartao) {
     return;
   }
 
-  setGroupInputValue("editGroupId", card.dataset.id || "");
-  setGroupInputValue("editGroupName", card.dataset.name || "");
-  setGroupInputValue("editGroupDescription", card.dataset.description || "");
-  setGroupInputValue("editGroupStatus", card.dataset.status || "Ativo");
+  definirValorCampoEntradaGrupo("editGroupId", cartao.dataset.id || "");
+  definirValorCampoEntradaGrupo("editGroupName", cartao.dataset.name || "");
+  definirValorCampoEntradaGrupo("editGroupDescription", cartao.dataset.description || "");
+  definirValorCampoEntradaGrupo("editGroupStatus", cartao.dataset.status || "Ativo");
 
-  const memberIds = new Set(
-    Array.from(card.querySelectorAll(".group-member-row"))
-      .map((row) => row.dataset.memberId || "")
+  const idsMembro = new Set(
+    Array.from(cartao.querySelectorAll(".group-member-row"))
+      .map((linha) => linha.dataset.memberId || "")
       .filter(Boolean),
   );
-  const permissionCodes = new Set((card.dataset.permissionCodes || "").split(",").filter(Boolean));
+  const codigosPermissao = new Set((cartao.dataset.permissionCodes || "").split(",").filter(Boolean));
 
-  setGroupModalChecks("membros[]", memberIds);
-  setGroupModalChecks("permissoes[]", permissionCodes);
-  syncGroupModalPermissionSections();
-  setGroupInputValue("editGroupEmployeeSearch", "");
-  filterGroupModalMembers();
-  clearGroupModalMessage();
+  definirMarcacoesModalGrupo("membros[]", idsMembro);
+  definirMarcacoesModalGrupo("permissoes[]", codigosPermissao);
+  sincronizarSecoesPermissaoModalGrupo();
+  definirValorCampoEntradaGrupo("editGroupEmployeeSearch", "");
+  filtrarMembrosModalGrupo();
+  limparMensagemModalGrupo();
 
   window.titechRememberDialogTrigger?.();
   modal.hidden = false;
   document.getElementById("editGroupName")?.focus();
 }
 
-function closeGroupEditModal() {
+function fecharModalEdicaoGrupo() {
   const modal = document.getElementById("groupEditModal");
 
   if (modal) {
@@ -110,142 +110,142 @@ function closeGroupEditModal() {
 }
 
 // O backend persiste o conjunto completo antes da atualização visual.
-async function submitGroupModal(event) {
-  event.preventDefault();
+async function enviarModalGrupo(evento) {
+  evento.preventDefault();
 
-  const form = event.currentTarget;
-  const submitButton = document.getElementById("saveGroupButton");
-  const error = validateGroupModalForm(form);
+  const formulario = evento.currentTarget;
+  const botaoEnviar = document.getElementById("saveGroupButton");
+  const erro = validarFormularioModalGrupo(formulario);
 
-  if (error) {
-    setGroupModalMessage(error, "error");
+  if (erro) {
+    definirMensagemModalGrupo(erro, "error");
     return;
   }
 
-  const confirmed = await confirmGroupModalEdition(form);
+  const confirmado = await confirmarEdicaoModalGrupo(formulario);
 
-  if (!confirmed) {
+  if (!confirmado) {
     return;
   }
 
-  setGroupEditLoading(submitButton, true, "Salvando...");
-  clearGroupModalMessage();
+  definirCarregandoEdicaoGrupo(botaoEnviar, true, "Salvando...");
+  limparMensagemModalGrupo();
 
   try {
-    const result = await postGroupEdit(form.action, new FormData(form));
+    const resultado = await enviarEdicaoGrupo(formulario.action, new FormData(formulario));
 
-    if (result.grupo) {
-      updateGroupCard(result.grupo);
+    if (resultado.grupo) {
+      atualizarCartaoGrupo(resultado.grupo);
     }
 
-    closeGroupEditModal();
-    setGroupEditMessage(result.message || "Grupo atualizado com sucesso.", "success");
-  } catch (error) {
-    setGroupModalMessage(error.message || "Nao foi possivel atualizar o grupo.", "error");
+    fecharModalEdicaoGrupo();
+    definirMensagemEdicaoGrupo(resultado.message || "Grupo atualizado com sucesso.", "success");
+  } catch (erro) {
+    definirMensagemModalGrupo(erro.message || "Nao foi possivel atualizar o grupo.", "error");
   } finally {
-    setGroupEditLoading(submitButton, false);
+    definirCarregandoEdicaoGrupo(botaoEnviar, false);
   }
 }
 
 // A remoção individual exige confirmação e preserva a consistência das métricas.
-async function removeGroupMember(button) {
-  const row = button.closest(".group-member-row");
-  const card = button.closest(".group-edit-item");
+async function removerMembroGrupo(botao) {
+  const linha = botao.closest(".group-member-row");
+  const cartao = botao.closest(".group-edit-item");
 
-  if (!row || !card) {
+  if (!linha || !cartao) {
     return;
   }
 
-  const memberName = row.querySelector(".group-member-info strong")?.textContent || "este membro";
-  const groupName = card.dataset.name || "este grupo";
-  const confirmed = await confirmGroupEditAction({
-    title: `Remover ${memberName}?`,
-    text: `O colaborador sera removido do grupo ${groupName}.`,
+  const nomeMembro = linha.querySelector(".group-member-info strong")?.textContent || "este membro";
+  const nomeGrupo = cartao.dataset.name || "este grupo";
+  const confirmado = await confirmarAcaoEdicaoGrupo({
+    title: `Remover ${nomeMembro}?`,
+    text: `O colaborador sera removido do grupo ${nomeGrupo}.`,
     confirmButtonText: "Remover membro",
     icon: "warning",
   });
 
-  if (!confirmed) {
+  if (!confirmado) {
     return;
   }
 
-  const body = new FormData();
-  body.append("csrf_token", getGroupEditCsrfToken());
-  body.append("grupo_id", card.dataset.id || "");
-  body.append("usuario_id", row.dataset.memberId || "");
+  const corpoRequisicao = new FormData();
+  corpoRequisicao.append("csrf_token", obterTokenCsrfEdicaoGrupo());
+  corpoRequisicao.append("grupo_id", cartao.dataset.id || "");
+  corpoRequisicao.append("usuario_id", linha.dataset.memberId || "");
 
-  setGroupEditLoading(button, true, "Removendo...");
-  clearGroupEditMessage();
+  definirCarregandoEdicaoGrupo(botao, true, "Removendo...");
+  limparMensagemEdicaoGrupo();
 
   try {
-    const result = await postGroupEdit("../Backend/remover-membro-grupo.php", body);
+    const resultado = await enviarEdicaoGrupo("../Backend/remover-membro-grupo.php", corpoRequisicao);
 
-    row.remove();
-    updateGroupMemberCount(card, -1);
-    ensureGroupMemberEmptyState(card);
-    setGroupEditMessage(result.message || "Membro removido do grupo.", "success");
-  } catch (error) {
-    setGroupEditMessage(error.message || "Nao foi possivel remover o membro.", "error");
+    linha.remove();
+    atualizarQuantidadeMembroGrupo(cartao, -1);
+    garantirEstadoVazioMembroGrupo(cartao);
+    definirMensagemEdicaoGrupo(resultado.message || "Membro removido do grupo.", "success");
+  } catch (erro) {
+    definirMensagemEdicaoGrupo(erro.message || "Nao foi possivel remover o membro.", "error");
   } finally {
-    setGroupEditLoading(button, false);
+    definirCarregandoEdicaoGrupo(botao, false);
   }
 }
 
 // A exclusão só remove o cartão após resposta bem-sucedida do servidor.
-async function deleteGroup(button) {
-  const card = button.closest(".group-edit-item");
+async function excluirGrupo(botao) {
+  const cartao = botao.closest(".group-edit-item");
 
-  if (!card) {
+  if (!cartao) {
     return;
   }
 
-  const groupName = card.dataset.name || "este grupo";
-  const confirmed = await confirmGroupEditAction({
-    title: `Excluir ${groupName}?`,
+  const nomeGrupo = cartao.dataset.name || "este grupo";
+  const confirmado = await confirmarAcaoEdicaoGrupo({
+    title: `Excluir ${nomeGrupo}?`,
     text: "Esta acao remove o grupo, seus membros e suas permissoes.",
     confirmButtonText: "Excluir grupo",
     icon: "warning",
   });
 
-  if (!confirmed) {
+  if (!confirmado) {
     return;
   }
 
-  const body = new FormData();
-  body.append("csrf_token", getGroupEditCsrfToken());
-  body.append("id", card.dataset.id || "");
+  const corpoRequisicao = new FormData();
+  corpoRequisicao.append("csrf_token", obterTokenCsrfEdicaoGrupo());
+  corpoRequisicao.append("id", cartao.dataset.id || "");
 
-  setGroupEditLoading(button, true, "Excluindo...");
-  clearGroupEditMessage();
+  definirCarregandoEdicaoGrupo(botao, true, "Excluindo...");
+  limparMensagemEdicaoGrupo();
 
   try {
-    const result = await postGroupEdit("../Backend/excluir-grupo.php", body);
-    const removedMembers = Number(card.dataset.members || result.grupo?.total_membros || 0);
-    const removedPermissions = Number(card.dataset.permissions || result.grupo?.total_permissoes || 0);
+    const resultado = await enviarEdicaoGrupo("../Backend/excluir-grupo.php", corpoRequisicao);
+    const membrosRemovidos = Number(cartao.dataset.members || resultado.grupo?.total_membros || 0);
+    const permissoesRemovidas = Number(cartao.dataset.permissions || resultado.grupo?.total_permissoes || 0);
 
-    card.remove();
-    incrementGroupEditMetric("editGroupMetricTotal", -1);
-    incrementGroupEditMetric("editGroupMetricMembers", -removedMembers);
-    incrementGroupEditMetric("editGroupMetricPermissions", -removedPermissions);
-    filterGroupEditItems();
-    setGroupEditMessage(result.message || "Grupo excluido com sucesso.", "success");
-  } catch (error) {
-    setGroupEditMessage(error.message || "Nao foi possivel excluir o grupo.", "error");
+    cartao.remove();
+    incrementarMetricaEdicaoGrupo("editGroupMetricTotal", -1);
+    incrementarMetricaEdicaoGrupo("editGroupMetricMembers", -membrosRemovidos);
+    incrementarMetricaEdicaoGrupo("editGroupMetricPermissions", -permissoesRemovidas);
+    filtrarItensEdicaoGrupo();
+    definirMensagemEdicaoGrupo(resultado.message || "Grupo excluido com sucesso.", "success");
+  } catch (erro) {
+    definirMensagemEdicaoGrupo(erro.message || "Nao foi possivel excluir o grupo.", "error");
   } finally {
-    setGroupEditLoading(button, false);
+    definirCarregandoEdicaoGrupo(botao, false);
   }
 }
 
-function validateGroupModalForm(form) {
-  const data = new FormData(form);
-  const name = String(data.get("nome") || "").trim();
-  const status = String(data.get("status") || "").trim();
+function validarFormularioModalGrupo(formulario) {
+  const dados = new FormData(formulario);
+  const nome = String(dados.get("nome") || "").trim();
+  const status = String(dados.get("status") || "").trim();
 
-  if (name.length < 3) {
+  if (nome.length < 3) {
     return "Informe um nome de grupo com pelo menos 3 caracteres.";
   }
 
-  if (name.length > 90) {
+  if (nome.length > 90) {
     return "O nome do grupo pode ter no maximo 90 caracteres.";
   }
 
@@ -256,377 +256,377 @@ function validateGroupModalForm(form) {
   return "";
 }
 
-async function confirmGroupModalEdition(form) {
-  const data = new FormData(form);
-  const name = String(data.get("nome") || "este grupo").trim() || "este grupo";
+async function confirmarEdicaoModalGrupo(formulario) {
+  const dados = new FormData(formulario);
+  const nome = String(dados.get("nome") || "este grupo").trim() || "este grupo";
 
-  return confirmGroupEditAction({
+  return confirmarAcaoEdicaoGrupo({
     title: "Salvar alteracoes?",
-    text: `Confirme para atualizar nome, descricao, membros e permissoes de ${name}.`,
+    text: `Confirme para atualizar nome, descricao, membros e permissoes de ${nome}.`,
     confirmButtonText: "Salvar alteracoes",
     cancelButtonText: "Continuar editando",
     icon: "warning",
   });
 }
 
-function filterGroupModalMembers() {
-  const search = normalizeGroupEditText(document.getElementById("editGroupEmployeeSearch")?.value || "");
+function filtrarMembrosModalGrupo() {
+  const busca = normalizarTextoEdicaoGrupo(document.getElementById("editGroupEmployeeSearch")?.value || "");
 
-  document.querySelectorAll("[data-modal-member-card]").forEach((card) => {
-    const matches = !search || normalizeGroupEditText(card.dataset.search || "").includes(search);
-    card.hidden = !matches;
+  document.querySelectorAll("[data-modal-member-card]").forEach((cartao) => {
+    const correspondencias = !busca || normalizarTextoEdicaoGrupo(cartao.dataset.search || "").includes(busca);
+    cartao.hidden = !correspondencias;
   });
 }
 
-function updateGroupCard(group) {
-  const card = document.querySelector(`.group-edit-item[data-id="${cssEscapeGroupEdit(group.id)}"]`);
+function atualizarCartaoGrupo(grupo) {
+  const cartao = document.querySelector(`.group-edit-item[data-id="${escaparCssEdicaoGrupo(grupo.id)}"]`);
 
-  if (!card) {
+  if (!cartao) {
     return;
   }
 
-  const oldMemberTotal = Number(card.dataset.members || 0);
-  const oldPermissionTotal = Number(card.dataset.permissions || 0);
-  const members = Array.isArray(group.membros) ? group.membros : [];
-  const permissions = Array.isArray(group.permissoes) ? group.permissoes : [];
-  const memberTotal = Number(group.total_membros ?? members.length);
-  const permissionTotal = Number(group.total_permissoes ?? permissions.length);
-  const description = String(group.descricao || "");
-  const status = String(group.status || "Ativo");
+  const totalMembroAntigo = Number(cartao.dataset.members || 0);
+  const totalPermissaoAntigo = Number(cartao.dataset.permissions || 0);
+  const membros = Array.isArray(grupo.membros) ? grupo.membros : [];
+  const permissoes = Array.isArray(grupo.permissoes) ? grupo.permissoes : [];
+  const totalMembro = Number(grupo.total_membros ?? membros.length);
+  const totalPermissao = Number(grupo.total_permissoes ?? permissoes.length);
+  const descricao = String(grupo.descricao || "");
+  const status = String(grupo.status || "Ativo");
 
-  card.dataset.name = String(group.nome || "");
-  card.dataset.description = description;
-  card.dataset.status = status;
-  card.dataset.members = String(memberTotal);
-  card.dataset.permissions = String(permissionTotal);
-  card.dataset.permissionCodes = permissions.map((permission) => String(permission.codigo || "")).filter(Boolean).join(",");
-  card.dataset.search = buildGroupSearchValue(group, members, permissions);
+  cartao.dataset.name = String(grupo.nome || "");
+  cartao.dataset.description = descricao;
+  cartao.dataset.status = status;
+  cartao.dataset.members = String(totalMembro);
+  cartao.dataset.permissions = String(totalPermissao);
+  cartao.dataset.permissionCodes = permissoes.map((permissao) => String(permissao.codigo || "")).filter(Boolean).join(",");
+  cartao.dataset.search = montarValorBuscaGrupo(grupo, membros, permissoes);
 
-  updateElementText(card.querySelector("[data-group-name]"), group.nome || "--");
-  updateElementText(card.querySelector("[data-group-description]"), description || "Sem descricao informada.");
-  updateElementText(card.querySelector("[data-member-count]"), String(memberTotal));
-  updateElementText(card.querySelector("[data-permission-count]"), String(permissionTotal));
-  updateGroupStatusBadge(card, status);
+  atualizarTextoElemento(cartao.querySelector("[data-group-name]"), grupo.nome || "--");
+  atualizarTextoElemento(cartao.querySelector("[data-group-description]"), descricao || "Sem descricao informada.");
+  atualizarTextoElemento(cartao.querySelector("[data-member-count]"), String(totalMembro));
+  atualizarTextoElemento(cartao.querySelector("[data-permission-count]"), String(totalPermissao));
+  atualizarIndicadorStatusGrupo(cartao, status);
 
-  renderGroupPermissions(card, permissions);
-  renderGroupMembers(card, members);
-  incrementGroupEditMetric("editGroupMetricMembers", memberTotal - oldMemberTotal);
-  incrementGroupEditMetric("editGroupMetricPermissions", permissionTotal - oldPermissionTotal);
-  filterGroupEditItems();
+  renderizarPermissoesGrupo(cartao, permissoes);
+  renderizarMembrosGrupo(cartao, membros);
+  incrementarMetricaEdicaoGrupo("editGroupMetricMembers", totalMembro - totalMembroAntigo);
+  incrementarMetricaEdicaoGrupo("editGroupMetricPermissions", totalPermissao - totalPermissaoAntigo);
+  filtrarItensEdicaoGrupo();
 }
 
-function renderGroupPermissions(card, permissions) {
-  const list = card.querySelector("[data-permission-list]");
+function renderizarPermissoesGrupo(cartao, permissoes) {
+  const lista = cartao.querySelector("[data-permission-list]");
 
-  if (!list) {
+  if (!lista) {
     return;
   }
 
-  list.replaceChildren();
+  lista.replaceChildren();
 
-  if (!permissions.length) {
-    list.append(createGroupPermissionChip("Nenhuma permissao cadastrada."));
+  if (!permissoes.length) {
+    lista.append(criarEtiquetaPermissaoGrupo("Nenhuma permissao cadastrada."));
     return;
   }
 
-  permissions.forEach((permission) => {
-    list.append(createGroupPermissionChip(permission.rotulo || permission.codigo || "--"));
+  permissoes.forEach((permissao) => {
+    lista.append(criarEtiquetaPermissaoGrupo(permissao.rotulo || permissao.codigo || "--"));
   });
 }
 
 // A lista usa elementos de DOM para manter o conteúdo da resposta como texto.
-function renderGroupMembers(card, members) {
-  const list = card.querySelector("[data-member-list]");
+function renderizarMembrosGrupo(cartao, membros) {
+  const lista = cartao.querySelector("[data-member-list]");
 
-  if (!list) {
+  if (!lista) {
     return;
   }
 
-  list.replaceChildren();
+  lista.replaceChildren();
 
-  members.forEach((member) => {
-    list.append(createGroupMemberRow(member));
+  membros.forEach((membro) => {
+    lista.append(criarLinhaMembroGrupo(membro));
   });
 
-  ensureGroupMemberEmptyState(card);
+  garantirEstadoVazioMembroGrupo(cartao);
 }
 
-function createGroupPermissionChip(label) {
-  const chip = document.createElement("span");
-  chip.textContent = label;
+function criarEtiquetaPermissaoGrupo(rotulo) {
+  const etiqueta = document.createElement("span");
+  etiqueta.textContent = rotulo;
 
-  return chip;
+  return etiqueta;
 }
 
-function createGroupMemberRow(member) {
-  const row = document.createElement("article");
+function criarLinhaMembroGrupo(membro) {
+  const linha = document.createElement("article");
   const avatar = document.createElement("div");
-  const info = document.createElement("div");
-  const name = document.createElement("strong");
+  const informacoes = document.createElement("div");
+  const nome = document.createElement("strong");
   const email = document.createElement("span");
-  const details = document.createElement("small");
-  const button = document.createElement("button");
+  const detalhes = document.createElement("small");
+  const botao = document.createElement("button");
 
-  row.className = "group-member-row";
-  row.dataset.memberId = member.id || "";
+  linha.className = "group-member-row";
+  linha.dataset.memberId = membro.id || "";
 
   avatar.className = "group-member-avatar";
   avatar.setAttribute("aria-hidden", "true");
-  avatar.textContent = member.iniciais || getGroupEditInitials(member.nome || "");
+  avatar.textContent = membro.iniciais || obterIniciaisEdicaoGrupo(membro.nome || "");
 
-  info.className = "group-member-info";
-  name.textContent = member.nome || "--";
-  email.textContent = member.email || "--";
-  details.textContent = `${member.tipo_usuario || "--"} - ${member.departamento || "--"}`;
-  info.append(name, email, details);
+  informacoes.className = "group-member-info";
+  nome.textContent = membro.nome || "--";
+  email.textContent = membro.email || "--";
+  detalhes.textContent = `${membro.tipo_usuario || "--"} - ${membro.departamento || "--"}`;
+  informacoes.append(nome, email, detalhes);
 
-  button.className = "table-action remove-member-button";
-  button.type = "button";
-  button.dataset.memberAction = "remove";
-  button.innerHTML = '<i class="bi bi-person-dash"></i><span>Remover</span>';
+  botao.className = "table-action remove-member-button";
+  botao.type = "button";
+  botao.dataset.memberAction = "remove";
+  botao.innerHTML = '<i class="bi bi-person-dash"></i><span>Remover</span>';
 
-  row.append(avatar, info, button);
+  linha.append(avatar, informacoes, botao);
 
-  return row;
+  return linha;
 }
 
-function buildGroupSearchValue(group, members, permissions) {
-  const memberSearch = members
-    .map((member) => `${member.nome || ""} ${member.email || ""} ${member.departamento || ""}`)
+function montarValorBuscaGrupo(grupo, membros, permissoes) {
+  const buscaMembro = membros
+    .map((membro) => `${membro.nome || ""} ${membro.email || ""} ${membro.departamento || ""}`)
     .join(" ");
-  const permissionSearch = permissions
-    .map((permission) => `${permission.rotulo || ""} ${permission.codigo || ""}`)
+  const buscaPermissao = permissoes
+    .map((permissao) => `${permissao.rotulo || ""} ${permissao.codigo || ""}`)
     .join(" ");
 
-  return `${group.nome || ""} ${group.descricao || ""} ${group.status || ""} ${memberSearch} ${permissionSearch}`.toLowerCase().trim();
+  return `${grupo.nome || ""} ${grupo.descricao || ""} ${grupo.status || ""} ${buscaMembro} ${buscaPermissao}`.toLowerCase().trim();
 }
 
-function updateGroupStatusBadge(card, status) {
-  const badge = card.querySelector("[data-group-status]");
+function atualizarIndicadorStatusGrupo(cartao, status) {
+  const indicador = cartao.querySelector("[data-group-status]");
 
-  if (!badge) {
+  if (!indicador) {
     return;
   }
 
-  const isActive = normalizeGroupEditText(status) === "ativo";
+  const ehAtivo = normalizarTextoEdicaoGrupo(status) === "ativo";
 
-  badge.textContent = status || "Ativo";
-  badge.classList.toggle("status-active", isActive);
-  badge.classList.toggle("status-inactive", !isActive);
+  indicador.textContent = status || "Ativo";
+  indicador.classList.toggle("status-active", ehAtivo);
+  indicador.classList.toggle("status-inactive", !ehAtivo);
 }
 
-async function postGroupEdit(url, body) {
-  const response = await fetch(url, {
+async function enviarEdicaoGrupo(url, corpoRequisicao) {
+  const resposta = await fetch(url, {
     method: "POST",
-    body,
+    body: corpoRequisicao,
     headers: { Accept: "application/json" },
   });
-  const result = await response.json().catch(() => ({
+  const resultado = await resposta.json().catch(() => ({
     ok: false,
     message: "Resposta invalida do servidor.",
   }));
 
-  if (!response.ok || !result.ok) {
-    throw new Error(result.message || "Nao foi possivel concluir a acao.");
+  if (!resposta.ok || !resultado.ok) {
+    throw new Error(resultado.message || "Nao foi possivel concluir a acao.");
   }
 
-  return result;
+  return resultado;
 }
 
-async function confirmGroupEditAction(options) {
+async function confirmarAcaoEdicaoGrupo(opcoes) {
   if (typeof window.titechConfirm === "function") {
-    return window.titechConfirm(options);
+    return window.titechConfirm(opcoes);
   }
 
-  return window.confirm(`${options.title}\n${options.text}`);
+  return window.confirm(`${opcoes.title}\n${opcoes.text}`);
 }
 
-function updateGroupMemberCount(card, amount) {
-  const nextValue = Math.max(0, Number(card.dataset.members || 0) + amount);
-  const counter = card.querySelector("[data-member-count]");
+function atualizarQuantidadeMembroGrupo(cartao, quantidade) {
+  const valorProximo = Math.max(0, Number(cartao.dataset.members || 0) + quantidade);
+  const contador = cartao.querySelector("[data-member-count]");
 
-  card.dataset.members = String(nextValue);
+  cartao.dataset.members = String(valorProximo);
 
-  if (counter) {
-    counter.textContent = String(nextValue);
+  if (contador) {
+    contador.textContent = String(valorProximo);
   }
 
-  incrementGroupEditMetric("editGroupMetricMembers", amount);
+  incrementarMetricaEdicaoGrupo("editGroupMetricMembers", quantidade);
 }
 
-function ensureGroupMemberEmptyState(card) {
-  const list = card.querySelector("[data-member-list]");
+function garantirEstadoVazioMembroGrupo(cartao) {
+  const lista = cartao.querySelector("[data-member-list]");
 
-  if (!list || list.querySelector(".group-member-row") || list.querySelector("[data-member-empty]")) {
+  if (!lista || lista.querySelector(".group-member-row") || lista.querySelector("[data-member-empty]")) {
     return;
   }
 
-  const empty = document.createElement("div");
-  empty.className = "group-member-empty";
-  empty.dataset.memberEmpty = "";
-  empty.innerHTML = '<i class="bi bi-info-circle"></i><span>Nenhum membro neste grupo.</span>';
-  list.append(empty);
+  const vazio = document.createElement("div");
+  vazio.className = "group-member-empty";
+  vazio.dataset.memberEmpty = "";
+  vazio.innerHTML = '<i class="bi bi-info-circle"></i><span>Nenhum membro neste grupo.</span>';
+  lista.append(vazio);
 }
 
-function filterGroupEditItems() {
-  const search = normalizeGroupEditText(document.getElementById("groupEditSearch")?.value || "");
-  const cards = Array.from(document.querySelectorAll(".group-edit-item"));
-  let visible = 0;
+function filtrarItensEdicaoGrupo() {
+  const busca = normalizarTextoEdicaoGrupo(document.getElementById("groupEditSearch")?.value || "");
+  const cartoes = Array.from(document.querySelectorAll(".group-edit-item"));
+  let visivel = 0;
 
-  cards.forEach((card) => {
-    const matches = !search || normalizeGroupEditText(card.dataset.search || "").includes(search);
+  cartoes.forEach((cartao) => {
+    const correspondencias = !busca || normalizarTextoEdicaoGrupo(cartao.dataset.search || "").includes(busca);
 
-    card.hidden = !matches;
+    cartao.hidden = !correspondencias;
 
-    if (matches) {
-      visible += 1;
+    if (correspondencias) {
+      visivel += 1;
     }
   });
 
-  updateGroupEditText("groupEditResultCount", `${visible.toLocaleString("pt-BR")} ${visible === 1 ? "registro" : "registros"}`);
-  updateGroupEditEmptyState();
+  atualizarTextoEdicaoGrupo("groupEditResultCount", `${visivel.toLocaleString("pt-BR")} ${visivel === 1 ? "registro" : "registros"}`);
+  atualizarEstadoVazioEdicaoGrupo();
 }
 
-function updateGroupEditEmptyState() {
-  const empty = document.getElementById("groupEditEmptyState");
-  const visibleCards = Array.from(document.querySelectorAll(".group-edit-item")).filter((card) => !card.hidden);
+function atualizarEstadoVazioEdicaoGrupo() {
+  const vazio = document.getElementById("groupEditEmptyState");
+  const cartoesVisiveis = Array.from(document.querySelectorAll(".group-edit-item")).filter((cartao) => !cartao.hidden);
 
-  if (empty) {
-    empty.hidden = visibleCards.length > 0;
+  if (vazio) {
+    vazio.hidden = cartoesVisiveis.length > 0;
   }
 }
 
-function setGroupModalMessage(message, type) {
-  const element = document.getElementById("groupModalMessage");
+function definirMensagemModalGrupo(mensagem, tipo) {
+  const elemento = document.getElementById("groupModalMessage");
 
-  if (!element) {
+  if (!elemento) {
     return;
   }
 
-  element.textContent = message;
-  element.classList.toggle("show", Boolean(message));
-  element.classList.toggle("success", type === "success");
-  element.classList.toggle("error", type === "error");
+  elemento.textContent = mensagem;
+  elemento.classList.toggle("show", Boolean(mensagem));
+  elemento.classList.toggle("success", tipo === "success");
+  elemento.classList.toggle("error", tipo === "error");
 }
 
-function clearGroupModalMessage() {
-  setGroupModalMessage("", "");
+function limparMensagemModalGrupo() {
+  definirMensagemModalGrupo("", "");
 }
 
-function setGroupEditMessage(message, type) {
-  const element = document.getElementById("groupEditPageMessage");
+function definirMensagemEdicaoGrupo(mensagem, tipo) {
+  const elemento = document.getElementById("groupEditPageMessage");
 
-  if (!element) {
+  if (!elemento) {
     return;
   }
 
-  element.textContent = message;
-  element.classList.toggle("show", Boolean(message));
-  element.classList.toggle("success", type === "success");
-  element.classList.toggle("error", type === "error");
+  elemento.textContent = mensagem;
+  elemento.classList.toggle("show", Boolean(mensagem));
+  elemento.classList.toggle("success", tipo === "success");
+  elemento.classList.toggle("error", tipo === "error");
 
-  if (message && type === "success") {
-    setTimeout(clearGroupEditMessage, GROUP_EDIT_MESSAGE_HIDE_DELAY_MS);
+  if (mensagem && tipo === "success") {
+    setTimeout(limparMensagemEdicaoGrupo, ATRASO_OCULTACAO_MENSAGEM_EDICAO_GRUPO_MS);
   }
 }
 
-function clearGroupEditMessage() {
-  setGroupEditMessage("", "");
+function limparMensagemEdicaoGrupo() {
+  definirMensagemEdicaoGrupo("", "");
 }
 
-function setGroupEditLoading(button, isLoading, loadingText = "Aguarde...") {
-  if (!button) {
+function definirCarregandoEdicaoGrupo(botao, estaCarregando, textoCarregando = "Aguarde...") {
+  if (!botao) {
     return;
   }
 
-  if (isLoading) {
-    button.dataset.originalHtml = button.innerHTML;
-    button.disabled = true;
-    button.innerHTML = `<i class="bi bi-arrow-repeat"></i><span>${loadingText}</span>`;
+  if (estaCarregando) {
+    botao.dataset.originalHtml = botao.innerHTML;
+    botao.disabled = true;
+    botao.innerHTML = `<i class="bi bi-arrow-repeat"></i><span>${textoCarregando}</span>`;
     return;
   }
 
-  button.disabled = false;
+  botao.disabled = false;
 
-  if (button.dataset.originalHtml) {
-    button.innerHTML = button.dataset.originalHtml;
-    delete button.dataset.originalHtml;
+  if (botao.dataset.originalHtml) {
+    botao.innerHTML = botao.dataset.originalHtml;
+    delete botao.dataset.originalHtml;
   }
 }
 
-function incrementGroupEditMetric(id, amount) {
-  const element = document.getElementById(id);
-  const current = Number.parseInt(element?.textContent || "0", 10);
+function incrementarMetricaEdicaoGrupo(id, quantidade) {
+  const elemento = document.getElementById(id);
+  const atual = Number.parseInt(elemento?.textContent || "0", 10);
 
-  if (!element || Number.isNaN(current)) {
+  if (!elemento || Number.isNaN(atual)) {
     return;
   }
 
-  element.textContent = String(Math.max(0, current + amount));
+  elemento.textContent = String(Math.max(0, atual + quantidade));
 }
 
-function updateGroupEditText(id, value) {
-  const element = document.getElementById(id);
+function atualizarTextoEdicaoGrupo(id, valor) {
+  const elemento = document.getElementById(id);
 
-  if (element) {
-    element.textContent = value;
+  if (elemento) {
+    elemento.textContent = valor;
   }
 }
 
-function updateElementText(element, value) {
-  if (element) {
-    element.textContent = value;
+function atualizarTextoElemento(elemento, valor) {
+  if (elemento) {
+    elemento.textContent = valor;
   }
 }
 
-function setGroupInputValue(id, value) {
-  const input = document.getElementById(id);
+function definirValorCampoEntradaGrupo(id, valor) {
+  const campoEntrada = document.getElementById(id);
 
-  if (input) {
-    input.value = value;
+  if (campoEntrada) {
+    campoEntrada.value = valor;
   }
 }
 
-function setGroupModalChecks(name, selectedValues) {
-  document.querySelectorAll(`#groupEditModal input[name="${name}"]`).forEach((input) => {
-    input.checked = selectedValues.has(input.value);
+function definirMarcacoesModalGrupo(nome, valoresSelecionados) {
+  document.querySelectorAll(`#groupEditModal input[name="${nome}"]`).forEach((campoEntrada) => {
+    campoEntrada.checked = valoresSelecionados.has(campoEntrada.value);
   });
 }
 
-function syncGroupModalPermissionSections() {
-  document.querySelectorAll("#groupEditModal .permission-section").forEach((section) => {
-    section.open = Boolean(section.querySelector('input[name="permissoes[]"]:checked'));
+function sincronizarSecoesPermissaoModalGrupo() {
+  document.querySelectorAll("#groupEditModal .permission-section").forEach((secao) => {
+    secao.open = Boolean(secao.querySelector('input[name="permissoes[]"]:checked'));
   });
 }
 
-function cssEscapeGroupEdit(value) {
+function escaparCssEdicaoGrupo(valor) {
   if (window.CSS?.escape) {
-    return window.CSS.escape(String(value || ""));
+    return window.CSS.escape(String(valor || ""));
   }
 
-  return String(value || "").replace(/["\\]/g, "\\$&");
+  return String(valor || "").replace(/["\\]/g, "\\$&");
 }
 
-function getGroupEditInitials(name) {
-  const initials = String(name || "")
+function obterIniciaisEdicaoGrupo(nome) {
+  const iniciais = String(nome || "")
     .trim()
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
+    .map((parte) => parte.charAt(0).toUpperCase())
     .join("");
 
-  return initials || "TT";
+  return iniciais || "TT";
 }
 
-function normalizeGroupEditText(value) {
-  return String(value)
+function normalizarTextoEdicaoGrupo(valor) {
+  return String(valor)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
 }
 
-function getGroupEditCsrfToken() {
+function obterTokenCsrfEdicaoGrupo() {
   return document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
 }

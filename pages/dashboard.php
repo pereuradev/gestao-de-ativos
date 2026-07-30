@@ -30,12 +30,11 @@ exigirPermissaoPagina("visualizar_dashboard", "Dashboard");
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap"
     rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-    rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <link rel="stylesheet" href="../css/pagina-base.css?v=20260727-sidebar-layout" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
-  <link rel="stylesheet" href="../css/dashboard-produtos.css?v=20260728-dashboard-analitico" />
+  <link rel="stylesheet" href="../css/dashboard-produtos.css?v=20260728-evolucao-ativos" />
   <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
@@ -44,7 +43,7 @@ exigirPermissaoPagina("visualizar_dashboard", "Dashboard");
   <script src="../js/animations/entrada-pagina.js?v=20260721-js-structure" defer></script>
   <script src="../js/ui/menu-lateral.js?v=20260721-js-structure" defer></script>
   <script src="../js/base-interface.js?v=20260724-custom-accent" defer></script>
-  <script src="../js/pages/dashboard-produtos.js?v=20260728-dashboard-analitico" defer></script>
+  <script src="../js/pages/dashboard-produtos.js?v=20260728-evolucao-ativos" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="../js/ui/widgets-react.js?v=20260626-react-responsive" defer></script>
@@ -79,6 +78,56 @@ exigirPermissaoPagina("visualizar_dashboard", "Dashboard");
         Carregando dados do banco.
       </p>
 
+
+
+
+      <section class="dashboard-panel asset-evolution-card dashboard-asset-evolution"
+        aria-labelledby="assetEvolutionTitle">
+        <div class="panel-heading asset-chart-header">
+          <div>
+            <span class="eyebrow">Evolu&ccedil;&atilde;o dos ativos</span>
+            <h2 id="assetEvolutionTitle">Ativos cadastrados no tempo</h2>
+            <p class="chart-subtitle" id="assetEvolutionSubtitle">
+              Acompanhe o acumulado do invent&aacute;rio e os novos cadastros por per&iacute;odo.
+            </p>
+          </div>
+
+          <div class="chart-period-filter" aria-label="Per&iacute;odo da evolu&ccedil;&atilde;o de ativos">
+            <button class="is-active" type="button" data-stock-period="semana" aria-pressed="true">
+              Semanalmente
+            </button>
+            <button type="button" data-stock-period="hoje" aria-pressed="false">
+              Diariamente
+            </button>
+            <button type="button" data-stock-period="mes" aria-pressed="false">
+              Mensalmente
+            </button>
+            <button type="button" data-stock-period="ano" aria-pressed="false">
+              Anualmente
+            </button>
+          </div>
+        </div>
+
+        <div class="asset-chart-summary" aria-live="polite">
+          <div>
+            <span>Total atual</span>
+            <strong id="stockPeriodTotal">--</strong>
+          </div>
+          <div>
+            <span>Novos no per&iacute;odo</span>
+            <strong id="stockPeriodNew">--</strong>
+          </div>
+          <div>
+            <span>Crescimento</span>
+            <strong id="stockPeriodDelta">--</strong>
+          </div>
+        </div>
+
+        <div class="chart-shell asset-evolution-shell">
+          <canvas id="stockEvolutionChart" aria-label="Gr&aacute;fico de evolu&ccedil;&atilde;o dos ativos cadastrados"
+            role="img"></canvas>
+        </div>
+      </section>
       <section class="dashboard-panel chart-control-panel" aria-label="Controles do dashboard">
         <div class="dashboard-control-group">
           <label for="categoryFilter">Tipo de produto</label>
@@ -108,7 +157,7 @@ exigirPermissaoPagina("visualizar_dashboard", "Dashboard");
             <option value="status">Quantidade por status</option>
             <option value="marcas">Quantidade por marca</option>
             <option value="locais">Quantidade por localiza&ccedil;&atilde;o</option>
-            <option value="evolucao">Evolu&ccedil;&atilde;o de cadastros</option>
+
           </select>
         </div>
 
@@ -122,16 +171,6 @@ exigirPermissaoPagina("visualizar_dashboard", "Dashboard");
             <option value="polarArea">Polar</option>
           </select>
         </div>
-
-        <div class="dashboard-control-group">
-          <label for="periodFilter">Per&iacute;odo da evolu&ccedil;&atilde;o</label>
-          <select id="periodFilter">
-            <option value="7">&Uacute;ltimos 7 dias</option>
-            <option value="30" selected>&Uacute;ltimos 30 dias</option>
-            <option value="90">&Uacute;ltimos 90 dias</option>
-          </select>
-        </div>
-
         <button class="refresh-dashboard-button" id="refreshDashboard" type="button">
           <i class="bi bi-arrow-clockwise"></i>
           Atualizar

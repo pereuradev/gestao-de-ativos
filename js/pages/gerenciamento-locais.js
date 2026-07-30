@@ -1,83 +1,83 @@
 // Valida e cadastra locais, atualizando métricas e filtros no navegador.
 // Os helpers globais de interface são carregados antes deste módulo.
 
-const MESSAGE_HIDE_DELAY_MS = 2700;
+const ATRASO_OCULTACAO_MENSAGEM_MS = 2700;
 
-document.addEventListener("DOMContentLoaded", initPage);
+document.addEventListener("DOMContentLoaded", inicializarPagina);
 
-function initPage() {
-  startPageAnimation();
-  loadSavedTheme();
-  setupThemeToggle();
-  setupSidebar();
-  setupNavGroups();
-  setupLocationForm();
-  setupLocationFilters();
+function inicializarPagina() {
+  iniciarAnimacaoPagina();
+  carregarTemaSalvo();
+  configurarAlternadorTema();
+  configurarBarraLateral();
+  configurarGruposNavegacao();
+  configurarFormularioLocal();
+  configurarFiltrosLocal();
 }
 
-function setupLocationForm() {
-  const form = document.getElementById("locationForm");
+function configurarFormularioLocal() {
+  const formulario = document.getElementById("locationForm");
 
-  if (!form) return;
+  if (!formulario) return;
 
-  form.addEventListener("submit", submitLocationForm);
-  form.addEventListener("reset", () => {
-    setTimeout(() => setLocationMessage("", ""), 0);
+  formulario.addEventListener("submit", enviarFormularioLocal);
+  formulario.addEventListener("reset", () => {
+    setTimeout(() => definirMensagemLocal("", ""), 0);
   });
 }
 
 // A interface só inclui o novo local após confirmação do cadastro pelo backend.
-async function submitLocationForm(event) {
-  event.preventDefault();
+async function enviarFormularioLocal(evento) {
+  evento.preventDefault();
 
-  const form = event.currentTarget;
-  const submitButton = document.getElementById("locationSubmitButton");
-  const error = validateLocationForm(form);
+  const formulario = evento.currentTarget;
+  const botaoEnviar = document.getElementById("locationSubmitButton");
+  const erro = validarFormularioLocal(formulario);
 
-  if (error) {
-    setLocationMessage(error, "error");
+  if (erro) {
+    definirMensagemLocal(erro, "error");
     return;
   }
 
-  setButtonLoading(submitButton, true);
-  setLocationMessage("", "");
+  definirCarregandoBotao(botaoEnviar, true);
+  definirMensagemLocal("", "");
 
   try {
-    const response = await fetch(form.action, {
+    const resposta = await fetch(formulario.action, {
       method: "POST",
-      body: new FormData(form),
+      body: new FormData(formulario),
       headers: { Accept: "application/json" },
     });
-    const result = await response.json().catch(() => ({
+    const resultado = await resposta.json().catch(() => ({
       ok: false,
       message: "Resposta invalida do servidor.",
     }));
 
-    if (!response.ok || !result.ok) {
-      throw new Error(result.message || "Nao foi possivel cadastrar o local.");
+    if (!resposta.ok || !resultado.ok) {
+      throw new Error(resultado.message || "Nao foi possivel cadastrar o local.");
     }
 
-    setLocationMessage(result.message || "Local cadastrado com sucesso.", "success");
-    prependLocationRow(result.local);
-    updateMetricsAfterCreate(result.local);
-    form.reset();
-    filterLocations();
+    definirMensagemLocal(resultado.message || "Local cadastrado com sucesso.", "success");
+    inserirInicioLinhaLocal(resultado.local);
+    atualizarMetricasAposCadastro(resultado.local);
+    formulario.reset();
+    filtrarLocais();
 
     setTimeout(() => {
-      setLocationMessage("", "");
-    }, MESSAGE_HIDE_DELAY_MS);
-  } catch (error) {
-    setLocationMessage(error.message || "Nao foi possivel cadastrar o local.", "error");
+      definirMensagemLocal("", "");
+    }, ATRASO_OCULTACAO_MENSAGEM_MS);
+  } catch (erro) {
+    definirMensagemLocal(erro.message || "Nao foi possivel cadastrar o local.", "error");
   } finally {
-    setButtonLoading(submitButton, false);
+    definirCarregandoBotao(botaoEnviar, false);
   }
 }
 
-function validateLocationForm(form) {
-  const data = new FormData(form);
-  const nome = String(data.get("nome") || "").trim();
-  const endereco = String(data.get("endereco") || "").trim();
-  const status = String(data.get("status") || "").trim();
+function validarFormularioLocal(formulario) {
+  const dados = new FormData(formulario);
+  const nome = String(dados.get("nome") || "").trim();
+  const endereco = String(dados.get("endereco") || "").trim();
+  const status = String(dados.get("status") || "").trim();
 
   if (!nome || !status) {
     return "Informe nome e status para cadastrar o local.";
@@ -98,165 +98,165 @@ function validateLocationForm(form) {
   return "";
 }
 
-function setButtonLoading(button, isLoading) {
-  if (!button) return;
+function definirCarregandoBotao(botao, estaCarregando) {
+  if (!botao) return;
 
-  button.disabled = isLoading;
+  botao.disabled = estaCarregando;
 
-  if (isLoading) {
-    button.replaceChildren(
-      createElement("i", "bi bi-arrow-repeat"),
-      createElement("span", "", "Cadastrando..."),
+  if (estaCarregando) {
+    botao.replaceChildren(
+      criarElemento("i", "bi bi-arrow-repeat"),
+      criarElemento("span", "", "Cadastrando..."),
     );
     return;
   }
 
-  button.replaceChildren(
-    createElement("i", "bi bi-plus-circle"),
-    createElement("span", "", "Cadastrar local"),
+  botao.replaceChildren(
+    criarElemento("i", "bi bi-plus-circle"),
+    criarElemento("span", "", "Cadastrar local"),
   );
 }
 
-function setLocationMessage(message, type) {
-  const element = document.getElementById("locationFormMessage");
+function definirMensagemLocal(mensagem, tipo) {
+  const elemento = document.getElementById("locationFormMessage");
 
-  if (!element) return;
+  if (!elemento) return;
 
-  element.textContent = message;
-  element.classList.toggle("show", Boolean(message));
-  element.classList.toggle("error", type === "error");
-  element.classList.toggle("success", type === "success");
+  elemento.textContent = mensagem;
+  elemento.classList.toggle("show", Boolean(mensagem));
+  elemento.classList.toggle("error", tipo === "error");
+  elemento.classList.toggle("success", tipo === "success");
 }
 
-function setupLocationFilters() {
-  document.getElementById("locationSearch")?.addEventListener("input", filterLocations);
-  document.getElementById("locationStatusFilter")?.addEventListener("change", filterLocations);
-  document.getElementById("clearLocationFilters")?.addEventListener("click", clearLocationFilters);
+function configurarFiltrosLocal() {
+  document.getElementById("locationSearch")?.addEventListener("input", filtrarLocais);
+  document.getElementById("locationStatusFilter")?.addEventListener("change", filtrarLocais);
+  document.getElementById("clearLocationFilters")?.addEventListener("click", limparFiltrosLocal);
 
-  filterLocations();
+  filtrarLocais();
 }
 
-function clearLocationFilters() {
-  const search = document.getElementById("locationSearch");
+function limparFiltrosLocal() {
+  const busca = document.getElementById("locationSearch");
   const status = document.getElementById("locationStatusFilter");
 
-  if (search) {
-    search.value = "";
+  if (busca) {
+    busca.value = "";
   }
 
   if (status) {
     status.value = "todos";
   }
 
-  filterLocations();
-  search?.focus();
+  filtrarLocais();
+  busca?.focus();
 }
 
 // Os filtros atuam nas linhas existentes e atualizam contador e estado vazio juntos.
-function filterLocations() {
-  const rows = Array.from(document.querySelectorAll(".location-row"));
-  const search = normalizeText(document.getElementById("locationSearch")?.value || "");
-  const status = normalizeText(document.getElementById("locationStatusFilter")?.value || "todos");
-  let visibleCount = 0;
+function filtrarLocais() {
+  const linhas = Array.from(document.querySelectorAll(".location-row"));
+  const busca = normalizarTexto(document.getElementById("locationSearch")?.value || "");
+  const status = normalizarTexto(document.getElementById("locationStatusFilter")?.value || "todos");
+  let quantidadeVisivel = 0;
 
-  rows.forEach((row) => {
-    const rowStatus = normalizeText(row.dataset.status || "");
-    const rowSearch = normalizeText(row.dataset.search || "");
-    const matchesStatus = status === "todos" || rowStatus === status;
-    const matchesSearch = !search || rowSearch.includes(search);
-    const isVisible = matchesStatus && matchesSearch;
+  linhas.forEach((linha) => {
+    const statusLinha = normalizarTexto(linha.dataset.status || "");
+    const buscaLinha = normalizarTexto(linha.dataset.search || "");
+    const correspondeStatus = status === "todos" || statusLinha === status;
+    const correspondeBusca = !busca || buscaLinha.includes(busca);
+    const ehVisivel = correspondeStatus && correspondeBusca;
 
-    row.hidden = !isVisible;
+    linha.hidden = !ehVisivel;
 
-    if (isVisible) {
-      visibleCount += 1;
+    if (ehVisivel) {
+      quantidadeVisivel += 1;
     }
   });
 
-  updateResultCount(visibleCount);
-  updateEmptyState(rows.length === 0 || visibleCount === 0);
+  atualizarQuantidadeResultado(quantidadeVisivel);
+  atualizarEstadoVazio(linhas.length === 0 || quantidadeVisivel === 0);
 }
 
-function prependLocationRow(local) {
-  const tbody = document.getElementById("locationTableBody");
+function inserirInicioLinhaLocal(local) {
+  const corpoTabela = document.getElementById("locationTableBody");
 
-  if (!tbody || !local) return;
+  if (!corpoTabela || !local) return;
 
   document.getElementById("locationEmptyState")?.setAttribute("hidden", "");
 
-  const name = String(local.nome || "Novo local");
-  const address = String(local.endereco || "Sem endereco informado");
+  const nome = String(local.nome || "Novo local");
+  const endereco = String(local.endereco || "Sem endereco informado");
   const status = String(local.status || "Ativo");
-  const row = createElement("tr", "registration-row location-row");
-  const nameCell = createElement("td");
-  const statusCell = createElement("td");
-  const createdCell = createElement("td", "", "Agora");
-  const nameStrong = createElement("strong", "", name);
-  const addressSpan = createElement("span", "location-address", address);
-  const badge = createElement(
+  const linha = criarElemento("tr", "registration-row location-row");
+  const celulaNome = criarElemento("td");
+  const celulaStatus = criarElemento("td");
+  const celulaCriacao = criarElemento("td", "", "Agora");
+  const nomeDestacado = criarElemento("strong", "", nome);
+  const elementoEndereco = criarElemento("span", "location-address", endereco);
+  const indicador = criarElemento(
     "span",
     `status-badge ${status === "Ativo" ? "status-active" : "status-inactive"}`,
     status,
   );
 
-  row.dataset.status = normalizeText(status);
-  row.dataset.search = normalizeText(`${name} ${address}`);
-  nameCell.dataset.label = "Local";
-  statusCell.dataset.label = "Status";
-  createdCell.dataset.label = "Criado em";
+  linha.dataset.status = normalizarTexto(status);
+  linha.dataset.search = normalizarTexto(`${nome} ${endereco}`);
+  celulaNome.dataset.label = "Local";
+  celulaStatus.dataset.label = "Status";
+  celulaCriacao.dataset.label = "Criado em";
 
-  nameCell.append(nameStrong, addressSpan);
-  statusCell.append(badge);
-  row.append(nameCell, statusCell, createdCell);
-  tbody.prepend(row);
+  celulaNome.append(nomeDestacado, elementoEndereco);
+  celulaStatus.append(indicador);
+  linha.append(celulaNome, celulaStatus, celulaCriacao);
+  corpoTabela.prepend(linha);
 }
 
-function updateMetricsAfterCreate(local) {
-  incrementMetric("totalLocationsMetric");
+function atualizarMetricasAposCadastro(local) {
+  incrementarMetrica("totalLocationsMetric");
 
   if (String(local?.status || "") === "Inativo") {
-    incrementMetric("inactiveLocationsMetric");
+    incrementarMetrica("inactiveLocationsMetric");
     return;
   }
 
-  incrementMetric("activeLocationsMetric");
+  incrementarMetrica("activeLocationsMetric");
 }
 
-function incrementMetric(id) {
-  const element = document.getElementById(id);
-  const value = Number(element?.textContent || 0);
+function incrementarMetrica(id) {
+  const elemento = document.getElementById(id);
+  const valor = Number(elemento?.textContent || 0);
 
-  if (element) {
-    element.textContent = String(Number.isFinite(value) ? value + 1 : 1);
+  if (elemento) {
+    elemento.textContent = String(Number.isFinite(valor) ? valor + 1 : 1);
   }
 }
 
-function updateResultCount(count) {
-  const resultCount = document.getElementById("locationResultCount");
+function atualizarQuantidadeResultado(quantidade) {
+  const quantidadeResultado = document.getElementById("locationResultCount");
 
-  if (!resultCount) return;
+  if (!quantidadeResultado) return;
 
-  resultCount.textContent = `${count.toLocaleString("pt-BR")} ${count === 1 ? "registro" : "registros"}`;
+  quantidadeResultado.textContent = `${quantidade.toLocaleString("pt-BR")} ${quantidade === 1 ? "registro" : "registros"}`;
 }
 
-function updateEmptyState(show) {
-  const emptyState = document.getElementById("locationEmptyState");
+function atualizarEstadoVazio(exibir) {
+  const estadoVazio = document.getElementById("locationEmptyState");
 
-  if (emptyState) {
-    emptyState.hidden = !show;
+  if (estadoVazio) {
+    estadoVazio.hidden = !exibir;
   }
 }
 
-function createElement(tag, className = "", text = "") {
-  const element = document.createElement(tag);
+function criarElemento(etiqueta, nomeClasse = "", texto = "") {
+  const elemento = document.createElement(etiqueta);
 
-  if (className) {
-    element.className = className;
+  if (nomeClasse) {
+    elemento.className = nomeClasse;
   }
 
-  if (text) {
-    element.textContent = text;
+  if (texto) {
+    elemento.textContent = texto;
   }
 
-  return element;
+  return elemento;
 }

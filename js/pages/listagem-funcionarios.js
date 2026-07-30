@@ -1,129 +1,129 @@
 // Filtra os cartões de funcionários e apresenta detalhes no modal de visualização.
 // O módulo altera apenas a interface; os dados de origem são renderizados pelo PHP.
 
-document.addEventListener("DOMContentLoaded", initPage);
+document.addEventListener("DOMContentLoaded", inicializarPagina);
 
-function initPage() {
-  startPageAnimation();
-  loadSavedTheme();
-  setupThemeToggle();
-  setupSidebar();
-  setupNavGroups();
-  setupEmployeeFilters();
-  setupEmployeeCards();
-  setupEmployeeModal();
+function inicializarPagina() {
+  iniciarAnimacaoPagina();
+  carregarTemaSalvo();
+  configurarAlternadorTema();
+  configurarBarraLateral();
+  configurarGruposNavegacao();
+  configurarFiltrosFuncionario();
+  configurarCartoesFuncionario();
+  configurarModalFuncionario();
 }
 
-function setupEmployeeFilters() {
-  const search = document.getElementById("employeeSearch");
-  const statusFilter = document.getElementById("employeeStatusFilter");
+function configurarFiltrosFuncionario() {
+  const busca = document.getElementById("employeeSearch");
+  const filtroStatus = document.getElementById("employeeStatusFilter");
 
-  search?.addEventListener("input", filterEmployees);
-  statusFilter?.addEventListener("change", filterEmployees);
+  busca?.addEventListener("input", filtrarFuncionarios);
+  filtroStatus?.addEventListener("change", filtrarFuncionarios);
 
-  filterEmployees();
+  filtrarFuncionarios();
 }
 
 // A busca combina os campos normalizados de cada cartão sem consultar novamente o servidor.
-function filterEmployees() {
-  const cards = Array.from(document.querySelectorAll(".employee-row"));
-  const search = normalizeText(document.getElementById("employeeSearch")?.value || "");
-  const status = normalizeText(document.getElementById("employeeStatusFilter")?.value || "todos");
-  let visibleCount = 0;
+function filtrarFuncionarios() {
+  const cartoes = Array.from(document.querySelectorAll(".employee-row"));
+  const busca = normalizarTexto(document.getElementById("employeeSearch")?.value || "");
+  const status = normalizarTexto(document.getElementById("employeeStatusFilter")?.value || "todos");
+  let quantidadeVisivel = 0;
 
-  cards.forEach((card) => {
-    const rowStatus = normalizeText(card.dataset.status || "");
-    const rowSearch = normalizeText(card.dataset.search || "");
-    const matchesStatus = status === "todos" || rowStatus === status;
-    const matchesSearch = !search || rowSearch.includes(search);
-    const isVisible = matchesStatus && matchesSearch;
+  cartoes.forEach((cartao) => {
+    const statusLinha = normalizarTexto(cartao.dataset.status || "");
+    const buscaLinha = normalizarTexto(cartao.dataset.search || "");
+    const correspondeStatus = status === "todos" || statusLinha === status;
+    const correspondeBusca = !busca || buscaLinha.includes(busca);
+    const ehVisivel = correspondeStatus && correspondeBusca;
 
-    card.hidden = !isVisible;
+    cartao.hidden = !ehVisivel;
 
-    if (isVisible) {
-      visibleCount += 1;
+    if (ehVisivel) {
+      quantidadeVisivel += 1;
     }
   });
 
-  updateResultCount(visibleCount);
-  updateFilteredEmptyState(cards.length > 0 && visibleCount === 0);
+  atualizarQuantidadeResultado(quantidadeVisivel);
+  atualizarEstadoVazioFiltrado(cartoes.length > 0 && quantidadeVisivel === 0);
 }
 
-function updateResultCount(count) {
-  const resultCount = document.getElementById("employeeResultCount");
+function atualizarQuantidadeResultado(quantidade) {
+  const quantidadeResultado = document.getElementById("employeeResultCount");
 
-  if (!resultCount) return;
+  if (!quantidadeResultado) return;
 
-  resultCount.textContent = `${count.toLocaleString("pt-BR")} ${count === 1 ? "registro" : "registros"}`;
+  quantidadeResultado.textContent = `${quantidade.toLocaleString("pt-BR")} ${quantidade === 1 ? "registro" : "registros"}`;
 }
 
-function updateFilteredEmptyState(show) {
-  const emptyState = document.getElementById("employeeEmptyState");
+function atualizarEstadoVazioFiltrado(exibir) {
+  const estadoVazio = document.getElementById("employeeEmptyState");
 
-  if (emptyState) {
-    emptyState.hidden = !show;
+  if (estadoVazio) {
+    estadoVazio.hidden = !exibir;
   }
 }
 
-function setupEmployeeCards() {
-  document.getElementById("employeeCardList")?.addEventListener("click", (event) => {
-    const card = event.target.closest("[data-employee-card]");
+function configurarCartoesFuncionario() {
+  document.getElementById("employeeCardList")?.addEventListener("click", (evento) => {
+    const cartao = evento.target.closest("[data-employee-card]");
 
-    if (card) {
-      openEmployeeModal(card);
+    if (cartao) {
+      abrirModalFuncionario(cartao);
     }
   });
 }
 
-function setupEmployeeModal() {
+function configurarModalFuncionario() {
   const modal = document.getElementById("employeeDetailsModal");
 
-  document.querySelectorAll("[data-close-employee-modal]").forEach((button) => {
-    button.addEventListener("click", closeEmployeeModal);
+  document.querySelectorAll("[data-close-employee-modal]").forEach((botao) => {
+    botao.addEventListener("click", fecharModalFuncionario);
   });
 
-  modal?.addEventListener("click", (event) => {
-    if (event.target === modal) {
-      closeEmployeeModal();
+  modal?.addEventListener("click", (evento) => {
+    if (evento.target === modal) {
+      fecharModalFuncionario();
     }
   });
 
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && modal && !modal.hidden) {
-      closeEmployeeModal();
+  document.addEventListener("keydown", (evento) => {
+    if (evento.key === "Escape" && modal && !modal.hidden) {
+      fecharModalFuncionario();
     }
   });
 }
 
 // O modal usa os dados já presentes no cartão e devolve o foco ao fechar.
-function openEmployeeModal(card) {
+function abrirModalFuncionario(cartao) {
   const modal = document.getElementById("employeeDetailsModal");
 
   if (!modal) {
     return;
   }
 
-  modal.dataset.lastTriggerId = card.dataset.email || "";
-  updateEmployeeText("employeeModalInitials", card.dataset.initials || "TT");
-  updateEmployeeText("employeeModalTitle", card.dataset.name || "Funcionario");
-  updateEmployeeText("employeeModalEmail", card.dataset.email || "--");
-  updateEmployeeText("employeeModalRole", card.dataset.role || "--");
-  updateEmployeeText("employeeModalDepartment", card.dataset.department || "--");
-  updateEmployeeText("employeeModalCompany", card.dataset.company || "--");
-  updateEmployeeText("employeeModalPhone", card.dataset.phone || "--");
-  updateEmployeeText("employeeModalRg", card.dataset.rg || "--");
-  updateEmployeeText("employeeModalCpf", card.dataset.cpf || "--");
-  updateEmployeeText("employeeModalBirth", card.dataset.birth || "--");
-  updateEmployeeText("employeeModalCreated", card.dataset.created || "--");
-  updateEmployeeText("employeeModalUpdated", card.dataset.updated || "--");
-  updateEmployeeStatus(card);
+  modal.dataset.lastTriggerId = cartao.dataset.email || "";
+  atualizarTextoFuncionario("employeeModalInitials", cartao.dataset.initials || "TT");
+  atualizarTextoFuncionario("employeeModalTitle", cartao.dataset.name || "Funcionario");
+  atualizarTextoFuncionario("employeeModalEmail", cartao.dataset.email || "--");
+  atualizarTextoFuncionario("employeeModalRole", cartao.dataset.role || "--");
+  atualizarTextoFuncionario("employeeModalDepartment", cartao.dataset.department || "--");
+  atualizarTextoFuncionario("employeeModalCompany", cartao.dataset.company || "--");
+  atualizarTextoFuncionario("employeeModalPhone", cartao.dataset.phone || "--");
+  atualizarTextoFuncionario("employeeModalRg", cartao.dataset.rg || "--");
+  atualizarTextoFuncionario("employeeModalCpf", cartao.dataset.cpf || "--");
+  atualizarTextoFuncionario("employeeModalBirth", cartao.dataset.birth || "--");
+  atualizarTextoFuncionario("employeeModalCreated", cartao.dataset.created || "--");
+  atualizarTextoFuncionario("employeeModalUpdated", cartao.dataset.updated || "--");
+  atualizarStatusFuncionario(cartao);
 
   window.titechRememberDialogTrigger?.();
   modal.hidden = false;
   modal.querySelector("[data-close-employee-modal]")?.focus();
 }
 
-function closeEmployeeModal() {
+function fecharModalFuncionario() {
   const modal = document.getElementById("employeeDetailsModal");
 
   if (!modal) {
@@ -132,20 +132,20 @@ function closeEmployeeModal() {
 
   modal.hidden = true;
 
-  const triggerEmail = modal.dataset.lastTriggerId || "";
-  const trigger = triggerEmail
-    ? document.querySelector(`[data-employee-card][data-email="${cssEscapeEmployee(triggerEmail)}"]`)
+  const emailAcionador = modal.dataset.lastTriggerId || "";
+  const acionador = emailAcionador
+    ? document.querySelector(`[data-employee-card][data-email="${escaparCssFuncionario(emailAcionador)}"]`)
     : null;
 
-  trigger?.focus();
+  acionador?.focus();
 }
 
-function updateEmployeeStatus(card) {
+function atualizarStatusFuncionario(cartao) {
   const status = document.getElementById("employeeModalStatus");
-  const statusLabel = card.dataset.statusLabel || "--";
-  const statusClass = normalizeText(statusLabel) === "ativo"
+  const rotuloStatus = cartao.dataset.statusLabel || "--";
+  const classeStatus = normalizarTexto(rotuloStatus) === "ativo"
     ? "status-active"
-    : normalizeText(statusLabel) === "inativo"
+    : normalizarTexto(rotuloStatus) === "inativo"
       ? "status-inactive"
       : "status-neutral";
 
@@ -153,22 +153,22 @@ function updateEmployeeStatus(card) {
     return;
   }
 
-  status.className = `status-badge ${statusClass}`;
-  status.textContent = statusLabel;
+  status.className = `status-badge ${classeStatus}`;
+  status.textContent = rotuloStatus;
 }
 
-function updateEmployeeText(id, value) {
-  const element = document.getElementById(id);
+function atualizarTextoFuncionario(id, valor) {
+  const elemento = document.getElementById(id);
 
-  if (element) {
-    element.textContent = value;
+  if (elemento) {
+    elemento.textContent = valor;
   }
 }
 
-function cssEscapeEmployee(value) {
+function escaparCssFuncionario(valor) {
   if (window.CSS?.escape) {
-    return window.CSS.escape(String(value || ""));
+    return window.CSS.escape(String(valor || ""));
   }
 
-  return String(value || "").replace(/["\\]/g, "\\$&");
+  return String(valor || "").replace(/["\\]/g, "\\$&");
 }

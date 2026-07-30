@@ -1,52 +1,52 @@
 // Controla filtros, modal, atualização e exclusão de ativos.
 // Mensagens entre recarregamentos usam sessionStorage para preservar o retorno da operação.
 
-const MESSAGE_HIDE_DELAY_MS = 2800;
-const PAGE_MESSAGE_STORAGE_KEY = "titech-edicao-ativos-message";
+const ATRASO_OCULTACAO_MENSAGEM_MS = 2800;
+const CHAVE_ARMAZENAMENTO_MENSAGEM_PAGINA = "titech-edicao-ativos-message";
 // Cada modo informa quais campos de identificacao devem ficar disponiveis no modal.
-const TRACEABILITY_CONFIG = {
+const CONFIGURACAO_RASTREABILIDADE = {
   nao_possui: { pn: false, sn: false },
   somente_pn: { pn: true, sn: false },
   somente_sn: { pn: false, sn: true },
   ambos: { pn: true, sn: true },
 };
 
-let assetSearchTimer = null;
+let temporizadorBuscaAtivo = null;
 
-document.addEventListener("DOMContentLoaded", initPage);
+document.addEventListener("DOMContentLoaded", inicializarPagina);
 
-function initPage() {
-  startPageAnimation();
-  loadSavedTheme();
-  setupThemeToggle();
-  setupSidebar();
-  setupNavGroups();
-  setupAssetFilters();
-  setupAssetActions();
-  setupEditModal();
-  restorePendingPageMessage();
+function inicializarPagina() {
+  iniciarAnimacaoPagina();
+  carregarTemaSalvo();
+  configurarAlternadorTema();
+  configurarBarraLateral();
+  configurarGruposNavegacao();
+  configurarFiltrosAtivo();
+  configurarAcoesAtivo();
+  configurarModalEdicao();
+  restaurarMensagemPaginaPendente();
 }
 
 // Filtros e paginação são processados pelo servidor; a busca é enviada após um pequeno debounce.
-function setupAssetFilters() {
-  const form = document.getElementById("assetFiltersForm");
-  const searchInput = document.getElementById("assetSearch");
-  const searchValue = document.getElementById("assetSearchValue");
+function configurarFiltrosAtivo() {
+  const formulario = document.getElementById("assetFiltersForm");
+  const campoEntradaBusca = document.getElementById("assetSearch");
+  const valorBusca = document.getElementById("assetSearchValue");
 
-  if (!form) {
+  if (!formulario) {
     return;
   }
 
-  if (searchInput && searchValue) {
-    searchInput.value = searchValue.value || "";
+  if (campoEntradaBusca && valorBusca) {
+    campoEntradaBusca.value = valorBusca.value || "";
   }
 
-  searchInput?.addEventListener("input", () => {
-    window.clearTimeout(assetSearchTimer);
+  campoEntradaBusca?.addEventListener("input", () => {
+    window.clearTimeout(temporizadorBuscaAtivo);
 
-    assetSearchTimer = window.setTimeout(() => {
-      syncSearchValue();
-      resetAssetPageAndSubmit(form);
+    temporizadorBuscaAtivo = window.setTimeout(() => {
+      sincronizarValorBusca();
+      redefinirPaginaAtivoEEnviar(formulario);
     }, 450);
   });
 
@@ -55,117 +55,117 @@ function setupAssetFilters() {
     "assetCategoryFilter",
     "assetBrandFilter",
     "assetPerPage",
-  ].forEach((fieldId) => {
-    document.getElementById(fieldId)?.addEventListener("change", () => {
-      syncSearchValue();
-      resetAssetPageAndSubmit(form);
+  ].forEach((idCampo) => {
+    document.getElementById(idCampo)?.addEventListener("change", () => {
+      sincronizarValorBusca();
+      redefinirPaginaAtivoEEnviar(formulario);
     });
   });
 
-  form.addEventListener("submit", syncSearchValue);
+  formulario.addEventListener("submit", sincronizarValorBusca);
 
   document.getElementById("clearAssetFilters")?.addEventListener("click", () => {
     window.location.href = "edicao-ativos.php";
   });
 }
 
-function syncSearchValue() {
-  const searchInput = document.getElementById("assetSearch");
-  const searchValue = document.getElementById("assetSearchValue");
+function sincronizarValorBusca() {
+  const campoEntradaBusca = document.getElementById("assetSearch");
+  const valorBusca = document.getElementById("assetSearchValue");
 
-  if (searchInput && searchValue) {
-    searchValue.value = searchInput.value;
+  if (campoEntradaBusca && valorBusca) {
+    valorBusca.value = campoEntradaBusca.value;
   }
 }
 
-function resetAssetPageAndSubmit(form) {
-  const pageInput = form.querySelector('input[name="pagina"]');
+function redefinirPaginaAtivoEEnviar(formulario) {
+  const campoEntradaPagina = formulario.querySelector('input[name="pagina"]');
 
-  if (pageInput) {
-    pageInput.value = "1";
+  if (campoEntradaPagina) {
+    campoEntradaPagina.value = "1";
   }
 
-  if (typeof form.requestSubmit === "function") {
-    form.requestSubmit();
+  if (typeof formulario.requestSubmit === "function") {
+    formulario.requestSubmit();
     return;
   }
 
-  form.submit();
+  formulario.submit();
 }
 
-function setupAssetActions() {
-  document.getElementById("assetTableBody")?.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-asset-action]");
+function configurarAcoesAtivo() {
+  document.getElementById("assetTableBody")?.addEventListener("click", (evento) => {
+    const botao = evento.target.closest("[data-asset-action]");
 
-    if (!button) return;
+    if (!botao) return;
 
-    const row = button.closest(".asset-row");
+    const linha = botao.closest(".asset-row");
 
-    if (!row) return;
+    if (!linha) return;
 
-    if (button.dataset.assetAction === "edit") {
-      openEditModal(row);
+    if (botao.dataset.assetAction === "edit") {
+      abrirModalEdicao(linha);
       return;
     }
 
-    if (button.dataset.assetAction === "delete") {
-      deleteAsset(row, button);
+    if (botao.dataset.assetAction === "delete") {
+      excluirAtivo(linha, botao);
     }
   });
 }
 
-function setupEditModal() {
-  const form = document.getElementById("assetEditForm");
+function configurarModalEdicao() {
+  const formulario = document.getElementById("assetEditForm");
   const modal = document.getElementById("assetEditModal");
 
-  form?.addEventListener("submit", submitEditForm);
-  if (form) {
-    setupTraceabilityControls(form);
+  formulario?.addEventListener("submit", enviarFormularioEdicao);
+  if (formulario) {
+    configurarControlesRastreabilidade(formulario);
   }
 
-  document.querySelectorAll("[data-close-asset-modal]").forEach((button) => {
-    button.addEventListener("click", closeEditModal);
+  document.querySelectorAll("[data-close-asset-modal]").forEach((botao) => {
+    botao.addEventListener("click", fecharModalEdicao);
   });
 
-  modal?.addEventListener("click", (event) => {
-    if (event.target === modal) {
-      closeEditModal();
+  modal?.addEventListener("click", (evento) => {
+    if (evento.target === modal) {
+      fecharModalEdicao();
     }
   });
 }
 
 // Os atributos data-* da linha abastecem o formulário sem uma consulta adicional.
-function openEditModal(row) {
+function abrirModalEdicao(linha) {
   const modal = document.getElementById("assetEditModal");
-  const form = document.getElementById("assetEditForm");
+  const formulario = document.getElementById("assetEditForm");
 
   if (!modal) return;
 
-  const serial = row.dataset.serial || "";
-  const partNumber = row.dataset.partNumber || "";
+  const numeroSerie = linha.dataset.serial || "";
+  const numeroParte = linha.dataset.partNumber || "";
 
-  setInputValue("editAssetId", row.dataset.id || "");
-  setInputValue("editAssetName", row.dataset.name || "");
-  setInputValue("editAssetCategory", row.dataset.categoryId || "");
-  setSelectValue("editAssetStatus", row.dataset.statusRaw || "");
-  setSelectValue("editAssetBrand", row.dataset.brandRaw || "");
-  setInputValue("editAssetLocation", row.dataset.locationId || "");
-  setInputValue("editAssetSerial", serial);
-  setInputValue("editAssetPartNumber", partNumber);
-  setInputValue("editAssetProperty", row.dataset.property || "");
-  setInputValue("editAssetImei", row.dataset.imei || "");
-  setInputValue("editAssetDatasheet", row.dataset.datasheet || "");
-  setInputValue("editAssetDescription", row.dataset.description || "");
-  setSelectedTraceability(form, getTraceabilityFromValues(partNumber, serial));
-  updateTraceabilityFields(form);
+  definirValorCampoEntrada("editAssetId", linha.dataset.id || "");
+  definirValorCampoEntrada("editAssetName", linha.dataset.name || "");
+  definirValorCampoEntrada("editAssetCategory", linha.dataset.categoryId || "");
+  definirValorSeletor("editAssetStatus", linha.dataset.statusRaw || "");
+  definirValorSeletor("editAssetBrand", linha.dataset.brandRaw || "");
+  definirValorCampoEntrada("editAssetLocation", linha.dataset.locationId || "");
+  definirValorCampoEntrada("editAssetSerial", numeroSerie);
+  definirValorCampoEntrada("editAssetPartNumber", numeroParte);
+  definirValorCampoEntrada("editAssetProperty", linha.dataset.property || "");
+  definirValorCampoEntrada("editAssetImei", linha.dataset.imei || "");
+  definirValorCampoEntrada("editAssetDatasheet", linha.dataset.datasheet || "");
+  definirValorCampoEntrada("editAssetDescription", linha.dataset.description || "");
+  definirRastreabilidadeSelecionada(formulario, obterRastreabilidadePelosValores(numeroParte, numeroSerie));
+  atualizarCamposRastreabilidade(formulario);
 
-  clearEditMessage();
+  limparMensagemEdicao();
   window.titechRememberDialogTrigger?.();
   modal.hidden = false;
   document.getElementById("editAssetName")?.focus();
 }
 
-function closeEditModal() {
+function fecharModalEdicao() {
   const modal = document.getElementById("assetEditModal");
 
   if (modal) {
@@ -174,76 +174,76 @@ function closeEditModal() {
 }
 
 // A página só é recarregada depois que o backend confirma a atualização.
-async function submitEditForm(event) {
-  event.preventDefault();
+async function enviarFormularioEdicao(evento) {
+  evento.preventDefault();
 
-  const form = event.currentTarget;
-  const submitButton = document.getElementById("saveAssetButton");
-  const error = validateAssetForm(form);
+  const formulario = evento.currentTarget;
+  const botaoEnviar = document.getElementById("saveAssetButton");
+  const erro = validarFormularioAtivo(formulario);
 
-  if (error) {
-    setEditMessage(error, "error");
+  if (erro) {
+    definirMensagemEdicao(erro, "error");
     return;
   }
 
-  const confirmed = await confirmAssetEdition(form);
+  const confirmado = await confirmarEdicaoAtivo(formulario);
 
-  if (!confirmed) {
+  if (!confirmado) {
     return;
   }
 
-  setLoading(submitButton, true, "Salvando...");
-  clearEditMessage();
+  definirCarregando(botaoEnviar, true, "Salvando...");
+  limparMensagemEdicao();
 
   try {
-    const response = await fetch(form.action, {
+    const resposta = await fetch(formulario.action, {
       method: "POST",
-      body: new FormData(form),
+      body: new FormData(formulario),
       headers: { Accept: "application/json" },
     });
-    const result = await response.json().catch(() => ({
+    const resultado = await resposta.json().catch(() => ({
       ok: false,
       message: "Resposta invalida do servidor.",
     }));
 
-    if (!response.ok || !result.ok) {
-      throw new Error(result.message || "Nao foi possivel alterar o ativo.");
+    if (!resposta.ok || !resultado.ok) {
+      throw new Error(resultado.message || "Nao foi possivel alterar o ativo.");
     }
 
-    reloadAssetPageWithMessage(result.message || "Ativo alterado com sucesso.", "success");
-  } catch (error) {
-    setEditMessage(error.message || "Nao foi possivel alterar o ativo.", "error");
+    recarregarPaginaAtivoComMensagem(resultado.message || "Ativo alterado com sucesso.", "success");
+  } catch (erro) {
+    definirMensagemEdicao(erro.message || "Nao foi possivel alterar o ativo.", "error");
   } finally {
-    setLoading(submitButton, false);
+    definirCarregando(botaoEnviar, false);
   }
 }
 
-async function confirmAssetEdition(form) {
-  const data = new FormData(form);
-  const assetName = String(data.get("nome") || "este ativo").trim() || "este ativo";
+async function confirmarEdicaoAtivo(formulario) {
+  const dados = new FormData(formulario);
+  const nomeAtivo = String(dados.get("nome") || "este ativo").trim() || "este ativo";
 
   if (typeof window.titechConfirm === "function") {
     return window.titechConfirm({
       title: "Confirmar edicao?",
-      text: `Confirme para salvar as alteracoes de ${assetName}.`,
+      text: `Confirme para salvar as alteracoes de ${nomeAtivo}.`,
       confirmButtonText: "Salvar edicao",
       cancelButtonText: "Continuar editando",
       icon: "warning",
     });
   }
 
-  return window.confirm(`Salvar as alteracoes de ${assetName}?`);
+  return window.confirm(`Salvar as alteracoes de ${nomeAtivo}?`);
 }
 
-function validateAssetForm(form) {
-  const data = new FormData(form);
-  const nome = String(data.get("nome") || "").trim();
-  const categoria = String(data.get("categoria_id") || "").trim();
-  const status = String(data.get("status") || "").trim();
-  const traceability = getSelectedTraceability(form);
-  const config = TRACEABILITY_CONFIG[traceability];
-  const partNumber = String(data.get("part_number") || "").trim();
-  const serial = String(data.get("numero_serie") || "").trim();
+function validarFormularioAtivo(formulario) {
+  const dados = new FormData(formulario);
+  const nome = String(dados.get("nome") || "").trim();
+  const categoria = String(dados.get("categoria_id") || "").trim();
+  const status = String(dados.get("status") || "").trim();
+  const rastreabilidade = obterRastreabilidadeSelecionada(formulario);
+  const configuracao = CONFIGURACAO_RASTREABILIDADE[rastreabilidade];
+  const numeroParte = String(dados.get("part_number") || "").trim();
+  const numeroSerie = String(dados.get("numero_serie") || "").trim();
 
   if (!nome || !categoria || !status) {
     return "Preencha nome, categoria e status do ativo.";
@@ -253,15 +253,15 @@ function validateAssetForm(form) {
     return "O nome do ativo precisa ter pelo menos 2 caracteres.";
   }
 
-  if (!config) {
+  if (!configuracao) {
     return "Selecione uma opcao de rastreabilidade valida.";
   }
 
-  if (config.pn && !partNumber) {
+  if (configuracao.pn && !numeroParte) {
     return "Informe o PN para a rastreabilidade escolhida.";
   }
 
-  if (config.sn && !serial) {
+  if (configuracao.sn && !numeroSerie) {
     return "Informe o numero de serie para a rastreabilidade escolhida.";
   }
 
@@ -269,115 +269,115 @@ function validateAssetForm(form) {
 }
 
 // A rastreabilidade alterna os campos visiveis sem permitir envio de valores escondidos.
-function setupTraceabilityControls(form) {
-  form.querySelectorAll('input[name="rastreabilidade"]').forEach((option) => {
-    option.addEventListener("change", () => updateTraceabilityFields(form));
+function configurarControlesRastreabilidade(formulario) {
+  formulario.querySelectorAll('input[name="rastreabilidade"]').forEach((opcao) => {
+    opcao.addEventListener("change", () => atualizarCamposRastreabilidade(formulario));
   });
 
-  updateTraceabilityFields(form);
+  atualizarCamposRastreabilidade(formulario);
 }
 
-function getTraceabilityFromValues(partNumber, serial) {
-  const hasPartNumber = String(partNumber || "").trim() !== "";
-  const hasSerial = String(serial || "").trim() !== "";
+function obterRastreabilidadePelosValores(numeroParte, numeroSerie) {
+  const possuiNumeroParte = String(numeroParte || "").trim() !== "";
+  const possuiNumeroSerie = String(numeroSerie || "").trim() !== "";
 
-  if (hasPartNumber && hasSerial) {
+  if (possuiNumeroParte && possuiNumeroSerie) {
     return "ambos";
   }
 
-  if (hasPartNumber) {
+  if (possuiNumeroParte) {
     return "somente_pn";
   }
 
-  if (hasSerial) {
+  if (possuiNumeroSerie) {
     return "somente_sn";
   }
 
   return "nao_possui";
 }
 
-function setSelectedTraceability(form, value) {
-  form?.querySelector(`input[name="rastreabilidade"][value="${value}"]`)?.click();
+function definirRastreabilidadeSelecionada(formulario, valor) {
+  formulario?.querySelector(`input[name="rastreabilidade"][value="${valor}"]`)?.click();
 }
 
-function getSelectedTraceability(form) {
-  return form?.querySelector('input[name="rastreabilidade"]:checked')?.value || "nao_possui";
+function obterRastreabilidadeSelecionada(formulario) {
+  return formulario?.querySelector('input[name="rastreabilidade"]:checked')?.value || "nao_possui";
 }
 
-function updateTraceabilityFields(form) {
-  if (!form) return;
+function atualizarCamposRastreabilidade(formulario) {
+  if (!formulario) return;
 
-  const config = TRACEABILITY_CONFIG[getSelectedTraceability(form)] || TRACEABILITY_CONFIG.nao_possui;
+  const configuracao = CONFIGURACAO_RASTREABILIDADE[obterRastreabilidadeSelecionada(formulario)] || CONFIGURACAO_RASTREABILIDADE.nao_possui;
 
   // Campos ocultos ficam desabilitados para o backend receber somente a escolha atual.
-  toggleTraceabilityField(form, "pn", config.pn);
-  toggleTraceabilityField(form, "sn", config.sn);
+  alternarCampoRastreabilidade(formulario, "pn", configuracao.pn);
+  alternarCampoRastreabilidade(formulario, "sn", configuracao.sn);
 }
 
-function toggleTraceabilityField(form, field, shouldShow) {
-  const wrapper = form.querySelector(`[data-traceability-field="${field}"]`);
-  const input = form.querySelector(`[data-traceability-input="${field}"]`);
+function alternarCampoRastreabilidade(formulario, campo, deveExibir) {
+  const envoltorio = formulario.querySelector(`[data-traceability-field="${campo}"]`);
+  const campoEntrada = formulario.querySelector(`[data-traceability-input="${campo}"]`);
 
-  if (wrapper) {
-    wrapper.hidden = !shouldShow;
+  if (envoltorio) {
+    envoltorio.hidden = !deveExibir;
   }
 
-  if (!input) {
+  if (!campoEntrada) {
     return;
   }
 
-  input.disabled = !shouldShow;
-  input.required = shouldShow;
+  campoEntrada.disabled = !deveExibir;
+  campoEntrada.required = deveExibir;
 }
 
 // A exclusão exige confirmação e token CSRF antes de remover o registro.
-async function deleteAsset(row, button) {
-  const name = row.dataset.name || "este ativo";
-  const confirmed = window.titechConfirm
+async function excluirAtivo(linha, botao) {
+  const nome = linha.dataset.name || "este ativo";
+  const confirmado = window.titechConfirm
     ? await window.titechConfirm({
-      title: `Excluir ${name}?`,
+      title: `Excluir ${nome}?`,
       text: "Esta acao nao pode ser desfeita.",
       confirmButtonText: "Excluir ativo",
       icon: "warning",
     })
-    : window.confirm(`Excluir ${name}? Esta acao nao pode ser desfeita.`);
+    : window.confirm(`Excluir ${nome}? Esta acao nao pode ser desfeita.`);
 
-  if (!confirmed) return;
+  if (!confirmado) return;
 
-  const body = new FormData();
-  body.append("csrf_token", getCsrfToken());
-  body.append("id", row.dataset.id || "");
+  const corpoRequisicao = new FormData();
+  corpoRequisicao.append("csrf_token", obterTokenCsrf());
+  corpoRequisicao.append("id", linha.dataset.id || "");
 
-  setLoading(button, true, "Excluindo...");
-  clearPageMessage();
+  definirCarregando(botao, true, "Excluindo...");
+  limparMensagemPagina();
 
   try {
-    const response = await fetch("../Backend/excluir-ativo.php", {
+    const resposta = await fetch("../Backend/excluir-ativo.php", {
       method: "POST",
-      body,
+      body: corpoRequisicao,
       headers: { Accept: "application/json" },
     });
-    const result = await response.json().catch(() => ({
+    const resultado = await resposta.json().catch(() => ({
       ok: false,
       message: "Resposta invalida do servidor.",
     }));
 
-    if (!response.ok || !result.ok) {
-      throw new Error(result.message || "Nao foi possivel excluir o ativo.");
+    if (!resposta.ok || !resultado.ok) {
+      throw new Error(resultado.message || "Nao foi possivel excluir o ativo.");
     }
 
-    reloadAssetPageWithMessage(result.message || "Ativo excluido com sucesso.", "success");
-  } catch (error) {
-    setPageMessage(error.message || "Nao foi possivel excluir o ativo.", "error");
+    recarregarPaginaAtivoComMensagem(resultado.message || "Ativo excluido com sucesso.", "success");
+  } catch (erro) {
+    definirMensagemPagina(erro.message || "Nao foi possivel excluir o ativo.", "error");
   } finally {
-    setLoading(button, false);
+    definirCarregando(botao, false);
   }
 }
 
 // A mensagem fica na sessão do navegador para sobreviver ao recarregamento.
-function reloadAssetPageWithMessage(message, type) {
+function recarregarPaginaAtivoComMensagem(mensagem, tipo) {
   try {
-    sessionStorage.setItem(PAGE_MESSAGE_STORAGE_KEY, JSON.stringify({ message, type }));
+    sessionStorage.setItem(CHAVE_ARMAZENAMENTO_MENSAGEM_PAGINA, JSON.stringify({ message: mensagem, type: tipo }));
   } catch {
     return window.location.reload();
   }
@@ -385,84 +385,84 @@ function reloadAssetPageWithMessage(message, type) {
   window.location.reload();
 }
 
-function restorePendingPageMessage() {
-  let payload = null;
+function restaurarMensagemPaginaPendente() {
+  let mensagemPendente = null;
 
   try {
-    payload = JSON.parse(sessionStorage.getItem(PAGE_MESSAGE_STORAGE_KEY) || "null");
-    sessionStorage.removeItem(PAGE_MESSAGE_STORAGE_KEY);
+    mensagemPendente = JSON.parse(sessionStorage.getItem(CHAVE_ARMAZENAMENTO_MENSAGEM_PAGINA) || "null");
+    sessionStorage.removeItem(CHAVE_ARMAZENAMENTO_MENSAGEM_PAGINA);
   } catch {
-    payload = null;
+    mensagemPendente = null;
   }
 
-  if (payload?.message) {
-    setPageMessage(payload.message, payload.type || "success");
-  }
-}
-
-function setPageMessage(message, type) {
-  const element = document.getElementById("assetPageMessage");
-
-  if (!element) return;
-
-  element.textContent = message;
-  element.classList.toggle("show", Boolean(message));
-  element.classList.toggle("error", type === "error");
-  element.classList.toggle("success", type === "success");
-
-  if (message && type === "success") {
-    setTimeout(clearPageMessage, MESSAGE_HIDE_DELAY_MS);
+  if (mensagemPendente?.message) {
+    definirMensagemPagina(mensagemPendente.message, mensagemPendente.type || "success");
   }
 }
 
-function clearPageMessage() {
-  setPageMessage("", "");
+function definirMensagemPagina(mensagem, tipo) {
+  const elemento = document.getElementById("assetPageMessage");
+
+  if (!elemento) return;
+
+  elemento.textContent = mensagem;
+  elemento.classList.toggle("show", Boolean(mensagem));
+  elemento.classList.toggle("error", tipo === "error");
+  elemento.classList.toggle("success", tipo === "success");
+
+  if (mensagem && tipo === "success") {
+    setTimeout(limparMensagemPagina, ATRASO_OCULTACAO_MENSAGEM_MS);
+  }
 }
 
-function setEditMessage(message, type) {
-  const element = document.getElementById("assetEditMessage");
-
-  if (!element) return;
-
-  element.textContent = message;
-  element.classList.toggle("show", Boolean(message));
-  element.classList.toggle("error", type === "error");
-  element.classList.toggle("success", type === "success");
+function limparMensagemPagina() {
+  definirMensagemPagina("", "");
 }
 
-function clearEditMessage() {
-  setEditMessage("", "");
+function definirMensagemEdicao(mensagem, tipo) {
+  const elemento = document.getElementById("assetEditMessage");
+
+  if (!elemento) return;
+
+  elemento.textContent = mensagem;
+  elemento.classList.toggle("show", Boolean(mensagem));
+  elemento.classList.toggle("error", tipo === "error");
+  elemento.classList.toggle("success", tipo === "success");
 }
 
-function setLoading(button, isLoading, loadingText = "Aguarde...") {
-  if (!button) return;
+function limparMensagemEdicao() {
+  definirMensagemEdicao("", "");
+}
 
-  if (isLoading) {
-    button.dataset.originalHtml = button.innerHTML;
-    button.disabled = true;
-    button.innerHTML = `<i class="bi bi-arrow-repeat"></i><span>${loadingText}</span>`;
+function definirCarregando(botao, estaCarregando, textoCarregando = "Aguarde...") {
+  if (!botao) return;
+
+  if (estaCarregando) {
+    botao.dataset.originalHtml = botao.innerHTML;
+    botao.disabled = true;
+    botao.innerHTML = `<i class="bi bi-arrow-repeat"></i><span>${textoCarregando}</span>`;
     return;
   }
 
-  button.disabled = false;
+  botao.disabled = false;
 
-  if (button.dataset.originalHtml) {
-    button.innerHTML = button.dataset.originalHtml;
-    delete button.dataset.originalHtml;
+  if (botao.dataset.originalHtml) {
+    botao.innerHTML = botao.dataset.originalHtml;
+    delete botao.dataset.originalHtml;
   }
 }
 
-function setSelectValue(id, value) {
-  const select = document.getElementById(id);
+function definirValorSeletor(id, valor) {
+  const seletor = document.getElementById(id);
 
-  if (!select) return;
+  if (!seletor) return;
 
-  const normalizedValue = normalizeText(value);
-  const option = [...select.options].find((item) => normalizeText(item.value) === normalizedValue);
+  const valorNormalizado = normalizarTexto(valor);
+  const opcao = [...seletor.options].find((item) => normalizarTexto(item.value) === valorNormalizado);
 
-  select.value = option ? option.value : "";
+  seletor.value = opcao ? opcao.value : "";
 }
 
-function getCsrfToken() {
+function obterTokenCsrf() {
   return document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
 }

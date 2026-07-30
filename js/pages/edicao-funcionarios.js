@@ -1,128 +1,128 @@
 // Gerencia filtros e o modal de atualização dos dados de funcionários.
 // O cartão editado é sincronizado no DOM após a confirmação do backend.
 
-const EMPLOYEE_EDIT_MESSAGE_HIDE_DELAY_MS = 2800;
+const ATRASO_OCULTACAO_MENSAGEM_EDICAO_FUNCIONARIO_MS = 2800;
 
-document.addEventListener("DOMContentLoaded", initEmployeeEditPage);
+document.addEventListener("DOMContentLoaded", inicializarPaginaEdicaoFuncionario);
 
-function initEmployeeEditPage() {
-  startPageAnimation();
-  loadSavedTheme();
-  setupThemeToggle();
-  setupSidebar();
-  setupNavGroups();
-  setupEmployeeFilters();
-  setupEmployeeCards();
-  setupEmployeeEditModal();
+function inicializarPaginaEdicaoFuncionario() {
+  iniciarAnimacaoPagina();
+  carregarTemaSalvo();
+  configurarAlternadorTema();
+  configurarBarraLateral();
+  configurarGruposNavegacao();
+  configurarFiltrosFuncionario();
+  configurarCartoesFuncionario();
+  configurarModalEdicaoFuncionario();
 }
 
-function setupEmployeeFilters() {
-  document.getElementById("employeeSearch")?.addEventListener("input", filterEmployees);
-  document.getElementById("employeeStatusFilter")?.addEventListener("change", filterEmployees);
+function configurarFiltrosFuncionario() {
+  document.getElementById("employeeSearch")?.addEventListener("input", filtrarFuncionarios);
+  document.getElementById("employeeStatusFilter")?.addEventListener("change", filtrarFuncionarios);
 
-  filterEmployees();
+  filtrarFuncionarios();
 }
 
-function setupEmployeeCards() {
-  document.getElementById("employeeCardList")?.addEventListener("click", (event) => {
-    const card = event.target.closest("[data-employee-card]");
+function configurarCartoesFuncionario() {
+  document.getElementById("employeeCardList")?.addEventListener("click", (evento) => {
+    const cartao = evento.target.closest("[data-employee-card]");
 
-    if (card) {
-      openEmployeeEditModal(card);
+    if (cartao) {
+      abrirModalEdicaoFuncionario(cartao);
     }
   });
 }
 
-function setupEmployeeEditModal() {
+function configurarModalEdicaoFuncionario() {
   const modal = document.getElementById("employeeEditModal");
-  const form = document.getElementById("employeeEditForm");
+  const formulario = document.getElementById("employeeEditForm");
 
-  form?.addEventListener("submit", submitEmployeeEditForm);
+  formulario?.addEventListener("submit", enviarFormularioEdicaoFuncionario);
 
-  document.querySelectorAll("[data-close-employee-modal]").forEach((button) => {
-    button.addEventListener("click", closeEmployeeEditModal);
+  document.querySelectorAll("[data-close-employee-modal]").forEach((botao) => {
+    botao.addEventListener("click", fecharModalEdicaoFuncionario);
   });
 
-  modal?.addEventListener("click", (event) => {
-    if (event.target === modal) {
-      closeEmployeeEditModal();
+  modal?.addEventListener("click", (evento) => {
+    if (evento.target === modal) {
+      fecharModalEdicaoFuncionario();
     }
   });
 
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && modal && !modal.hidden) {
-      closeEmployeeEditModal();
+  document.addEventListener("keydown", (evento) => {
+    if (evento.key === "Escape" && modal && !modal.hidden) {
+      fecharModalEdicaoFuncionario();
     }
   });
 }
 
 // A filtragem ocorre sobre os cartões já renderizados e mantém o estado vazio sincronizado.
-function filterEmployees() {
-  const cards = Array.from(document.querySelectorAll(".employee-row"));
-  const search = normalizeText(document.getElementById("employeeSearch")?.value || "");
-  const status = normalizeText(document.getElementById("employeeStatusFilter")?.value || "todos");
-  let visibleCount = 0;
-  let activeCount = 0;
-  let inactiveCount = 0;
+function filtrarFuncionarios() {
+  const cartoes = Array.from(document.querySelectorAll(".employee-row"));
+  const busca = normalizarTexto(document.getElementById("employeeSearch")?.value || "");
+  const status = normalizarTexto(document.getElementById("employeeStatusFilter")?.value || "todos");
+  let quantidadeVisivel = 0;
+  let quantidadeAtivos = 0;
+  let quantidadeInativos = 0;
 
-  cards.forEach((card) => {
-    const rowStatus = normalizeText(card.dataset.status || "");
-    const rowSearch = normalizeText(card.dataset.search || "");
-    const matchesStatus = status === "todos" || rowStatus === status;
-    const matchesSearch = !search || rowSearch.includes(search);
-    const isVisible = matchesStatus && matchesSearch;
+  cartoes.forEach((cartao) => {
+    const statusLinha = normalizarTexto(cartao.dataset.status || "");
+    const buscaLinha = normalizarTexto(cartao.dataset.search || "");
+    const correspondeStatus = status === "todos" || statusLinha === status;
+    const correspondeBusca = !busca || buscaLinha.includes(busca);
+    const ehVisivel = correspondeStatus && correspondeBusca;
 
-    if (rowStatus === "ativo") {
-      activeCount += 1;
-    } else if (rowStatus === "inativo") {
-      inactiveCount += 1;
+    if (statusLinha === "ativo") {
+      quantidadeAtivos += 1;
+    } else if (statusLinha === "inativo") {
+      quantidadeInativos += 1;
     }
 
-    card.hidden = !isVisible;
+    cartao.hidden = !ehVisivel;
 
-    if (isVisible) {
-      visibleCount += 1;
+    if (ehVisivel) {
+      quantidadeVisivel += 1;
     }
   });
 
-  updateEmployeeText("employeeResultCount", `${visibleCount.toLocaleString("pt-BR")} ${visibleCount === 1 ? "registro" : "registros"}`);
-  updateEmployeeText("employeeTotalMetric", String(cards.length));
-  updateEmployeeText("employeeActiveMetric", String(activeCount));
-  updateEmployeeText("employeeInactiveMetric", String(inactiveCount));
-  updateFilteredEmptyState(cards.length > 0 && visibleCount === 0);
+  atualizarTextoFuncionario("employeeResultCount", `${quantidadeVisivel.toLocaleString("pt-BR")} ${quantidadeVisivel === 1 ? "registro" : "registros"}`);
+  atualizarTextoFuncionario("employeeTotalMetric", String(cartoes.length));
+  atualizarTextoFuncionario("employeeActiveMetric", String(quantidadeAtivos));
+  atualizarTextoFuncionario("employeeInactiveMetric", String(quantidadeInativos));
+  atualizarEstadoVazioFiltrado(cartoes.length > 0 && quantidadeVisivel === 0);
 }
 
 // O modal é preenchido a partir dos atributos do cartão selecionado.
-function openEmployeeEditModal(card) {
+function abrirModalEdicaoFuncionario(cartao) {
   const modal = document.getElementById("employeeEditModal");
 
   if (!modal) {
     return;
   }
 
-  modal.dataset.lastTriggerId = card.dataset.id || "";
-  setEmployeeValue("editEmployeeId", card.dataset.id || "");
-  setEmployeeValue("editEmployeeName", card.dataset.name || "");
-  setEmployeeValue("editEmployeeEmail", card.dataset.email || "");
-  setEmployeeValue("editEmployeeRole", card.dataset.role || "Colaborador");
-  setEmployeeValue("editEmployeeStatus", card.dataset.statusLabel || "Ativo");
-  setEmployeeValue("editEmployeeDepartment", card.dataset.department || "TI");
-  setEmployeeValue("editEmployeeCompany", card.dataset.company || "");
-  setEmployeeValue("editEmployeeRg", card.dataset.rg || "");
-  setEmployeeValue("editEmployeeCpf", card.dataset.cpf || "");
-  setEmployeeValue("editEmployeePhone", card.dataset.phone || "");
-  setEmployeeValue("editEmployeeBirth", card.dataset.birthValue || "");
-  updateEmployeeText("employeeEditInitials", card.dataset.initials || "TT");
-  updateEmployeeText("employeeEditModalTitle", card.dataset.name || "Funcionario");
-  updateEmployeeText("employeeEditEmailText", card.dataset.email || "--");
-  clearEmployeeEditMessage();
+  modal.dataset.lastTriggerId = cartao.dataset.id || "";
+  definirValorFuncionario("editEmployeeId", cartao.dataset.id || "");
+  definirValorFuncionario("editEmployeeName", cartao.dataset.name || "");
+  definirValorFuncionario("editEmployeeEmail", cartao.dataset.email || "");
+  definirValorFuncionario("editEmployeeRole", cartao.dataset.role || "Colaborador");
+  definirValorFuncionario("editEmployeeStatus", cartao.dataset.statusLabel || "Ativo");
+  definirValorFuncionario("editEmployeeDepartment", cartao.dataset.department || "TI");
+  definirValorFuncionario("editEmployeeCompany", cartao.dataset.company || "");
+  definirValorFuncionario("editEmployeeRg", cartao.dataset.rg || "");
+  definirValorFuncionario("editEmployeeCpf", cartao.dataset.cpf || "");
+  definirValorFuncionario("editEmployeePhone", cartao.dataset.phone || "");
+  definirValorFuncionario("editEmployeeBirth", cartao.dataset.birthValue || "");
+  atualizarTextoFuncionario("employeeEditInitials", cartao.dataset.initials || "TT");
+  atualizarTextoFuncionario("employeeEditModalTitle", cartao.dataset.name || "Funcionario");
+  atualizarTextoFuncionario("employeeEditEmailText", cartao.dataset.email || "--");
+  limparMensagemEdicaoFuncionario();
 
   window.titechRememberDialogTrigger?.();
   modal.hidden = false;
   document.getElementById("editEmployeeName")?.focus();
 }
 
-function closeEmployeeEditModal() {
+function fecharModalEdicaoFuncionario() {
   const modal = document.getElementById("employeeEditModal");
 
   if (!modal) {
@@ -131,28 +131,28 @@ function closeEmployeeEditModal() {
 
   modal.hidden = true;
 
-  const triggerId = modal.dataset.lastTriggerId || "";
-  const trigger = triggerId
-    ? document.querySelector(`[data-employee-card][data-id="${cssEscapeEmployee(triggerId)}"]`)
+  const idAcionador = modal.dataset.lastTriggerId || "";
+  const acionador = idAcionador
+    ? document.querySelector(`[data-employee-card][data-id="${escaparCssFuncionario(idAcionador)}"]`)
     : null;
 
-  trigger?.focus();
+  acionador?.focus();
 }
 
 // Os dados visuais só são atualizados depois da confirmação do backend.
-async function submitEmployeeEditForm(event) {
-  event.preventDefault();
+async function enviarFormularioEdicaoFuncionario(evento) {
+  evento.preventDefault();
 
-  const form = event.currentTarget;
-  const submitButton = document.getElementById("saveEmployeeButton");
-  const error = validateEmployeeEditForm(form);
+  const formulario = evento.currentTarget;
+  const botaoEnviar = document.getElementById("saveEmployeeButton");
+  const erro = validarFormularioEdicaoFuncionario(formulario);
 
-  if (error) {
-    setEmployeeEditMessage(error, "error");
+  if (erro) {
+    definirMensagemEdicaoFuncionario(erro, "error");
     return;
   }
 
-  const confirmed = window.titechConfirm
+  const confirmado = window.titechConfirm
     ? await window.titechConfirm({
       title: "Salvar alteracoes?",
       text: "Os dados do funcionario serao atualizados no cadastro.",
@@ -161,56 +161,56 @@ async function submitEmployeeEditForm(event) {
     })
     : window.confirm("Salvar alteracoes deste funcionario?");
 
-  if (!confirmed) {
+  if (!confirmado) {
     return;
   }
 
-  setEmployeeLoading(submitButton, true, "Salvando...");
-  clearEmployeeEditMessage();
+  definirCarregandoFuncionario(botaoEnviar, true, "Salvando...");
+  limparMensagemEdicaoFuncionario();
 
   try {
-    const response = await fetch(form.action, {
+    const resposta = await fetch(formulario.action, {
       method: "POST",
-      body: new FormData(form),
+      body: new FormData(formulario),
       headers: { Accept: "application/json" },
     });
-    const result = await response.json().catch(() => ({
+    const resultado = await resposta.json().catch(() => ({
       ok: false,
       message: "Resposta invalida do servidor.",
     }));
 
-    if (!response.ok || !result.ok) {
-      throw new Error(result.message || "Nao foi possivel atualizar o funcionario.");
+    if (!resposta.ok || !resultado.ok) {
+      throw new Error(resultado.message || "Nao foi possivel atualizar o funcionario.");
     }
 
-    updateEmployeeCard(result.funcionario);
-    closeEmployeeEditModal();
-    setEmployeeEditPageMessage(result.message || "Funcionario atualizado com sucesso.", "success");
-    filterEmployees();
-  } catch (error) {
-    setEmployeeEditMessage(error.message || "Nao foi possivel atualizar o funcionario.", "error");
+    atualizarCartaoFuncionario(resultado.funcionario);
+    fecharModalEdicaoFuncionario();
+    definirMensagemPaginaEdicaoFuncionario(resultado.message || "Funcionario atualizado com sucesso.", "success");
+    filtrarFuncionarios();
+  } catch (erro) {
+    definirMensagemEdicaoFuncionario(erro.message || "Nao foi possivel atualizar o funcionario.", "error");
   } finally {
-    setEmployeeLoading(submitButton, false);
+    definirCarregandoFuncionario(botaoEnviar, false);
   }
 }
 
-function validateEmployeeEditForm(form) {
-  const data = new FormData(form);
-  const name = String(data.get("nome_completo") || "").trim();
-  const role = String(data.get("tipo_usuario") || "").trim();
-  const status = String(data.get("status") || "").trim();
-  const department = String(data.get("departamento") || "").trim();
-  const company = String(data.get("empresa") || "").trim();
-  const rg = String(data.get("rg") || "").replace(/\D+/g, "");
-  const cpf = String(data.get("cpf") || "").replace(/\D+/g, "");
-  const phone = String(data.get("celular") || "").replace(/\D+/g, "");
-  const birthDate = String(data.get("data_nascimento") || "").trim();
+function validarFormularioEdicaoFuncionario(formulario) {
+  const dados = new FormData(formulario);
+  const nome = String(dados.get("nome_completo") || "").trim();
+  const tipoUsuario = String(dados.get("tipo_usuario") || "").trim();
+  const status = String(dados.get("status") || "").trim();
+  const departamento = String(dados.get("departamento") || "").trim();
+  const empresa = String(dados.get("empresa") || "").trim();
+  const rg = String(dados.get("rg") || "").replace(/\D+/g, "");
+  const cpf = String(dados.get("cpf") || "").replace(/\D+/g, "");
+  const telefone = String(dados.get("celular") || "").replace(/\D+/g, "");
+  const dataNascimento = String(dados.get("data_nascimento") || "").trim();
 
-  if (!name || !role || !status || !department || !company || !birthDate) {
+  if (!nome || !tipoUsuario || !status || !departamento || !empresa || !dataNascimento) {
     return "Preencha todos os campos obrigatorios.";
   }
 
-  if (name.split(/\s+/).filter(Boolean).length < 2) {
+  if (nome.split(/\s+/).filter(Boolean).length < 2) {
     return "Informe nome e sobrenome.";
   }
 
@@ -222,11 +222,11 @@ function validateEmployeeEditForm(form) {
     return "Informe um CPF valido.";
   }
 
-  if (phone.length !== 11) {
+  if (telefone.length !== 11) {
     return "Informe um celular valido com DDD.";
   }
 
-  if (!["Colaborador", "Administrador"].includes(role)) {
+  if (!["Colaborador", "Administrador"].includes(tipoUsuario)) {
     return "Perfil de acesso invalido.";
   }
 
@@ -238,214 +238,214 @@ function validateEmployeeEditForm(form) {
 }
 
 // Sincroniza o cartão existente para evitar recarregar toda a listagem.
-function updateEmployeeCard(employee) {
-  if (!employee?.id) {
+function atualizarCartaoFuncionario(funcionario) {
+  if (!funcionario?.id) {
     return;
   }
 
-  const card = document.querySelector(`[data-employee-card][data-id="${cssEscapeEmployee(String(employee.id))}"]`);
+  const cartao = document.querySelector(`[data-employee-card][data-id="${escaparCssFuncionario(String(funcionario.id))}"]`);
 
-  if (!card) {
+  if (!cartao) {
     return;
   }
 
-  const name = String(employee.nome_completo || "");
-  const email = String(employee.email || card.dataset.email || "");
-  const role = String(employee.tipo_usuario || "Colaborador");
-  const department = String(employee.departamento || "");
-  const company = String(employee.empresa || "");
-  const phone = String(employee.celular || "");
-  const rg = String(employee.rg || "");
-  const cpf = String(employee.cpf || "");
-  const status = String(employee.status || "Ativo");
-  const birthValue = String(employee.data_nascimento || "");
-  const birthLabel = formatEmployeeDateOnly(birthValue);
-  const updatedLabel = formatEmployeeDateTime(employee.atualizado_em) || "Agora";
-  const initials = getEmployeeInitials(name);
-  const search = [name, email, role, department, company, phone, rg, cpf, status].join(" ");
+  const nome = String(funcionario.nome_completo || "");
+  const email = String(funcionario.email || cartao.dataset.email || "");
+  const tipoUsuario = String(funcionario.tipo_usuario || "Colaborador");
+  const departamento = String(funcionario.departamento || "");
+  const empresa = String(funcionario.empresa || "");
+  const telefone = String(funcionario.celular || "");
+  const rg = String(funcionario.rg || "");
+  const cpf = String(funcionario.cpf || "");
+  const status = String(funcionario.status || "Ativo");
+  const valorNascimento = String(funcionario.data_nascimento || "");
+  const rotuloNascimento = formatarSomenteDataFuncionario(valorNascimento);
+  const rotuloAtualizado = formatarDataHoraFuncionario(funcionario.atualizado_em) || "Agora";
+  const iniciais = obterIniciaisFuncionario(nome);
+  const busca = [nome, email, tipoUsuario, departamento, empresa, telefone, rg, cpf, status].join(" ");
 
-  Object.assign(card.dataset, {
-    name,
+  Object.assign(cartao.dataset, {
+    name: nome,
     email,
-    role,
-    department,
-    company,
-    phone,
+    role: tipoUsuario,
+    department: departamento,
+    company: empresa,
+    phone: telefone,
     rg,
     cpf,
-    status: normalizeText(status),
+    status: normalizarTexto(status),
     statusLabel: status,
-    birth: birthLabel,
-    birthValue,
-    updated: updatedLabel,
-    initials,
-    search,
+    birth: rotuloNascimento,
+    birthValue: valorNascimento,
+    updated: rotuloAtualizado,
+    initials: iniciais,
+    search: busca,
   });
 
-  updateEmployeeTextFrom(card, ".employee-card-avatar", initials);
-  updateEmployeeTextFrom(card, ".employee-card-identity strong", name);
-  updateEmployeeTextFrom(card, ".employee-card-identity small", email);
-  updateEmployeeCardStatus(card, status);
-  updateEmployeeCardField(card, "Perfil", role);
-  updateEmployeeCardField(card, "Departamento", department);
-  updateEmployeeCardField(card, "Empresa", company);
-  updateEmployeeCardField(card, "Celular", phone);
+  atualizarTextoFuncionarioNoContexto(cartao, ".employee-card-avatar", iniciais);
+  atualizarTextoFuncionarioNoContexto(cartao, ".employee-card-identity strong", nome);
+  atualizarTextoFuncionarioNoContexto(cartao, ".employee-card-identity small", email);
+  atualizarStatusCartaoFuncionario(cartao, status);
+  atualizarCampoCartaoFuncionario(cartao, "Perfil", tipoUsuario);
+  atualizarCampoCartaoFuncionario(cartao, "Departamento", departamento);
+  atualizarCampoCartaoFuncionario(cartao, "Empresa", empresa);
+  atualizarCampoCartaoFuncionario(cartao, "Celular", telefone);
 }
 
-function updateEmployeeCardStatus(card, status) {
-  const badge = card.querySelector(".status-badge");
-  const statusClass = normalizeText(status) === "ativo"
+function atualizarStatusCartaoFuncionario(cartao, status) {
+  const indicador = cartao.querySelector(".status-badge");
+  const classeStatus = normalizarTexto(status) === "ativo"
     ? "status-active"
-    : normalizeText(status) === "inativo"
+    : normalizarTexto(status) === "inativo"
       ? "status-inactive"
       : "status-neutral";
 
-  if (badge) {
-    badge.className = `status-badge ${statusClass}`;
-    badge.textContent = status;
+  if (indicador) {
+    indicador.className = `status-badge ${classeStatus}`;
+    indicador.textContent = status;
   }
 }
 
-function updateEmployeeCardField(card, label, value) {
-  const items = Array.from(card.querySelectorAll(".employee-card-body > span"));
-  const item = items.find((element) => normalizeText(element.querySelector("small")?.textContent || "") === normalizeText(label));
+function atualizarCampoCartaoFuncionario(cartao, rotulo, valor) {
+  const itens = Array.from(cartao.querySelectorAll(".employee-card-body > span"));
+  const item = itens.find((elemento) => normalizarTexto(elemento.querySelector("small")?.textContent || "") === normalizarTexto(rotulo));
 
-  updateEmployeeTextFrom(item, "strong", value);
+  atualizarTextoFuncionarioNoContexto(item, "strong", valor);
 }
 
-function updateEmployeeTextFrom(root, selector, value) {
-  const element = root?.querySelector?.(selector);
+function atualizarTextoFuncionarioNoContexto(raiz, seletor, valor) {
+  const elemento = raiz?.querySelector?.(seletor);
 
-  if (element) {
-    element.textContent = value;
+  if (elemento) {
+    elemento.textContent = valor;
   }
 }
 
-function updateFilteredEmptyState(show) {
-  const emptyState = document.getElementById("employeeEmptyState");
+function atualizarEstadoVazioFiltrado(exibir) {
+  const estadoVazio = document.getElementById("employeeEmptyState");
 
-  if (emptyState) {
-    emptyState.hidden = !show;
+  if (estadoVazio) {
+    estadoVazio.hidden = !exibir;
   }
 }
 
-function setEmployeeValue(id, value) {
-  const input = document.getElementById(id);
+function definirValorFuncionario(id, valor) {
+  const campoEntrada = document.getElementById(id);
 
-  if (input) {
-    input.value = value;
+  if (campoEntrada) {
+    campoEntrada.value = valor;
   }
 }
 
-function setEmployeeEditMessage(message, type) {
-  const element = document.getElementById("employeeEditMessage");
+function definirMensagemEdicaoFuncionario(mensagem, tipo) {
+  const elemento = document.getElementById("employeeEditMessage");
 
-  if (!element) {
+  if (!elemento) {
     return;
   }
 
-  element.textContent = message;
-  element.classList.toggle("show", Boolean(message));
-  element.classList.toggle("error", type === "error");
-  element.classList.toggle("success", type === "success");
+  elemento.textContent = mensagem;
+  elemento.classList.toggle("show", Boolean(mensagem));
+  elemento.classList.toggle("error", tipo === "error");
+  elemento.classList.toggle("success", tipo === "success");
 }
 
-function clearEmployeeEditMessage() {
-  setEmployeeEditMessage("", "");
+function limparMensagemEdicaoFuncionario() {
+  definirMensagemEdicaoFuncionario("", "");
 }
 
-function setEmployeeEditPageMessage(message, type) {
-  const element = document.getElementById("employeeEditPageMessage");
+function definirMensagemPaginaEdicaoFuncionario(mensagem, tipo) {
+  const elemento = document.getElementById("employeeEditPageMessage");
 
-  if (!element) {
+  if (!elemento) {
     return;
   }
 
-  element.textContent = message;
-  element.classList.toggle("show", Boolean(message));
-  element.classList.toggle("error", type === "error");
-  element.classList.toggle("success", type === "success");
+  elemento.textContent = mensagem;
+  elemento.classList.toggle("show", Boolean(mensagem));
+  elemento.classList.toggle("error", tipo === "error");
+  elemento.classList.toggle("success", tipo === "success");
 
-  if (message && type === "success") {
-    setTimeout(() => setEmployeeEditPageMessage("", ""), EMPLOYEE_EDIT_MESSAGE_HIDE_DELAY_MS);
+  if (mensagem && tipo === "success") {
+    setTimeout(() => definirMensagemPaginaEdicaoFuncionario("", ""), ATRASO_OCULTACAO_MENSAGEM_EDICAO_FUNCIONARIO_MS);
   }
 }
 
-function setEmployeeLoading(button, isLoading, loadingText = "Aguarde...") {
-  if (!button) {
+function definirCarregandoFuncionario(botao, estaCarregando, textoCarregando = "Aguarde...") {
+  if (!botao) {
     return;
   }
 
-  if (isLoading) {
-    button.dataset.originalHtml = button.innerHTML;
-    button.disabled = true;
-    button.innerHTML = `<i class="bi bi-arrow-repeat"></i><span>${loadingText}</span>`;
+  if (estaCarregando) {
+    botao.dataset.originalHtml = botao.innerHTML;
+    botao.disabled = true;
+    botao.innerHTML = `<i class="bi bi-arrow-repeat"></i><span>${textoCarregando}</span>`;
     return;
   }
 
-  button.disabled = false;
+  botao.disabled = false;
 
-  if (button.dataset.originalHtml) {
-    button.innerHTML = button.dataset.originalHtml;
-    delete button.dataset.originalHtml;
+  if (botao.dataset.originalHtml) {
+    botao.innerHTML = botao.dataset.originalHtml;
+    delete botao.dataset.originalHtml;
   }
 }
 
-function updateEmployeeText(id, value) {
-  const element = document.getElementById(id);
+function atualizarTextoFuncionario(id, valor) {
+  const elemento = document.getElementById(id);
 
-  if (element) {
-    element.textContent = value;
+  if (elemento) {
+    elemento.textContent = valor;
   }
 }
 
-function getEmployeeInitials(name) {
-  const initials = String(name || "")
+function obterIniciaisFuncionario(nome) {
+  const iniciais = String(nome || "")
     .trim()
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
+    .map((parte) => parte.charAt(0).toUpperCase())
     .join("");
 
-  return initials || "TT";
+  return iniciais || "TT";
 }
 
-function formatEmployeeDateOnly(value) {
-  if (!value) {
+function formatarSomenteDataFuncionario(valor) {
+  if (!valor) {
     return "--";
   }
 
-  const date = new Date(`${value}T00:00:00`);
+  const data = new Date(`${valor}T00:00:00`);
 
-  if (Number.isNaN(date.getTime())) {
+  if (Number.isNaN(data.getTime())) {
     return "--";
   }
 
-  return new Intl.DateTimeFormat("pt-BR").format(date);
+  return new Intl.DateTimeFormat("pt-BR").format(data);
 }
 
-function formatEmployeeDateTime(value) {
-  if (!value) {
+function formatarDataHoraFuncionario(valor) {
+  if (!valor) {
     return "";
   }
 
-  const date = new Date(value);
+  const data = new Date(valor);
 
-  if (Number.isNaN(date.getTime())) {
+  if (Number.isNaN(data.getTime())) {
     return "";
   }
 
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
     timeStyle: "short",
-  }).format(date);
+  }).format(data);
 }
 
-function cssEscapeEmployee(value) {
+function escaparCssFuncionario(valor) {
   if (window.CSS?.escape) {
-    return window.CSS.escape(String(value || ""));
+    return window.CSS.escape(String(valor || ""));
   }
 
-  return String(value || "").replace(/["\\]/g, "\\$&");
+  return String(valor || "").replace(/["\\]/g, "\\$&");
 }

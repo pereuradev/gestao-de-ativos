@@ -24,7 +24,7 @@ function responder(bool $sucesso, string $mensagemResposta, int $codigoStatusHtt
 function campo(string $nome): string
 {
     // Le campos POST sem deixar espacos perdidos no inicio ou fim.
-    return trim((string)($_POST[$nome] ?? ""));
+    return trim((string) ($_POST[$nome] ?? ""));
 }
 
 function campoNulo(string $nome): ?string
@@ -83,7 +83,7 @@ function uuidValido(?string $valor): bool
         return true;
     }
 
-    return (bool)preg_match(
+    return (bool) preg_match(
         "/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i",
         $valor
     );
@@ -181,7 +181,7 @@ function mensagemDuplicidadeAtivo(PDO $pdo, string $id, ?string $numeroSerie, ?s
         return null;
     }
 
-    if ($numeroSerie !== null && strcasecmp(trim((string)($ativo["numero_serie"] ?? "")), $numeroSerie) === 0) {
+    if ($numeroSerie !== null && strcasecmp(trim((string) ($ativo["numero_serie"] ?? "")), $numeroSerie) === 0) {
         return "Numero de serie ja cadastrado.";
     }
 
@@ -279,7 +279,7 @@ try {
 
     $status = $statusNormalizado;
 
-    if (!categoriaExiste($pdo, (string)$categoriaId)) {
+    if (!categoriaExiste($pdo, (string) $categoriaId)) {
         responder(false, "Categoria nao encontrada. Atualize a pagina e tente novamente.", 422);
     }
 
@@ -307,7 +307,7 @@ try {
             responder(false, "Selecione uma marca ativa cadastrada.", 422);
         }
 
-        $marca = (string)$marcaAtiva;
+        $marca = (string) $marcaAtiva;
     }
 
     $duplicidade = mensagemDuplicidadeAtivo($pdo, $id, $numeroSerie, $imei);

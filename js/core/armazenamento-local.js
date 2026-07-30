@@ -1,31 +1,31 @@
 (function () {
 // Helpers seguros para armazenamento local e normalizacao simples.
 // Ficam em arquivo proprio porque preferencias, tema e sidebar usam a mesma base.
-function getSavedItem(key) {
+function obterItemSalvo(chave) {
   try {
-    return localStorage.getItem(key);
+    return localStorage.getItem(chave);
   } catch {
     return null;
   }
 }
 
-function setSavedItem(key, value) {
+function definirItemSalvo(chave, valor) {
   try {
-    localStorage.setItem(key, value);
+    localStorage.setItem(chave, valor);
   } catch {
     return;
   }
 }
 
-function normalizeChoice(value, allowedValues, fallback) {
-  const normalized = String(value ?? "").trim();
+function normalizarEscolha(valor, valoresPermitidos, padrao) {
+  const normalizado = String(valor ?? "").trim();
 
-  return allowedValues.includes(normalized) ? normalized : fallback;
+  return valoresPermitidos.includes(normalizado) ? normalizado : padrao;
 }
 
 Object.assign(window, {
-  getSavedItem,
-  setSavedItem,
-  normalizeChoice,
+  getSavedItem: obterItemSalvo,
+  setSavedItem: definirItemSalvo,
+  normalizeChoice: normalizarEscolha,
 });
 })();

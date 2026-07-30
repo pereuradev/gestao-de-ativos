@@ -1,87 +1,87 @@
 // Controla busca, edição e exclusão de locais cadastrados.
 // As ações dependem do token CSRF renderizado pela página e da resposta JSON do backend.
 
-const MESSAGE_HIDE_DELAY_MS = 2800;
+const ATRASO_OCULTACAO_MENSAGEM_MS = 2800;
 
-document.addEventListener("DOMContentLoaded", initPage);
+document.addEventListener("DOMContentLoaded", inicializarPagina);
 
-function initPage() {
-  startPageAnimation();
-  loadSavedTheme();
-  setupThemeToggle();
-  setupSidebar();
-  setupNavGroups();
-  setupLocationFilters();
-  setupLocationActions();
-  setupEditModal();
+function inicializarPagina() {
+  iniciarAnimacaoPagina();
+  carregarTemaSalvo();
+  configurarAlternadorTema();
+  configurarBarraLateral();
+  configurarGruposNavegacao();
+  configurarFiltrosLocal();
+  configurarAcoesLocal();
+  configurarModalEdicao();
 }
 
-function setupLocationFilters() {
-  document.getElementById("locationSearch")?.addEventListener("input", filterLocations);
-  document.getElementById("locationStatusFilter")?.addEventListener("change", filterLocations);
+function configurarFiltrosLocal() {
+  document.getElementById("locationSearch")?.addEventListener("input", filtrarLocais);
+  document.getElementById("locationStatusFilter")?.addEventListener("change", filtrarLocais);
 
-  filterLocations();
+  filtrarLocais();
 }
 
-function setupLocationActions() {
-  document.getElementById("locationTableBody")?.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-location-action]");
+function configurarAcoesLocal() {
+  document.getElementById("locationTableBody")?.addEventListener("click", (evento) => {
+    const botao = evento.target.closest("[data-location-action]");
 
-    if (!button) return;
+    if (!botao) return;
 
-    const row = button.closest(".location-row");
+    const linha = botao.closest(".location-row");
 
-    if (!row) return;
+    if (!linha) return;
 
-    if (button.dataset.locationAction === "edit") {
-      openEditModal(row);
+    if (botao.dataset.locationAction === "edit") {
+      abrirModalEdicao(linha);
       return;
     }
 
-    if (button.dataset.locationAction === "delete") {
-      deleteLocation(row, button);
+    if (botao.dataset.locationAction === "delete") {
+      excluirLocal(linha, botao);
     }
   });
 }
 
-function setupEditModal() {
-  const form = document.getElementById("locationEditForm");
+function configurarModalEdicao() {
+  const formulario = document.getElementById("locationEditForm");
   const modal = document.getElementById("locationEditModal");
 
-  form?.addEventListener("submit", submitEditForm);
+  formulario?.addEventListener("submit", enviarFormularioEdicao);
 
-  document.querySelectorAll("[data-close-edit-modal]").forEach((button) => {
-    button.addEventListener("click", closeEditModal);
+  document.querySelectorAll("[data-close-edit-modal]").forEach((botao) => {
+    botao.addEventListener("click", fecharModalEdicao);
   });
 
-  modal?.addEventListener("click", (event) => {
-    if (event.target === modal) {
-      closeEditModal();
+  modal?.addEventListener("click", (evento) => {
+    if (evento.target === modal) {
+      fecharModalEdicao();
     }
   });
 }
 
 // O formulário recebe os dados da linha selecionada por meio de atributos data-*.
-function openEditModal(row) {
+function abrirModalEdicao(linha) {
   const modal = document.getElementById("locationEditModal");
-  const idInput = document.getElementById("editLocationId");
-  const nameInput = document.getElementById("editLocationName");
-  const addressInput = document.getElementById("editLocationAddress");
-  const statusInput = document.getElementById("editLocationStatus");
+  const campoEntradaId = document.getElementById("editLocationId");
+  const campoEntradaNome = document.getElementById("editLocationName");
+  const campoEntradaEndereco = document.getElementById("editLocationAddress");
+  const campoEntradaStatus = document.getElementById("editLocationStatus");
 
-  if (!modal || !idInput || !nameInput || !addressInput || !statusInput) return;
+  if (!modal || !campoEntradaId || !campoEntradaNome || !campoEntradaEndereco || !campoEntradaStatus) return;
 
-  idInput.value = row.dataset.id || "";
-  nameInput.value = row.dataset.name || "";
-  addressInput.value = row.dataset.address || "";
-  statusInput.value = row.dataset.statusRaw || "Ativo";
-  clearEditMessage();
+  campoEntradaId.value = linha.dataset.id || "";
+  campoEntradaNome.value = linha.dataset.name || "";
+  campoEntradaEndereco.value = linha.dataset.address || "";
+  campoEntradaStatus.value = linha.dataset.statusRaw || "Ativo";
+  limparMensagemEdicao();
   window.titechRememberDialogTrigger?.();
   modal.hidden = false;
-  nameInput.focus();
+  campoEntradaNome.focus();
 }
 
-function closeEditModal() {
+function fecharModalEdicao() {
   const modal = document.getElementById("locationEditModal");
 
   if (modal) {
@@ -90,52 +90,52 @@ function closeEditModal() {
 }
 
 // A linha é atualizada somente após a confirmação do backend.
-async function submitEditForm(event) {
-  event.preventDefault();
+async function enviarFormularioEdicao(evento) {
+  evento.preventDefault();
 
-  const form = event.currentTarget;
-  const submitButton = document.getElementById("saveLocationButton");
-  const error = validateLocationForm(form);
+  const formulario = evento.currentTarget;
+  const botaoEnviar = document.getElementById("saveLocationButton");
+  const erro = validarFormularioLocal(formulario);
 
-  if (error) {
-    setEditMessage(error, "error");
+  if (erro) {
+    definirMensagemEdicao(erro, "error");
     return;
   }
 
-  setLoading(submitButton, true, "Salvando...");
-  clearEditMessage();
+  definirCarregando(botaoEnviar, true, "Salvando...");
+  limparMensagemEdicao();
 
   try {
-    const response = await fetch(form.action, {
+    const resposta = await fetch(formulario.action, {
       method: "POST",
-      body: new FormData(form),
+      body: new FormData(formulario),
       headers: { Accept: "application/json" },
     });
-    const result = await response.json().catch(() => ({
+    const resultado = await resposta.json().catch(() => ({
       ok: false,
       message: "Resposta invalida do servidor.",
     }));
 
-    if (!response.ok || !result.ok) {
-      throw new Error(result.message || "Nao foi possivel alterar o local.");
+    if (!resposta.ok || !resultado.ok) {
+      throw new Error(resultado.message || "Nao foi possivel alterar o local.");
     }
 
-    updateLocationRow(result.local);
-    closeEditModal();
-    setPageMessage(result.message || "Local alterado com sucesso.", "success");
-    filterLocations();
-  } catch (error) {
-    setEditMessage(error.message || "Nao foi possivel alterar o local.", "error");
+    atualizarLinhaLocal(resultado.local);
+    fecharModalEdicao();
+    definirMensagemPagina(resultado.message || "Local alterado com sucesso.", "success");
+    filtrarLocais();
+  } catch (erro) {
+    definirMensagemEdicao(erro.message || "Nao foi possivel alterar o local.", "error");
   } finally {
-    setLoading(submitButton, false);
+    definirCarregando(botaoEnviar, false);
   }
 }
 
-function validateLocationForm(form) {
-  const data = new FormData(form);
-  const nome = String(data.get("nome") || "").trim();
-  const endereco = String(data.get("endereco") || "").trim();
-  const status = String(data.get("status") || "").trim();
+function validarFormularioLocal(formulario) {
+  const dados = new FormData(formulario);
+  const nome = String(dados.get("nome") || "").trim();
+  const endereco = String(dados.get("endereco") || "").trim();
+  const status = String(dados.get("status") || "").trim();
 
   if (!nome || !status) {
     return "Informe nome e status do local.";
@@ -157,210 +157,210 @@ function validateLocationForm(form) {
 }
 
 // A exclusão combina confirmação do usuário, CSRF e resposta JSON válida.
-async function deleteLocation(row, button) {
-  const name = row.dataset.name || "este local";
-  const confirmed = window.titechConfirm
+async function excluirLocal(linha, botao) {
+  const nome = linha.dataset.name || "este local";
+  const confirmado = window.titechConfirm
     ? await window.titechConfirm({
-      title: `Excluir ${name}?`,
+      title: `Excluir ${nome}?`,
       text: "Esta acao nao pode ser desfeita.",
       confirmButtonText: "Excluir local",
       icon: "warning",
     })
-    : window.confirm(`Excluir ${name}? Esta acao nao pode ser desfeita.`);
+    : window.confirm(`Excluir ${nome}? Esta acao nao pode ser desfeita.`);
 
-  if (!confirmed) return;
+  if (!confirmado) return;
 
-  const body = new FormData();
-  body.append("csrf_token", getCsrfToken());
-  body.append("id", row.dataset.id || "");
+  const corpoRequisicao = new FormData();
+  corpoRequisicao.append("csrf_token", obterTokenCsrf());
+  corpoRequisicao.append("id", linha.dataset.id || "");
 
-  setLoading(button, true, "Excluindo...");
-  clearPageMessage();
+  definirCarregando(botao, true, "Excluindo...");
+  limparMensagemPagina();
 
   try {
-    const response = await fetch("../Backend/excluir-local.php", {
+    const resposta = await fetch("../Backend/excluir-local.php", {
       method: "POST",
-      body,
+      body: corpoRequisicao,
       headers: { Accept: "application/json" },
     });
-    const result = await response.json().catch(() => ({
+    const resultado = await resposta.json().catch(() => ({
       ok: false,
       message: "Resposta invalida do servidor.",
     }));
 
-    if (!response.ok || !result.ok) {
-      throw new Error(result.message || "Nao foi possivel excluir o local.");
+    if (!resposta.ok || !resultado.ok) {
+      throw new Error(resultado.message || "Nao foi possivel excluir o local.");
     }
 
-    row.remove();
-    setPageMessage(result.message || "Local excluido com sucesso.", "success");
-    filterLocations();
-  } catch (error) {
-    setPageMessage(error.message || "Nao foi possivel excluir o local.", "error");
+    linha.remove();
+    definirMensagemPagina(resultado.message || "Local excluido com sucesso.", "success");
+    filtrarLocais();
+  } catch (erro) {
+    definirMensagemPagina(erro.message || "Nao foi possivel excluir o local.", "error");
   } finally {
-    setLoading(button, false);
+    definirCarregando(botao, false);
   }
 }
 
-function updateLocationRow(local) {
+function atualizarLinhaLocal(local) {
   if (!local?.id) return;
 
-  const row = document.querySelector(`.location-row[data-id="${cssEscape(String(local.id))}"]`);
+  const linha = document.querySelector(`.location-row[data-id="${escaparCss(String(local.id))}"]`);
 
-  if (!row) return;
+  if (!linha) return;
 
-  const name = String(local.nome || "");
-  const address = String(local.endereco || "");
+  const nome = String(local.nome || "");
+  const endereco = String(local.endereco || "");
   const status = String(local.status || "Ativo");
-  const normalizedStatus = normalizeText(status);
-  const nameCell = row.querySelector("[data-location-name]");
-  const addressCell = row.querySelector("[data-location-address]");
-  const statusCell = row.querySelector("[data-location-status]");
-  const updatedCell = row.querySelector("[data-location-updated]");
+  const statusNormalizado = normalizarTexto(status);
+  const celulaNome = linha.querySelector("[data-location-name]");
+  const celulaEndereco = linha.querySelector("[data-location-address]");
+  const celulaStatus = linha.querySelector("[data-location-status]");
+  const celulaAtualizacao = linha.querySelector("[data-location-updated]");
 
-  row.dataset.name = name;
-  row.dataset.address = address;
-  row.dataset.status = normalizedStatus;
-  row.dataset.statusRaw = status;
-  row.dataset.search = normalizeText(`${name} ${address}`);
+  linha.dataset.name = nome;
+  linha.dataset.address = endereco;
+  linha.dataset.status = statusNormalizado;
+  linha.dataset.statusRaw = status;
+  linha.dataset.search = normalizarTexto(`${nome} ${endereco}`);
 
-  if (nameCell) {
-    nameCell.textContent = name;
+  if (celulaNome) {
+    celulaNome.textContent = nome;
   }
 
-  if (addressCell) {
-    addressCell.textContent = address || "Sem referencia informada";
+  if (celulaEndereco) {
+    celulaEndereco.textContent = endereco || "Sem referencia informada";
   }
 
-  if (statusCell) {
-    statusCell.className = `status-badge ${status === "Ativo" ? "status-active" : "status-inactive"}`;
-    statusCell.textContent = status;
+  if (celulaStatus) {
+    celulaStatus.className = `status-badge ${status === "Ativo" ? "status-active" : "status-inactive"}`;
+    celulaStatus.textContent = status;
   }
 
-  if (updatedCell) {
-    updatedCell.textContent = formatDate(local.atualizado_em) || "Agora";
+  if (celulaAtualizacao) {
+    celulaAtualizacao.textContent = formatarData(local.atualizado_em) || "Agora";
   }
 }
 
 // A busca e o status filtram localmente os registros já renderizados.
-function filterLocations() {
-  const rows = Array.from(document.querySelectorAll(".location-row"));
-  const search = normalizeText(document.getElementById("locationSearch")?.value || "");
-  const status = normalizeText(document.getElementById("locationStatusFilter")?.value || "todos");
-  let visibleCount = 0;
-  let activeCount = 0;
-  let inactiveCount = 0;
+function filtrarLocais() {
+  const linhas = Array.from(document.querySelectorAll(".location-row"));
+  const busca = normalizarTexto(document.getElementById("locationSearch")?.value || "");
+  const status = normalizarTexto(document.getElementById("locationStatusFilter")?.value || "todos");
+  let quantidadeVisivel = 0;
+  let quantidadeAtivos = 0;
+  let quantidadeInativos = 0;
 
-  rows.forEach((row) => {
-    const rowStatus = normalizeText(row.dataset.status || "");
-    const rowSearch = normalizeText(row.dataset.search || "");
-    const matchesStatus = status === "todos" || rowStatus === status;
-    const matchesSearch = !search || rowSearch.includes(search);
-    const isVisible = matchesStatus && matchesSearch;
+  linhas.forEach((linha) => {
+    const statusLinha = normalizarTexto(linha.dataset.status || "");
+    const buscaLinha = normalizarTexto(linha.dataset.search || "");
+    const correspondeStatus = status === "todos" || statusLinha === status;
+    const correspondeBusca = !busca || buscaLinha.includes(busca);
+    const ehVisivel = correspondeStatus && correspondeBusca;
 
-    if (rowStatus === "ativo") {
-      activeCount += 1;
-    } else if (rowStatus === "inativo") {
-      inactiveCount += 1;
+    if (statusLinha === "ativo") {
+      quantidadeAtivos += 1;
+    } else if (statusLinha === "inativo") {
+      quantidadeInativos += 1;
     }
 
-    row.hidden = !isVisible;
+    linha.hidden = !ehVisivel;
 
-    if (isVisible) {
-      visibleCount += 1;
+    if (ehVisivel) {
+      quantidadeVisivel += 1;
     }
   });
 
-  updateText("locationResultCount", `${visibleCount.toLocaleString("pt-BR")} ${visibleCount === 1 ? "registro" : "registros"}`);
-  updateText("totalLocationsMetric", String(rows.length));
-  updateText("activeLocationsMetric", String(activeCount));
-  updateText("inactiveLocationsMetric", String(inactiveCount));
-  updateEmptyState(rows.length === 0 || visibleCount === 0);
+  atualizarTexto("locationResultCount", `${quantidadeVisivel.toLocaleString("pt-BR")} ${quantidadeVisivel === 1 ? "registro" : "registros"}`);
+  atualizarTexto("totalLocationsMetric", String(linhas.length));
+  atualizarTexto("activeLocationsMetric", String(quantidadeAtivos));
+  atualizarTexto("inactiveLocationsMetric", String(quantidadeInativos));
+  atualizarEstadoVazio(linhas.length === 0 || quantidadeVisivel === 0);
 }
 
-function updateEmptyState(show) {
-  const emptyState = document.getElementById("locationEmptyState");
+function atualizarEstadoVazio(exibir) {
+  const estadoVazio = document.getElementById("locationEmptyState");
 
-  if (emptyState) {
-    emptyState.hidden = !show;
+  if (estadoVazio) {
+    estadoVazio.hidden = !exibir;
   }
 }
 
-function setPageMessage(message, type) {
-  const element = document.getElementById("locationPageMessage");
+function definirMensagemPagina(mensagem, tipo) {
+  const elemento = document.getElementById("locationPageMessage");
 
-  if (!element) return;
+  if (!elemento) return;
 
-  element.textContent = message;
-  element.classList.toggle("show", Boolean(message));
-  element.classList.toggle("error", type === "error");
-  element.classList.toggle("success", type === "success");
+  elemento.textContent = mensagem;
+  elemento.classList.toggle("show", Boolean(mensagem));
+  elemento.classList.toggle("error", tipo === "error");
+  elemento.classList.toggle("success", tipo === "success");
 
-  if (message && type === "success") {
-    setTimeout(clearPageMessage, MESSAGE_HIDE_DELAY_MS);
+  if (mensagem && tipo === "success") {
+    setTimeout(limparMensagemPagina, ATRASO_OCULTACAO_MENSAGEM_MS);
   }
 }
 
-function clearPageMessage() {
-  setPageMessage("", "");
+function limparMensagemPagina() {
+  definirMensagemPagina("", "");
 }
 
-function setEditMessage(message, type) {
-  const element = document.getElementById("locationEditMessage");
+function definirMensagemEdicao(mensagem, tipo) {
+  const elemento = document.getElementById("locationEditMessage");
 
-  if (!element) return;
+  if (!elemento) return;
 
-  element.textContent = message;
-  element.classList.toggle("show", Boolean(message));
-  element.classList.toggle("error", type === "error");
-  element.classList.toggle("success", type === "success");
+  elemento.textContent = mensagem;
+  elemento.classList.toggle("show", Boolean(mensagem));
+  elemento.classList.toggle("error", tipo === "error");
+  elemento.classList.toggle("success", tipo === "success");
 }
 
-function clearEditMessage() {
-  setEditMessage("", "");
+function limparMensagemEdicao() {
+  definirMensagemEdicao("", "");
 }
 
-function setLoading(button, isLoading, loadingText = "Aguarde...") {
-  if (!button) return;
+function definirCarregando(botao, estaCarregando, textoCarregando = "Aguarde...") {
+  if (!botao) return;
 
-  if (isLoading) {
-    button.dataset.originalHtml = button.innerHTML;
-    button.disabled = true;
-    button.innerHTML = `<i class="bi bi-arrow-repeat"></i><span>${loadingText}</span>`;
+  if (estaCarregando) {
+    botao.dataset.originalHtml = botao.innerHTML;
+    botao.disabled = true;
+    botao.innerHTML = `<i class="bi bi-arrow-repeat"></i><span>${textoCarregando}</span>`;
     return;
   }
 
-  button.disabled = false;
+  botao.disabled = false;
 
-  if (button.dataset.originalHtml) {
-    button.innerHTML = button.dataset.originalHtml;
-    delete button.dataset.originalHtml;
+  if (botao.dataset.originalHtml) {
+    botao.innerHTML = botao.dataset.originalHtml;
+    delete botao.dataset.originalHtml;
   }
 }
 
-function getCsrfToken() {
+function obterTokenCsrf() {
   return document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
 }
 
-function formatDate(value) {
-  if (!value) return "";
+function formatarData(valor) {
+  if (!valor) return "";
 
-  const date = new Date(value);
+  const data = new Date(valor);
 
-  if (Number.isNaN(date.getTime())) {
+  if (Number.isNaN(data.getTime())) {
     return "";
   }
 
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
     timeStyle: "short",
-  }).format(date);
+  }).format(data);
 }
 
-function cssEscape(value) {
+function escaparCss(valor) {
   if (window.CSS?.escape) {
-    return window.CSS.escape(value);
+    return window.CSS.escape(valor);
   }
 
-  return value.replace(/["\\]/g, "\\$&");
+  return valor.replace(/["\\]/g, "\\$&");
 }

@@ -1,148 +1,148 @@
 (function () {
-const SIDEBAR_WIDTH_STORAGE_KEY = "titech-sidebar-width";
-const SIDEBAR_DEFAULT_WIDTH = 292;
-const SIDEBAR_MIN_WIDTH = 236;
-const SIDEBAR_MAX_WIDTH = 392;
-const SIDEBAR_DESKTOP_QUERY = "(min-width: 921px)";
+const CHAVE_ARMAZENAMENTO_LARGURA_BARRA_LATERAL = "titech-sidebar-width";
+const LARGURA_PADRAO_BARRA_LATERAL = 292;
+const LARGURA_MINIMA_BARRA_LATERAL = 236;
+const LARGURA_MAXIMA_BARRA_LATERAL = 392;
+const CONSULTA_TELA_AMPLA_BARRA_LATERAL = "(min-width: 921px)";
 
-function setupSidebar() {
-  const openButton = document.getElementById("openSidebar");
-  const closeButton = document.getElementById("closeSidebar");
-  const backdrop = document.getElementById("sidebarBackdrop");
+function configurarBarraLateral() {
+  const botaoAbrir = document.getElementById("openSidebar");
+  const botaoFechar = document.getElementById("closeSidebar");
+  const fundoModal = document.getElementById("sidebarBackdrop");
 
-  openButton?.addEventListener("click", openSidebar);
-  closeButton?.addEventListener("click", closeSidebar);
-  backdrop?.addEventListener("click", closeSidebar);
+  botaoAbrir?.addEventListener("click", abrirBarraLateral);
+  botaoFechar?.addEventListener("click", fecharBarraLateral);
+  fundoModal?.addEventListener("click", fecharBarraLateral);
 
-  window.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape") return;
+  window.addEventListener("keydown", (evento) => {
+    if (evento.key !== "Escape") return;
 
-    if (typeof window.closeEditModal === "function") {
-      window.closeEditModal();
+    if (typeof window.fecharModalEdicao === "function") {
+      window.fecharModalEdicao();
     }
 
-    closeSidebar();
+    fecharBarraLateral();
   });
 
-  document.querySelectorAll(".sidebar-nav a").forEach((link) => {
-    link.addEventListener("click", () => {
+  document.querySelectorAll(".sidebar-nav a").forEach((atalho) => {
+    atalho.addEventListener("click", () => {
       if (window.innerWidth <= 920) {
-        closeSidebar();
+        fecharBarraLateral();
       }
     });
   });
 
-  setupSidebarResize();
+  configurarRedimensionamentoBarraLateral();
 }
 
-function openSidebar() {
+function abrirBarraLateral() {
   document.documentElement.classList.add("sidebar-open");
   document.body.classList.add("sidebar-open");
 }
 
-function closeSidebar() {
+function fecharBarraLateral() {
   document.documentElement.classList.remove("sidebar-open");
   document.body.classList.remove("sidebar-open");
 }
 
-function setupSidebarResize() {
-  const sidebar = document.getElementById("sidebar");
+function configurarRedimensionamentoBarraLateral() {
+  const barraLateral = document.getElementById("sidebar");
 
-  if (!sidebar || sidebar.dataset.resizeReady === "true") {
+  if (!barraLateral || barraLateral.dataset.resizeReady === "true") {
     return;
   }
 
-  sidebar.dataset.resizeReady = "true";
+  barraLateral.dataset.resizeReady = "true";
 
-  const handle = document.createElement("div");
-  handle.className = "sidebar-resize-handle";
-  handle.setAttribute("role", "separator");
-  handle.setAttribute("aria-orientation", "vertical");
-  handle.setAttribute("aria-label", "Redimensionar menu lateral");
-  handle.setAttribute("aria-valuemin", String(SIDEBAR_MIN_WIDTH));
-  handle.setAttribute("aria-valuemax", String(SIDEBAR_MAX_WIDTH));
-  handle.tabIndex = 0;
-  sidebar.appendChild(handle);
+  const manipulador = document.createElement("div");
+  manipulador.className = "sidebar-resize-handle";
+  manipulador.setAttribute("role", "separator");
+  manipulador.setAttribute("aria-orientation", "vertical");
+  manipulador.setAttribute("aria-label", "Redimensionar menu lateral");
+  manipulador.setAttribute("aria-valuemin", String(LARGURA_MINIMA_BARRA_LATERAL));
+  manipulador.setAttribute("aria-valuemax", String(LARGURA_MAXIMA_BARRA_LATERAL));
+  manipulador.tabIndex = 0;
+  barraLateral.appendChild(manipulador);
 
-  updateSidebarResizeHandle(handle, getCurrentSidebarWidth());
+  atualizarManipuladorRedimensionamentoBarraLateral(manipulador, obterLarguraBarraLateralAtual());
 
-  let startX = 0;
-  let startWidth = SIDEBAR_DEFAULT_WIDTH;
-  let activePointerId = null;
+  let xInicial = 0;
+  let larguraInicial = LARGURA_PADRAO_BARRA_LATERAL;
+  let idPonteiroAtivo = null;
 
-  const finishResize = () => {
-    if (activePointerId === null) {
+  const finalizarRedimensionamento = () => {
+    if (idPonteiroAtivo === null) {
       return;
     }
 
-    activePointerId = null;
+    idPonteiroAtivo = null;
     document.body.classList.remove("sidebar-resizing");
-    setSavedSidebarItem(SIDEBAR_WIDTH_STORAGE_KEY, String(getCurrentSidebarWidth()));
+    definirItemBarraLateralSalvo(CHAVE_ARMAZENAMENTO_LARGURA_BARRA_LATERAL, String(obterLarguraBarraLateralAtual()));
   };
 
-  handle.addEventListener("pointerdown", (event) => {
-    if (!isSidebarResizableViewport()) {
+  manipulador.addEventListener("pointerdown", (evento) => {
+    if (!permiteRedimensionarBarraLateral()) {
       return;
     }
 
-    activePointerId = event.pointerId;
-    startX = event.clientX;
-    startWidth = getCurrentSidebarWidth();
+    idPonteiroAtivo = evento.pointerId;
+    xInicial = evento.clientX;
+    larguraInicial = obterLarguraBarraLateralAtual();
     document.body.classList.add("sidebar-resizing");
-    handle.setPointerCapture?.(event.pointerId);
-    event.preventDefault();
+    manipulador.setPointerCapture?.(evento.pointerId);
+    evento.preventDefault();
   });
 
-  handle.addEventListener("pointermove", (event) => {
-    if (activePointerId !== event.pointerId) {
+  manipulador.addEventListener("pointermove", (evento) => {
+    if (idPonteiroAtivo !== evento.pointerId) {
       return;
     }
 
-    const nextWidth = startWidth + (event.clientX - startX);
-    applySidebarWidth(nextWidth);
-    updateSidebarResizeHandle(handle, getCurrentSidebarWidth());
+    const larguraProxima = larguraInicial + (evento.clientX - xInicial);
+    aplicarLarguraBarraLateral(larguraProxima);
+    atualizarManipuladorRedimensionamentoBarraLateral(manipulador, obterLarguraBarraLateralAtual());
   });
 
-  handle.addEventListener("pointerup", finishResize);
-  handle.addEventListener("pointercancel", finishResize);
+  manipulador.addEventListener("pointerup", finalizarRedimensionamento);
+  manipulador.addEventListener("pointercancel", finalizarRedimensionamento);
 
-  handle.addEventListener("dblclick", () => {
-    applySidebarWidth(SIDEBAR_DEFAULT_WIDTH);
-    updateSidebarResizeHandle(handle, SIDEBAR_DEFAULT_WIDTH);
-    setSavedSidebarItem(SIDEBAR_WIDTH_STORAGE_KEY, String(SIDEBAR_DEFAULT_WIDTH));
+  manipulador.addEventListener("dblclick", () => {
+    aplicarLarguraBarraLateral(LARGURA_PADRAO_BARRA_LATERAL);
+    atualizarManipuladorRedimensionamentoBarraLateral(manipulador, LARGURA_PADRAO_BARRA_LATERAL);
+    definirItemBarraLateralSalvo(CHAVE_ARMAZENAMENTO_LARGURA_BARRA_LATERAL, String(LARGURA_PADRAO_BARRA_LATERAL));
   });
 
-  handle.addEventListener("keydown", (event) => {
-    if (!isSidebarResizableViewport()) {
+  manipulador.addEventListener("keydown", (evento) => {
+    if (!permiteRedimensionarBarraLateral()) {
       return;
     }
 
-    const step = event.shiftKey ? 24 : 12;
-    const currentWidth = getCurrentSidebarWidth();
-    let nextWidth = currentWidth;
+    const etapa = evento.shiftKey ? 24 : 12;
+    const larguraAtual = obterLarguraBarraLateralAtual();
+    let larguraProxima = larguraAtual;
 
-    if (event.key === "ArrowLeft") {
-      nextWidth = currentWidth - step;
-    } else if (event.key === "ArrowRight") {
-      nextWidth = currentWidth + step;
-    } else if (event.key === "Home") {
-      nextWidth = SIDEBAR_MIN_WIDTH;
-    } else if (event.key === "End") {
-      nextWidth = SIDEBAR_MAX_WIDTH;
+    if (evento.key === "ArrowLeft") {
+      larguraProxima = larguraAtual - etapa;
+    } else if (evento.key === "ArrowRight") {
+      larguraProxima = larguraAtual + etapa;
+    } else if (evento.key === "Home") {
+      larguraProxima = LARGURA_MINIMA_BARRA_LATERAL;
+    } else if (evento.key === "End") {
+      larguraProxima = LARGURA_MAXIMA_BARRA_LATERAL;
     } else {
       return;
     }
 
-    event.preventDefault();
-    applySidebarWidth(nextWidth);
-    updateSidebarResizeHandle(handle, getCurrentSidebarWidth());
-    setSavedSidebarItem(SIDEBAR_WIDTH_STORAGE_KEY, String(getCurrentSidebarWidth()));
+    evento.preventDefault();
+    aplicarLarguraBarraLateral(larguraProxima);
+    atualizarManipuladorRedimensionamentoBarraLateral(manipulador, obterLarguraBarraLateralAtual());
+    definirItemBarraLateralSalvo(CHAVE_ARMAZENAMENTO_LARGURA_BARRA_LATERAL, String(obterLarguraBarraLateralAtual()));
   });
 
   window.addEventListener("resize", () => {
-    if (isSidebarResizableViewport()) {
-      applySavedSidebarWidth();
-      updateSidebarResizeHandle(handle, getCurrentSidebarWidth());
+    if (permiteRedimensionarBarraLateral()) {
+      aplicarLarguraSalvaBarraLateral();
+      atualizarManipuladorRedimensionamentoBarraLateral(manipulador, obterLarguraBarraLateralAtual());
       return;
     }
 
@@ -150,104 +150,104 @@ function setupSidebarResize() {
   });
 }
 
-function applySavedSidebarWidth() {
-  const savedWidth = Number(getSavedSidebarItem(SIDEBAR_WIDTH_STORAGE_KEY));
+function aplicarLarguraSalvaBarraLateral() {
+  const larguraSalva = Number(obterItemBarraLateralSalvo(CHAVE_ARMAZENAMENTO_LARGURA_BARRA_LATERAL));
 
-  if (!isSidebarResizableViewport()) {
+  if (!permiteRedimensionarBarraLateral()) {
     document.body.style.removeProperty("--sidebar-width");
     return;
   }
 
-  applySidebarWidth(Number.isFinite(savedWidth) ? savedWidth : SIDEBAR_DEFAULT_WIDTH);
+  aplicarLarguraBarraLateral(Number.isFinite(larguraSalva) ? larguraSalva : LARGURA_PADRAO_BARRA_LATERAL);
 }
 
-function applySidebarWidth(width) {
-  const nextWidth = clampSidebarWidth(width);
+function aplicarLarguraBarraLateral(largura) {
+  const larguraProxima = limitarLarguraBarraLateral(largura);
 
-  document.body.style.setProperty("--sidebar-width", `${nextWidth}px`);
+  document.body.style.setProperty("--sidebar-width", `${larguraProxima}px`);
 }
 
-function getCurrentSidebarWidth() {
-  const sidebar = document.getElementById("sidebar");
-  const currentWidth = sidebar?.getBoundingClientRect().width || SIDEBAR_DEFAULT_WIDTH;
+function obterLarguraBarraLateralAtual() {
+  const barraLateral = document.getElementById("sidebar");
+  const larguraAtual = barraLateral?.getBoundingClientRect().width || LARGURA_PADRAO_BARRA_LATERAL;
 
-  return clampSidebarWidth(currentWidth);
+  return limitarLarguraBarraLateral(larguraAtual);
 }
 
-function clampSidebarWidth(width) {
-  const numericWidth = Number(width);
+function limitarLarguraBarraLateral(largura) {
+  const larguraNumerica = Number(largura);
 
-  if (!Number.isFinite(numericWidth)) {
-    return SIDEBAR_DEFAULT_WIDTH;
+  if (!Number.isFinite(larguraNumerica)) {
+    return LARGURA_PADRAO_BARRA_LATERAL;
   }
 
-  return Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, Math.round(numericWidth)));
+  return Math.min(LARGURA_MAXIMA_BARRA_LATERAL, Math.max(LARGURA_MINIMA_BARRA_LATERAL, Math.round(larguraNumerica)));
 }
 
-function updateSidebarResizeHandle(handle, width) {
-  handle.setAttribute("aria-valuenow", String(clampSidebarWidth(width)));
+function atualizarManipuladorRedimensionamentoBarraLateral(manipulador, largura) {
+  manipulador.setAttribute("aria-valuenow", String(limitarLarguraBarraLateral(largura)));
 }
 
-function isSidebarResizableViewport() {
-  return window.matchMedia?.(SIDEBAR_DESKTOP_QUERY)?.matches ?? window.innerWidth >= 921;
+function permiteRedimensionarBarraLateral() {
+  return window.matchMedia?.(CONSULTA_TELA_AMPLA_BARRA_LATERAL)?.matches ?? window.innerWidth >= 921;
 }
 
-function setupNavGroups() {
-  const groups = Array.from(document.querySelectorAll("[data-nav-group]"));
+function configurarGruposNavegacao() {
+  const grupos = Array.from(document.querySelectorAll("[data-nav-group]"));
 
-  groups.forEach((group) => {
-    const button = group.querySelector(".nav-toggle");
+  grupos.forEach((grupo) => {
+    const botao = grupo.querySelector(".nav-toggle");
 
-    if (!button) return;
+    if (!botao) return;
 
-    button.addEventListener("click", () => {
-      const shouldOpen = !group.classList.contains("open");
+    botao.addEventListener("click", () => {
+      const deveAbrir = !grupo.classList.contains("open");
 
-      groups.forEach((otherGroup) => {
-        if (otherGroup === group) return;
+      grupos.forEach((outroGrupo) => {
+        if (outroGrupo === grupo) return;
 
-        otherGroup.classList.remove("open");
-        otherGroup.querySelector(".nav-toggle")?.setAttribute("aria-expanded", "false");
+        outroGrupo.classList.remove("open");
+        outroGrupo.querySelector(".nav-toggle")?.setAttribute("aria-expanded", "false");
       });
 
-      group.classList.toggle("open", shouldOpen);
-      button.setAttribute("aria-expanded", String(shouldOpen));
+      grupo.classList.toggle("open", deveAbrir);
+      botao.setAttribute("aria-expanded", String(deveAbrir));
     });
   });
 }
 
-function getSavedSidebarItem(key) {
-  if (typeof window.getSavedItem === "function") {
-    return window.getSavedItem(key);
+function obterItemBarraLateralSalvo(chave) {
+  if (typeof window.obterItemSalvo === "function") {
+    return window.obterItemSalvo(chave);
   }
 
   try {
-    return localStorage.getItem(key);
+    return localStorage.getItem(chave);
   } catch {
     return null;
   }
 }
 
-function setSavedSidebarItem(key, value) {
-  if (typeof window.setSavedItem === "function") {
-    window.setSavedItem(key, value);
+function definirItemBarraLateralSalvo(chave, valor) {
+  if (typeof window.definirItemSalvo === "function") {
+    window.definirItemSalvo(chave, valor);
     return;
   }
 
   try {
-    localStorage.setItem(key, value);
+    localStorage.setItem(chave, valor);
   } catch {
     return;
   }
 }
 
 Object.assign(window, {
-  setupSidebar,
-  openSidebar,
-  closeSidebar,
-  applySidebarWidth,
-  applySavedSidebarWidth,
-  setupSidebarResize,
-  setupNavGroups,
+  setupSidebar: configurarBarraLateral,
+  openSidebar: abrirBarraLateral,
+  closeSidebar: fecharBarraLateral,
+  applySidebarWidth: aplicarLarguraBarraLateral,
+  applySavedSidebarWidth: aplicarLarguraSalvaBarraLateral,
+  setupSidebarResize: configurarRedimensionamentoBarraLateral,
+  setupNavGroups: configurarGruposNavegacao,
 });
 })();

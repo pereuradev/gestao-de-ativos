@@ -33,11 +33,11 @@ let temporizadorNotificacao = null;
 let identificadorAnimacaoNavegacao = null;
 
 function inicializarPaginaConfiguracoes() {
-  startPageAnimation();
-  loadSavedTheme();
-  setupThemeToggle();
-  setupSidebar();
-  setupNavGroups();
+  iniciarAnimacaoPagina();
+  carregarTemaSalvo();
+  configurarAlternadorTema();
+  configurarBarraLateral();
+  configurarGruposNavegacao();
   configurarNavegacaoConfiguracoes();
   configurarEnvioFotoCracha();
   configurarControlesPreferencias();
@@ -577,23 +577,23 @@ function limitarNumero(valor, minimo, maximo) {
 }
 
 function obterEstadoPreferencias() {
-  if (typeof window.getCurrentUserPreferences === "function") {
-    return window.getCurrentUserPreferences();
+  if (typeof window.obterPreferenciasUsuarioAtual === "function") {
+    return window.obterPreferenciasUsuarioAtual();
   }
 
   return {
-    theme: getSavedItem("titech-theme") || PREFERENCIAS_INTERFACE_PADRAO.theme,
-    accent: getSavedItem("titech-accent") || PREFERENCIAS_INTERFACE_PADRAO.accent,
-    fontSize: getSavedItem("titech-font-size") || PREFERENCIAS_INTERFACE_PADRAO.fontSize,
-    density: getSavedItem("titech-density") || PREFERENCIAS_INTERFACE_PADRAO.density,
-    motion: getSavedItem("titech-motion") || PREFERENCIAS_INTERFACE_PADRAO.motion,
-    cursor: getSavedItem("titech-cursor") || PREFERENCIAS_INTERFACE_PADRAO.cursor,
+    theme: obterItemSalvo("titech-theme") || PREFERENCIAS_INTERFACE_PADRAO.theme,
+    accent: obterItemSalvo("titech-accent") || PREFERENCIAS_INTERFACE_PADRAO.accent,
+    fontSize: obterItemSalvo("titech-font-size") || PREFERENCIAS_INTERFACE_PADRAO.fontSize,
+    density: obterItemSalvo("titech-density") || PREFERENCIAS_INTERFACE_PADRAO.density,
+    motion: obterItemSalvo("titech-motion") || PREFERENCIAS_INTERFACE_PADRAO.motion,
+    cursor: obterItemSalvo("titech-cursor") || PREFERENCIAS_INTERFACE_PADRAO.cursor,
   };
 }
 
 function normalizarEstadoPreferencias(preferencias) {
-  if (typeof window.normalizeUserPreferences === "function") {
-    return window.normalizeUserPreferences(preferencias);
+  if (typeof window.normalizarPreferenciasUsuario === "function") {
+    return window.normalizarPreferenciasUsuario(preferencias);
   }
 
   return { ...PREFERENCIAS_INTERFACE_PADRAO, ...preferencias };
@@ -602,22 +602,22 @@ function normalizarEstadoPreferencias(preferencias) {
 function aplicarEstadoPreferencias(preferencias) {
   const preferenciasNormalizadas = normalizarEstadoPreferencias(preferencias);
 
-  if (typeof window.applyUserPreferences === "function") {
-    return window.applyUserPreferences(preferenciasNormalizadas);
+  if (typeof window.aplicarPreferenciasUsuario === "function") {
+    return window.aplicarPreferenciasUsuario(preferenciasNormalizadas);
   }
 
-  setSavedItem("titech-accent", preferenciasNormalizadas.accent);
-  setSavedItem("titech-theme", preferenciasNormalizadas.theme);
-  setSavedItem("titech-font-size", preferenciasNormalizadas.fontSize);
-  setSavedItem("titech-density", preferenciasNormalizadas.density);
-  setSavedItem("titech-motion", preferenciasNormalizadas.motion);
-  setSavedItem("titech-cursor", preferenciasNormalizadas.cursor);
-  applyTheme(preferenciasNormalizadas.theme);
-  applyAccent(preferenciasNormalizadas.accent);
-  applyFontSizePreference(preferenciasNormalizadas.fontSize);
-  applyDensity(preferenciasNormalizadas.density);
-  applyMotionPreference(preferenciasNormalizadas.motion);
-  applyCursorPreference(preferenciasNormalizadas.cursor);
+  definirItemSalvo("titech-accent", preferenciasNormalizadas.accent);
+  definirItemSalvo("titech-theme", preferenciasNormalizadas.theme);
+  definirItemSalvo("titech-font-size", preferenciasNormalizadas.fontSize);
+  definirItemSalvo("titech-density", preferenciasNormalizadas.density);
+  definirItemSalvo("titech-motion", preferenciasNormalizadas.motion);
+  definirItemSalvo("titech-cursor", preferenciasNormalizadas.cursor);
+  aplicarTema(preferenciasNormalizadas.theme);
+  aplicarDestaque(preferenciasNormalizadas.accent);
+  aplicarPreferenciaTamanhoFonte(preferenciasNormalizadas.fontSize);
+  aplicarDensidade(preferenciasNormalizadas.density);
+  aplicarPreferenciaMovimento(preferenciasNormalizadas.motion);
+  aplicarPreferenciaCursor(preferenciasNormalizadas.cursor);
 
   return preferenciasNormalizadas;
 }
@@ -631,8 +631,8 @@ async function salvarAlteracaoPreferencias(preferenciasParciais, mensagem, notif
   sincronizarFormularioPreferencias();
   exibirMensagemPreferencia(mensagem);
 
-  const resultado = typeof window.saveUserPreferences === "function"
-    ? await window.saveUserPreferences(proximasPreferencias)
+  const resultado = typeof window.salvarPreferenciasUsuario === "function"
+    ? await window.salvarPreferenciasUsuario(proximasPreferencias)
     : { ok: true, preferences: proximasPreferencias };
 
   if (resultado.ok) {
@@ -656,7 +656,7 @@ function configurarValidacaoSenha() {
   const botaoAtualizar = document.getElementById("updatePasswordButton");
 
   configurarBotoesVisibilidadeSenha(formulario);
-  configurarAvisoCapsLockSenha(formulario);
+  configurarAvisoMaiusculasAtivasSenha(formulario);
 
   [campoSenhaAtual, campoNovaSenha, campoConfirmacaoSenha].forEach((campoSenha) => {
     campoSenha?.addEventListener("input", () => definirMensagemSenha("", ""));
@@ -777,22 +777,22 @@ function restaurarVisibilidadeSenhas(formulario) {
   });
 }
 
-function configurarAvisoCapsLockSenha(formulario) {
-  const avisoCapsLock = document.getElementById("passwordCapsLock");
+function configurarAvisoMaiusculasAtivasSenha(formulario) {
+  const avisoMaiusculasAtivas = document.getElementById("passwordCapsLock");
 
-  if (!formulario || !avisoCapsLock) {
+  if (!formulario || !avisoMaiusculasAtivas) {
     return;
   }
 
   formulario.querySelectorAll('input[autocomplete$="password"]').forEach((campoSenha) => {
-    const atualizarAvisoCapsLock = (evento) => {
-      avisoCapsLock.hidden = !Boolean(evento.getModifierState?.("CapsLock"));
+    const atualizarAvisoMaiusculasAtivas = (evento) => {
+      avisoMaiusculasAtivas.hidden = !Boolean(evento.getModifierState?.("CapsLock"));
     };
 
-    campoSenha.addEventListener("keydown", atualizarAvisoCapsLock);
-    campoSenha.addEventListener("keyup", atualizarAvisoCapsLock);
+    campoSenha.addEventListener("keydown", atualizarAvisoMaiusculasAtivas);
+    campoSenha.addEventListener("keyup", atualizarAvisoMaiusculasAtivas);
     campoSenha.addEventListener("blur", () => {
-      avisoCapsLock.hidden = true;
+      avisoMaiusculasAtivas.hidden = true;
     });
   });
 }
@@ -930,10 +930,10 @@ function avaliarSenha(senha, confirmacaoSenha) {
 }
 
 function atualizarDiagnosticos() {
-  updateText("diagBrowser", obterNomeNavegador());
-  updateText("diagOs", obterSistemaOperacional());
-  updateText("diagWidth", `${window.innerWidth}px`);
-  updateText("diagTime", new Intl.DateTimeFormat("pt-BR", {
+  atualizarTexto("diagBrowser", obterNomeNavegador());
+  atualizarTexto("diagOs", obterSistemaOperacional());
+  atualizarTexto("diagWidth", `${window.innerWidth}px`);
+  atualizarTexto("diagTime", new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
     timeStyle: "medium",
   }).format(new Date()));

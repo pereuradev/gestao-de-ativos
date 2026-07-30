@@ -405,6 +405,10 @@ try {
         }
     }
 
+    if (count($ativosCriados) !== $quantidadeCadastro) {
+        throw new RuntimeException("Nem todas as unidades foram cadastradas.");
+    }
+
     $pdo->commit();
 
     $mensagemSucesso = $quantidadeCadastro === 1

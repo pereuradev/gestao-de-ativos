@@ -1,83 +1,83 @@
 // Controla busca, edicao e exclusao de categorias cadastradas.
 // As acoes dependem do token CSRF renderizado pela pagina e da resposta JSON do backend.
 
-const CATEGORY_MESSAGE_HIDE_DELAY_MS = 2800;
+const ATRASO_OCULTACAO_MENSAGEM_CATEGORIA_MS = 2800;
 
-document.addEventListener("DOMContentLoaded", initCategoryEditPage);
+document.addEventListener("DOMContentLoaded", inicializarPaginaEdicaoCategoria);
 
-function initCategoryEditPage() {
-  startPageAnimation();
-  loadSavedTheme();
-  setupThemeToggle();
-  setupSidebar();
-  setupNavGroups();
-  setupCategoryFilters();
-  setupCategoryActions();
-  setupCategoryEditModal();
+function inicializarPaginaEdicaoCategoria() {
+  iniciarAnimacaoPagina();
+  carregarTemaSalvo();
+  configurarAlternadorTema();
+  configurarBarraLateral();
+  configurarGruposNavegacao();
+  configurarFiltrosCategoria();
+  configurarAcoesCategoria();
+  configurarModalEdicaoCategoria();
 }
 
-function setupCategoryFilters() {
-  document.getElementById("categorySearch")?.addEventListener("input", filterCategories);
+function configurarFiltrosCategoria() {
+  document.getElementById("categorySearch")?.addEventListener("input", filtrarCategorias);
 
-  filterCategories();
+  filtrarCategorias();
 }
 
-function setupCategoryActions() {
-  document.getElementById("categoryTableBody")?.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-category-action]");
+function configurarAcoesCategoria() {
+  document.getElementById("categoryTableBody")?.addEventListener("click", (evento) => {
+    const botao = evento.target.closest("[data-category-action]");
 
-    if (!button) return;
+    if (!botao) return;
 
-    const row = button.closest(".category-row");
+    const linha = botao.closest(".category-row");
 
-    if (!row) return;
+    if (!linha) return;
 
-    if (button.dataset.categoryAction === "edit") {
-      openCategoryEditModal(row);
+    if (botao.dataset.categoryAction === "edit") {
+      abrirModalEdicaoCategoria(linha);
       return;
     }
 
-    if (button.dataset.categoryAction === "delete") {
-      deleteCategory(row, button);
+    if (botao.dataset.categoryAction === "delete") {
+      excluirCategoria(linha, botao);
     }
   });
 }
 
-function setupCategoryEditModal() {
-  const form = document.getElementById("categoryEditForm");
+function configurarModalEdicaoCategoria() {
+  const formulario = document.getElementById("categoryEditForm");
   const modal = document.getElementById("categoryEditModal");
 
-  form?.addEventListener("submit", submitCategoryEditForm);
+  formulario?.addEventListener("submit", enviarFormularioEdicaoCategoria);
 
-  document.querySelectorAll("[data-close-edit-modal]").forEach((button) => {
-    button.addEventListener("click", closeCategoryEditModal);
+  document.querySelectorAll("[data-close-edit-modal]").forEach((botao) => {
+    botao.addEventListener("click", fecharModalEdicaoCategoria);
   });
 
-  modal?.addEventListener("click", (event) => {
-    if (event.target === modal) {
-      closeCategoryEditModal();
+  modal?.addEventListener("click", (evento) => {
+    if (evento.target === modal) {
+      fecharModalEdicaoCategoria();
     }
   });
 }
 
-function openCategoryEditModal(row) {
+function abrirModalEdicaoCategoria(linha) {
   const modal = document.getElementById("categoryEditModal");
-  const idInput = document.getElementById("editCategoryId");
-  const nameInput = document.getElementById("editCategoryName");
-  const descriptionInput = document.getElementById("editCategoryDescription");
+  const campoEntradaId = document.getElementById("editCategoryId");
+  const campoEntradaNome = document.getElementById("editCategoryName");
+  const campoDescricao = document.getElementById("editCategoryDescription");
 
-  if (!modal || !idInput || !nameInput || !descriptionInput) return;
+  if (!modal || !campoEntradaId || !campoEntradaNome || !campoDescricao) return;
 
-  idInput.value = row.dataset.id || "";
-  nameInput.value = row.dataset.name || "";
-  descriptionInput.value = row.dataset.description || "";
-  clearCategoryEditMessage();
+  campoEntradaId.value = linha.dataset.id || "";
+  campoEntradaNome.value = linha.dataset.name || "";
+  campoDescricao.value = linha.dataset.description || "";
+  limparMensagemEdicaoCategoria();
   window.titechRememberDialogTrigger?.();
   modal.hidden = false;
-  nameInput.focus();
+  campoEntradaNome.focus();
 }
 
-function closeCategoryEditModal() {
+function fecharModalEdicaoCategoria() {
   const modal = document.getElementById("categoryEditModal");
 
   if (modal) {
@@ -85,51 +85,51 @@ function closeCategoryEditModal() {
   }
 }
 
-async function submitCategoryEditForm(event) {
-  event.preventDefault();
+async function enviarFormularioEdicaoCategoria(evento) {
+  evento.preventDefault();
 
-  const form = event.currentTarget;
-  const submitButton = document.getElementById("saveCategoryButton");
-  const error = validateCategoryForm(form);
+  const formulario = evento.currentTarget;
+  const botaoEnviar = document.getElementById("saveCategoryButton");
+  const erro = validarFormularioCategoria(formulario);
 
-  if (error) {
-    setCategoryEditMessage(error, "error");
+  if (erro) {
+    definirMensagemEdicaoCategoria(erro, "error");
     return;
   }
 
-  setCategoryLoading(submitButton, true, "Salvando...");
-  clearCategoryEditMessage();
+  definirCarregandoCategoria(botaoEnviar, true, "Salvando...");
+  limparMensagemEdicaoCategoria();
 
   try {
-    const response = await fetch(form.action, {
+    const resposta = await fetch(formulario.action, {
       method: "POST",
-      body: new FormData(form),
+      body: new FormData(formulario),
       headers: { Accept: "application/json" },
     });
-    const result = await response.json().catch(() => ({
+    const resultado = await resposta.json().catch(() => ({
       ok: false,
       message: "Resposta invalida do servidor.",
     }));
 
-    if (!response.ok || !result.ok) {
-      throw new Error(result.message || "Nao foi possivel alterar a categoria.");
+    if (!resposta.ok || !resultado.ok) {
+      throw new Error(resultado.message || "Nao foi possivel alterar a categoria.");
     }
 
-    updateCategoryRow(result.categoria);
-    closeCategoryEditModal();
-    setCategoryPageMessage(result.message || "Categoria alterada com sucesso.", "success");
-    filterCategories();
-  } catch (error) {
-    setCategoryEditMessage(error.message || "Nao foi possivel alterar a categoria.", "error");
+    atualizarLinhaCategoria(resultado.categoria);
+    fecharModalEdicaoCategoria();
+    definirMensagemPaginaCategoria(resultado.message || "Categoria alterada com sucesso.", "success");
+    filtrarCategorias();
+  } catch (erro) {
+    definirMensagemEdicaoCategoria(erro.message || "Nao foi possivel alterar a categoria.", "error");
   } finally {
-    setCategoryLoading(submitButton, false);
+    definirCarregandoCategoria(botaoEnviar, false);
   }
 }
 
-function validateCategoryForm(form) {
-  const data = new FormData(form);
-  const nome = String(data.get("nome") || "").trim();
-  const descricao = String(data.get("descricao") || "").trim();
+function validarFormularioCategoria(formulario) {
+  const dados = new FormData(formulario);
+  const nome = String(dados.get("nome") || "").trim();
+  const descricao = String(dados.get("descricao") || "").trim();
 
   if (!nome) {
     return "Informe o nome da categoria.";
@@ -150,200 +150,200 @@ function validateCategoryForm(form) {
   return "";
 }
 
-async function deleteCategory(row, button) {
-  const name = row.dataset.name || "esta categoria";
-  const linkedAssets = Number(row.dataset.assets || 0);
-  const text = linkedAssets > 0
+async function excluirCategoria(linha, botao) {
+  const nome = linha.dataset.name || "esta categoria";
+  const ativosVinculados = Number(linha.dataset.assets || 0);
+  const texto = ativosVinculados > 0
     ? "Esta categoria possui ativos vinculados e o banco deve bloquear a exclusao."
     : "Esta acao nao pode ser desfeita.";
-  const confirmed = window.titechConfirm
+  const confirmado = window.titechConfirm
     ? await window.titechConfirm({
-      title: `Excluir ${name}?`,
-      text,
+      title: `Excluir ${nome}?`,
+      text: texto,
       confirmButtonText: "Excluir categoria",
       icon: "warning",
     })
-    : window.confirm(`Excluir ${name}? ${text}`);
+    : window.confirm(`Excluir ${nome}? ${texto}`);
 
-  if (!confirmed) return;
+  if (!confirmado) return;
 
-  const body = new FormData();
-  body.append("csrf_token", getCategoryCsrfToken());
-  body.append("id", row.dataset.id || "");
+  const corpoRequisicao = new FormData();
+  corpoRequisicao.append("csrf_token", obterTokenCsrfCategoria());
+  corpoRequisicao.append("id", linha.dataset.id || "");
 
-  setCategoryLoading(button, true, "Excluindo...");
-  clearCategoryPageMessage();
+  definirCarregandoCategoria(botao, true, "Excluindo...");
+  limparMensagemPaginaCategoria();
 
   try {
-    const response = await fetch("../Backend/excluir-categoria.php", {
+    const resposta = await fetch("../Backend/excluir-categoria.php", {
       method: "POST",
-      body,
+      body: corpoRequisicao,
       headers: { Accept: "application/json" },
     });
-    const result = await response.json().catch(() => ({
+    const resultado = await resposta.json().catch(() => ({
       ok: false,
       message: "Resposta invalida do servidor.",
     }));
 
-    if (!response.ok || !result.ok) {
-      throw new Error(result.message || "Nao foi possivel excluir a categoria.");
+    if (!resposta.ok || !resultado.ok) {
+      throw new Error(resultado.message || "Nao foi possivel excluir a categoria.");
     }
 
-    row.remove();
-    setCategoryPageMessage(result.message || "Categoria excluida com sucesso.", "success");
-    filterCategories();
-  } catch (error) {
-    setCategoryPageMessage(error.message || "Nao foi possivel excluir a categoria.", "error");
+    linha.remove();
+    definirMensagemPaginaCategoria(resultado.message || "Categoria excluida com sucesso.", "success");
+    filtrarCategorias();
+  } catch (erro) {
+    definirMensagemPaginaCategoria(erro.message || "Nao foi possivel excluir a categoria.", "error");
   } finally {
-    setCategoryLoading(button, false);
+    definirCarregandoCategoria(botao, false);
   }
 }
 
-function updateCategoryRow(category) {
-  if (!category?.id) return;
+function atualizarLinhaCategoria(categoria) {
+  if (!categoria?.id) return;
 
-  const row = document.querySelector(`.category-row[data-id="${cssEscape(String(category.id))}"]`);
+  const linha = document.querySelector(`.category-row[data-id="${escaparCss(String(categoria.id))}"]`);
 
-  if (!row) return;
+  if (!linha) return;
 
-  const name = String(category.nome || "");
-  const description = String(category.descricao || "");
-  const nameCell = row.querySelector("[data-category-name]");
-  const descriptionCell = row.querySelector("[data-category-description]");
-  const updatedCell = row.querySelector("[data-category-updated]");
+  const nome = String(categoria.nome || "");
+  const descricao = String(categoria.descricao || "");
+  const celulaNome = linha.querySelector("[data-category-name]");
+  const celulaDescricao = linha.querySelector("[data-category-description]");
+  const celulaAtualizacao = linha.querySelector("[data-category-updated]");
 
-  row.dataset.name = name;
-  row.dataset.description = description;
-  row.dataset.search = normalizeText(`${name} ${description}`);
+  linha.dataset.name = nome;
+  linha.dataset.description = descricao;
+  linha.dataset.search = normalizarTexto(`${nome} ${descricao}`);
 
-  if (nameCell) {
-    nameCell.textContent = name;
+  if (celulaNome) {
+    celulaNome.textContent = nome;
   }
 
-  if (descriptionCell) {
-    descriptionCell.textContent = description || "Sem descricao";
+  if (celulaDescricao) {
+    celulaDescricao.textContent = descricao || "Sem descricao";
   }
 
-  if (updatedCell) {
-    updatedCell.textContent = formatCategoryDate(category.atualizado_em) || "Agora";
+  if (celulaAtualizacao) {
+    celulaAtualizacao.textContent = formatarDataCategoria(categoria.atualizado_em) || "Agora";
   }
 }
 
-function filterCategories() {
-  const rows = Array.from(document.querySelectorAll(".category-row"));
-  const search = normalizeText(document.getElementById("categorySearch")?.value || "");
-  let visibleCount = 0;
-  let linkedCount = 0;
-  let unlinkedCount = 0;
+function filtrarCategorias() {
+  const linhas = Array.from(document.querySelectorAll(".category-row"));
+  const busca = normalizarTexto(document.getElementById("categorySearch")?.value || "");
+  let quantidadeVisivel = 0;
+  let quantidadeVinculados = 0;
+  let quantidadeDesvinculados = 0;
 
-  rows.forEach((row) => {
-    const rowSearch = normalizeText(row.dataset.search || "");
-    const assets = Number(row.dataset.assets || 0);
-    const isVisible = !search || rowSearch.includes(search);
+  linhas.forEach((linha) => {
+    const buscaLinha = normalizarTexto(linha.dataset.search || "");
+    const ativos = Number(linha.dataset.assets || 0);
+    const ehVisivel = !busca || buscaLinha.includes(busca);
 
-    if (assets > 0) {
-      linkedCount += 1;
+    if (ativos > 0) {
+      quantidadeVinculados += 1;
     } else {
-      unlinkedCount += 1;
+      quantidadeDesvinculados += 1;
     }
 
-    row.hidden = !isVisible;
+    linha.hidden = !ehVisivel;
 
-    if (isVisible) {
-      visibleCount += 1;
+    if (ehVisivel) {
+      quantidadeVisivel += 1;
     }
   });
 
-  updateText("categoryResultCount", `${visibleCount.toLocaleString("pt-BR")} ${visibleCount === 1 ? "registro" : "registros"}`);
-  updateText("totalCategoriesMetric", String(rows.length));
-  updateText("linkedCategoriesMetric", String(linkedCount));
-  updateText("unlinkedCategoriesMetric", String(unlinkedCount));
-  updateCategoryEmptyState(rows.length === 0 || visibleCount === 0);
+  atualizarTexto("categoryResultCount", `${quantidadeVisivel.toLocaleString("pt-BR")} ${quantidadeVisivel === 1 ? "registro" : "registros"}`);
+  atualizarTexto("totalCategoriesMetric", String(linhas.length));
+  atualizarTexto("linkedCategoriesMetric", String(quantidadeVinculados));
+  atualizarTexto("unlinkedCategoriesMetric", String(quantidadeDesvinculados));
+  atualizarEstadoVazioCategoria(linhas.length === 0 || quantidadeVisivel === 0);
 }
 
-function updateCategoryEmptyState(show) {
-  const emptyState = document.getElementById("categoryEmptyState");
+function atualizarEstadoVazioCategoria(exibir) {
+  const estadoVazio = document.getElementById("categoryEmptyState");
 
-  if (emptyState) {
-    emptyState.hidden = !show;
+  if (estadoVazio) {
+    estadoVazio.hidden = !exibir;
   }
 }
 
-function setCategoryPageMessage(message, type) {
-  const element = document.getElementById("categoryPageMessage");
+function definirMensagemPaginaCategoria(mensagem, tipo) {
+  const elemento = document.getElementById("categoryPageMessage");
 
-  if (!element) return;
+  if (!elemento) return;
 
-  element.textContent = message;
-  element.classList.toggle("show", Boolean(message));
-  element.classList.toggle("error", type === "error");
-  element.classList.toggle("success", type === "success");
+  elemento.textContent = mensagem;
+  elemento.classList.toggle("show", Boolean(mensagem));
+  elemento.classList.toggle("error", tipo === "error");
+  elemento.classList.toggle("success", tipo === "success");
 
-  if (message && type === "success") {
-    setTimeout(clearCategoryPageMessage, CATEGORY_MESSAGE_HIDE_DELAY_MS);
+  if (mensagem && tipo === "success") {
+    setTimeout(limparMensagemPaginaCategoria, ATRASO_OCULTACAO_MENSAGEM_CATEGORIA_MS);
   }
 }
 
-function clearCategoryPageMessage() {
-  setCategoryPageMessage("", "");
+function limparMensagemPaginaCategoria() {
+  definirMensagemPaginaCategoria("", "");
 }
 
-function setCategoryEditMessage(message, type) {
-  const element = document.getElementById("categoryEditMessage");
+function definirMensagemEdicaoCategoria(mensagem, tipo) {
+  const elemento = document.getElementById("categoryEditMessage");
 
-  if (!element) return;
+  if (!elemento) return;
 
-  element.textContent = message;
-  element.classList.toggle("show", Boolean(message));
-  element.classList.toggle("error", type === "error");
-  element.classList.toggle("success", type === "success");
+  elemento.textContent = mensagem;
+  elemento.classList.toggle("show", Boolean(mensagem));
+  elemento.classList.toggle("error", tipo === "error");
+  elemento.classList.toggle("success", tipo === "success");
 }
 
-function clearCategoryEditMessage() {
-  setCategoryEditMessage("", "");
+function limparMensagemEdicaoCategoria() {
+  definirMensagemEdicaoCategoria("", "");
 }
 
-function setCategoryLoading(button, isLoading, loadingText = "Aguarde...") {
-  if (!button) return;
+function definirCarregandoCategoria(botao, estaCarregando, textoCarregando = "Aguarde...") {
+  if (!botao) return;
 
-  if (isLoading) {
-    button.dataset.originalHtml = button.innerHTML;
-    button.disabled = true;
-    button.innerHTML = `<i class="bi bi-arrow-repeat"></i><span>${loadingText}</span>`;
+  if (estaCarregando) {
+    botao.dataset.originalHtml = botao.innerHTML;
+    botao.disabled = true;
+    botao.innerHTML = `<i class="bi bi-arrow-repeat"></i><span>${textoCarregando}</span>`;
     return;
   }
 
-  button.disabled = false;
+  botao.disabled = false;
 
-  if (button.dataset.originalHtml) {
-    button.innerHTML = button.dataset.originalHtml;
-    delete button.dataset.originalHtml;
+  if (botao.dataset.originalHtml) {
+    botao.innerHTML = botao.dataset.originalHtml;
+    delete botao.dataset.originalHtml;
   }
 }
 
-function getCategoryCsrfToken() {
+function obterTokenCsrfCategoria() {
   return document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
 }
 
-function formatCategoryDate(value) {
-  if (!value) return "";
+function formatarDataCategoria(valor) {
+  if (!valor) return "";
 
-  const date = new Date(value);
+  const data = new Date(valor);
 
-  if (Number.isNaN(date.getTime())) {
+  if (Number.isNaN(data.getTime())) {
     return "";
   }
 
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
     timeStyle: "short",
-  }).format(date);
+  }).format(data);
 }
 
-function cssEscape(value) {
+function escaparCss(valor) {
   if (window.CSS?.escape) {
-    return window.CSS.escape(value);
+    return window.CSS.escape(valor);
   }
 
-  return value.replace(/["\\]/g, "\\$&");
+  return valor.replace(/["\\]/g, "\\$&");
 }
