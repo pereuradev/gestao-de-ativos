@@ -23,21 +23,14 @@ if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
 require_once __DIR__ . "/permissoes-acesso.php";
 exigirPermissaoApi("visualizar_dashboard", "Dashboard");
 
+$inicioProcessamento = microtime(true);
+
 function responderJson(array $dadosResposta, int $codigoStatusHttp = 200): void
 {
     // Centraliza o formato da resposta para sucesso e erro sairem iguais.
     http_response_code($codigoStatusHttp);
     echo json_encode($dadosResposta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
-}
-
-function consultarValor(PDO $pdo, string $sql, array $parametrosConsulta = []): int
-{
-    // Usado para consultas de contagem, onde esperamos apenas um numero.
-    $consultaPreparada = $pdo->prepare($sql);
-    $consultaPreparada->execute($parametrosConsulta);
-
-    return (int)$consultaPreparada->fetchColumn();
 }
 
 function consultarLinhas(PDO $pdo, string $sql, array $parametrosConsulta = []): array
@@ -54,68 +47,6 @@ function consultarLinhas(PDO $pdo, string $sql, array $parametrosConsulta = []):
     return $consultaPreparada->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function normalizarPeriodo(mixed $periodo): int
-{
-    // Aceitamos apenas periodos conhecidos para evitar consultas inesperadas.
-    $periodo = (int)$periodo;
-    $periodosPermitidos = [7, 30, 90];
-
-    return in_array($periodo, $periodosPermitidos, true) ? $periodo : 30;
-}
-
-function montarFiltroCategoria(string $categoriaId): array
-{
-    // Retorna o trecho WHERE e os parametros correspondentes.
-    // Isso deixa todas as consultas usando o mesmo filtro de categoria.
-    $categoriaId = trim($categoriaId);
-
-    if ($categoriaId === "" || $categoriaId === "todos") {
-        return ["", []];
-    }
-
-    if ($categoriaId === "sem-categoria") {
-        return [" where a.categoria_id is null ", []];
-    }
-
-    return [" where a.categoria_id::text = :categoria_id ", [":categoria_id" => $categoriaId]];
-}
-
-function montarFiltrosAtivos(string $categoriaId, string $marca, string $localId): array
-{
-    // Todos os filtros do dashboard passam por aqui para manter as consultas coerentes.
-    $condicoes = [];
-    $parametrosConsulta = [];
-    $categoriaId = trim($categoriaId);
-    $marca = trim($marca);
-    $localId = trim($localId);
-
-    if ($categoriaId === "sem-categoria") {
-        $condicoes[] = "a.categoria_id is null";
-    } elseif ($categoriaId !== "" && $categoriaId !== "todos") {
-        $condicoes[] = "a.categoria_id::text = :categoria_id";
-        $parametrosConsulta[":categoria_id"] = $categoriaId;
-    }
-
-    if ($marca === "sem-marca") {
-        $condicoes[] = "nullif(trim(a.marca), '') is null";
-    } elseif ($marca !== "" && $marca !== "todos") {
-        $condicoes[] = "lower(trim(a.marca)) = lower(:marca)";
-        $parametrosConsulta[":marca"] = $marca;
-    }
-
-    if ($localId === "sem-localizacao") {
-        $condicoes[] = "a.local_id is null";
-    } elseif ($localId !== "" && $localId !== "todos") {
-        $condicoes[] = "a.local_id::text = :local_id";
-        $parametrosConsulta[":local_id"] = $localId;
-    }
-
-    return [
-        $condicoes ? " where " . implode(" and ", $condicoes) . " " : "",
-        $parametrosConsulta,
-    ];
-}
-
 function calcularPercentual(int $valor, int $total): float
 {
     // Evita divisao por zero quando o filtro nao encontra dados.
@@ -126,25 +57,15 @@ function calcularPercentual(int $valor, int $total): float
     return round(($valor / $total) * 100, 1);
 }
 
-function agruparLinhasPorCategoria(array $linhas, array $totaisPorCategoria): array
+function decodificarListaPainel(mixed $valor): array
 {
-    // Monta mapas como marcas_por_categoria e status_por_categoria.
-    // O frontend usa esses mapas para trocar o filtro sem esperar nova requisicao.
-    $grupos = [];
-
-    foreach ($linhas as $linha) {
-        $categoriaId = (string)($linha["categoria_id"] ?? "sem-categoria");
-        $total = (int)($linha["total"] ?? 0);
-        $totalBase = (int)($totaisPorCategoria[$categoriaId] ?? 0);
-
-        $grupos[$categoriaId][] = [
-            "nome" => (string)($linha["nome"] ?? "Sem nome"),
-            "total" => $total,
-            "percentual" => calcularPercentual($total, $totalBase),
-        ];
+    if (is_array($valor)) {
+        return $valor;
     }
 
-    return $grupos;
+    $lista = json_decode((string)$valor, true);
+
+    return is_array($lista) ? $lista : [];
 }
 
 try {
@@ -158,41 +79,147 @@ try {
     $categoriaId = trim((string)($_GET["categoria_id"] ?? "todos"));
     $marcaFiltro = trim((string)($_GET["marca"] ?? "todos"));
     $localId = trim((string)($_GET["local_id"] ?? "todos"));
-    $periodo = normalizarPeriodo($_GET["periodo"] ?? 30);
+    $categoriaId = $categoriaId !== "" ? $categoriaId : "todos";
+    $marcaFiltro = $marcaFiltro !== "" ? $marcaFiltro : "todos";
+    $localId = $localId !== "" ? $localId : "todos";
 
-    [$condicoesFiltros, $parametrosFiltros] = montarFiltrosAtivos($categoriaId, $marcaFiltro, $localId);
-    [$condicoesSemCategoria, $parametrosSemCategoria] = montarFiltrosAtivos("todos", $marcaFiltro, $localId);
-    [$condicoesSemMarca, $parametrosSemMarca] = montarFiltrosAtivos($categoriaId, "todos", $localId);
-    [$condicoesSemLocal, $parametrosSemLocal] = montarFiltrosAtivos($categoriaId, $marcaFiltro, "todos");
+    $filtroCategoriaSql = "(
+        f.categoria_id = 'todos'
+        or (f.categoria_id = 'sem-categoria' and a.categoria_id is null)
+        or (f.categoria_id not in ('todos', 'sem-categoria') and a.categoria_id::text = f.categoria_id)
+    )";
+    $filtroMarcaSql = "(
+        f.marca = 'todos'
+        or (f.marca = 'sem-marca' and nullif(trim(a.marca), '') is null)
+        or (f.marca not in ('todos', 'sem-marca') and lower(trim(a.marca)) = lower(f.marca))
+    )";
+    $filtroLocalSql = "(
+        f.local_id = 'todos'
+        or (f.local_id = 'sem-localizacao' and a.local_id is null)
+        or (f.local_id not in ('todos', 'sem-localizacao') and a.local_id::text = f.local_id)
+    )";
 
-    // Numeros gerais que alimentam os cards principais do dashboard.
-    $totalAtivos = consultarValor($pdo, "select count(*) from public.ativos");
-    $totalTipos = consultarValor($pdo, "select count(*) from public.categorias_ativos");
-
-    // Lista todos os tipos de produto, incluindo ativos sem categoria.
-    $categorias = consultarLinhas($pdo, "
+    // Todas as secoes sao agregadas em uma unica consulta para evitar varias viagens ao banco remoto.
+    $dadosConsulta = consultarLinhas($pdo, "
+        with filtros as (
+            select
+                cast(:categoria_id as text) as categoria_id,
+                cast(:marca as text) as marca,
+                cast(:local_id as text) as local_id
+        )
         select
-            coalesce(c.id::text, 'sem-categoria') as id,
-            coalesce(nullif(trim(c.nome), ''), 'Sem categoria') as nome,
-            count(a.id)::int as total
-        from public.ativos a
-        left join public.categorias_ativos c on c.id = a.categoria_id
-        {$condicoesSemCategoria}
-        group by coalesce(c.id::text, 'sem-categoria'), coalesce(nullif(trim(c.nome), ''), 'Sem categoria')
-        order by total desc, nome asc
-    ", $parametrosSemCategoria);
+            (select count(*)::int from public.ativos) as total_ativos,
+            (select count(*)::int from public.categorias_ativos) as total_tipos,
+            (
+                select count(*)::int
+                from public.ativos a
+                cross join filtros f
+                where {$filtroCategoriaSql} and {$filtroMarcaSql} and {$filtroLocalSql}
+            ) as total_selecionado,
+            coalesce((
+                select jsonb_agg(to_jsonb(lista_categorias))
+                from (
+                    select
+                        coalesce(c.id::text, 'sem-categoria') as id,
+                        coalesce(nullif(trim(c.nome), ''), 'Sem categoria') as nome,
+                        count(a.id)::int as total
+                    from public.ativos a
+                    left join public.categorias_ativos c on c.id = a.categoria_id
+                    cross join filtros f
+                    where {$filtroMarcaSql} and {$filtroLocalSql}
+                    group by coalesce(c.id::text, 'sem-categoria'), coalesce(nullif(trim(c.nome), ''), 'Sem categoria')
+                    order by total desc, nome asc
+                ) lista_categorias
+            ), '[]'::jsonb)::text as categorias_json,
+            coalesce((
+                select jsonb_agg(to_jsonb(lista_status))
+                from (
+                    select coalesce(nullif(trim(a.status), ''), 'Sem status') as nome, count(*)::int as total
+                    from public.ativos a
+                    cross join filtros f
+                    where {$filtroCategoriaSql} and {$filtroMarcaSql} and {$filtroLocalSql}
+                    group by coalesce(nullif(trim(a.status), ''), 'Sem status')
+                    order by total desc, nome asc
+                ) lista_status
+            ), '[]'::jsonb)::text as status_json,
+            coalesce((
+                select jsonb_agg(to_jsonb(lista_marcas))
+                from (
+                    select coalesce(nullif(trim(a.marca), ''), 'Sem marca') as nome, count(*)::int as total
+                    from public.ativos a
+                    cross join filtros f
+                    where {$filtroCategoriaSql} and {$filtroMarcaSql} and {$filtroLocalSql}
+                    group by coalesce(nullif(trim(a.marca), ''), 'Sem marca')
+                    order by total desc, nome asc
+                    limit 12
+                ) lista_marcas
+            ), '[]'::jsonb)::text as marcas_json,
+            coalesce((
+                select jsonb_agg(to_jsonb(lista_marcas_filtro))
+                from (
+                    select
+                        case when nullif(trim(a.marca), '') is null then 'sem-marca' else trim(a.marca) end as id,
+                        coalesce(nullif(trim(a.marca), ''), 'Sem marca') as nome,
+                        count(*)::int as total
+                    from public.ativos a
+                    cross join filtros f
+                    where {$filtroCategoriaSql} and {$filtroLocalSql}
+                    group by
+                        case when nullif(trim(a.marca), '') is null then 'sem-marca' else trim(a.marca) end,
+                        coalesce(nullif(trim(a.marca), ''), 'Sem marca')
+                    order by total desc, nome asc
+                ) lista_marcas_filtro
+            ), '[]'::jsonb)::text as marcas_filtro_json,
+            coalesce((
+                select jsonb_agg(to_jsonb(lista_locais))
+                from (
+                    select coalesce(nullif(trim(l.nome), ''), 'Sem localizacao') as nome, count(a.id)::int as total
+                    from public.ativos a
+                    left join public.locais l on l.id = a.local_id
+                    cross join filtros f
+                    where {$filtroCategoriaSql} and {$filtroMarcaSql} and {$filtroLocalSql}
+                    group by coalesce(nullif(trim(l.nome), ''), 'Sem localizacao')
+                    order by total desc, nome asc
+                    limit 12
+                ) lista_locais
+            ), '[]'::jsonb)::text as locais_json,
+            coalesce((
+                select jsonb_agg(to_jsonb(lista_locais_filtro))
+                from (
+                    select
+                        coalesce(l.id::text, 'sem-localizacao') as id,
+                        coalesce(nullif(trim(l.nome), ''), 'Sem localizacao') as nome,
+                        count(a.id)::int as total
+                    from public.ativos a
+                    left join public.locais l on l.id = a.local_id
+                    cross join filtros f
+                    where {$filtroCategoriaSql} and {$filtroMarcaSql}
+                    group by coalesce(l.id::text, 'sem-localizacao'), coalesce(nullif(trim(l.nome), ''), 'Sem localizacao')
+                    order by total desc, nome asc
+                ) lista_locais_filtro
+            ), '[]'::jsonb)::text as locais_filtro_json
+    ", [
+        ":categoria_id" => $categoriaId,
+        ":marca" => $marcaFiltro,
+        ":local_id" => $localId,
+    ])[0] ?? [];
 
-    $totaisPorCategoria = [];
+    $totalAtivos = (int)($dadosConsulta["total_ativos"] ?? 0);
+    $totalTipos = (int)($dadosConsulta["total_tipos"] ?? 0);
+    $totalSelecionado = (int)($dadosConsulta["total_selecionado"] ?? 0);
+    $categorias = decodificarListaPainel($dadosConsulta["categorias_json"] ?? []);
+    $status = decodificarListaPainel($dadosConsulta["status_json"] ?? []);
+    $marcas = decodificarListaPainel($dadosConsulta["marcas_json"] ?? []);
+    $marcasFiltro = decodificarListaPainel($dadosConsulta["marcas_filtro_json"] ?? []);
+    $locais = decodificarListaPainel($dadosConsulta["locais_json"] ?? []);
+    $locaisFiltro = decodificarListaPainel($dadosConsulta["locais_filtro_json"] ?? []);
 
-    // Acrescenta percentual em cada categoria e cria um indice para calculos posteriores.
+    // Acrescenta percentual em cada categoria antes de enviar ao frontend.
     foreach ($categorias as &$categoria) {
         $categoria["total"] = (int)$categoria["total"];
         $categoria["percentual"] = calcularPercentual((int)$categoria["total"], $totalAtivos);
-        $totaisPorCategoria[(string)$categoria["id"]] = (int)$categoria["total"];
     }
     unset($categoria);
-
-    $totalSelecionado = consultarValor($pdo, "select count(*) from public.ativos a {$condicoesFiltros}", $parametrosFiltros);
 
     // Por padrao a tela esta em "Todos"; se vier um tipo especifico, substituimos abaixo.
     $categoriaSelecionada = [
@@ -218,187 +245,6 @@ try {
 
     $maiorCategoria = $categorias[0] ?? null;
 
-    // Agrupamento por status respeitando o filtro atual.
-    $status = consultarLinhas($pdo, "
-        select
-            coalesce(nullif(trim(a.status), ''), 'Sem status') as nome,
-            count(*)::int as total
-        from public.ativos a
-        {$condicoesFiltros}
-        group by coalesce(nullif(trim(a.status), ''), 'Sem status')
-        order by total desc, nome asc
-    ", $parametrosFiltros);
-
-    // Mesmo agrupamento, mas separado por categoria para troca instantanea no frontend.
-    $statusPorCategoria = consultarLinhas($pdo, "
-        select
-            coalesce(a.categoria_id::text, 'sem-categoria') as categoria_id,
-            coalesce(nullif(trim(a.status), ''), 'Sem status') as nome,
-            count(*)::int as total
-        from public.ativos a
-        {$condicoesSemCategoria}
-        group by
-            coalesce(a.categoria_id::text, 'sem-categoria'),
-            coalesce(nullif(trim(a.status), ''), 'Sem status')
-        order by categoria_id asc, total desc, nome asc
-    ", $parametrosSemCategoria);
-
-    // Ranking de marcas do filtro atual, limitado para manter a leitura simples.
-    $marcas = consultarLinhas($pdo, "
-        select
-            coalesce(nullif(trim(a.marca), ''), 'Sem marca') as nome,
-            count(*)::int as total
-        from public.ativos a
-        {$condicoesFiltros}
-        group by coalesce(nullif(trim(a.marca), ''), 'Sem marca')
-        order by total desc, nome asc
-        limit 12
-    ", $parametrosFiltros);
-
-    $marcasFiltro = consultarLinhas($pdo, "
-        select
-            coalesce(nullif(trim(a.marca), ''), 'Sem marca') as nome,
-            case
-                when nullif(trim(a.marca), '') is null then 'sem-marca'
-                else trim(a.marca)
-            end as id,
-            count(*)::int as total
-        from public.ativos a
-        {$condicoesSemMarca}
-        group by coalesce(nullif(trim(a.marca), ''), 'Sem marca'), case
-            when nullif(trim(a.marca), '') is null then 'sem-marca'
-            else trim(a.marca)
-        end
-        order by total desc, nome asc
-    ", $parametrosSemMarca);
-
-    // Ranking de marcas pre-carregado por categoria.
-    $marcasPorCategoria = consultarLinhas($pdo, "
-        with marcas as (
-            select
-                coalesce(a.categoria_id::text, 'sem-categoria') as categoria_id,
-                coalesce(nullif(trim(a.marca), ''), 'Sem marca') as nome,
-                count(*)::int as total
-            from public.ativos a
-            {$condicoesSemCategoria}
-            group by
-                coalesce(a.categoria_id::text, 'sem-categoria'),
-                coalesce(nullif(trim(a.marca), ''), 'Sem marca')
-        ),
-        ordenadas as (
-            select
-                categoria_id,
-                nome,
-                total,
-                row_number() over (
-                    partition by categoria_id
-                    order by total desc, nome asc
-                ) as posicao
-            from marcas
-        )
-        select categoria_id, nome, total
-        from ordenadas
-        where posicao <= 12
-        order by categoria_id asc, posicao asc
-    ", $parametrosSemCategoria);
-
-    // Ranking de locais do filtro atual.
-    $locais = consultarLinhas($pdo, "
-        select
-            coalesce(nullif(trim(l.nome), ''), 'Sem localização') as nome,
-            count(a.id)::int as total
-        from public.ativos a
-        left join public.locais l on l.id = a.local_id
-        {$condicoesFiltros}
-        group by coalesce(nullif(trim(l.nome), ''), 'Sem localização')
-        order by total desc, nome asc
-        limit 12
-    ", $parametrosFiltros);
-
-    $locaisFiltro = consultarLinhas($pdo, "
-        select
-            coalesce(l.id::text, 'sem-localizacao') as id,
-            coalesce(nullif(trim(l.nome), ''), 'Sem localizacao') as nome,
-            count(a.id)::int as total
-        from public.ativos a
-        left join public.locais l on l.id = a.local_id
-        {$condicoesSemLocal}
-        group by coalesce(l.id::text, 'sem-localizacao'), coalesce(nullif(trim(l.nome), ''), 'Sem localizacao')
-        order by total desc, nome asc
-    ", $parametrosSemLocal);
-
-    // Ranking de locais pre-carregado por categoria.
-    $locaisPorCategoria = consultarLinhas($pdo, "
-        with locais as (
-            select
-                coalesce(a.categoria_id::text, 'sem-categoria') as categoria_id,
-                coalesce(nullif(trim(l.nome), ''), 'Sem localizacao') as nome,
-                count(a.id)::int as total
-            from public.ativos a
-            left join public.locais l on l.id = a.local_id
-            {$condicoesSemCategoria}
-            group by
-                coalesce(a.categoria_id::text, 'sem-categoria'),
-                coalesce(nullif(trim(l.nome), ''), 'Sem localizacao')
-        ),
-        ordenados as (
-            select
-                categoria_id,
-                nome,
-                total,
-                row_number() over (
-                    partition by categoria_id
-                    order by total desc, nome asc
-                ) as posicao
-            from locais
-        )
-        select categoria_id, nome, total
-        from ordenados
-        where posicao <= 12
-        order by categoria_id asc, posicao asc
-    ", $parametrosSemCategoria);
-
-    $parametrosEvolucao = $parametrosFiltros;
-    $parametrosEvolucao[":periodo"] = $periodo;
-
-    // A evolucao precisa manter todos os dias do periodo, mesmo quando o total do dia e zero.
-    $juncaoEvolucao = "a.criado_em::date = d.dia";
-
-    if ($categoriaId === "sem-categoria") {
-        $juncaoEvolucao .= " and a.categoria_id is null";
-    } elseif ($categoriaId !== "" && $categoriaId !== "todos") {
-        $juncaoEvolucao .= " and a.categoria_id::text = :categoria_id";
-    }
-
-    if ($marcaFiltro === "sem-marca") {
-        $juncaoEvolucao .= " and nullif(trim(a.marca), '') is null";
-    } elseif ($marcaFiltro !== "" && $marcaFiltro !== "todos") {
-        $juncaoEvolucao .= " and lower(trim(a.marca)) = lower(:marca)";
-    }
-
-    if ($localId === "sem-localizacao") {
-        $juncaoEvolucao .= " and a.local_id is null";
-    } elseif ($localId !== "" && $localId !== "todos") {
-        $juncaoEvolucao .= " and a.local_id::text = :local_id";
-    }
-
-    $evolucao = consultarLinhas($pdo, "
-        with dias as (
-            select generate_series(
-                (current_date - ((:periodo - 1) * interval '1 day'))::date,
-                current_date::date,
-                interval '1 day'
-            )::date as dia
-        )
-        select
-            to_char(d.dia, 'DD/MM') as nome,
-            count(a.id)::int as total
-        from dias d
-        left join public.ativos a on {$juncaoEvolucao}
-        group by d.dia
-        order by d.dia
-    ", $parametrosEvolucao);
-
     $normalizarLista = static function (array $lista, int $totalBase): array {
         // Padroniza nome, total e percentual antes de enviar para o JavaScript.
         return array_map(static function (array $item) use ($totalBase): array {
@@ -422,11 +268,14 @@ try {
         }, $lista);
     };
 
+    $duracaoMs = round((microtime(true) - $inicioProcessamento) * 1000, 1);
+    header("Server-Timing: dashboard;dur={$duracaoMs}");
+
     // Resposta unica que alimenta cards, filtros, grafico, ranking e tabela.
     responderJson([
         "ok" => true,
         "gerado_em" => date("c"),
-        "periodo" => $periodo,
+        "duracao_ms" => $duracaoMs,
         "categoria_filtro" => $categoriaId,
         "marca_filtro" => $marcaFiltro,
         "local_filtro" => $localId,
@@ -446,14 +295,11 @@ try {
         "marcas_filtro" => $normalizarOpcoesFiltro($marcasFiltro),
         "locais_filtro" => $normalizarOpcoesFiltro($locaisFiltro),
         "status" => $normalizarLista($status, $totalSelecionado),
-        "status_por_categoria" => agruparLinhasPorCategoria($statusPorCategoria, $totaisPorCategoria),
         "marcas" => $normalizarLista($marcas, $totalSelecionado),
-        "marcas_por_categoria" => agruparLinhasPorCategoria($marcasPorCategoria, $totaisPorCategoria),
         "locais" => $normalizarLista($locais, $totalSelecionado),
-        "locais_por_categoria" => agruparLinhasPorCategoria($locaisPorCategoria, $totaisPorCategoria),
-        "evolucao" => $normalizarLista($evolucao, max(1, array_sum(array_map(static fn ($item) => (int)$item["total"], $evolucao)))),
     ]);
 } catch (Throwable $erro) {
+    error_log("Falha no dashboard de produtos: " . $erro->getMessage());
     responderJson([
         "ok" => false,
         "message" => "Nao foi possivel carregar o dashboard de produtos.",

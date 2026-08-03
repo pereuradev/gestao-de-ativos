@@ -216,14 +216,20 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
   window.TITECH_USER_PREFERENCES = <?php echo $componentSidebarPreferencesJson; ?>;
 </script>
 <aside class="sidebar" id="sidebar">
-  <!-- Cabecalho fixo da sidebar com logo e botao de fechar no mobile. -->
+  <!-- Cabecalho fixo com controles independentes para desktop e mobile. -->
   <div class="sidebar-header">
     <a href="https://www.titechsolutions.com.br/" class="brand-area" aria-label="Acessar site da TI TECH Solutions">
       <img class="brand-logo" src="../assets/logo-branca.png" alt="TI TECH Solutions" />
+      <img class="brand-mark" src="../assets/favicon.png" alt="" />
     </a>
 
+    <button class="icon-button sidebar-collapse-toggle" id="toggleSidebarCompact" type="button"
+      aria-controls="sidebar" aria-expanded="true" aria-label="Recolher menu lateral" title="Recolher menu lateral">
+      <i class="bi bi-chevron-bar-left" aria-hidden="true"></i>
+    </button>
+
     <button class="icon-button sidebar-close" id="closeSidebar" type="button" aria-label="Fechar menu">
-      <i class="bi bi-x-lg"></i>
+      <i class="bi bi-x-lg" aria-hidden="true"></i>
     </button>
   </div>
 
@@ -231,12 +237,12 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
   <nav class="sidebar-nav" aria-label="Menu principal">
     <!-- Links principais sempre visiveis. A classe active e calculada pelo componente. -->
     <a class="<?php echo $componentSidebarLinkClass("pagina-inicial.php"); ?>" href="pagina-inicial.php" <?php echo $componentSidebarCurrentAttr("pagina-inicial.php"); ?>>
-      <i class="bi bi-house-door-fill"></i>
+      <i class="bi bi-house-door-fill" aria-hidden="true"></i>
       <span>P&aacute;gina Inicial</span>
     </a>
 
     <a class="<?php echo $componentSidebarLinkClass("dashboard.php"); ?>" href="dashboard.php" <?php echo $componentSidebarCurrentAttr("dashboard.php"); ?>>
-      <i class="bi bi-bar-chart-fill"></i>
+      <i class="bi bi-bar-chart-fill" aria-hidden="true"></i>
       <span>Dashboard</span>
     </a>
 
@@ -245,9 +251,9 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
       <button class="nav-link nav-toggle<?php echo $componentSidebarVisualizationOpen ? " active" : ""; ?>" type="button"
         aria-expanded="<?php echo $componentSidebarVisualizationOpen ? "true" : "false"; ?>"
         aria-controls="visualizationSubmenu">
-        <i class="bi bi-eye-fill"></i>
+        <i class="bi bi-eye-fill" aria-hidden="true"></i>
         <span>Visualiza&ccedil;&otilde;es</span>
-        <i class="bi bi-chevron-down nav-chevron"></i>
+        <i class="bi bi-chevron-down nav-chevron" aria-hidden="true"></i>
       </button>
 
       <div class="nav-submenu" id="visualizationSubmenu">
@@ -293,9 +299,9 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
       <button class="nav-link nav-toggle<?php echo $componentSidebarRegistrationOpen ? " active" : ""; ?>" type="button"
         aria-expanded="<?php echo $componentSidebarRegistrationOpen ? "true" : "false"; ?>"
         aria-controls="registrationSubmenu">
-        <i class="bi bi-folder-plus"></i>
+        <i class="bi bi-folder-plus" aria-hidden="true"></i>
         <span>Cadastros</span>
-        <i class="bi bi-chevron-down nav-chevron"></i>
+        <i class="bi bi-chevron-down nav-chevron" aria-hidden="true"></i>
       </button>
 
       <div class="nav-submenu" id="registrationSubmenu">
@@ -338,9 +344,9 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
     <div class="nav-group<?php echo $componentSidebarEditingOpen ? " open" : ""; ?>" data-nav-group>
       <button class="nav-link nav-toggle<?php echo $componentSidebarEditingOpen ? " active" : ""; ?>" type="button"
         aria-expanded="<?php echo $componentSidebarEditingOpen ? "true" : "false"; ?>" aria-controls="editingSubmenu">
-        <i class="bi bi-pencil-square"></i>
+        <i class="bi bi-pencil-square" aria-hidden="true"></i>
         <span>Edi&ccedil;&atilde;o</span>
-        <i class="bi bi-chevron-down nav-chevron"></i>
+        <i class="bi bi-chevron-down nav-chevron" aria-hidden="true"></i>
       </button>
 
       <div class="nav-submenu" id="editingSubmenu">
@@ -382,14 +388,15 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
 
     <!-- Configuracoes permanece como link principal por nao pertencer aos fluxos expansivos. -->
     <a class="<?php echo $componentSidebarLinkClass("configuracoes.php"); ?>" href="configuracoes.php" <?php echo $componentSidebarCurrentAttr("configuracoes.php"); ?>>
-      <i class="bi bi-gear-fill"></i>
+      <i class="bi bi-gear-fill" aria-hidden="true"></i>
       <span>Configura&ccedil;&otilde;es</span>
     </a>
   </nav>
 
   <!-- Rodape fixo com resumo do usuario e acao de logout. -->
   <div class="sidebar-footer">
-    <div class="sidebar-summary user-summary-card">
+    <div class="sidebar-summary user-summary-card"
+      title="<?php echo $componentSidebarName; ?> — <?php echo $componentSidebarRoleLabel; ?>">
       <div class="sidebar-avatar<?php echo $componentSidebarBadgePhoto !== "" ? " has-photo" : ""; ?>" aria-hidden="true">
         <?php if ($componentSidebarBadgePhoto !== ""): ?>
           <img src="<?php echo $componentSidebarBadgePhotoEscaped; ?>" alt="" />
@@ -408,7 +415,7 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
     </div>
 
     <a href="../Backend/logout.php" class="logout-button">
-      <i class="bi bi-box-arrow-left"></i>
+      <i class="bi bi-box-arrow-left" aria-hidden="true"></i>
       <span>Sair do sistema</span>
     </a>
   </div>

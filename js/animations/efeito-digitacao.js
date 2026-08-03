@@ -37,6 +37,10 @@ function inicializarCiclosEfeitoDigitacao() {
   elementos.forEach((elemento) => {
     // Lê as frases configuradas no próprio elemento ou escolhe um fallback adequado.
     const frases = obterFrasesEfeitoDigitacao(elemento);
+    // Titulos permanecem legiveis por padrao. A animacao so ocorre quando a pagina
+    // pede explicitamente data-typewriter-animate="true".
+    const animacaoFoiSolicitada =
+      elemento.dataset.typewriterAnimate === "true";
 
     // Sem frases não existe conteúdo para animar, então este elemento é ignorado.
     if (!frases.length) return;
@@ -46,8 +50,8 @@ function inicializarCiclosEfeitoDigitacao() {
     // Mede o espaço necessário antes de animar para evitar saltos no layout.
     estabilizarElementoEfeitoDigitacao(elemento, frases);
 
-    // Acessibilidade: movimento reduzido e listas com uma única frase não precisam de loop.
-    if (deveReduzirMovimento || frases.length === 1) {
+    // Acessibilidade: movimento reduzido, texto estatico ou uma unica frase nao precisam de loop.
+    if (!animacaoFoiSolicitada || deveReduzirMovimento || frases.length === 1) {
       // Mostra a primeira frase completa, sem simular digitação.
       definirTextoEfeitoDigitacaoEstatico(elemento, frases);
       // Encerra somente esta iteração do forEach e impede a chamada de runTypewriter abaixo.

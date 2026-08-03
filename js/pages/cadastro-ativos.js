@@ -2,19 +2,22 @@
 // Usa os diálogos e avisos globais fornecidos pelos módulos compartilhados da interface.
 
 const ATRASO_REDIRECIONAMENTO_MS = 900;
-const QUANTIDADE_PN_MINIMA = 1;
-const QUANTIDADE_PN_MAXIMA = 100;
+const QUANTIDADE_ATIVOS_MINIMA = 1;
+const QUANTIDADE_ATIVOS_MAXIMA = 100;
+const TAMANHO_MAXIMO_NUMERO_SERIE = 120;
 // Cada modo informa quais campos de identificacao devem ficar disponiveis no formulario.
 const CONFIGURACAO_RASTREABILIDADE = {
-  nao_possui: { pn: false, sn: false },
-  somente_pn: { pn: true, sn: false },
-  somente_sn: { pn: false, sn: true },
-  ambos: { pn: true, sn: true },
+  nao_possui: { pn: false, sn: false, quantidade: false, numerosSerieModal: false },
+  somente_pn: { pn: true, sn: false, quantidade: true, numerosSerieModal: false },
+  somente_sn: { pn: false, sn: true, quantidade: false, numerosSerieModal: false },
+  ambos: { pn: true, sn: false, quantidade: true, numerosSerieModal: true },
 };
 
 document.addEventListener("DOMContentLoaded", inicializarPagina);
 
 let preservarMensagemNaProximaRedefinicao = false;
+let resolverModalNumerosSerie = null;
+let numerosSerieTemporarios = [];
 
 function inicializarPagina() {
   executarAuxiliarPagina("iniciarAnimacaoPagina");
@@ -23,6 +26,7 @@ function inicializarPagina() {
   executarAuxiliarPagina("configurarBarraLateral");
   executarAuxiliarPagina("configurarGruposNavegacao");
   configurarFormularioAtivo();
+  configurarModalNumerosSerie();
 }
 
 function executarAuxiliarPagina(nomeAuxiliar) {
@@ -41,6 +45,7 @@ function configurarFormularioAtivo() {
 
   formulario.addEventListener("submit", enviarFormularioAtivo);
   formulario.addEventListener("reset", () => {
+    numerosSerieTemporarios = [];
     setTimeout(() => atualizarCamposRastreabilidade(formulario), 0);
 
     if (preservarMensagemNaProximaRedefinicao) {
@@ -67,6 +72,21 @@ async function enviarFormularioAtivo(evento) {
     return;
   }
 
+  const rastreabilidade = obterRastreabilidadeSelecionada(formulario);
+  let numerosSerie = [];
+
+  if (rastreabilidade === "ambos") {
+    const quantidade = obterQuantidadeAtivos(formulario);
+    const numerosSerieInformados = await solicitarNumerosSerie(quantidade, formulario);
+
+    if (!numerosSerieInformados) {
+      return;
+    }
+
+    numerosSerie = numerosSerieInformados;
+    numerosSerieTemporarios = [...numerosSerieInformados];
+  }
+
   const confirmado = await confirmarCadastroAtivo(formulario);
 
   if (!confirmado) {
@@ -77,9 +97,15 @@ async function enviarFormularioAtivo(evento) {
   definirMensagemFormulario("", "");
 
   try {
+    const dadosCadastro = new FormData(formulario);
+
+    numerosSerie.forEach((numeroSerie) => {
+      dadosCadastro.append("numeros_serie[]", numeroSerie);
+    });
+
     const resposta = await fetch(formulario.action, {
       method: "POST",
-      body: new FormData(formulario),
+      body: dadosCadastro,
       headers: { Accept: "application/json" },
     });
     const resultado = await resposta.json().catch(() => ({
@@ -99,6 +125,7 @@ async function enviarFormularioAtivo(evento) {
     ativosCriados.forEach(inserirInicioAtivoRecente);
     atualizarMetricasAtivo(ativosCriados);
     preservarMensagemNaProximaRedefinicao = true;
+    numerosSerieTemporarios = [];
     formulario.reset();
 
     setTimeout(() => {
@@ -116,8 +143,11 @@ async function confirmarCadastroAtivo(formulario) {
   const dados = new FormData(formulario);
   const nomeAtivo = String(dados.get("nome") || "este ativo").trim() || "este ativo";
   const rastreabilidade = obterRastreabilidadeSelecionada(formulario);
-  const quantidade = rastreabilidade === "somente_pn" ? obterQuantidadePn(formulario) : QUANTIDADE_PN_MINIMA;
-  const textoConfirmacao = quantidade > QUANTIDADE_PN_MINIMA
+  const configuracao = CONFIGURACAO_RASTREABILIDADE[rastreabilidade];
+  const quantidade = configuracao?.quantidade
+    ? obterQuantidadeAtivos(formulario)
+    : QUANTIDADE_ATIVOS_MINIMA;
+  const textoConfirmacao = quantidade > QUANTIDADE_ATIVOS_MINIMA
     ? `Confirme para cadastrar ${quantidade} unidades de ${nomeAtivo} no inventario.`
     : `Confirme para cadastrar ${nomeAtivo} no inventario.`;
 
@@ -143,7 +173,8 @@ function validarFormularioAtivo(formulario) {
   const configuracao = CONFIGURACAO_RASTREABILIDADE[rastreabilidade];
   const numeroParte = String(dados.get("part_number") || "").trim();
   const numeroSerie = String(dados.get("numero_serie") || "").trim();
-  const quantidade = obterQuantidadePn(formulario);
+  const imei = String(dados.get("imei") || "").trim();
+  const quantidade = obterQuantidadeAtivos(formulario);
 
   if (!nome || !categoria || !status) {
     return "Preencha nome, categoria e status para cadastrar o ativo.";
@@ -165,8 +196,12 @@ function validarFormularioAtivo(formulario) {
     return "Informe o numero de serie para a rastreabilidade escolhida.";
   }
 
-  if (rastreabilidade === "somente_pn" && !quantidade) {
-    return `Informe uma quantidade entre ${QUANTIDADE_PN_MINIMA} e ${QUANTIDADE_PN_MAXIMA}.`;
+  if (configuracao.quantidade && !quantidade) {
+    return `Informe uma quantidade entre ${QUANTIDADE_ATIVOS_MINIMA} e ${QUANTIDADE_ATIVOS_MAXIMA}.`;
+  }
+
+  if (configuracao.quantidade && quantidade > QUANTIDADE_ATIVOS_MINIMA && imei) {
+    return "Para cadastrar mais de uma unidade, deixe o IMEI vazio.";
   }
 
   return "";
@@ -191,7 +226,12 @@ function atualizarCamposRastreabilidade(formulario) {
   // Desabilitar campos escondidos impede que valores antigos sejam enviados ao backend.
   alternarCampoRastreabilidade(formulario, "pn", configuracao.pn);
   alternarCampoRastreabilidade(formulario, "sn", configuracao.sn);
-  alternarCampoQuantidadePn(formulario, rastreabilidade === "somente_pn");
+  alternarCampoQuantidade(formulario, configuracao.quantidade, rastreabilidade);
+
+  if (!configuracao.numerosSerieModal) {
+    numerosSerieTemporarios = [];
+    fecharModalNumerosSerie();
+  }
 }
 
 function alternarCampoRastreabilidade(formulario, campo, deveExibir) {
@@ -219,15 +259,20 @@ function configurarControlesQuantidade(formulario) {
     return;
   }
 
-  botaoDecrementar?.addEventListener("click", () => definirQuantidadePn(formulario, obterQuantidadePn(formulario) - 1));
-  botaoIncrementar?.addEventListener("click", () => definirQuantidadePn(formulario, obterQuantidadePn(formulario) + 1));
-  campoEntrada.addEventListener("input", () => definirQuantidadePn(formulario, campoEntrada.value));
-  definirQuantidadePn(formulario, campoEntrada.value);
+  botaoDecrementar?.addEventListener("click", () =>
+    definirQuantidadeAtivos(formulario, obterQuantidadeAtivos(formulario) - 1),
+  );
+  botaoIncrementar?.addEventListener("click", () =>
+    definirQuantidadeAtivos(formulario, obterQuantidadeAtivos(formulario) + 1),
+  );
+  campoEntrada.addEventListener("input", () => definirQuantidadeAtivos(formulario, campoEntrada.value));
+  definirQuantidadeAtivos(formulario, campoEntrada.value);
 }
 
-function alternarCampoQuantidadePn(formulario, deveExibir) {
-  const envoltorio = formulario.querySelector("[data-pn-quantity-field]");
+function alternarCampoQuantidade(formulario, deveExibir, rastreabilidade) {
+  const envoltorio = formulario.querySelector("[data-quantity-field]");
   const campoEntrada = formulario.querySelector("[data-quantity-input]");
+  const dica = formulario.querySelector("[data-quantity-hint]");
 
   if (envoltorio) {
     envoltorio.hidden = !deveExibir;
@@ -239,16 +284,23 @@ function alternarCampoQuantidadePn(formulario, deveExibir) {
 
   campoEntrada.disabled = !deveExibir;
 
+  if (dica) {
+    dica.textContent =
+      rastreabilidade === "ambos"
+        ? "Depois, informe um SN diferente para cada unidade no modal."
+        : "Cada unidade com este PN será cadastrada separadamente.";
+  }
+
   if (!deveExibir) {
-    definirQuantidadePn(formulario, QUANTIDADE_PN_MINIMA);
+    definirQuantidadeAtivos(formulario, QUANTIDADE_ATIVOS_MINIMA);
   }
 }
 
-function obterQuantidadePn(formulario) {
+function obterQuantidadeAtivos(formulario) {
   const campoEntrada = formulario.querySelector("[data-quantity-input]");
 
   if (!(campoEntrada instanceof HTMLInputElement)) {
-    return QUANTIDADE_PN_MINIMA;
+    return QUANTIDADE_ATIVOS_MINIMA;
   }
 
   const quantidade = Number.parseInt(campoEntrada.value || "", 10);
@@ -256,13 +308,16 @@ function obterQuantidadePn(formulario) {
   return Number.isInteger(quantidade) ? quantidade : 0;
 }
 
-function definirQuantidadePn(formulario, valor) {
+function definirQuantidadeAtivos(formulario, valor) {
   const campoEntrada = formulario.querySelector("[data-quantity-input]");
   const botaoDecrementar = formulario.querySelector("[data-quantity-decrement]");
   const botaoIncrementar = formulario.querySelector("[data-quantity-increment]");
   const quantidade = Math.min(
-    QUANTIDADE_PN_MAXIMA,
-    Math.max(QUANTIDADE_PN_MINIMA, Number.parseInt(String(valor || ""), 10) || QUANTIDADE_PN_MINIMA),
+    QUANTIDADE_ATIVOS_MAXIMA,
+    Math.max(
+      QUANTIDADE_ATIVOS_MINIMA,
+      Number.parseInt(String(valor || ""), 10) || QUANTIDADE_ATIVOS_MINIMA,
+    ),
   );
 
   if (campoEntrada instanceof HTMLInputElement) {
@@ -270,11 +325,220 @@ function definirQuantidadePn(formulario, valor) {
   }
 
   if (botaoDecrementar instanceof HTMLButtonElement) {
-    botaoDecrementar.disabled = quantidade <= QUANTIDADE_PN_MINIMA;
+    botaoDecrementar.disabled = quantidade <= QUANTIDADE_ATIVOS_MINIMA;
   }
 
   if (botaoIncrementar instanceof HTMLButtonElement) {
-    botaoIncrementar.disabled = quantidade >= QUANTIDADE_PN_MAXIMA;
+    botaoIncrementar.disabled = quantidade >= QUANTIDADE_ATIVOS_MAXIMA;
+  }
+
+  if (numerosSerieTemporarios.length > quantidade) {
+    numerosSerieTemporarios = numerosSerieTemporarios.slice(0, quantidade);
+  }
+}
+
+function configurarModalNumerosSerie() {
+  const dialogo = document.getElementById("serialNumbersDialog");
+  const formularioModal = dialogo?.querySelector("[data-serial-numbers-form]");
+
+  if (
+    typeof HTMLDialogElement === "undefined" ||
+    !(dialogo instanceof HTMLDialogElement) ||
+    !(formularioModal instanceof HTMLFormElement) ||
+    dialogo.dataset.configurado === "true"
+  ) {
+    return;
+  }
+
+  dialogo.dataset.configurado = "true";
+
+  dialogo.querySelectorAll("[data-serial-numbers-close], [data-serial-numbers-cancel]").forEach((botao) => {
+    botao.addEventListener("click", () => dialogo.close("cancelado"));
+  });
+
+  formularioModal.addEventListener("submit", (evento) => {
+    evento.preventDefault();
+
+    const numerosSerie = obterNumerosSerieModal(dialogo);
+    const erro = validarNumerosSerieModal(numerosSerie);
+
+    if (erro) {
+      definirErroModalNumerosSerie(dialogo, erro.mensagem, erro.indice);
+      return;
+    }
+
+    numerosSerieTemporarios = [...numerosSerie];
+    concluirModalNumerosSerie(numerosSerie);
+    dialogo.close("confirmado");
+  });
+
+  dialogo.addEventListener("close", () => {
+    if (dialogo.returnValue === "confirmado") {
+      return;
+    }
+
+    numerosSerieTemporarios = obterNumerosSerieModal(dialogo);
+    concluirModalNumerosSerie(null);
+  });
+}
+
+function solicitarNumerosSerie(quantidade, formularioAtivo) {
+  const dialogo = document.getElementById("serialNumbersDialog");
+
+  if (
+    typeof HTMLDialogElement === "undefined" ||
+    !(dialogo instanceof HTMLDialogElement) ||
+    typeof dialogo.showModal !== "function"
+  ) {
+    definirMensagemFormulario(
+      "O navegador nao conseguiu abrir o preenchimento dos numeros de serie.",
+      "error",
+    );
+    return Promise.resolve(null);
+  }
+
+  montarCamposNumerosSerie(dialogo, quantidade, formularioAtivo);
+  dialogo.returnValue = "";
+  dialogo.showModal();
+
+  requestAnimationFrame(() => {
+    dialogo.querySelector("[data-serial-number-input]")?.focus();
+  });
+
+  return new Promise((resolver) => {
+    resolverModalNumerosSerie = resolver;
+  });
+}
+
+function montarCamposNumerosSerie(dialogo, quantidade, formularioAtivo) {
+  const conteiner = dialogo.querySelector("[data-serial-numbers-fields]");
+  const resumo = document.getElementById("serialNumbersDialogSummary");
+  const contador = dialogo.querySelector("[data-serial-numbers-counter]");
+  const numeroParte = String(
+    formularioAtivo.querySelector('[name="part_number"]')?.value || "",
+  ).trim();
+
+  if (!conteiner) {
+    return;
+  }
+
+  conteiner.replaceChildren();
+  definirErroModalNumerosSerie(dialogo, "");
+
+  if (resumo) {
+    resumo.textContent = numeroParte
+      ? `Preencha um SN para cada unidade do PN ${numeroParte}.`
+      : "Preencha um SN diferente para cada unidade.";
+  }
+
+  if (contador) {
+    contador.textContent = `${quantidade} ${quantidade === 1 ? "unidade" : "unidades"}`;
+  }
+
+  for (let indice = 0; indice < quantidade; indice += 1) {
+    const identificador = `serialNumberUnit${indice + 1}`;
+    const rotulo = criarElemento("label", "serial-number-field");
+    const titulo = criarElemento("span", "serial-number-label", `Unidade ${indice + 1}`);
+    const envoltorio = criarElemento("div", "input-shell");
+    const icone = criarElemento("i", "bi bi-upc-scan");
+    const campoEntrada = document.createElement("input");
+
+    campoEntrada.id = identificador;
+    campoEntrada.name = "numeros_serie[]";
+    campoEntrada.type = "text";
+    campoEntrada.placeholder = `Informe o SN da unidade ${indice + 1}`;
+    campoEntrada.autocomplete = "off";
+    campoEntrada.maxLength = TAMANHO_MAXIMO_NUMERO_SERIE;
+    campoEntrada.required = true;
+    campoEntrada.dataset.serialNumberInput = "";
+    campoEntrada.dataset.serialIndex = String(indice);
+    campoEntrada.value = numerosSerieTemporarios[indice] || "";
+    campoEntrada.setAttribute("aria-label", `SN da unidade ${indice + 1}`);
+    campoEntrada.addEventListener("input", () => definirErroModalNumerosSerie(dialogo, ""));
+
+    envoltorio.append(icone, campoEntrada);
+    rotulo.append(titulo, envoltorio);
+    conteiner.append(rotulo);
+  }
+}
+
+function obterNumerosSerieModal(dialogo) {
+  return Array.from(dialogo.querySelectorAll("[data-serial-number-input]")).map((campo) =>
+    String(campo.value || "").trim(),
+  );
+}
+
+function validarNumerosSerieModal(numerosSerie) {
+  const unidadesPorNumeroSerie = new Map();
+
+  for (let indice = 0; indice < numerosSerie.length; indice += 1) {
+    const numeroSerie = numerosSerie[indice];
+
+    if (!numeroSerie) {
+      return {
+        mensagem: `Informe o SN da unidade ${indice + 1}.`,
+        indice,
+      };
+    }
+
+    if (numeroSerie.length > TAMANHO_MAXIMO_NUMERO_SERIE) {
+      return {
+        mensagem: `O SN da unidade ${indice + 1} deve ter no maximo ${TAMANHO_MAXIMO_NUMERO_SERIE} caracteres.`,
+        indice,
+      };
+    }
+
+    const chaveNumeroSerie = numeroSerie.toLocaleLowerCase("pt-BR");
+
+    if (unidadesPorNumeroSerie.has(chaveNumeroSerie)) {
+      return {
+        mensagem: `O SN da unidade ${indice + 1} esta repetido. Informe um SN diferente para cada unidade.`,
+        indice,
+      };
+    }
+
+    unidadesPorNumeroSerie.set(chaveNumeroSerie, indice);
+  }
+
+  return null;
+}
+
+function definirErroModalNumerosSerie(dialogo, mensagem, indice = null) {
+  const elementoErro = dialogo.querySelector("[data-serial-numbers-error]");
+
+  dialogo.querySelectorAll("[data-serial-number-input]").forEach((campo) => {
+    campo.removeAttribute("aria-invalid");
+  });
+
+  if (elementoErro) {
+    elementoErro.textContent = mensagem;
+    elementoErro.hidden = !mensagem;
+  }
+
+  if (Number.isInteger(indice)) {
+    const campoComErro = dialogo.querySelector(`[data-serial-index="${indice}"]`);
+
+    campoComErro?.setAttribute("aria-invalid", "true");
+    campoComErro?.focus();
+  }
+}
+
+function concluirModalNumerosSerie(resultado) {
+  const resolver = resolverModalNumerosSerie;
+
+  resolverModalNumerosSerie = null;
+  resolver?.(resultado);
+}
+
+function fecharModalNumerosSerie() {
+  const dialogo = document.getElementById("serialNumbersDialog");
+
+  if (
+    typeof HTMLDialogElement !== "undefined" &&
+    dialogo instanceof HTMLDialogElement &&
+    dialogo.open
+  ) {
+    dialogo.close("cancelado");
   }
 }
 
@@ -319,10 +583,15 @@ function inserirInicioAtivoRecente(ativo) {
   const conteudo = criarElemento("div");
   const titulo = criarElemento("strong", "", String(ativo.nome || "Novo ativo"));
   const numeroParte = String(ativo.part_number || "").trim();
+  const numeroSerie = String(ativo.numero_serie || "").trim();
   const detalhes = [String(ativo.status || "Disponivel")];
 
   if (numeroParte) {
     detalhes.push(`PN ${numeroParte}`);
+  }
+
+  if (numeroSerie) {
+    detalhes.push(`SN ${numeroSerie}`);
   }
 
   const detalhe = criarElemento("span", "", detalhes.join(" - "));

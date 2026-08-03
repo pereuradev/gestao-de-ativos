@@ -10,6 +10,8 @@ function inicializarPaginaCadastroGrupo() {
   chamarGlobalGrupo("configurarBarraLateral");
   chamarGlobalGrupo("configurarGruposNavegacao");
   configurarBuscaFuncionarioGrupo();
+  configurarResumoSelecaoGrupo();
+  configurarModelosPermissaoGrupo();
   configurarFormularioGrupo();
   configurarRedefinicaoFormularioGrupo();
 }
@@ -57,6 +59,70 @@ function configurarBuscaFuncionarioGrupo() {
       });
 
     filtrarFuncionariosGrupo();
+    atualizarResumoSelecaoGrupo();
+  });
+}
+
+function configurarResumoSelecaoGrupo() {
+  const formulario = obterElementoGrupo("groupForm");
+
+  formulario?.addEventListener("change", (evento) => {
+    if (
+      evento.target instanceof HTMLInputElement &&
+      evento.target.matches('input[type="checkbox"]')
+    ) {
+      atualizarResumoSelecaoGrupo();
+    }
+  });
+
+  atualizarResumoSelecaoGrupo();
+}
+
+function atualizarResumoSelecaoGrupo() {
+  const totalMembros = document.querySelectorAll(
+    'input[name="membros[]"]:checked',
+  ).length;
+  const totalPermissoes = document.querySelectorAll(
+    'input[name="permissoes[]"]:checked',
+  ).length;
+  const membrosSelecionados = obterElementoGrupo("groupMembersSelected");
+  const permissoesSelecionadas = obterElementoGrupo("groupPermissionsSelected");
+
+  if (membrosSelecionados) {
+    membrosSelecionados.textContent = `${totalMembros} ${totalMembros === 1 ? "funcionário" : "funcionários"}`;
+  }
+
+  if (permissoesSelecionadas) {
+    permissoesSelecionadas.textContent = `${totalPermissoes} ${totalPermissoes === 1 ? "permissão" : "permissões"}`;
+  }
+}
+
+function configurarModelosPermissaoGrupo() {
+  document.querySelectorAll("[data-permission-preset]").forEach((botao) => {
+    botao.addEventListener("click", () => {
+      const modelo = botao.dataset.permissionPreset || "clear";
+      const permissoes = document.querySelectorAll(
+        'input[name="permissoes[]"]',
+      );
+
+      permissoes.forEach((campoEntrada) => {
+        const codigo = String(campoEntrada.value || "");
+
+        campoEntrada.checked =
+          modelo === "full" ||
+          (modelo === "view" && codigo.startsWith("visualizar_")) ||
+          (modelo === "operate" &&
+            (codigo.startsWith("visualizar_") ||
+              codigo.startsWith("cadastrar_")));
+      });
+
+      atualizarResumoSelecaoGrupo();
+      window.titechToast?.(
+        modelo === "clear"
+          ? "Permissoes removidas."
+          : "Modelo aplicado. Revise os acessos antes de cadastrar.",
+      );
+    });
   });
 }
 
@@ -98,6 +164,7 @@ function configurarRedefinicaoFormularioGrupo() {
     requestAnimationFrame(() => {
       definirMensagemGrupo("");
       filtrarFuncionariosGrupo();
+      atualizarResumoSelecaoGrupo();
     });
   });
 }
@@ -117,7 +184,17 @@ async function tratarEnvioGrupo(evento) {
   }
 
   const nomeGrupo = obterElementoGrupo("groupName")?.value.trim() || "este grupo";
-  const confirmado = await confirmarCriacaoGrupo(nomeGrupo);
+  const totalMembros = formulario.querySelectorAll(
+    'input[name="membros[]"]:checked',
+  ).length;
+  const totalPermissoes = formulario.querySelectorAll(
+    'input[name="permissoes[]"]:checked',
+  ).length;
+  const confirmado = await confirmarCriacaoGrupo(
+    nomeGrupo,
+    totalMembros,
+    totalPermissoes,
+  );
 
   if (!confirmado) {
     return;
@@ -184,11 +261,14 @@ function validarFormularioGrupo(formulario) {
   return "";
 }
 
-async function confirmarCriacaoGrupo(nomeGrupo) {
+async function confirmarCriacaoGrupo(nomeGrupo, totalMembros, totalPermissoes) {
+  const rotuloMembros = totalMembros === 1 ? "funcionário" : "funcionários";
+  const rotuloPermissoes = totalPermissoes === 1 ? "permissão" : "permissões";
+
   if (typeof window.titechConfirm === "function") {
     return window.titechConfirm({
       title: "Cadastrar grupo?",
-      text: `Confirme para criar o grupo ${nomeGrupo} com os funcionarios e permissoes selecionados.`,
+      text: `O grupo ${nomeGrupo} terá ${totalMembros} ${rotuloMembros} e ${totalPermissoes} ${rotuloPermissoes}.`,
       confirmButtonText: "Cadastrar grupo",
       cancelButtonText: "Revisar",
       icon: "info",

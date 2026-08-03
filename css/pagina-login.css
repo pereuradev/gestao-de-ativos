@@ -727,6 +727,29 @@ body.theme-switching .login-card {
   animation: entrance 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
+.access-detection-note {
+  margin: 20px 0 22px;
+  padding: 13px 15px;
+  border: 1px solid color-mix(in srgb, var(--teal) 42%, transparent);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--teal) 9%, transparent);
+}
+
+.access-detection-note i {
+  color: var(--teal);
+  font-size: 1.2rem;
+}
+
+.access-detection-note p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
 /* Entrada discreta do card quando a tela carrega. */
 @keyframes entrance {
   from {
@@ -1523,9 +1546,7 @@ body.theme-dark.cursor-hover .custom-cursor {
   }
 
   .login-brand {
-    min-height: auto;
-    padding-top: 190px;
-    padding-bottom: 56px;
+    display: none;
   }
 
   .brand-content {
@@ -1533,8 +1554,8 @@ body.theme-dark.cursor-hover .custom-cursor {
   }
 
   .login-side {
-    min-height: auto;
-    padding-top: 40px;
+    min-height: 100dvh;
+    padding-top: 88px;
     padding-bottom: 40px;
   }
 

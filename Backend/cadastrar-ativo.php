@@ -10,8 +10,9 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 header("Content-Type: application/json; charset=utf-8");
 header("Cache-Control: no-store");
 
-const QUANTIDADE_PN_MINIMA = 1;
-const QUANTIDADE_PN_MAXIMA = 100;
+const QUANTIDADE_ATIVOS_MINIMA = 1;
+const QUANTIDADE_ATIVOS_MAXIMA = 100;
+const TAMANHO_MAXIMO_NUMERO_SERIE = 120;
 
 function responder(bool $sucesso, string $mensagemResposta, int $codigoStatusHttp = 200, array $dadosAdicionais = []): void
 {
@@ -38,20 +39,55 @@ function campoNulo(string $nome): ?string
     return $valor !== "" ? $valor : null;
 }
 
+function listaCamposTexto(string $nome): ?array
+{
+    if (!array_key_exists($nome, $_POST)) {
+        return [];
+    }
+
+    $valores = $_POST[$nome];
+
+    if (!is_array($valores)) {
+        return null;
+    }
+
+    $valoresNormalizados = [];
+
+    foreach ($valores as $valor) {
+        if (!is_scalar($valor) && $valor !== null) {
+            return null;
+        }
+
+        $valoresNormalizados[] = trim((string) $valor);
+    }
+
+    return $valoresNormalizados;
+}
+
 function rastreabilidadePermitida(string $valor): bool
 {
     return in_array($valor, ["nao_possui", "somente_pn", "somente_sn", "ambos"], true);
 }
 
-function mensagemRastreabilidadeAtivo(string $rastreabilidade, ?string $numeroSerie, ?string $numeroParte): ?string
+function mensagemRastreabilidadeAtivo(
+    string $rastreabilidade,
+    ?string $numeroSerie,
+    ?string $numeroParte,
+    array $numerosSerie,
+    int $quantidade
+): ?string
 {
     // A escolha de rastreabilidade define quais identificadores sao obrigatorios.
     if (in_array($rastreabilidade, ["somente_pn", "ambos"], true) && $numeroParte === null) {
         return "Informe o PN para a rastreabilidade escolhida.";
     }
 
-    if (in_array($rastreabilidade, ["somente_sn", "ambos"], true) && $numeroSerie === null) {
+    if ($rastreabilidade === "somente_sn" && $numeroSerie === null) {
         return "Informe o numero de serie para a rastreabilidade escolhida.";
+    }
+
+    if ($rastreabilidade === "ambos" && count($numerosSerie) !== $quantidade) {
+        return "Informe um numero de serie para cada unidade.";
     }
 
     return null;
@@ -63,15 +99,15 @@ function normalizarRastreabilidadeAtivo(string $rastreabilidade, ?string $numero
     return match ($rastreabilidade) {
         "somente_pn" => [null, $numeroParte],
         "somente_sn" => [$numeroSerie, null],
-        "ambos" => [$numeroSerie, $numeroParte],
+        "ambos" => [null, $numeroParte],
         default => [null, null],
     };
 }
 
 function quantidadeCadastroAtivo(string $rastreabilidade): int
 {
-    if ($rastreabilidade !== "somente_pn") {
-        return QUANTIDADE_PN_MINIMA;
+    if (!in_array($rastreabilidade, ["somente_pn", "ambos"], true)) {
+        return QUANTIDADE_ATIVOS_MINIMA;
     }
 
     $quantidade = filter_input(
@@ -80,13 +116,60 @@ function quantidadeCadastroAtivo(string $rastreabilidade): int
         FILTER_VALIDATE_INT,
         [
             "options" => [
-                "min_range" => QUANTIDADE_PN_MINIMA,
-                "max_range" => QUANTIDADE_PN_MAXIMA,
+                "min_range" => QUANTIDADE_ATIVOS_MINIMA,
+                "max_range" => QUANTIDADE_ATIVOS_MAXIMA,
             ],
         ]
     );
 
     return is_int($quantidade) ? $quantidade : 0;
+}
+
+function numerosSerieCadastroAtivo(
+    string $rastreabilidade,
+    ?string $numeroSerie,
+    array $numerosSerie,
+    int $quantidade
+): array
+{
+    return match ($rastreabilidade) {
+        "somente_sn" => [$numeroSerie],
+        "ambos" => array_values($numerosSerie),
+        default => array_fill(0, $quantidade, null),
+    };
+}
+
+function mensagemNumerosSerieAtivo(array $numerosSerie): ?string
+{
+    $numerosSerieConhecidos = [];
+
+    foreach ($numerosSerie as $indice => $numeroSerie) {
+        if ($numeroSerie === null) {
+            continue;
+        }
+
+        $numeroSerie = trim((string) $numeroSerie);
+        $numeroUnidade = $indice + 1;
+
+        if ($numeroSerie === "") {
+            return "Informe o numero de serie da unidade " . $numeroUnidade . ".";
+        }
+
+        if (strlen($numeroSerie) > TAMANHO_MAXIMO_NUMERO_SERIE) {
+            return "O numero de serie da unidade " . $numeroUnidade
+                . " deve ter no maximo " . TAMANHO_MAXIMO_NUMERO_SERIE . " caracteres.";
+        }
+
+        $chaveNumeroSerie = strtolower($numeroSerie);
+
+        if (isset($numerosSerieConhecidos[$chaveNumeroSerie])) {
+            return "Os numeros de serie devem ser diferentes entre as unidades.";
+        }
+
+        $numerosSerieConhecidos[$chaveNumeroSerie] = true;
+    }
+
+    return null;
 }
 
 function csrfValido(): bool
@@ -170,14 +253,25 @@ function localExiste(PDO $pdo, ?string $localId): bool
     return $consultaPreparada->fetchColumn() !== false;
 }
 
-function mensagemDuplicidadeAtivo(PDO $pdo, ?string $numeroSerie, ?string $imei): ?string
+function mensagemDuplicidadeAtivo(PDO $pdo, array $numerosSerie, ?string $imei): ?string
 {
     $condicoesSql = [];
     $parametrosConsulta = [];
+    $numerosSerieValidos = array_values(array_filter(
+        $numerosSerie,
+        static fn ($numeroSerie): bool => is_string($numeroSerie) && trim($numeroSerie) !== ""
+    ));
 
-    if ($numeroSerie !== null) {
-        $condicoesSql[] = "lower(trim(numero_serie)) = lower(trim(:numero_serie))";
-        $parametrosConsulta[":numero_serie"] = $numeroSerie;
+    if ($numerosSerieValidos) {
+        $marcadoresNumeroSerie = [];
+
+        foreach ($numerosSerieValidos as $indice => $numeroSerie) {
+            $marcador = ":numero_serie_" . $indice;
+            $marcadoresNumeroSerie[] = $marcador;
+            $parametrosConsulta[$marcador] = strtolower(trim($numeroSerie));
+        }
+
+        $condicoesSql[] = "lower(trim(numero_serie)) in (" . implode(", ", $marcadoresNumeroSerie) . ")";
     }
 
     if ($imei !== null) {
@@ -202,8 +296,12 @@ function mensagemDuplicidadeAtivo(PDO $pdo, ?string $numeroSerie, ?string $imei)
         return null;
     }
 
-    if ($numeroSerie !== null && strcasecmp(trim((string) ($ativo["numero_serie"] ?? "")), $numeroSerie) === 0) {
-        return "Numero de serie ja cadastrado.";
+    $numeroSerieExistente = trim((string) ($ativo["numero_serie"] ?? ""));
+
+    foreach ($numerosSerieValidos as $numeroSerie) {
+        if ($numeroSerieExistente !== "" && strcasecmp($numeroSerieExistente, trim($numeroSerie)) === 0) {
+            return "Numero de serie " . $numeroSerie . " ja cadastrado.";
+        }
     }
 
     return "IMEI ja cadastrado.";
@@ -231,6 +329,7 @@ $descricao = campoNulo("descricao");
 $rastreabilidade = campo("rastreabilidade") ?: "nao_possui";
 $numeroSerieEnviado = campoNulo("numero_serie");
 $numeroParteEnviado = campoNulo("part_number");
+$numerosSerieEnviados = listaCamposTexto("numeros_serie");
 $quantidadeCadastro = quantidadeCadastroAtivo($rastreabilidade);
 $categoriaId = campoNulo("categoria_id");
 $localId = campoNulo("local_id");
@@ -252,18 +351,28 @@ if (!rastreabilidadePermitida($rastreabilidade)) {
     responder(false, "Selecione uma opcao de rastreabilidade valida.", 422);
 }
 
-$mensagemRastreabilidade = mensagemRastreabilidadeAtivo($rastreabilidade, $numeroSerieEnviado, $numeroParteEnviado);
-
-if ($mensagemRastreabilidade !== null) {
-    responder(false, $mensagemRastreabilidade, 422);
+if ($numerosSerieEnviados === null) {
+    responder(false, "Lista de numeros de serie invalida.", 422);
 }
 
 if ($quantidadeCadastro === 0) {
     responder(
         false,
-        "Informe uma quantidade entre " . QUANTIDADE_PN_MINIMA . " e " . QUANTIDADE_PN_MAXIMA . ".",
+        "Informe uma quantidade entre " . QUANTIDADE_ATIVOS_MINIMA . " e " . QUANTIDADE_ATIVOS_MAXIMA . ".",
         422
     );
+}
+
+$mensagemRastreabilidade = mensagemRastreabilidadeAtivo(
+    $rastreabilidade,
+    $numeroSerieEnviado,
+    $numeroParteEnviado,
+    $numerosSerieEnviados,
+    $quantidadeCadastro
+);
+
+if ($mensagemRastreabilidade !== null) {
+    responder(false, $mensagemRastreabilidade, 422);
 }
 
 [$numeroSerie, $numeroParte] = normalizarRastreabilidadeAtivo(
@@ -271,6 +380,17 @@ if ($quantidadeCadastro === 0) {
     $numeroSerieEnviado,
     $numeroParteEnviado
 );
+$numerosSerieCadastro = numerosSerieCadastroAtivo(
+    $rastreabilidade,
+    $numeroSerie,
+    $numerosSerieEnviados,
+    $quantidadeCadastro
+);
+$mensagemNumerosSerie = mensagemNumerosSerieAtivo($numerosSerieCadastro);
+
+if ($mensagemNumerosSerie !== null) {
+    responder(false, $mensagemNumerosSerie, 422);
+}
 
 if ($numeroParte !== null && strlen($numeroParte) > 120) {
     responder(false, "PN deve ter no maximo 120 caracteres.", 422);
@@ -289,7 +409,7 @@ if (!imeiValido($imei)) {
 }
 
 if ($quantidadeCadastro > 1 && $imei !== null) {
-    responder(false, "Para cadastrar mais de uma unidade por PN, deixe o IMEI vazio.", 422);
+    responder(false, "Para cadastrar mais de uma unidade, deixe o IMEI vazio.", 422);
 }
 
 try {
@@ -339,13 +459,13 @@ try {
         $marca = (string) $marcaAtiva;
     }
 
-    $duplicidade = mensagemDuplicidadeAtivo($pdo, $numeroSerie, $imei);
+    $duplicidade = mensagemDuplicidadeAtivo($pdo, $numerosSerieCadastro, $imei);
 
     if ($duplicidade !== null) {
         responder(false, $duplicidade, 409);
     }
 
-    // Somente PN representa varias unidades do mesmo modelo; cada unidade vira uma linha independente.
+    // Cadastros em quantidade sempre geram uma linha por unidade.
     $consultaPreparada = $pdo->prepare("
         insert into public.ativos (
             nome,
@@ -375,6 +495,7 @@ try {
         returning
             id,
             nome,
+            numero_serie,
             part_number,
             status,
             criado_em
@@ -384,10 +505,12 @@ try {
     $pdo->beginTransaction();
 
     for ($indice = 0; $indice < $quantidadeCadastro; $indice++) {
+        $numeroSerieUnidade = $numerosSerieCadastro[$indice] ?? null;
+
         $consultaPreparada->execute([
             ":nome" => $nome,
             ":descricao" => $descricao,
-            ":numero_serie" => $numeroSerie,
+            ":numero_serie" => $numeroSerieUnidade,
             ":part_number" => $numeroParte,
             ":categoria_id" => $categoriaId,
             ":local_id" => $localId,

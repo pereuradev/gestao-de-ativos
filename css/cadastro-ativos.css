@@ -409,7 +409,7 @@ body.theme-dark .input-shell select option:checked {
   display: none !important;
 }
 
-[data-pn-quantity-field][hidden] {
+[data-quantity-field][hidden] {
   display: none !important;
 }
 
@@ -467,6 +467,201 @@ body.theme-dark .input-shell select option:checked {
 .quantity-stepper input::-webkit-inner-spin-button {
   margin: 0;
   appearance: none;
+}
+
+.serial-numbers-dialog {
+  width: min(860px, calc(100vw - 32px));
+  max-height: min(780px, calc(100vh - 32px));
+  padding: 0;
+  overflow: hidden;
+  color: var(--asset-text);
+  border: 1px solid var(--asset-border-strong);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(57, 168, 214, 0.17), transparent 38%),
+    radial-gradient(circle at 92% 6%, rgba(59, 194, 171, 0.14), transparent 34%),
+    var(--asset-surface-strong);
+  box-shadow: 0 34px 100px rgba(0, 10, 18, 0.62);
+}
+
+.serial-numbers-dialog::backdrop {
+  background: rgba(0, 13, 23, 0.76);
+  backdrop-filter: blur(7px);
+}
+
+.serial-numbers-modal {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  max-height: min(780px, calc(100vh - 32px));
+}
+
+.serial-numbers-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 26px 20px;
+  border-bottom: 1px solid var(--asset-border);
+}
+
+.serial-numbers-heading {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-width: 0;
+}
+
+.serial-numbers-heading h3,
+.serial-numbers-heading p {
+  margin: 0;
+}
+
+.serial-numbers-heading h3 {
+  color: var(--asset-text);
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
+  letter-spacing: -0.025em;
+}
+
+.serial-numbers-heading #serialNumbersDialogSummary {
+  margin-top: 5px;
+  color: var(--asset-muted);
+  line-height: 1.45;
+}
+
+.serial-numbers-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  color: var(--asset-navy);
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--asset-teal), #6de4d2);
+  box-shadow: 0 13px 28px rgba(59, 194, 171, 0.24);
+}
+
+.serial-numbers-close {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  color: var(--asset-muted-strong);
+  border: 1px solid var(--asset-border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.serial-numbers-close:hover {
+  color: var(--asset-text);
+  border-color: var(--asset-border-strong);
+  background: rgba(57, 168, 214, 0.12);
+}
+
+.serial-numbers-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 18px 26px 0;
+  padding: 11px 13px;
+  color: var(--asset-muted-strong);
+  border: 1px solid var(--asset-border);
+  border-radius: 14px;
+  background: rgba(57, 168, 214, 0.08);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.serial-numbers-status i {
+  color: var(--asset-teal);
+}
+
+.serial-numbers-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+  min-height: 0;
+  margin: 18px 10px 0 26px;
+  padding: 0 16px 4px 0;
+  overflow-y: auto;
+  scrollbar-color: var(--asset-teal) transparent;
+}
+
+.serial-number-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.serial-number-label {
+  color: var(--asset-muted-strong);
+  font-size: 0.8rem;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.serial-number-field .input-shell {
+  min-width: 0;
+}
+
+.serial-number-field input[aria-invalid="true"] {
+  border-color: rgba(239, 68, 68, 0.72);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.13);
+}
+
+.serial-numbers-error {
+  margin: 14px 26px 0;
+  padding: 11px 13px;
+  color: #ffd8d8;
+  border: 1px solid rgba(239, 68, 68, 0.36);
+  border-radius: 14px;
+  background: rgba(239, 68, 68, 0.12);
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+body.theme-light .serial-numbers-error {
+  color: #991b1b;
+}
+
+.serial-numbers-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 26px 24px;
+  border-top: 1px solid var(--asset-border);
+}
+
+.serial-numbers-actions .form-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 0 18px;
+  color: var(--asset-text);
+  border: 1px solid var(--asset-border);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.055);
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.serial-numbers-actions .form-action-button:hover {
+  transform: translateY(-1px);
+  border-color: var(--asset-border-strong);
+}
+
+.serial-numbers-actions .success-button {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: linear-gradient(135deg, #22c55e, #15803d);
+  box-shadow: 0 14px 30px rgba(21, 128, 61, 0.24);
 }
 
 .form-message {
@@ -702,6 +897,38 @@ body.theme-light .asset-form-actions .danger-button {
 
   .traceability-options {
     grid-template-columns: 1fr;
+  }
+
+  .serial-numbers-dialog {
+    width: min(100% - 20px, 860px);
+    max-height: calc(100vh - 20px);
+    border-radius: 20px;
+  }
+
+  .serial-numbers-modal {
+    max-height: calc(100vh - 20px);
+  }
+
+  .serial-numbers-header,
+  .serial-numbers-actions {
+    padding-inline: 18px;
+  }
+
+  .serial-numbers-status {
+    margin-inline: 18px;
+  }
+
+  .serial-numbers-fields {
+    grid-template-columns: 1fr;
+    margin-left: 18px;
+  }
+
+  .serial-numbers-actions {
+    flex-direction: column-reverse;
+  }
+
+  .serial-numbers-actions .form-action-button {
+    width: 100%;
   }
 
   .asset-form-actions .form-action-button,

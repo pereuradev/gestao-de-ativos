@@ -1,5 +1,6 @@
 (function () {
 const CHAVE_ARMAZENAMENTO_LARGURA_BARRA_LATERAL = "titech-sidebar-width";
+const CHAVE_ARMAZENAMENTO_ESTADO_COMPACTO = "titech-menu-lateral-compacto";
 const LARGURA_PADRAO_BARRA_LATERAL = 292;
 const LARGURA_MINIMA_BARRA_LATERAL = 236;
 const LARGURA_MAXIMA_BARRA_LATERAL = 392;
@@ -17,10 +18,12 @@ function configurarBarraLateral() {
 
   const botaoAbrir = document.getElementById("openSidebar");
   const botaoFechar = document.getElementById("closeSidebar");
+  const botaoAlternarEstado = document.getElementById("toggleSidebarCompact");
   const fundoModal = document.getElementById("sidebarBackdrop");
 
   botaoAbrir?.addEventListener("click", abrirBarraLateral);
   botaoFechar?.addEventListener("click", fecharBarraLateral);
+  botaoAlternarEstado?.addEventListener("click", alternarEstadoCompactoBarraLateral);
   fundoModal?.addEventListener("click", fecharBarraLateral);
 
   window.addEventListener("keydown", (evento) => {
@@ -42,6 +45,7 @@ function configurarBarraLateral() {
   });
 
   configurarRedimensionamentoBarraLateral();
+  aplicarEstadoCompactoSalvoBarraLateral();
 }
 
 function abrirBarraLateral() {
@@ -149,6 +153,8 @@ function configurarRedimensionamentoBarraLateral() {
   });
 
   window.addEventListener("resize", () => {
+    aplicarEstadoCompactoSalvoBarraLateral();
+
     if (permiteRedimensionarBarraLateral()) {
       aplicarLarguraSalvaBarraLateral();
       atualizarManipuladorRedimensionamentoBarraLateral(manipulador, obterLarguraBarraLateralAtual());
@@ -198,7 +204,80 @@ function atualizarManipuladorRedimensionamentoBarraLateral(manipulador, largura)
 }
 
 function permiteRedimensionarBarraLateral() {
-  return window.matchMedia?.(CONSULTA_TELA_AMPLA_BARRA_LATERAL)?.matches ?? window.innerWidth >= 921;
+  const estaEmTelaAmpla = window.matchMedia?.(CONSULTA_TELA_AMPLA_BARRA_LATERAL)?.matches ?? window.innerWidth >= 921;
+
+  return estaEmTelaAmpla && !barraLateralEstaCompacta();
+}
+
+function barraLateralEstaCompacta() {
+  return document.body.classList.contains("menu-lateral-compacto");
+}
+
+function aplicarEstadoCompactoBarraLateral(deveCompactar, opcoes = {}) {
+  const { persistir = true } = opcoes;
+  const estaEmTelaAmpla = window.matchMedia?.(CONSULTA_TELA_AMPLA_BARRA_LATERAL)?.matches ?? window.innerWidth >= 921;
+  const deveAplicarEstadoCompacto = Boolean(deveCompactar) && estaEmTelaAmpla;
+
+  document.body.classList.toggle("menu-lateral-compacto", deveAplicarEstadoCompacto);
+  atualizarControleEstadoCompactoBarraLateral(deveAplicarEstadoCompacto);
+  atualizarTitulosMenuLateral(deveAplicarEstadoCompacto);
+
+  if (!deveAplicarEstadoCompacto && estaEmTelaAmpla) {
+    aplicarLarguraSalvaBarraLateral();
+  }
+
+  if (persistir) {
+    definirItemBarraLateralSalvo(CHAVE_ARMAZENAMENTO_ESTADO_COMPACTO, String(Boolean(deveCompactar)));
+  }
+}
+
+function alternarEstadoCompactoBarraLateral() {
+  aplicarEstadoCompactoBarraLateral(!barraLateralEstaCompacta());
+}
+
+function aplicarEstadoCompactoSalvoBarraLateral() {
+  const estadoSalvo = obterItemBarraLateralSalvo(CHAVE_ARMAZENAMENTO_ESTADO_COMPACTO) === "true";
+
+  aplicarEstadoCompactoBarraLateral(estadoSalvo, { persistir: false });
+}
+
+function atualizarControleEstadoCompactoBarraLateral(estaCompacta) {
+  const botaoAlternarEstado = document.getElementById("toggleSidebarCompact");
+
+  if (!botaoAlternarEstado) return;
+
+  const rotulo = estaCompacta ? "Expandir menu lateral" : "Recolher menu lateral";
+  const icone = botaoAlternarEstado.querySelector("i");
+
+  botaoAlternarEstado.setAttribute("aria-expanded", String(!estaCompacta));
+  botaoAlternarEstado.setAttribute("aria-label", rotulo);
+  botaoAlternarEstado.title = rotulo;
+
+  if (icone) {
+    icone.className = estaCompacta ? "bi bi-chevron-bar-right" : "bi bi-chevron-bar-left";
+  }
+}
+
+function atualizarTitulosMenuLateral(estaCompacta) {
+  document.querySelectorAll(".sidebar-nav .nav-link, .sidebar-footer .logout-button").forEach((item) => {
+    if (item.dataset.tituloOriginal === undefined) {
+      item.dataset.tituloOriginal = item.getAttribute("title") || "";
+    }
+
+    const tituloOriginal = item.dataset.tituloOriginal;
+    const rotulo = item.querySelector("span")?.textContent?.trim() || "";
+
+    if (estaCompacta && !tituloOriginal && rotulo) {
+      item.setAttribute("title", rotulo);
+      return;
+    }
+
+    if (tituloOriginal) {
+      item.setAttribute("title", tituloOriginal);
+    } else {
+      item.removeAttribute("title");
+    }
+  });
 }
 
 function configurarGruposNavegacao() {
@@ -212,7 +291,12 @@ function configurarGruposNavegacao() {
     botao.dataset.grupoNavegacaoConfigurado = "true";
 
     botao.addEventListener("click", () => {
-      const deveAbrir = !grupo.classList.contains("open");
+      const estavaCompacta = barraLateralEstaCompacta();
+      const deveAbrir = estavaCompacta || !grupo.classList.contains("open");
+
+      if (estavaCompacta) {
+        aplicarEstadoCompactoBarraLateral(false);
+      }
 
       grupos.forEach((outroGrupo) => {
         if (outroGrupo === grupo) return;
@@ -258,6 +342,9 @@ Object.assign(window, {
   fecharBarraLateral,
   aplicarLarguraBarraLateral,
   aplicarLarguraSalvaBarraLateral,
+  aplicarEstadoCompactoBarraLateral,
+  aplicarEstadoCompactoSalvoBarraLateral,
+  alternarEstadoCompactoBarraLateral,
   configurarRedimensionamentoBarraLateral,
   configurarGruposNavegacao,
   // Os nomes antigos continuam disponíveis para páginas que ainda não foram migradas.
@@ -269,4 +356,6 @@ Object.assign(window, {
   setupSidebarResize: configurarRedimensionamentoBarraLateral,
   setupNavGroups: configurarGruposNavegacao,
 });
+
+aplicarEstadoCompactoSalvoBarraLateral();
 })();

@@ -53,19 +53,20 @@ async function enviarFormularioCategoria(evento) {
     }));
 
     if (!resposta.ok || !resultado.ok) {
-      throw new Error(resultado.message || "Nao foi possivel cadastrar a categoria.");
+      throw new Error(
+        resultado.message || "Nao foi possivel cadastrar a categoria.",
+      );
     }
 
-    definirMensagemCategoria(resultado.message || "Categoria cadastrada com sucesso.", "success");
+    definirMensagemCategoria("Categoria cadastrada com sucesso!");
     incrementarMetricaCategoria("totalCategoriesMetric");
     incrementarMetricaCategoria("unlinkedCategoriesMetric");
     formulario.reset();
-
-    setTimeout(() => {
-      definirMensagemCategoria("", "");
-    }, ATRASO_OCULTACAO_MENSAGEM_CATEGORIA_MS);
   } catch (erro) {
-    definirMensagemCategoria(erro.message || "Nao foi possivel cadastrar a categoria.", "error");
+    definirMensagemCategoria(
+      erro.message || "Nao foi possivel cadastrar a categoria.",
+      "error",
+    );
   } finally {
     definirCarregandoBotaoCategoria(botaoEnviar, false);
   }
@@ -126,8 +127,12 @@ function definirMensagemCategoria(mensagem, tipo) {
 }
 
 function configurarFiltrosCategoria() {
-  document.getElementById("categorySearch")?.addEventListener("input", filtrarCategorias);
-  document.getElementById("clearCategoryFilters")?.addEventListener("click", limparFiltrosCategoria);
+  document
+    .getElementById("categorySearch")
+    ?.addEventListener("input", filtrarCategorias);
+  document
+    .getElementById("clearCategoryFilters")
+    ?.addEventListener("click", limparFiltrosCategoria);
 
   filtrarCategorias();
 }
@@ -145,7 +150,9 @@ function limparFiltrosCategoria() {
 
 function filtrarCategorias() {
   const linhas = Array.from(document.querySelectorAll(".category-row"));
-  const busca = normalizarTexto(document.getElementById("categorySearch")?.value || "");
+  const busca = normalizarTexto(
+    document.getElementById("categorySearch")?.value || "",
+  );
   let quantidadeVisivel = 0;
 
   linhas.forEach((linha) => {

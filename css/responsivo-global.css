@@ -56,9 +56,39 @@ button {
   width: 100%;
 }
 
+/* Em desktop, mantem o contexto da pagina sem empurrar a tarefa principal para baixo. */
+@media (min-width: 921px) {
+  .hero-panel {
+    min-height: 190px;
+    padding: 26px 30px;
+  }
+
+  .compact-hero {
+    min-height: 176px;
+  }
+
+  .hero-content h2 {
+    margin: 8px 0 10px;
+    font-size: clamp(2rem, 3.2vw, 3.3rem);
+  }
+
+  .hero-actions {
+    margin-top: 18px;
+  }
+
+  .metrics-grid {
+    margin-top: 16px;
+    gap: 12px;
+  }
+
+  .metric-card {
+    min-height: 108px;
+    padding: 15px;
+  }
+}
+
 @media (max-width: 1180px) {
   .content-grid,
-  .metrics-grid,
   .asset-registration-layout,
   .settings-layout,
   .settings-grid,
@@ -67,8 +97,8 @@ button {
     grid-template-columns: 1fr !important;
   }
 
-  .hero-panel {
-    min-height: 260px;
+  .metrics-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 }
 
@@ -149,18 +179,17 @@ button {
   .brand-partners-hero,
   .locations-hero,
   .settings-hero {
-    min-height: 220px !important;
-    padding: 22px !important;
+    min-height: 154px !important;
+    padding: 20px !important;
     border-radius: 20px !important;
   }
 
   .hero-content h2,
   .settings-hero .hero-content h2 {
-    font-size: clamp(2rem, 12vw, 3.05rem) !important;
-    line-height: 0.98 !important;
+    font-size: clamp(1.8rem, 10vw, 2.6rem) !important;
+    line-height: 1 !important;
   }
 
-  .metrics-grid,
   .profile-details,
   .badge-grid,
   .diagnostics-grid,
@@ -175,6 +204,23 @@ button {
   .brand-filter-bar,
   .location-filter-bar {
     grid-template-columns: 1fr !important;
+  }
+
+  .metrics-grid {
+    margin-top: 12px !important;
+    padding: 2px 2px 10px;
+    display: flex !important;
+    gap: 10px !important;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+
+  .metrics-grid .metric-card {
+    min-width: min(82vw, 280px);
+    min-height: 104px;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
   }
 
   .content-card,

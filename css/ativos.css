@@ -25,20 +25,17 @@
 .asset-filter-bar {
   margin-bottom: 16px;
   display: grid;
-  grid-template-columns:
-    minmax(260px, 1fr)
-    minmax(150px, auto)
-    minmax(190px, auto)
-    minmax(160px, auto)
-    minmax(170px, auto)
-    minmax(140px, auto)
-    auto;
+  grid-template-columns: minmax(170px, 1fr) minmax(170px, 1fr) repeat(
+      2,
+      minmax(150px, 0.72fr)
+    );
   gap: 10px;
   align-items: center;
 }
 
 .asset-view-search {
   width: 100%;
+  grid-column: span 2;
 }
 
 .asset-filter-bar select,
@@ -327,16 +324,17 @@
 
 @media (max-width: 1180px) {
   .asset-filter-bar {
-    grid-template-columns: minmax(260px, 1fr) minmax(170px, 0.5fr) minmax(
-        190px,
-        0.5fr
-      );
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 760px) {
   .asset-filter-bar {
     grid-template-columns: 1fr;
+  }
+
+  .asset-view-search {
+    grid-column: auto;
   }
 
   .filter-clear-button {

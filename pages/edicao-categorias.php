@@ -91,19 +91,19 @@ try {
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
-  <link rel="stylesheet" href="../css/pagina-base.css?v=20260721-categorias" />
+  <link rel="stylesheet" href="../css/pagina-base.css?v=20260731-sidebar-compact" />
   <link rel="stylesheet" href="../css/cadastro-ativos.css?v=20260619-select-options" />
   <link rel="stylesheet" href="../css/categorias.css?v=20260721-categorias" />
   <link rel="stylesheet" href="../css/edicao-categorias.css?v=20260721-categorias" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
-  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
-  <script src="../js/animations/efeito-digitacao.js?v=20260630-reduced-motion" defer></script>
+  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260803-desktop-density" />
+  <script src="../js/animations/efeito-digitacao.js?v=20260803-static-headings" defer></script>
   <script src="../js/ui/feedback-interface.js?v=20260630-reduced-motion" defer></script>
-  <script src="../js/core/armazenamento-local.js?v=20260721-js-structure" defer></script>
-  <script src="../js/animations/entrada-pagina.js?v=20260721-js-structure" defer></script>
-  <script src="../js/ui/menu-lateral.js?v=20260721-js-structure" defer></script>
-  <script src="../js/base-interface.js?v=20260724-custom-accent" defer></script>
+  <script src="../js/core/armazenamento-local.js?v=20260730-sidebar-contract" defer></script>
+  <script src="../js/animations/entrada-pagina.js?v=20260730-sidebar-contract" defer></script>
+  <script src="../js/ui/menu-lateral.js?v=20260731-sidebar-compact" defer></script>
+  <script src="../js/base-interface.js?v=20260730-sidebar-contract" defer></script>
   <script src="../js/pages/edicao-categorias.js?v=20260721-categorias" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>

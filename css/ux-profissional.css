@@ -236,7 +236,11 @@ body.ux-enhanced .metric-card::after {
   border-radius: inherit;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 28%),
-    radial-gradient(circle at 100% 0%, rgba(79, 199, 177, 0.12), transparent 34%);
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(79, 199, 177, 0.12),
+      transparent 34%
+    );
   opacity: 0.45;
 }
 
@@ -245,21 +249,33 @@ body.ux-enhanced.theme-light .content-card::after,
 body.ux-enhanced.theme-light .metric-card::after {
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.72), transparent 30%),
-    radial-gradient(circle at 100% 0%, rgba(61, 214, 198, 0.08), transparent 36%);
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(61, 214, 198, 0.08),
+      transparent 36%
+    );
   opacity: 0.55;
 }
 
 body.ux-enhanced .hero-panel.locations-hero::after {
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 22%),
-    radial-gradient(circle at 76% 42%, rgba(61, 214, 198, 0.14), transparent 28%);
+    radial-gradient(
+      circle at 76% 42%,
+      rgba(61, 214, 198, 0.14),
+      transparent 28%
+    );
   opacity: 0.2;
 }
 
 body.ux-enhanced.theme-light .hero-panel.locations-hero::after {
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 24%),
-    radial-gradient(circle at 76% 42%, rgba(33, 150, 243, 0.12), transparent 30%);
+    radial-gradient(
+      circle at 76% 42%,
+      rgba(33, 150, 243, 0.12),
+      transparent 30%
+    );
   opacity: 0.18;
 }
 
@@ -397,8 +413,7 @@ body.ux-enhanced .disabled-action:hover {
 
 .theme-light .permission-dialog-panel {
   background:
-    linear-gradient(135deg, rgba(79, 199, 177, 0.18), transparent 42%),
-    #ffffff;
+    linear-gradient(135deg, rgba(79, 199, 177, 0.18), transparent 42%), #ffffff;
 }
 
 body.ux-enhanced :where(a, button):focus-visible {
@@ -434,7 +449,11 @@ body.ux-enhanced .primary-button {
 }
 
 body.ux-enhanced .danger-button {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.18), rgba(239, 68, 68, 0.08));
+  background: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, 0.18),
+    rgba(239, 68, 68, 0.08)
+  );
   color: #fecaca;
   border-color: rgba(239, 68, 68, 0.26);
 }
@@ -790,7 +809,11 @@ body.ux-enhanced .sidebar-summary {
   border-radius: 20px;
   background:
     linear-gradient(145deg, rgba(79, 199, 177, 0.16), transparent 42%),
-    linear-gradient(160deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.045));
+    linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.105),
+      rgba(255, 255, 255, 0.045)
+    );
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 16px 36px rgba(0, 0, 0, 0.14);
@@ -924,7 +947,11 @@ body.ux-enhanced .records-table-wrap.ux-reveal {
   border-radius: var(--ux-radius-lg);
   color: #f8feff;
   background:
-    linear-gradient(135deg, rgba(61, 214, 198, 0.2), rgba(74, 163, 199, 0.08) 42%),
+    linear-gradient(
+      135deg,
+      rgba(61, 214, 198, 0.2),
+      rgba(74, 163, 199, 0.08) 42%
+    ),
     rgba(7, 24, 39, 0.96);
   box-shadow:
     0 24px 60px rgba(0, 8, 15, 0.38),
@@ -991,7 +1018,11 @@ body.ux-enhanced .records-table-wrap.ux-reveal {
 .theme-light .ux-toast {
   color: #092033;
   background:
-    linear-gradient(135deg, rgba(79, 199, 177, 0.22), rgba(74, 163, 199, 0.1) 42%),
+    linear-gradient(
+      135deg,
+      rgba(79, 199, 177, 0.22),
+      rgba(74, 163, 199, 0.1) 42%
+    ),
     rgba(255, 255, 255, 0.98);
   box-shadow:
     0 24px 60px rgba(9, 31, 48, 0.16),

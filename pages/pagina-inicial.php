@@ -42,17 +42,18 @@ $usuarioAdministrador = in_array($tipoUsuario, ["adm", "admin", "administrador"]
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
-  <link rel="stylesheet" href="../css/pagina-base.css?v=20260727-sidebar-layout" />
+  <link rel="stylesheet" href="../css/pagina-base.css?v=20260731-sidebar-compact" />
+  <link rel="stylesheet" href="../css/pagina-inicial.css?v=20260803-operational-home" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
-  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
+  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260803-desktop-density" />
 
-  <script src="../js/animations/efeito-digitacao.js?v=20260630-reduced-motion" defer></script>
+  <script src="../js/animations/efeito-digitacao.js?v=20260803-static-headings" defer></script>
   <script src="../js/ui/feedback-interface.js?v=20260630-reduced-motion" defer></script>
-  <script src="../js/core/armazenamento-local.js?v=20260721-js-structure" defer></script>
-  <script src="../js/animations/entrada-pagina.js?v=20260721-js-structure" defer></script>
-  <script src="../js/ui/menu-lateral.js?v=20260730-sidebar-init" defer></script>
-  <script src="../js/base-interface.js?v=20260730-sidebar-init" defer></script>
+  <script src="../js/core/armazenamento-local.js?v=20260730-sidebar-contract" defer></script>
+  <script src="../js/animations/entrada-pagina.js?v=20260730-sidebar-contract" defer></script>
+  <script src="../js/ui/menu-lateral.js?v=20260731-sidebar-compact" defer></script>
+  <script src="../js/base-interface.js?v=20260730-sidebar-contract" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="../js/ui/widgets-react.js?v=20260626-react-responsive" defer></script>
@@ -97,8 +98,141 @@ $usuarioAdministrador = in_array($tipoUsuario, ["adm", "admin", "administrador"]
           <p>
             Acesse rapidamente o invent&aacute;rio, o dashboard e os fluxos principais do portal.
           </p>
-
         </div>
+      </section>
+
+      <div class="home-shortcuts-layout">
+        <section class="content-card quick-actions-card" aria-labelledby="quickActionsTitle">
+          <header>
+            <div>
+              <p class="section-tag">Acesso direto</p>
+              <h2 id="quickActionsTitle">A&ccedil;&otilde;es r&aacute;pidas</h2>
+              <p>Continue seu trabalho sem precisar procurar no menu.</p>
+            </div>
+          </header>
+
+          <nav class="quick-actions-grid" aria-label="A&ccedil;&otilde;es r&aacute;pidas do sistema">
+            <a class="quick-action-link" href="dashboard.php" data-quick-action="dashboard">
+              <span class="quick-action-icon" aria-hidden="true">
+                <i class="bi bi-bar-chart-line"></i>
+              </span>
+              <span class="quick-action-content">
+                <strong>Abrir dashboard</strong>
+                <small>Acompanhe indicadores e distribui&ccedil;&otilde;es.</small>
+              </span>
+            </a>
+
+            <a class="quick-action-link" href="ativos.php" data-quick-action="inventory">
+              <span class="quick-action-icon" aria-hidden="true">
+                <i class="bi bi-box-seam"></i>
+              </span>
+              <span class="quick-action-content">
+                <strong>Consultar ativos</strong>
+                <small>Pesquise, filtre e exporte o invent&aacute;rio.</small>
+              </span>
+            </a>
+
+            <a class="quick-action-link" href="cadastro-ativos.php" data-quick-action="create">
+              <span class="quick-action-icon" aria-hidden="true">
+                <i class="bi bi-plus-square"></i>
+              </span>
+              <span class="quick-action-content">
+                <strong>Cadastrar ativos</strong>
+                <small>Adicione novos itens ao invent&aacute;rio.</small>
+              </span>
+            </a>
+
+            <a class="quick-action-link" href="configuracoes.php" data-quick-action="settings">
+              <span class="quick-action-icon" aria-hidden="true">
+                <i class="bi bi-gear-wide-connected"></i>
+              </span>
+              <span class="quick-action-content">
+                <strong>Configura&ccedil;&otilde;es</strong>
+                <small>Personalize sua conta e a interface.</small>
+              </span>
+            </a>
+          </nav>
+        </section>
+
+        <nav class="company-access-grid" aria-label="Canais oficiais da TI TECH">
+          <a class="content-card company-access-card" href="https://www.titechsolutions.com.br/" target="_blank"
+            rel="noopener noreferrer" data-company-access="website">
+            <span class="company-access-icon" aria-hidden="true">
+              <i class="bi bi-globe2"></i>
+            </span>
+
+            <span class="company-access-content">
+              <small>Institucional</small>
+              <strong>Site da empresa</strong>
+              <span>Conhe&ccedil;a a TI TECH, seus servi&ccedil;os e suas solu&ccedil;&otilde;es.</span>
+            </span>
+
+            <i class="bi bi-box-arrow-up-right company-access-arrow" aria-hidden="true"></i>
+          </a>
+
+          <a class="content-card company-access-card" href="https://loja.titechsolutions.com.br/" target="_blank"
+            rel="noopener noreferrer" data-company-access="store">
+            <span class="company-access-icon" aria-hidden="true">
+              <i class="bi bi-bag"></i>
+            </span>
+
+            <span class="company-access-content">
+              <small>Produtos</small>
+              <strong>Loja da empresa</strong>
+              <span>Consulte o cat&aacute;logo de equipamentos e tecnologias.</span>
+            </span>
+
+            <i class="bi bi-box-arrow-up-right company-access-arrow" aria-hidden="true"></i>
+          </a>
+        </nav>
+      </div>
+
+      <section class="content-card social-links-card" aria-labelledby="socialLinksTitle">
+        <header class="social-links-header">
+          <div>
+            <p class="section-tag">Conecte-se com a TI TECH</p>
+            <h2 id="socialLinksTitle">Nossas redes sociais</h2>
+          </div>
+          <p>Acompanhe novidades, produtos e conte&uacute;dos da empresa.</p>
+        </header>
+
+        <nav class="social-links-grid" aria-label="Redes sociais da TI TECH">
+          <a class="social-link" href="https://www.linkedin.com/company/titechsolutionss/" target="_blank"
+            rel="noopener noreferrer" aria-label="Acessar o LinkedIn da TI TECH">
+            <span class="social-link-icon" aria-hidden="true">
+              <i class="bi bi-linkedin"></i>
+            </span>
+            <strong>LinkedIn</strong>
+            <i class="bi bi-box-arrow-up-right social-link-arrow" aria-hidden="true"></i>
+          </a>
+
+          <a class="social-link" href="https://www.youtube.com/@titechsolutions_BR" target="_blank"
+            rel="noopener noreferrer" aria-label="Acessar o YouTube da TI TECH">
+            <span class="social-link-icon" aria-hidden="true">
+              <i class="bi bi-youtube"></i>
+            </span>
+            <strong>YouTube</strong>
+            <i class="bi bi-box-arrow-up-right social-link-arrow" aria-hidden="true"></i>
+          </a>
+
+          <a class="social-link" href="https://www.instagram.com/titechsolutions/" target="_blank"
+            rel="noopener noreferrer" aria-label="Acessar o Instagram da TI TECH">
+            <span class="social-link-icon" aria-hidden="true">
+              <i class="bi bi-instagram"></i>
+            </span>
+            <strong>Instagram</strong>
+            <i class="bi bi-box-arrow-up-right social-link-arrow" aria-hidden="true"></i>
+          </a>
+
+          <a class="social-link" href="https://www.facebook.com/titechsolutions/" target="_blank"
+            rel="noopener noreferrer" aria-label="Acessar o Facebook da TI TECH">
+            <span class="social-link-icon" aria-hidden="true">
+              <i class="bi bi-facebook"></i>
+            </span>
+            <strong>Facebook</strong>
+            <i class="bi bi-box-arrow-up-right social-link-arrow" aria-hidden="true"></i>
+          </a>
+        </nav>
       </section>
     </main>
   </div>

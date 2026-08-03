@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// Login em JSON. A tela envia e-mail, senha e tipo de usuario e recebe o destino.
+// Login em JSON. A tela envia e-mail e senha; o perfil vem do cadastro do usuario.
 session_start();
 
 header("Content-Type: application/json; charset=utf-8");
@@ -30,12 +30,6 @@ function campo(string $nome): string
 {
     // Normaliza campos de formulario removendo espacos nas pontas.
     return trim((string)($_POST[$nome] ?? ""));
-}
-
-function tipoUsuarioValido(string $tipoUsuario): bool
-{
-    // Evita que o usuario force outro papel pelo HTML.
-    return in_array($tipoUsuario, ["Colaborador", "Administrador"], true);
 }
 
 function emailCorporativoValido(string $email): bool
@@ -277,10 +271,9 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 // Dados enviados pelo formulario de login.
 $email = campo("email");
 $senha = (string)($_POST["senha"] ?? "");
-$tipoUsuario = campo("tipo_usuario");
 
-if ($email === "" || $senha === "" || $tipoUsuario === "") {
-    responder(false, "Preencha e-mail, senha e tipo de acesso.", 422);
+if ($email === "" || $senha === "") {
+    responder(false, "Preencha e-mail e senha.", 422);
 }
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -289,10 +282,6 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
 if (!emailCorporativoValido($email)) {
     responder(false, "Use um e-mail corporativo autorizado.", 422);
-}
-
-if (!tipoUsuarioValido($tipoUsuario)) {
-    responder(false, "Tipo de acesso invalido.", 422);
 }
 
 try {
@@ -341,11 +330,6 @@ try {
         responder(false, "Conta inativa. Solicite ajuda a um administrador para reativar o acesso.", 403, [
             "reason" => "inactive_account",
         ]);
-    }
-
-    // Confere se o tipo escolhido no login bate com o perfil cadastrado.
-    if ((string)($perfil["tipo_usuario"] ?? "") !== $tipoUsuario) {
-        responder(false, "Tipo de acesso nao autorizado para este usuario.", 403);
     }
 
     if ($senhaPrecisaAtualizar) {

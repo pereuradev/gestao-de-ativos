@@ -24,6 +24,10 @@ function normalizarEscolha(valor, valoresPermitidos, padrao) {
 }
 
 Object.assign(window, {
+  obterItemSalvo,
+  definirItemSalvo,
+  normalizarEscolha,
+  // Os aliases antigos preservam páginas que ainda não foram migradas.
   getSavedItem: obterItemSalvo,
   setSavedItem: definirItemSalvo,
   normalizeChoice: normalizarEscolha,

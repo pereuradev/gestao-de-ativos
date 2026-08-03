@@ -74,6 +74,26 @@ function iniciaisFuncionario(string $nome): string
   return $iniciais !== "" ? $iniciais : "TT";
 }
 
+function urlFotoCrachaFuncionario(?string $nomeArquivo): string
+{
+  $nomeArquivo = trim((string) $nomeArquivo);
+
+  if (!preg_match('/^cracha-[A-Za-z0-9_-]+-[a-f0-9]{16}\.(jpg|png|webp)$/', $nomeArquivo)) {
+    return "";
+  }
+
+  $caminhoArquivo = dirname(__DIR__)
+    . DIRECTORY_SEPARATOR . "uploads"
+    . DIRECTORY_SEPARATOR . "crachas"
+    . DIRECTORY_SEPARATOR . $nomeArquivo;
+
+  if (!is_file($caminhoArquivo)) {
+    return "";
+  }
+
+  return "../uploads/crachas/" . rawurlencode($nomeArquivo);
+}
+
 function statusClasse(string $status): string
 {
   $statusNormalizado = strtolower(trim($status));
@@ -90,6 +110,7 @@ function statusClasse(string $status): string
 }
 
 $usuario = $_SESSION["usuario"];
+$emailUsuarioAtual = trim((string) ($usuario["email"] ?? ""));
 
 $funcionarios = [];
 $totalFuncionarios = 0;
@@ -111,8 +132,13 @@ try {
             count(*) filter (where lower(status) = 'inativo')::int as inativos,
             max(greatest(criado_em, atualizado_em)) as ultimo_movimento
           from public.perfis_usuarios
+         where :email_usuario_filtro = ''
+            or lower(btrim(coalesce(email, ''))) <> lower(btrim(:email_usuario_comparacao))
     ");
-  $resumoStmt->execute();
+  $resumoStmt->execute([
+    ":email_usuario_filtro" => $emailUsuarioAtual,
+    ":email_usuario_comparacao" => $emailUsuarioAtual,
+  ]);
   $resumo = $resumoStmt->fetch() ?: [];
 
   $totalFuncionarios = (int) ($resumo["total"] ?? 0);
@@ -132,16 +158,22 @@ try {
             cpf,
             celular,
             data_nascimento,
+            foto_cracha,
             status,
             criado_em,
             atualizado_em
           from public.perfis_usuarios
+         where :email_usuario_filtro = ''
+            or lower(btrim(coalesce(email, ''))) <> lower(btrim(:email_usuario_comparacao))
       order by
             case when lower(status) = 'ativo' then 0 else 1 end,
             greatest(criado_em, atualizado_em) desc,
             nome_completo asc
     ");
-  $funcionariosStmt->execute();
+  $funcionariosStmt->execute([
+    ":email_usuario_filtro" => $emailUsuarioAtual,
+    ":email_usuario_comparacao" => $emailUsuarioAtual,
+  ]);
   $funcionarios = $funcionariosStmt->fetchAll();
 } catch (Throwable) {
   $erroBanco = "Nao foi possivel carregar os funcionarios agora.";
@@ -165,19 +197,19 @@ try {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <!-- Estilos compartilhados e regras específicas deste fluxo. -->
-  <link rel="stylesheet" href="../css/pagina-base.css?v=20260720-sidebar-role-accent" />
-  <link rel="stylesheet" href="../css/funcionarios.css?v=20260706-employee-edit-page" />
+  <link rel="stylesheet" href="../css/pagina-base.css?v=20260731-sidebar-compact" />
+  <link rel="stylesheet" href="../css/funcionarios.css?v=20260731-employee-edit-photos" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
-  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
+  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260803-desktop-density" />
   <!-- Scripts da interface; os módulos compartilhados devem carregar antes do script da página. -->
-  <script src="../js/animations/efeito-digitacao.js?v=20260630-reduced-motion" defer></script>
+  <script src="../js/animations/efeito-digitacao.js?v=20260803-static-headings" defer></script>
   <script src="../js/ui/feedback-interface.js?v=20260630-reduced-motion" defer></script>
-  <script src="../js/core/armazenamento-local.js?v=20260721-js-structure" defer></script>
-  <script src="../js/animations/entrada-pagina.js?v=20260721-js-structure" defer></script>
-  <script src="../js/ui/menu-lateral.js?v=20260721-js-structure" defer></script>
-  <script src="../js/base-interface.js?v=20260724-custom-accent" defer></script>
-  <script src="../js/pages/edicao-funcionarios.js?v=20260706-employee-edit-page" defer></script>
+  <script src="../js/core/armazenamento-local.js?v=20260730-sidebar-contract" defer></script>
+  <script src="../js/animations/entrada-pagina.js?v=20260730-sidebar-contract" defer></script>
+  <script src="../js/ui/menu-lateral.js?v=20260731-sidebar-compact" defer></script>
+  <script src="../js/base-interface.js?v=20260730-sidebar-contract" defer></script>
+  <script src="../js/pages/edicao-funcionarios.js?v=20260731-employee-edit-photos" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="../js/ui/widgets-react.js?v=20260626-react-responsive" defer></script>
@@ -338,6 +370,8 @@ try {
             $atualizacaoFuncionario = formatarData((string) ($funcionario["atualizado_em"] ?? ""));
             $nascimentoValor = (string) ($funcionario["data_nascimento"] ?? "");
             $nascimentoFuncionario = formatarDataCurta($nascimentoValor);
+            $iniciaisFuncionario = iniciaisFuncionario($nomeFuncionario);
+            $fotoFuncionarioUrl = urlFotoCrachaFuncionario((string) ($funcionario["foto_cracha"] ?? ""));
             $searchText = implode(" ", [
               $nomeFuncionario,
               $emailFuncionario,
@@ -360,9 +394,17 @@ try {
               data-birth="<?php echo e($nascimentoFuncionario); ?>" data-birth-value="<?php echo e($nascimentoValor); ?>"
               data-status-label="<?php echo e($status); ?>"
               data-created="<?php echo e($cadastroFuncionario); ?>" data-updated="<?php echo e($atualizacaoFuncionario); ?>"
-              data-initials="<?php echo e(iniciaisFuncionario($nomeFuncionario)); ?>">
+              data-initials="<?php echo e($iniciaisFuncionario); ?>" data-photo-url="<?php echo e($fotoFuncionarioUrl); ?>">
               <span class="employee-card-header">
-                <span class="employee-card-avatar" aria-hidden="true"><?php echo e(iniciaisFuncionario($nomeFuncionario)); ?></span>
+                <span class="employee-card-avatar<?php echo $fotoFuncionarioUrl !== "" ? " has-photo" : ""; ?>"
+                  aria-hidden="true">
+                  <?php if ($fotoFuncionarioUrl !== ""): ?>
+                    <img src="<?php echo e($fotoFuncionarioUrl); ?>" alt="" loading="lazy" decoding="async"
+                      data-employee-photo data-fallback-initials="<?php echo e($iniciaisFuncionario); ?>" />
+                  <?php else: ?>
+                    <?php echo e($iniciaisFuncionario); ?>
+                  <?php endif; ?>
+                </span>
                 <span class="employee-card-identity">
                   <strong><?php echo e($nomeFuncionario); ?></strong>
                   <small><?php echo e($emailFuncionario); ?></small>

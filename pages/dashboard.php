@@ -32,18 +32,18 @@ exigirPermissaoPagina("visualizar_dashboard", "Dashboard");
     rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
-  <link rel="stylesheet" href="../css/pagina-base.css?v=20260727-sidebar-layout" />
+  <link rel="stylesheet" href="../css/pagina-base.css?v=20260731-sidebar-compact" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
   <link rel="stylesheet" href="../css/dashboard-produtos.css?v=20260728-evolucao-ativos" />
-  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
+  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260803-desktop-density" />
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
   <script src="../js/ui/feedback-interface.js?v=20260630-reduced-motion" defer></script>
-  <script src="../js/core/armazenamento-local.js?v=20260721-js-structure" defer></script>
-  <script src="../js/animations/entrada-pagina.js?v=20260721-js-structure" defer></script>
-  <script src="../js/ui/menu-lateral.js?v=20260721-js-structure" defer></script>
-  <script src="../js/base-interface.js?v=20260724-custom-accent" defer></script>
-  <script src="../js/pages/dashboard-produtos.js?v=20260728-evolucao-ativos" defer></script>
+  <script src="../js/core/armazenamento-local.js?v=20260730-sidebar-contract" defer></script>
+  <script src="../js/animations/entrada-pagina.js?v=20260730-sidebar-contract" defer></script>
+  <script src="../js/ui/menu-lateral.js?v=20260731-sidebar-compact" defer></script>
+  <script src="../js/base-interface.js?v=20260730-sidebar-contract" defer></script>
+  <script src="../js/pages/dashboard-produtos.js?v=20260803-dashboard-timeout" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="../js/ui/widgets-react.js?v=20260626-react-responsive" defer></script>

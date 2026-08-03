@@ -118,21 +118,21 @@ try {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <!-- Estilos compartilhados e regras específicas deste fluxo. -->
-  <link rel="stylesheet" href="../css/pagina-base.css?v=20260701-admin-employee-register-v2" />
+  <link rel="stylesheet" href="../css/pagina-base.css?v=20260731-sidebar-compact" />
   <link rel="stylesheet" href="../css/cadastro-ativos.css?v=20260701-admin-employee-register-v2" />
   <link rel="stylesheet" href="../css/cadastro-funcionarios.css?v=20260702-employee-hero-gradient" />
-  <link rel="stylesheet" href="../css/cadastro-grupos.css?v=20260707-permission-icons" />
+  <link rel="stylesheet" href="../css/cadastro-grupos.css?v=20260803-permission-presets" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260701-admin-employee-register-v2" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
-  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
+  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260803-desktop-density" />
   <!-- Scripts da interface; os módulos compartilhados devem carregar antes do script da página. -->
-  <script src="../js/animations/efeito-digitacao.js?v=20260701-admin-employee-register-v2" defer></script>
+  <script src="../js/animations/efeito-digitacao.js?v=20260803-static-headings" defer></script>
   <script src="../js/ui/feedback-interface.js?v=20260701-admin-employee-register-v2" defer></script>
-  <script src="../js/core/armazenamento-local.js?v=20260721-js-structure" defer></script>
-  <script src="../js/animations/entrada-pagina.js?v=20260721-js-structure" defer></script>
-  <script src="../js/ui/menu-lateral.js?v=20260721-js-structure" defer></script>
-  <script src="../js/base-interface.js?v=20260724-custom-accent" defer></script>
-  <script src="../js/pages/cadastro-grupos.js?v=20260702-groups-page" defer></script>
+  <script src="../js/core/armazenamento-local.js?v=20260730-sidebar-contract" defer></script>
+  <script src="../js/animations/entrada-pagina.js?v=20260730-sidebar-contract" defer></script>
+  <script src="../js/ui/menu-lateral.js?v=20260731-sidebar-compact" defer></script>
+  <script src="../js/base-interface.js?v=20260730-sidebar-contract" defer></script>
+  <script src="../js/pages/cadastro-grupos.js?v=20260803-permission-presets" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="../js/ui/widgets-react.js?v=20260626-react-responsive" defer></script>
@@ -308,9 +308,27 @@ try {
                 </div>
               </div>
 
+              <div class="group-selection-summary wide-field" role="status" aria-live="polite">
+                <span><i class="bi bi-people" aria-hidden="true"></i> <strong id="groupMembersSelected">0 funcion&aacute;rios</strong></span>
+                <span><i class="bi bi-shield-check" aria-hidden="true"></i> <strong id="groupPermissionsSelected">0 permiss&otilde;es</strong></span>
+              </div>
+
               <div class="form-section-title secondary-section">
                 <i class="bi bi-shield-check"></i>
                 <span>Permissoes do grupo</span>
+              </div>
+
+              <div class="permission-presets wide-field" aria-label="Modelos rapidos de permissoes">
+                <div>
+                  <strong>Comece por um modelo</strong>
+                  <small>Voc&ecirc; ainda pode ajustar cada permiss&atilde;o abaixo.</small>
+                </div>
+                <div class="permission-preset-actions">
+                  <button type="button" data-permission-preset="view">Somente consulta</button>
+                  <button type="button" data-permission-preset="operate">Operacao</button>
+                  <button type="button" data-permission-preset="full">Acesso completo</button>
+                  <button type="button" data-permission-preset="clear">Limpar</button>
+                </div>
               </div>
 
               <div class="permission-sections wide-field">

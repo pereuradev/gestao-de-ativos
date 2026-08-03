@@ -6,6 +6,7 @@
   const CHAVE_ARMAZENAMENTO_TEMA = "titech-theme";
   const CHAVE_ARMAZENAMENTO_DESTAQUE = "titech-accent";
   const TRANSICAO_TEMA_MS = 660;
+  const TEMPO_LIMITE_PAINEL_MS = 12000;
 
   // Paletas aceitas pela tela de configuracoes. O dashboard usa as mesmas variaveis
   // para graficos, botoes e estados visuais.
@@ -58,12 +59,8 @@
     marcas_filtro: [],
     locais_filtro: [],
     status: [],
-    status_por_categoria: {},
     marcas: [],
-    marcas_por_categoria: {},
     locais: [],
-    locais_por_categoria: {},
-    evolucao: [],
   };
 
   // Cada opcao do select "Dados do grafico" aponta para uma lista diferente do JSON.
@@ -96,13 +93,6 @@
       totalLabel: "Ativos analisados",
       dataKey: "locais",
     },
-    evolucao: {
-      title: "Evolução de cadastros",
-      description:
-        "Quantidade de ativos cadastrados por dia no período selecionado.",
-      totalLabel: "Novos cadastros",
-      dataKey: "evolucao",
-    },
   };
 
   const PERIODOS_EVOLUCAO_ATIVOS = {
@@ -125,7 +115,6 @@
   };
 
   let dadosPainel = DADOS_PAINEL_PADRAO;
-  let dadosBasePainel = DADOS_PAINEL_PADRAO;
   let graficoProdutos = null;
   let graficoEvolucaoAtivos = null;
   let temporizadorTema = null;
@@ -149,7 +138,6 @@
     localId: "todos",
     metrica: "categorias",
     tipoGrafico: "bar",
-    periodo: "30",
   };
 
   document.addEventListener(
@@ -370,7 +358,6 @@
     const filtroLocal = document.getElementById("locationFilter");
     const filtroMetrica = document.getElementById("metricFilter");
     const filtroTipoGrafico = document.getElementById("chartTypeFilter");
-    const filtroPeriodo = document.getElementById("periodFilter");
     const botaoAtualizar = document.getElementById("refreshDashboard");
 
     filtroCategoria?.addEventListener("change", () => {
@@ -396,31 +383,12 @@
 
     filtroMetrica?.addEventListener("change", () => {
       definirMetricaPainel(filtroMetrica.value || "categorias");
-
-      // Evolucao depende do periodo selecionado; por isso recarrega quando essa metrica entra.
-      if (estado.metrica === "evolucao") {
-        carregarProdutosPainel();
-        return;
-      }
-
       renderizarGraficoAtual();
     });
 
     filtroTipoGrafico?.addEventListener("change", () => {
       estado.tipoGrafico = filtroTipoGrafico.value || "bar";
       renderizarGraficoAtual();
-    });
-
-    filtroPeriodo?.addEventListener("change", () => {
-      estado.periodo = filtroPeriodo.value || "30";
-
-      // O periodo so muda dados quando a metrica atual e evolucao.
-      if (estado.metrica === "evolucao") {
-        carregarProdutosPainel();
-        return;
-      }
-
-      definirStatus("Periodo atualizado.", "A evolucao usara esse filtro.");
     });
 
     botaoAtualizar?.addEventListener("click", () => {
@@ -485,65 +453,12 @@
     }
   }
 
-  function aplicarSelecaoCategoriaLocal() {
-    // Se ainda nao temos a carga completa, deixamos o backend buscar os dados.
-    if (!dadosBasePainel.ok) {
-      return false;
-    }
-
-    if (estado.categoriaId === "todos") {
-      // Voltar para "Todos" e instantaneo porque guardamos a resposta completa.
-      dadosPainel = dadosBasePainel;
-      renderizarGraficoAtual();
-      definirStatus("Dados exibidos.", "Filtro removido na tela.");
-      return true;
-    }
-
-    const categoriaSelecionada = dadosBasePainel.categorias.find(
-      (categoria) => categoria.id === estado.categoriaId,
-    );
-
-    if (!categoriaSelecionada) {
-      return false;
-    }
-
-    const marcasCategoria =
-      dadosBasePainel.marcas_por_categoria?.[estado.categoriaId] || [];
-    const statusPorCategoria =
-      dadosBasePainel.status_por_categoria?.[estado.categoriaId] || [];
-    const locaisCategoria =
-      dadosBasePainel.locais_por_categoria?.[estado.categoriaId] || [];
-
-    dadosPainel = {
-      // Preserva os dados gerais, mas troca as listas que dependem do tipo selecionado.
-      ...dadosBasePainel,
-      resumo: {
-        ...dadosBasePainel.resumo,
-        total_filtrado: categoriaSelecionada.total,
-      },
-      categoria_selecionada: {
-        id: categoriaSelecionada.id,
-        nome: categoriaSelecionada.nome,
-        total: categoriaSelecionada.total,
-        percentual: categoriaSelecionada.percentual,
-      },
-      status: statusPorCategoria,
-      marcas: marcasCategoria,
-      locais: locaisCategoria,
-    };
-
-    renderizarGraficoAtual();
-    definirStatus("Dados exibidos.", "Filtro aplicado na tela.");
-
-    return true;
-  }
-
   async function carregarProdutosPainel(
     exibirCarregamento = true,
     opcoes = {},
   ) {
-    // Cache por categoria e periodo: evita buscar novamente dados que acabaram de ser carregados.
-    const chaveCache = `${estado.categoriaId}|${estado.marca}|${estado.localId}|${estado.periodo}`;
+    // Cache pelos filtros operacionais evita repetir uma consulta que acabou de concluir.
+    const chaveCache = `${estado.categoriaId}|${estado.marca}|${estado.localId}`;
     const forcarAtualizacao = Boolean(opcoes.forceRefresh);
 
     if (forcarAtualizacao) {
@@ -558,6 +473,12 @@
 
     controladorRequisicaoPainel?.abort();
     controladorRequisicaoPainel = new AbortController();
+    const controladorAtual = controladorRequisicaoPainel;
+    let tempoLimiteEsgotado = false;
+    const temporizadorLimite = window.setTimeout(() => {
+      tempoLimiteEsgotado = true;
+      controladorAtual.abort();
+    }, TEMPO_LIMITE_PAINEL_MS);
 
     // ID incremental evita que uma resposta antiga sobrescreva uma selecao mais recente.
     const idRequisicao = ++idRequisicaoPainel;
@@ -571,7 +492,6 @@
       categoria_id: estado.categoriaId,
       marca: estado.marca,
       local_id: estado.localId,
-      periodo: estado.periodo,
     });
 
     try {
@@ -581,7 +501,7 @@
           headers: {
             Accept: "application/json",
           },
-          signal: controladorRequisicaoPainel.signal,
+          signal: controladorAtual.signal,
         },
       );
 
@@ -612,7 +532,7 @@
         formatarUltimaAtualizacao(dadosPainel.gerado_em),
       );
     } catch (erro) {
-      if (erro.name === "AbortError") {
+      if (erro.name === "AbortError" && !tempoLimiteEsgotado) {
         return;
       }
 
@@ -621,13 +541,14 @@
       }
 
       console.error(erro);
-      dadosPainel = DADOS_PAINEL_PADRAO;
-      renderizarGraficoAtual();
       definirStatus(
-        "Não foi possível carregar os dados.",
-        "Confira a conexão com o banco e tente novamente.",
+        tempoLimiteEsgotado
+          ? "O resumo demorou mais que o esperado."
+          : "Não foi possível atualizar o resumo.",
+        "A evolução segue disponível. Use Atualizar para tentar novamente.",
       );
     } finally {
+      window.clearTimeout(temporizadorLimite);
       if (idRequisicao === idRequisicaoPainel) {
         controladorRequisicaoPainel = null;
         definirCarregandoPainel(false);
@@ -755,15 +676,6 @@
     dadosPainel = normalizarDadosPainel(dadosResposta);
     sincronizarEstadoComDadosPainel();
 
-    if (
-      dadosPainel.categoria_filtro === "todos" &&
-      dadosPainel.marca_filtro === "todos" &&
-      dadosPainel.local_filtro === "todos"
-    ) {
-      // A resposta geral vira a base para filtros instantaneos por categoria.
-      dadosBasePainel = dadosPainel;
-    }
-
     preencherFiltroCategoria(dadosPainel.categorias);
     preencherFiltroMarca(dadosPainel.marcas_filtro);
     preencherFiltroLocal(dadosPainel.locais_filtro);
@@ -789,7 +701,6 @@
     return {
       ok: Boolean(dados.ok),
       gerado_em: dados.gerado_em || null,
-      periodo: normalizarNumero(dados.periodo) || Number(estado.periodo),
       categoria_filtro: String(
         dados.categoria_filtro || estado.categoriaId || "todos",
       ),
@@ -811,18 +722,8 @@
       marcas_filtro: normalizarOpcoesFiltro(dados.marcas_filtro),
       locais_filtro: normalizarOpcoesFiltro(dados.locais_filtro),
       status: normalizarLinhasDados(dados.status),
-      status_por_categoria: normalizarLinhasPorCategoria(
-        dados.status_por_categoria,
-      ),
       marcas: normalizarLinhasDados(dados.marcas),
-      marcas_por_categoria: normalizarLinhasPorCategoria(
-        dados.marcas_por_categoria,
-      ),
       locais: normalizarLinhasDados(dados.locais),
-      locais_por_categoria: normalizarLinhasPorCategoria(
-        dados.locais_por_categoria,
-      ),
-      evolucao: normalizarLinhasDados(dados.evolucao),
     };
   }
 
@@ -830,7 +731,6 @@
     estado.categoriaId = dadosPainel.categoria_filtro || "todos";
     estado.marca = dadosPainel.marca_filtro || "todos";
     estado.localId = dadosPainel.local_filtro || "todos";
-    estado.periodo = String(dadosPainel.periodo || estado.periodo || "30");
   }
 
   function normalizarOpcoesFiltro(linhas) {
@@ -847,21 +747,6 @@
       .filter(
         (linha) => linha.id !== "" && linha.nome !== "" && linha.total > 0,
       );
-  }
-
-  function normalizarLinhasPorCategoria(grupos) {
-    // Transforma objetos de grupos em listas normalizadas, mantendo o id da categoria como chave.
-    if (!grupos || typeof grupos !== "object" || Array.isArray(grupos)) {
-      return {};
-    }
-
-    return Object.entries(grupos).reduce(
-      (normalizado, [idCategoria, linhas]) => {
-        normalizado[String(idCategoria)] = normalizarLinhasDados(linhas);
-        return normalizado;
-      },
-      {},
-    );
   }
 
   function normalizarLinhasDados(linhas, manterId = false) {

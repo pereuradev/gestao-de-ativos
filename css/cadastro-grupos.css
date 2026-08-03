@@ -247,6 +247,78 @@
   gap: 12px;
 }
 
+.group-selection-summary {
+  padding: 12px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  border: 1px solid color-mix(in srgb, var(--group-accent) 24%, var(--asset-border));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--group-accent) 8%, transparent);
+}
+
+.group-selection-summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--asset-muted);
+}
+
+.group-selection-summary i,
+.group-selection-summary strong {
+  color: var(--group-accent);
+}
+
+.permission-presets {
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--asset-border);
+  border-radius: 18px;
+  background: var(--asset-field-bg);
+}
+
+.permission-presets > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.permission-presets strong {
+  color: var(--asset-text);
+}
+
+.permission-presets small {
+  color: var(--asset-muted);
+}
+
+.permission-preset-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.permission-preset-actions button {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--group-accent) 34%, var(--asset-border));
+  border-radius: 12px;
+  color: var(--asset-text);
+  background: color-mix(in srgb, var(--group-accent) 9%, transparent);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.permission-preset-actions button:hover,
+.permission-preset-actions button:focus-visible {
+  border-color: var(--group-accent);
+  background: color-mix(in srgb, var(--group-accent) 17%, transparent);
+}
+
 /* Permissões organizadas por área para reduzir a carga visual. */
 .permission-sections {
   display: grid;
@@ -569,6 +641,16 @@
   .group-selector-toolbar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .permission-presets {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .permission-preset-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 
   .group-selector-toolbar .filter-clear-button {

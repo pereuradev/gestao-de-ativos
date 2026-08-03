@@ -10,8 +10,15 @@ function inicializarPagina() {
   configurarBarraLateral();
   configurarGruposNavegacao();
   configurarFiltrosFuncionario();
+  configurarFotosFuncionarios();
   configurarCartoesFuncionario();
   configurarModalFuncionario();
+}
+
+function configurarFotosFuncionarios() {
+  document.querySelectorAll("[data-employee-photo]").forEach((imagem) => {
+    imagem.addEventListener("error", () => exibirIniciaisNoAvatar(imagem), { once: true });
+  });
 }
 
 function configurarFiltrosFuncionario() {
@@ -104,7 +111,11 @@ function abrirModalFuncionario(cartao) {
   }
 
   modal.dataset.lastTriggerId = cartao.dataset.email || "";
-  atualizarTextoFuncionario("employeeModalInitials", cartao.dataset.initials || "TT");
+  atualizarAvatarFuncionario(
+    "employeeModalInitials",
+    cartao.dataset.photoUrl || "",
+    cartao.dataset.initials || "TT",
+  );
   atualizarTextoFuncionario("employeeModalTitle", cartao.dataset.name || "Funcionario");
   atualizarTextoFuncionario("employeeModalEmail", cartao.dataset.email || "--");
   atualizarTextoFuncionario("employeeModalRole", cartao.dataset.role || "--");
@@ -121,6 +132,41 @@ function abrirModalFuncionario(cartao) {
   window.titechRememberDialogTrigger?.();
   modal.hidden = false;
   modal.querySelector("[data-close-employee-modal]")?.focus();
+}
+
+function atualizarAvatarFuncionario(id, enderecoFoto, iniciais) {
+  const avatar = document.getElementById(id);
+
+  if (!avatar) {
+    return;
+  }
+
+  avatar.textContent = "";
+  avatar.classList.toggle("has-photo", Boolean(enderecoFoto));
+
+  if (!enderecoFoto) {
+    avatar.textContent = iniciais;
+    return;
+  }
+
+  const imagem = document.createElement("img");
+  imagem.src = enderecoFoto;
+  imagem.alt = "";
+  imagem.decoding = "async";
+  imagem.dataset.fallbackInitials = iniciais;
+  imagem.addEventListener("error", () => exibirIniciaisNoAvatar(imagem), { once: true });
+  avatar.appendChild(imagem);
+}
+
+function exibirIniciaisNoAvatar(imagem) {
+  const avatar = imagem.parentElement;
+
+  if (!avatar) {
+    return;
+  }
+
+  avatar.classList.remove("has-photo");
+  avatar.textContent = imagem.dataset.fallbackInitials || "TT";
 }
 
 function fecharModalFuncionario() {

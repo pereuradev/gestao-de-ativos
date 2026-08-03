@@ -49,12 +49,12 @@ $ultimosAtivos = [];
 $totalAtivos = 0;
 $ativosDisponiveis = 0;
 $erroBanco = "";
-$statusPadrao = "DisponÃƒÂ­vel";
+$statusPadrao = "Disponível";
 $statusOptions = [
-  "DisponÃƒÂ­vel",
+  "Disponível",
   "Em uso",
-  "HomologaÃƒÂ§ÃƒÂ£o",
-  "ManutenÃƒÂ§ÃƒÂ£o",
+  "Homologação",
+  "Manutenção",
 ];
 
 try {
@@ -143,19 +143,19 @@ try {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <!-- Estilos compartilhados e regras específicas deste fluxo. -->
-  <link rel="stylesheet" href="../css/pagina-base.css?v=20260720-sidebar-role-accent" />
-  <link rel="stylesheet" href="../css/cadastro-ativos.css?v=20260630-clean-form-card" />
+  <link rel="stylesheet" href="../css/pagina-base.css?v=20260731-sidebar-compact" />
+  <link rel="stylesheet" href="../css/cadastro-ativos.css?v=20260730-multiplos-sns" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
-  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260626-react-responsive" />
+  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260803-desktop-density" />
   <!-- Scripts da interface; os módulos compartilhados devem carregar antes do script da página. -->
-  <script src="../js/animations/efeito-digitacao.js?v=20260630-reduced-motion" defer></script>
+  <script src="../js/animations/efeito-digitacao.js?v=20260803-static-headings" defer></script>
   <script src="../js/ui/feedback-interface.js?v=20260630-reduced-motion" defer></script>
-  <script src="../js/core/armazenamento-local.js?v=20260721-js-structure" defer></script>
-  <script src="../js/animations/entrada-pagina.js?v=20260721-js-structure" defer></script>
-  <script src="../js/ui/menu-lateral.js?v=20260721-js-structure" defer></script>
-  <script src="../js/base-interface.js?v=20260724-custom-accent" defer></script>
-  <script src="../js/pages/cadastro-ativos.js?v=20260702-confirm-dialogs" defer></script>
+  <script src="../js/core/armazenamento-local.js?v=20260730-sidebar-contract" defer></script>
+  <script src="../js/animations/entrada-pagina.js?v=20260730-sidebar-contract" defer></script>
+  <script src="../js/ui/menu-lateral.js?v=20260731-sidebar-compact" defer></script>
+  <script src="../js/base-interface.js?v=20260730-sidebar-contract" defer></script>
+  <script src="../js/pages/cadastro-ativos.js?v=20260730-multiplos-sns" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="../js/ui/widgets-react.js?v=20260626-react-responsive" defer></script>
@@ -253,7 +253,7 @@ try {
       <?php endif; ?>
 
       <!-- Formulário protegido por CSRF e lista dos ativos cadastrados recentemente. -->
-      <section class="asset-registration-layout" aria-label="Cadastro e ÃƒÂºltimos ativos">
+      <section class="asset-registration-layout" aria-label="Cadastro e ultimos ativos">
         <article class="content-card asset-form-card asset-form-card-enhanced">
           <div class="card-header asset-card-header">
             <div>
@@ -263,14 +263,14 @@ try {
                 rastreabilidade do estoque.</span>
             </div>
 
-            <div class="form-badge" aria-label="Campos obrigatÃƒÂ³rios">
+            <div class="form-badge" aria-label="Campos obrigatorios">
               <i class="bi bi-asterisk"></i>
               Obrigat&oacute;rios
             </div>
           </div>
 
-          <form id="assetForm" class="asset-form enhanced-asset-form" action="../Backend/cadastrar-ativo.php" method="post"
-            novalidate>
+          <form id="assetForm" class="asset-form enhanced-asset-form" action="../Backend/cadastrar-ativo.php"
+            method="post" novalidate>
             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
 
             <div class="asset-form-grid">
@@ -380,7 +380,8 @@ try {
                   </label>
                 </div>
 
-                <small class="field-hint">A escolha controla quais identificadores aparecem e ser&atilde;o salvos.</small>
+                <small class="field-hint">A escolha controla quais identificadores aparecem e ser&atilde;o
+                  salvos.</small>
               </fieldset>
 
               <label class="asset-field">
@@ -406,19 +407,20 @@ try {
                 <small class="field-hint">Pode se repetir entre unidades do mesmo modelo.</small>
               </label>
 
-              <label class="asset-field pn-quantity-field" data-pn-quantity-field hidden>
+              <label class="asset-field asset-quantity-field" data-quantity-field hidden>
                 <span>Quantidade</span>
                 <div class="quantity-stepper" data-quantity-stepper>
                   <button type="button" data-quantity-decrement aria-label="Diminuir quantidade">
                     <i class="bi bi-dash-lg" aria-hidden="true"></i>
                   </button>
-                  <input id="pnQuantity" name="quantidade" type="number" value="1" min="1" max="100" inputmode="numeric"
-                    aria-label="Quantidade de ativos com este PN" data-quantity-input disabled />
+                  <input id="assetQuantity" name="quantidade" type="number" value="1" min="1" max="100" inputmode="numeric"
+                    aria-label="Quantidade de ativos a cadastrar" data-quantity-input disabled />
                   <button type="button" data-quantity-increment aria-label="Aumentar quantidade">
                     <i class="bi bi-plus-lg" aria-hidden="true"></i>
                   </button>
                 </div>
-                <small class="field-hint">Usado apenas em Somente PN; cada unidade ser&aacute; cadastrada separadamente.</small>
+                <small id="assetQuantityHint" class="field-hint" data-quantity-hint>Cada unidade ser&aacute; cadastrada
+                  separadamente.</small>
               </label>
 
               <label class="asset-field" data-traceability-field="sn" hidden>
@@ -426,7 +428,7 @@ try {
                 <div class="input-shell">
                   <i class="bi bi-123"></i>
                   <input name="numero_serie" type="text" placeholder="Serial do equipamento" autocomplete="off"
-                    data-traceability-input="sn" disabled />
+                    maxlength="120" data-traceability-input="sn" disabled />
                 </div>
               </label>
 
@@ -471,6 +473,51 @@ try {
               </button>
             </div>
           </form>
+
+          <dialog id="serialNumbersDialog" class="serial-numbers-dialog"
+            aria-labelledby="serialNumbersDialogTitle" aria-describedby="serialNumbersDialogSummary">
+            <form class="serial-numbers-modal" method="dialog" data-serial-numbers-form novalidate>
+              <header class="serial-numbers-header">
+                <div class="serial-numbers-heading">
+                  <span class="serial-numbers-icon" aria-hidden="true">
+                    <i class="bi bi-upc-scan"></i>
+                  </span>
+
+                  <div>
+                    <p class="section-tag">PN e SN</p>
+                    <h3 id="serialNumbersDialogTitle">Informe os n&uacute;meros de s&eacute;rie</h3>
+                    <p id="serialNumbersDialogSummary">Preencha um SN para cada unidade.</p>
+                  </div>
+                </div>
+
+                <button class="serial-numbers-close" type="button" data-serial-numbers-close
+                  aria-label="Fechar preenchimento dos números de série">
+                  <i class="bi bi-x-lg" aria-hidden="true"></i>
+                </button>
+              </header>
+
+              <div class="serial-numbers-status" aria-live="polite">
+                <i class="bi bi-boxes" aria-hidden="true"></i>
+                <span data-serial-numbers-counter>0 unidades</span>
+              </div>
+
+              <div id="serialNumbersFields" class="serial-numbers-fields" data-serial-numbers-fields></div>
+
+              <p id="serialNumbersError" class="serial-numbers-error" role="alert" data-serial-numbers-error hidden></p>
+
+              <footer class="serial-numbers-actions">
+                <button class="form-action-button secondary-button" type="button" data-serial-numbers-cancel>
+                  <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                  <span>Voltar</span>
+                </button>
+
+                <button class="form-action-button success-button" type="submit">
+                  <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                  <span>Usar estes SNs</span>
+                </button>
+              </footer>
+            </form>
+          </dialog>
         </article>
 
         <article class="content-card recent-assets-card">

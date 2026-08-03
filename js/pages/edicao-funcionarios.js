@@ -12,8 +12,15 @@ function inicializarPaginaEdicaoFuncionario() {
   configurarBarraLateral();
   configurarGruposNavegacao();
   configurarFiltrosFuncionario();
+  configurarFotosFuncionarios();
   configurarCartoesFuncionario();
   configurarModalEdicaoFuncionario();
+}
+
+function configurarFotosFuncionarios() {
+  document.querySelectorAll("[data-employee-photo]").forEach((imagem) => {
+    imagem.addEventListener("error", () => exibirIniciaisNoAvatar(imagem), { once: true });
+  });
 }
 
 function configurarFiltrosFuncionario() {
@@ -112,7 +119,11 @@ function abrirModalEdicaoFuncionario(cartao) {
   definirValorFuncionario("editEmployeeCpf", cartao.dataset.cpf || "");
   definirValorFuncionario("editEmployeePhone", cartao.dataset.phone || "");
   definirValorFuncionario("editEmployeeBirth", cartao.dataset.birthValue || "");
-  atualizarTextoFuncionario("employeeEditInitials", cartao.dataset.initials || "TT");
+  atualizarAvatarFuncionario(
+    document.getElementById("employeeEditInitials"),
+    cartao.dataset.photoUrl || "",
+    cartao.dataset.initials || "TT",
+  );
   atualizarTextoFuncionario("employeeEditModalTitle", cartao.dataset.name || "Funcionario");
   atualizarTextoFuncionario("employeeEditEmailText", cartao.dataset.email || "--");
   limparMensagemEdicaoFuncionario();
@@ -282,7 +293,11 @@ function atualizarCartaoFuncionario(funcionario) {
     search: busca,
   });
 
-  atualizarTextoFuncionarioNoContexto(cartao, ".employee-card-avatar", iniciais);
+  atualizarAvatarFuncionario(
+    cartao.querySelector(".employee-card-avatar"),
+    cartao.dataset.photoUrl || "",
+    iniciais,
+  );
   atualizarTextoFuncionarioNoContexto(cartao, ".employee-card-identity strong", nome);
   atualizarTextoFuncionarioNoContexto(cartao, ".employee-card-identity small", email);
   atualizarStatusCartaoFuncionario(cartao, status);
@@ -290,6 +305,39 @@ function atualizarCartaoFuncionario(funcionario) {
   atualizarCampoCartaoFuncionario(cartao, "Departamento", departamento);
   atualizarCampoCartaoFuncionario(cartao, "Empresa", empresa);
   atualizarCampoCartaoFuncionario(cartao, "Celular", telefone);
+}
+
+function atualizarAvatarFuncionario(avatar, enderecoFoto, iniciais) {
+  if (!avatar) {
+    return;
+  }
+
+  avatar.textContent = "";
+  avatar.classList.toggle("has-photo", Boolean(enderecoFoto));
+
+  if (!enderecoFoto) {
+    avatar.textContent = iniciais;
+    return;
+  }
+
+  const imagem = document.createElement("img");
+  imagem.src = enderecoFoto;
+  imagem.alt = "";
+  imagem.decoding = "async";
+  imagem.dataset.fallbackInitials = iniciais;
+  imagem.addEventListener("error", () => exibirIniciaisNoAvatar(imagem), { once: true });
+  avatar.appendChild(imagem);
+}
+
+function exibirIniciaisNoAvatar(imagem) {
+  const avatar = imagem.parentElement;
+
+  if (!avatar) {
+    return;
+  }
+
+  avatar.classList.remove("has-photo");
+  avatar.textContent = imagem.dataset.fallbackInitials || "TT";
 }
 
 function atualizarStatusCartaoFuncionario(cartao, status) {

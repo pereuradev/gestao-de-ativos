@@ -262,6 +262,21 @@
   font-weight: 900;
 }
 
+.employee-card-avatar.has-photo,
+.employee-modal-avatar.has-photo {
+  overflow: hidden;
+  padding: 0;
+  background: color-mix(in srgb, var(--surface-soft) 88%, transparent);
+}
+
+.employee-card-avatar.has-photo img,
+.employee-modal-avatar.has-photo img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
 .employee-card-identity {
   min-width: 0;
   display: grid;

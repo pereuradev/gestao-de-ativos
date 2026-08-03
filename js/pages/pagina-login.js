@@ -1,9 +1,5 @@
-// Controla autenticação, tema, perfil lembrado e estados acessíveis da página de login.
+// Controla autenticação, tema, e-mail lembrado e estados acessíveis da página de login.
 // Dados sensíveis não são persistidos; o armazenamento local guarda apenas preferências de interface.
-
-const estado = {
-  role: "Colaborador",
-};
 
 const CHAVES_ARMAZENAMENTO = {
   theme: "titech-theme",
@@ -26,30 +22,14 @@ const CONFIGURACAO = {
   toastDuration: 2200,
   toastRemoveDelay: 250,
   redirectDelay: 450,
-  invalidCredentialsMessage: "Credenciais invalidas. Confira e-mail, senha e perfil selecionado.",
+  invalidCredentialsMessage: "Credenciais invalidas. Confira o e-mail e a senha.",
   serverUnavailableMessage: "Servidor indisponivel. Tente novamente em instantes.",
-};
-
-const CONTEUDO_TIPO_USUARIO = {
-  Administrador: {
-    badge: "Controle total do ambiente",
-    title: "Acesso administrativo",
-    description:
-      "Gerencie usu\u00e1rios, ativos, permiss\u00f5es e configura\u00e7\u00f5es internas do sistema.",
-  },
-  Colaborador: {
-    badge: "Acesso operacional seguro",
-    title: "Acesso colaborador",
-    description:
-      "Consulte informa\u00e7\u00f5es, acompanhe ativos e utilize os recursos liberados para sua fun\u00e7\u00e3o.",
-  },
 };
 
 let temporizadorTema = null;
 let temporizadorNotificacao = null;
 let temporizadorRemoverNotificacao = null;
 let focoUltimoDialogoInativo = null;
-let animandoTrocaTipoUsuario = false;
 
 document.addEventListener("DOMContentLoaded", inicializar);
 
@@ -393,12 +373,13 @@ function definirCarregandoBotaoLogin(botao, estaCarregando) {
   botao.replaceChildren(indicadorCarregamento, texto);
 }
 
-function salvarPreferenciaPerfil(email, tipoUsuario, deveSalvar) {
+function salvarPreferenciaEmail(email, deveSalvar) {
   removerSenhaLegado();
+  // Compatibilidade: descarta a escolha de perfil salva pela versao anterior.
+  removerItemSalvo(CHAVES_ARMAZENAMENTO.profile);
 
   if (deveSalvar) {
     definirItemSalvo(CHAVES_ARMAZENAMENTO.email, email);
-    definirItemSalvo(CHAVES_ARMAZENAMENTO.profile, tipoUsuario);
     return;
   }
 
@@ -507,7 +488,6 @@ async function tratarLogin(evento) {
 
     dadosFormulario.append("email", email);
     dadosFormulario.append("senha", senha);
-    dadosFormulario.append("tipo_usuario", estado.role);
 
     const urlLogin = evento.target.getAttribute("action") || CONFIGURACAO.loginUrl;
     const resposta = await fetch(new URL(urlLogin, window.location.href), {
@@ -528,7 +508,7 @@ async function tratarLogin(evento) {
       throw new Error(obterMensagemFalhaLogin(resposta, dados));
     }
 
-    salvarPreferenciaPerfil(email, estado.role, lembrarPerfil.checked);
+    salvarPreferenciaEmail(email, lembrarPerfil.checked);
     salvarPreferenciasInterfacePeloLogin(dados.preferences);
     exibirNotificacao(dados.message || "Login realizado com sucesso.");
 
@@ -564,15 +544,14 @@ function atualizarStatusLembrarPerfil() {
   if (!lembrarPerfil || !status) return;
 
   status.textContent = lembrarPerfil.checked
-    ? `E-mail e perfil ${estado.role} ser\u00e3o lembrados`
-    : `Perfil selecionado: ${estado.role}`;
+    ? "E-mail salvo neste dispositivo"
+    : "E-mail n\u00e3o salvo neste dispositivo";
 }
 
 function inicializarPerfilSalvo() {
   const lembrarPerfil = obterElemento("rememberProfile");
   const campoEntradaEmail = obterElemento("email");
   const emailSalvo = obterItemSalvo(CHAVES_ARMAZENAMENTO.email);
-  const perfilSalvo = obterItemSalvo(CHAVES_ARMAZENAMENTO.profile);
 
   removerSenhaLegado();
 
@@ -582,20 +561,19 @@ function inicializarPerfilSalvo() {
     campoEntradaEmail.value = emailSalvo;
   }
 
-  lembrarPerfil.checked = Boolean(emailSalvo || perfilSalvo);
+  lembrarPerfil.checked = Boolean(emailSalvo);
   atualizarStatusLembrarPerfil();
 
   lembrarPerfil.addEventListener("change", () => {
-    salvarPreferenciaPerfil(
+    salvarPreferenciaEmail(
       campoEntradaEmail?.value.trim() || "",
-      estado.role,
       lembrarPerfil.checked,
     );
     atualizarStatusLembrarPerfil();
 
     exibirNotificacao(
       lembrarPerfil.checked
-        ? "E-mail e perfil ser\u00e3o lembrados."
+        ? "E-mail salvo neste dispositivo."
         : "Dados lembrados removidos.",
     );
   });
@@ -603,7 +581,7 @@ function inicializarPerfilSalvo() {
   campoEntradaEmail?.addEventListener("input", () => {
     if (!lembrarPerfil.checked) return;
 
-    salvarPreferenciaPerfil(campoEntradaEmail.value.trim(), estado.role, true);
+    salvarPreferenciaEmail(campoEntradaEmail.value.trim(), true);
   });
 }
 
@@ -618,194 +596,6 @@ function inicializarMensagemSessao() {
   if (statusSessao === "encerrada") {
     exibirNotificacao("Sessao encerrada com sucesso.");
   }
-}
-
-function deveReduzirMovimento() {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-function atualizarConteudoPainelTipoUsuario(tipoUsuario) {
-  const conteudo = CONTEUDO_TIPO_USUARIO[tipoUsuario] || CONTEUDO_TIPO_USUARIO.Colaborador;
-  const indicador = obterElemento("roleBadge");
-  const titulo = obterElemento("roleTitle");
-  const descricao = obterElemento("roleDescription");
-
-  if (indicador) {
-    indicador.textContent = conteudo.badge;
-  }
-
-  if (titulo) {
-    titulo.textContent = conteudo.title;
-  }
-
-  if (descricao) {
-    descricao.textContent = conteudo.description;
-  }
-}
-
-function sincronizarCampoEntradaTipoUsuario(tipoUsuario) {
-  const campoEntradaTipoUsuario = obterElemento("roleInput");
-
-  if (campoEntradaTipoUsuario) {
-    campoEntradaTipoUsuario.value = tipoUsuario;
-  }
-}
-
-function atualizarEstadoBotaoTipoUsuario(botoes, botaoSelecionado) {
-  botoes.forEach((botao) => {
-    const ehSelecionado = botao === botaoSelecionado;
-
-    botao.classList.toggle("active", ehSelecionado);
-    botao.setAttribute("aria-checked", ehSelecionado ? "true" : "false");
-  });
-}
-
-function animarAlteracaoPainelTipoUsuario(tipoUsuario, direcao, controleSegmentado) {
-  const painel = obterElemento("rolePanel");
-  const instanciaGsap = window.gsap;
-
-  if (!painel || !instanciaGsap || deveReduzirMovimento()) {
-    atualizarConteudoPainelTipoUsuario(tipoUsuario);
-    animandoTrocaTipoUsuario = false;
-    controleSegmentado?.removeAttribute("data-switching");
-    return;
-  }
-
-  const saidaX = direcao === "left" ? -28 : 28;
-  const entradaX = direcao === "left" ? 28 : -28;
-
-  animandoTrocaTipoUsuario = true;
-
-  instanciaGsap
-    .timeline({
-      defaults: {
-        duration: 0.32,
-        ease: "power2.out",
-      },
-      onComplete: () => {
-        animandoTrocaTipoUsuario = false;
-        controleSegmentado?.removeAttribute("data-switching");
-        instanciaGsap.set(painel, { clearProps: "transform,opacity" });
-      },
-    })
-    .to(painel, {
-      x: saidaX,
-      opacity: 0,
-      duration: 0.28,
-    })
-    .add(() => atualizarConteudoPainelTipoUsuario(tipoUsuario))
-    .fromTo(
-      painel,
-      { x: entradaX, opacity: 0 },
-      { x: 0, opacity: 1, duration: 0.34, ease: "power3.out" },
-    );
-}
-
-function atualizarIndicadorSeguranca(tipoUsuario) {
-  const indicador = obterElemento("securityMeter");
-
-  if (!indicador) return;
-
-  indicador.style.width = tipoUsuario === "Administrador" ? "84%" : "72%";
-}
-
-function definirTipoUsuarioAtivo(botoes, botaoSelecionado, controleSegmentado) {
-  if (animandoTrocaTipoUsuario) {
-    return;
-  }
-
-  const tipoUsuarioSelecionado = botaoSelecionado.dataset.role;
-
-  if (!tipoUsuarioSelecionado) return;
-
-  const tipoUsuarioAnterior = estado.role;
-  const direcao = tipoUsuarioSelecionado === "Administrador" ? "left" : "right";
-
-  atualizarEstadoBotaoTipoUsuario(botoes, botaoSelecionado);
-
-  animandoTrocaTipoUsuario = true;
-  controleSegmentado.dataset.switching = "true";
-  estado.role = tipoUsuarioSelecionado;
-  sincronizarCampoEntradaTipoUsuario(tipoUsuarioSelecionado);
-  controleSegmentado.dataset.active = tipoUsuarioSelecionado;
-  atualizarIndicadorSeguranca(tipoUsuarioSelecionado);
-
-  const lembrarPerfil = obterElemento("rememberProfile");
-  const campoEntradaEmail = obterElemento("email");
-
-  if (lembrarPerfil?.checked) {
-    salvarPreferenciaPerfil(campoEntradaEmail?.value.trim() || "", tipoUsuarioSelecionado, true);
-  }
-
-  atualizarStatusLembrarPerfil();
-  exibirNotificacao(
-    lembrarPerfil?.checked
-      ? `Perfil ${tipoUsuarioSelecionado} atualizado e salvo.`
-      : `Perfil selecionado: ${tipoUsuarioSelecionado}`,
-  );
-
-  if (tipoUsuarioAnterior !== tipoUsuarioSelecionado) {
-    animarAlteracaoPainelTipoUsuario(tipoUsuarioSelecionado, direcao, controleSegmentado);
-  } else {
-    animandoTrocaTipoUsuario = false;
-    controleSegmentado.removeAttribute("data-switching");
-  }
-}
-
-// A troca de perfil mantém botão, campo enviado e conteúdo explicativo sincronizados.
-function inicializarSeletorTipoUsuario() {
-  const controleSegmentado = document.querySelector(".segment-control");
-  const botoes = [...document.querySelectorAll(".segment-control button")];
-
-  if (!controleSegmentado || !botoes.length) return;
-
-  const perfilSalvo = obterItemSalvo(CHAVES_ARMAZENAMENTO.profile);
-  const botaoAtivo = botoes.find((botao) =>
-    botao.classList.contains("active"),
-  );
-  const botaoSalvo = botoes.find(
-    (botao) => botao.dataset.role === perfilSalvo,
-  );
-  const botaoSelecionado = botaoSalvo || botaoAtivo || botoes[0];
-
-  if (botaoSelecionado?.dataset.role) {
-    estado.role = botaoSelecionado.dataset.role;
-  }
-
-  atualizarEstadoBotaoTipoUsuario(botoes, botaoSelecionado);
-  sincronizarCampoEntradaTipoUsuario(estado.role);
-
-  controleSegmentado.dataset.active = estado.role;
-  atualizarIndicadorSeguranca(estado.role);
-  atualizarConteudoPainelTipoUsuario(estado.role);
-
-  botoes.forEach((botao) => {
-    botao.addEventListener("click", () => {
-      const tipoUsuarioSelecionado = botao.dataset.role;
-      const jaEstaAtivo =
-        estado.role === tipoUsuarioSelecionado && botao.classList.contains("active");
-
-      if (jaEstaAtivo) return;
-
-      definirTipoUsuarioAtivo(botoes, botao, controleSegmentado);
-    });
-
-    botao.addEventListener("keydown", (evento) => {
-      const chaves = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"];
-
-      if (!chaves.includes(evento.key)) return;
-
-      evento.preventDefault();
-
-      const indiceAtual = botoes.indexOf(botao);
-      const etapa = evento.key === "ArrowRight" || evento.key === "ArrowDown" ? 1 : -1;
-      const indiceProximo = (indiceAtual + etapa + botoes.length) % botoes.length;
-      const botaoProximo = botoes[indiceProximo];
-
-      botaoProximo.focus();
-      definirTipoUsuarioAtivo(botoes, botaoProximo, controleSegmentado);
-    });
-  });
 }
 
 function inicializarAlternadorSenha() {
@@ -845,7 +635,7 @@ function inicializarSolicitacaoAcesso() {
 
   solicitarAcesso.addEventListener("click", (evento) => {
     evento.preventDefault();
-    exibirNotificacao("Fluxo de recupera\u00e7\u00e3o de senha ainda n\u00e3o configurado.");
+    exibirNotificacao("Procure um administrador do portal para redefinir sua senha.");
   });
 }
 
@@ -855,7 +645,7 @@ function inicializarAtalhosSuporte() {
   if (atalhoEsqueciSenha) {
     atalhoEsqueciSenha.addEventListener("click", (evento) => {
       evento.preventDefault();
-      exibirNotificacao("Fluxo de recupera\u00e7\u00e3o de senha ainda n\u00e3o configurado.");
+      exibirNotificacao("Procure um administrador do portal para redefinir sua senha.");
     });
   }
 }
@@ -939,7 +729,6 @@ function inicializarCursorPersonalizado() {
 function inicializar() {
   inicializarTema();
   inicializarDialogoContaInativo();
-  inicializarSeletorTipoUsuario();
   inicializarPerfilSalvo();
   inicializarAlternadorSenha();
   inicializarValidacaoCampo();

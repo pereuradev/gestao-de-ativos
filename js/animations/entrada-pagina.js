@@ -8,6 +8,8 @@ function iniciarAnimacaoPagina() {
 }
 
 Object.assign(window, {
+  iniciarAnimacaoPagina,
+  // O alias antigo preserva páginas que ainda não foram migradas.
   startPageAnimation: iniciarAnimacaoPagina,
 });
 })();
