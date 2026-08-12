@@ -287,10 +287,10 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
 
   <!-- Estilos compartilhados do sistema e ajustes específicos da consulta de ativos. -->
   <link rel="stylesheet" href="../css/pagina-base.css?v=20260731-sidebar-compact" />
-  <link rel="stylesheet" href="../css/ativos.css?v=20260803-filter-layout" />
+  <link rel="stylesheet" href="../css/ativos.css?v=20260811-mobile-cards-2" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
-  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260803-desktop-density" />
+  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260811-assets-mobile-cards-2" />
 
   <!-- Scripts locais controlam a interface; React é carregado para os widgets reutilizáveis. -->
   <script src="../js/animations/efeito-digitacao.js?v=20260803-static-headings" defer></script>
@@ -351,7 +351,7 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
       </section>
 
       <!-- Métricas gerais do inventário, independentes dos filtros da listagem. -->
-      <section class="metrics-grid" aria-label="Resumo dos ativos">
+      <section class="metrics-grid asset-list-metrics" aria-label="Resumo dos ativos">
         <article class="metric-card">
           <div class="metric-icon">
             <i class="bi bi-hdd-stack-fill"></i>
@@ -542,8 +542,10 @@ $exportarAtivosExcelUrl = urlExportarAtivos("xlsx");
                   data-category-raw="<?php echo e($categoria); ?>" data-location="<?php echo e(strtolower($local)); ?>"
                   data-location-raw="<?php echo e($local); ?>" data-search="<?php echo e($searchData); ?>">
                   <td data-label="Ativo">
-                    <strong><?php echo e($nome ?: "--"); ?></strong>
-                    <span><?php echo e($propriedade); ?></span>
+                    <div class="asset-cell-stack">
+                      <strong><?php echo e($nome ?: "--"); ?></strong>
+                      <span><?php echo e($propriedade); ?></span>
+                    </div>
                   </td>
 
                   <td data-label="Categoria"><?php echo e($categoria); ?></td>

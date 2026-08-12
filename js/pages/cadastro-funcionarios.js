@@ -2,7 +2,7 @@
 // Os helpers globais de interface são carregados pela página antes deste módulo.
 
 const estadoCadastroFuncionario = {
-  role: "Colaborador",
+  tipoUsuario: "Colaborador",
 };
 
 document.addEventListener("DOMContentLoaded", inicializarPaginaCadastroFuncionario);
@@ -18,6 +18,7 @@ function inicializarPaginaCadastroFuncionario() {
   configurarForcaSenhaFuncionario();
   configurarMascarasDocumentoFuncionario();
   configurarFormularioCadastroFuncionario();
+  configurarLimpezaErrosFormularioFuncionario();
   configurarRedefinicaoFormularioFuncionario();
 }
 
@@ -55,7 +56,7 @@ function configurarSeletorTipoUsuarioFuncionario() {
       const tipoUsuarioProximo = botao.dataset.role || "Colaborador";
 
       if (
-        estadoCadastroFuncionario.role === tipoUsuarioProximo &&
+        estadoCadastroFuncionario.tipoUsuario === tipoUsuarioProximo &&
         botao.classList.contains("active")
       ) {
         return;
@@ -65,18 +66,26 @@ function configurarSeletorTipoUsuarioFuncionario() {
     });
   });
 
-  definirTipoUsuarioFuncionario(estadoCadastroFuncionario.role);
+  definirTipoUsuarioFuncionario(estadoCadastroFuncionario.tipoUsuario);
 }
 
 function definirTipoUsuarioFuncionario(tipoUsuario) {
-  const tipoUsuarioProximo = tipoUsuario === "Administrador" ? "Administrador" : "Colaborador";
+  const formulario = obterElementoFuncionario("employeeSignupForm");
   const controleTipoUsuario = obterElementoFuncionario("employeeRoleControl");
   const tipoUsuarioOculto = obterElementoFuncionario("selectedEmployeeRole");
   const botoes = controleTipoUsuario
     ? [...controleTipoUsuario.querySelectorAll("button[data-role]")]
     : [];
+  const permiteAdministrador = formulario?.dataset.permiteAdministrador === "true";
+  const opcaoAdministradorDisponivel = botoes.some(
+    (botao) => botao.dataset.role === "Administrador",
+  );
+  const tipoUsuarioProximo =
+    tipoUsuario === "Administrador" && permiteAdministrador && opcaoAdministradorDisponivel
+      ? "Administrador"
+      : "Colaborador";
 
-  estadoCadastroFuncionario.role = tipoUsuarioProximo;
+  estadoCadastroFuncionario.tipoUsuario = tipoUsuarioProximo;
 
   if (controleTipoUsuario) {
     controleTipoUsuario.dataset.active = tipoUsuarioProximo;
@@ -87,7 +96,10 @@ function definirTipoUsuarioFuncionario(tipoUsuario) {
   }
 
   botoes.forEach((botao) => {
-    botao.classList.toggle("active", botao.dataset.role === tipoUsuarioProximo);
+    const estaSelecionado = botao.dataset.role === tipoUsuarioProximo;
+
+    botao.classList.toggle("active", estaSelecionado);
+    botao.setAttribute("aria-checked", String(estaSelecionado));
   });
 }
 
@@ -264,54 +276,145 @@ function configurarMascarasDocumentoFuncionario() {
 
 // Concentra as regras do formulário para impedir validações divergentes entre os eventos.
 function validarCadastroFuncionario(dados) {
-  if (
-    !dados.nomeCompleto ||
-    !dados.email ||
-    !dados.senha ||
-    !dados.rg ||
-    !dados.cpf ||
-    !dados.celular ||
-    !dados.dataNascimento ||
-    !dados.tipoUsuario ||
-    !dados.departamento ||
-    !dados.empresa
-  ) {
-    return "Preencha todos os campos obrigatorios para continuar.";
+  const camposObrigatorios = [
+    ["employeeFullName", dados.nomeCompleto, "Informe o nome completo."],
+    ["employeeBirthDate", dados.dataNascimento, "Informe a data de nascimento."],
+    ["employeeCellphone", dados.celular, "Informe o telefone celular."],
+    ["employeeRg", dados.rg, "Informe o RG."],
+    ["employeeCpf", dados.cpf, "Informe o CPF."],
+    ["employeeEmail", dados.email, "Informe o e-mail corporativo."],
+    ["employeeDepartment", dados.departamento, "Selecione o departamento."],
+    ["employeeCompany", dados.empresa, "Informe a empresa."],
+    ["employeePassword", dados.senha, "Crie a senha inicial."],
+  ];
+  const campoNaoPreenchido = camposObrigatorios.find(([, valor]) => !valor);
+
+  if (campoNaoPreenchido) {
+    return {
+      campoId: campoNaoPreenchido[0],
+      mensagem: campoNaoPreenchido[2],
+    };
   }
 
   if (dados.nomeCompleto.trim().split(/\s+/).length < 2) {
-    return "Informe nome e sobrenome.";
+    return { campoId: "employeeFullName", mensagem: "Informe nome e sobrenome." };
   }
 
   if (!dados.email.includes("@")) {
-    return "Digite um e-mail valido.";
+    return { campoId: "employeeEmail", mensagem: "Digite um e-mail valido." };
   }
 
   if (!dados.email.toLowerCase().endsWith("@titechsolutions.com.br")) {
-    return "Use um e-mail corporativo autorizado.";
+    return {
+      campoId: "employeeEmail",
+      mensagem: "Use um e-mail corporativo autorizado.",
+    };
   }
 
   if (obterSomenteNumeros(dados.rg).length < 7) {
-    return "Informe um RG valido.";
+    return { campoId: "employeeRg", mensagem: "Informe um RG valido." };
   }
 
   if (!ehCpfFuncionarioValido(dados.cpf)) {
-    return "Informe um CPF valido.";
+    return { campoId: "employeeCpf", mensagem: "Informe um CPF valido." };
   }
 
   if (obterSomenteNumeros(dados.celular).length !== 11) {
-    return "Informe um telefone celular valido com DDD.";
+    return {
+      campoId: "employeeCellphone",
+      mensagem: "Informe um telefone celular valido com DDD.",
+    };
   }
 
-  if (new Date(dados.dataNascimento) > new Date()) {
-    return "A data de nascimento nao pode ser futura.";
+  const dataNascimento = new Date(`${dados.dataNascimento}T00:00:00`);
+
+  if (Number.isNaN(dataNascimento.getTime()) || dataNascimento > new Date()) {
+    return {
+      campoId: "employeeBirthDate",
+      mensagem: "Informe uma data de nascimento valida.",
+    };
   }
 
   if (dados.senha.length < 6) {
-    return "A senha precisa ter pelo menos 6 caracteres.";
+    return {
+      campoId: "employeePassword",
+      mensagem: "A senha precisa ter pelo menos 6 caracteres.",
+    };
   }
 
-  return "";
+  return null;
+}
+
+function limparErroCampoFuncionario(campoOuId) {
+  const campo =
+    typeof campoOuId === "string" ? obterElementoFuncionario(campoOuId) : campoOuId;
+
+  if (!campo) {
+    return;
+  }
+
+  const recipienteCampo = campo.closest(".asset-field");
+  const idErro = `${campo.id}Error`;
+
+  recipienteCampo?.classList.remove("is-invalid");
+  recipienteCampo?.querySelector(`#${idErro}`)?.remove();
+  campo.removeAttribute("aria-invalid");
+
+  const descricoes = (campo.getAttribute("aria-describedby") || "")
+    .split(/\s+/)
+    .filter((idDescricao) => idDescricao && idDescricao !== idErro);
+
+  if (descricoes.length) {
+    campo.setAttribute("aria-describedby", descricoes.join(" "));
+  } else {
+    campo.removeAttribute("aria-describedby");
+  }
+}
+
+function limparErrosFormularioFuncionario() {
+  document
+    .querySelectorAll("#employeeSignupForm [aria-invalid='true']")
+    .forEach((campo) => limparErroCampoFuncionario(campo));
+}
+
+function marcarErroCampoFuncionario(campoId, mensagem) {
+  const campo = obterElementoFuncionario(campoId);
+  const recipienteCampo = campo?.closest(".asset-field");
+
+  if (!campo || !recipienteCampo) {
+    return;
+  }
+
+  limparErroCampoFuncionario(campo);
+
+  const idErro = `${campo.id}Error`;
+  const erroCampo = criarElementoFuncionario("small", "employee-field-error", mensagem);
+  const descricoesAtuais = (campo.getAttribute("aria-describedby") || "")
+    .split(/\s+/)
+    .filter(Boolean);
+
+  erroCampo.id = idErro;
+  erroCampo.setAttribute("role", "alert");
+  recipienteCampo.classList.add("is-invalid");
+  recipienteCampo.append(erroCampo);
+  campo.setAttribute("aria-invalid", "true");
+  campo.setAttribute("aria-describedby", [...new Set([...descricoesAtuais, idErro])].join(" "));
+  campo.focus();
+}
+
+function configurarLimpezaErrosFormularioFuncionario() {
+  const formulario = obterElementoFuncionario("employeeSignupForm");
+
+  if (!formulario) {
+    return;
+  }
+
+  formulario
+    .querySelectorAll("input:not([type='hidden']), select")
+    .forEach((campo) => {
+      const evento = campo.tagName === "SELECT" ? "change" : "input";
+      campo.addEventListener(evento, () => limparErroCampoFuncionario(campo));
+    });
 }
 
 function definirMensagemFormularioFuncionario(mensagem, tipo = "") {
@@ -363,7 +466,7 @@ function montarDadosFuncionario() {
     cpf: obterElementoFuncionario("employeeCpf")?.value.trim() || "",
     celular: obterElementoFuncionario("employeeCellphone")?.value.trim() || "",
     dataNascimento: obterElementoFuncionario("employeeBirthDate")?.value || "",
-    tipoUsuario: estadoCadastroFuncionario.role,
+    tipoUsuario: estadoCadastroFuncionario.tipoUsuario,
     departamento: obterElementoFuncionario("employeeDepartment")?.value || "",
     empresa: obterElementoFuncionario("employeeCompany")?.value.trim() || "",
   };
@@ -379,8 +482,10 @@ async function tratarCadastroFuncionario(evento) {
   const erroValidacao = validarCadastroFuncionario(dadosFuncionario);
 
   if (erroValidacao) {
-    definirMensagemFormularioFuncionario(erroValidacao, "error");
-    window.titechToast?.(erroValidacao, "error");
+    limparErrosFormularioFuncionario();
+    marcarErroCampoFuncionario(erroValidacao.campoId, erroValidacao.mensagem);
+    definirMensagemFormularioFuncionario(erroValidacao.mensagem, "error");
+    window.titechToast?.(erroValidacao.mensagem, "error");
     return;
   }
 
@@ -479,6 +584,7 @@ function configurarRedefinicaoFormularioFuncionario() {
   formulario.addEventListener("reset", () => {
     requestAnimationFrame(() => {
       redefinirEstadoFormularioCadastroFuncionario();
+      limparErrosFormularioFuncionario();
       definirMensagemFormularioFuncionario("");
     });
   });

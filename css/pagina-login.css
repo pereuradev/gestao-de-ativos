@@ -1194,6 +1194,28 @@ body.theme-dark .form-control:-webkit-autofill:active {
   font-size: 0.92rem;
 }
 
+.request-access-link {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 13px;
+  color: var(--text);
+  text-decoration: none;
+  border: 1px solid color-mix(in srgb, var(--teal) 48%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--teal) 10%, transparent);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.request-access-link:hover {
+  color: var(--text);
+  border-color: var(--teal);
+  transform: translateY(-1px);
+}
+
 .secondary-action {
   min-height: 40px;
   padding: 8px 13px;

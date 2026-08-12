@@ -81,6 +81,16 @@
   min-width: 210px;
 }
 
+.asset-edit-cell-stack {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.asset-edit-cell-stack > * {
+  min-width: 0;
+}
+
 /* Paginação processada pelo PHP para limitar o volume da tabela. */
 .asset-pagination {
   margin-top: 18px;
@@ -326,5 +336,58 @@
   .table-action,
   .filter-clear-button {
     width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .asset-edit-card .records-table-wrap {
+    width: 100%;
+    overflow: visible;
+  }
+
+  .asset-edit-table {
+    width: 100%;
+    min-width: 0 !important;
+    table-layout: fixed;
+  }
+
+  .asset-edit-table tr {
+    width: 100%;
+    max-width: 100%;
+    padding: 10px;
+  }
+
+  .asset-edit-table td {
+    width: 100%;
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 6px;
+    padding: 7px 0;
+    align-items: start;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .asset-edit-table td::before {
+    line-height: 1.35;
+  }
+
+  .asset-edit-table td > *,
+  .asset-edit-table td strong,
+  .asset-edit-table td span,
+  .asset-edit-table td button {
+    max-width: 100%;
+    min-width: 0 !important;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .asset-edit-table .status-badge {
+    width: fit-content;
+  }
+
+  .asset-edit-table .row-actions {
+    width: 100%;
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 }

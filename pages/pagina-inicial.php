@@ -43,7 +43,7 @@ $usuarioAdministrador = in_array($tipoUsuario, ["adm", "admin", "administrador"]
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <link rel="stylesheet" href="../css/pagina-base.css?v=20260731-sidebar-compact" />
-  <link rel="stylesheet" href="../css/pagina-inicial.css?v=20260803-operational-home" />
+  <link rel="stylesheet" href="../css/pagina-inicial.css?v=20260810-social-brand-colors" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
   <link rel="stylesheet" href="../css/responsivo-global.css?v=20260803-desktop-density" />
@@ -197,7 +197,7 @@ $usuarioAdministrador = in_array($tipoUsuario, ["adm", "admin", "administrador"]
         </header>
 
         <nav class="social-links-grid" aria-label="Redes sociais da TI TECH">
-          <a class="social-link" href="https://www.linkedin.com/company/titechsolutionss/" target="_blank"
+          <a class="social-link social-link--linkedin" href="https://www.linkedin.com/company/titechsolutionss/" target="_blank"
             rel="noopener noreferrer" aria-label="Acessar o LinkedIn da TI TECH">
             <span class="social-link-icon" aria-hidden="true">
               <i class="bi bi-linkedin"></i>
@@ -206,7 +206,7 @@ $usuarioAdministrador = in_array($tipoUsuario, ["adm", "admin", "administrador"]
             <i class="bi bi-box-arrow-up-right social-link-arrow" aria-hidden="true"></i>
           </a>
 
-          <a class="social-link" href="https://www.youtube.com/@titechsolutions_BR" target="_blank"
+          <a class="social-link social-link--youtube" href="https://www.youtube.com/@titechsolutions_BR" target="_blank"
             rel="noopener noreferrer" aria-label="Acessar o YouTube da TI TECH">
             <span class="social-link-icon" aria-hidden="true">
               <i class="bi bi-youtube"></i>
@@ -215,7 +215,7 @@ $usuarioAdministrador = in_array($tipoUsuario, ["adm", "admin", "administrador"]
             <i class="bi bi-box-arrow-up-right social-link-arrow" aria-hidden="true"></i>
           </a>
 
-          <a class="social-link" href="https://www.instagram.com/titechsolutions/" target="_blank"
+          <a class="social-link social-link--instagram" href="https://www.instagram.com/titechsolutions/" target="_blank"
             rel="noopener noreferrer" aria-label="Acessar o Instagram da TI TECH">
             <span class="social-link-icon" aria-hidden="true">
               <i class="bi bi-instagram"></i>
@@ -224,7 +224,7 @@ $usuarioAdministrador = in_array($tipoUsuario, ["adm", "admin", "administrador"]
             <i class="bi bi-box-arrow-up-right social-link-arrow" aria-hidden="true"></i>
           </a>
 
-          <a class="social-link" href="https://www.facebook.com/titechsolutions/" target="_blank"
+          <a class="social-link social-link--facebook" href="https://www.facebook.com/titechsolutions/" target="_blank"
             rel="noopener noreferrer" aria-label="Acessar o Facebook da TI TECH">
             <span class="social-link-icon" aria-hidden="true">
               <i class="bi bi-facebook"></i>

@@ -410,408 +410,414 @@ $resumoPermissoes = $usuarioEhAdmin
         </aside>
 
         <div class="settings-content">
-      <section class="settings-overview" aria-label="Resumo das configura&ccedil;&otilde;es">
-        <!-- Crachá digital com os principais dados do usuário logado. -->
-        <article class="content-card digital-badge-card" id="conta">
-          <div class="badge-topline">
-            <span>Cracha digital</span>
-          </div>
-
-          <div class="badge-main">
-            <?php if ($fotoCrachaUrl !== ""): ?>
-              <div class="profile-avatar large-avatar has-photo" data-badge-photo-preview
-                data-initials="<?php echo $iniciais; ?>">
-                <img src="<?php echo e($fotoCrachaUrl); ?>" alt="Foto do crach&aacute; de <?php echo $nomeUsuario; ?>" />
+          <section class="settings-overview" aria-label="Resumo das configura&ccedil;&otilde;es">
+            <!-- Crachá digital com os principais dados do usuário logado. -->
+            <article class="content-card digital-badge-card" id="conta">
+              <div class="badge-topline">
+                <span>Cracha digital</span>
               </div>
-            <?php else: ?>
-              <div class="profile-avatar large-avatar" aria-hidden="true" data-badge-photo-preview
-                data-initials="<?php echo $iniciais; ?>"><?php echo $iniciais; ?></div>
-            <?php endif; ?>
-            <div>
-              <h2><?php echo $nomeUsuario; ?></h2>
-              <p><?php echo $emailUsuario; ?></p>
-              <div class="badge-tags">
-                <span><?php echo $tipoUsuario; ?></span>
-                <span class="status-badge <?php echo $statusClasse; ?>"><?php echo $statusUsuario; ?></span>
+
+              <div class="badge-main">
+                <?php if ($fotoCrachaUrl !== ""): ?>
+                  <div class="profile-avatar large-avatar has-photo" data-badge-photo-preview
+                    data-initials="<?php echo $iniciais; ?>">
+                    <img src="<?php echo e($fotoCrachaUrl); ?>"
+                      alt="Foto do crach&aacute; de <?php echo $nomeUsuario; ?>" />
+                  </div>
+                <?php else: ?>
+                  <div class="profile-avatar large-avatar" aria-hidden="true" data-badge-photo-preview
+                    data-initials="<?php echo $iniciais; ?>"><?php echo $iniciais; ?></div>
+                <?php endif; ?>
+                <div>
+                  <h2><?php echo $nomeUsuario; ?></h2>
+                  <p><?php echo $emailUsuario; ?></p>
+                  <div class="badge-tags">
+                    <span><?php echo $tipoUsuario; ?></span>
+                    <span class="status-badge <?php echo $statusClasse; ?>"><?php echo $statusUsuario; ?></span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div class="badge-grid">
-            <div>
-              <span>Departamento</span>
-              <strong><?php echo $departamentoUsuario; ?></strong>
-            </div>
-            <div>
-              <span>Empresa</span>
-              <strong><?php echo $empresaUsuario; ?></strong>
-            </div>
-            <div>
-              <span>&Uacute;ltimo acesso</span>
-              <strong><?php echo e($ultimoAcesso); ?></strong>
-            </div>
-          </div>
-
-          <form class="badge-photo-form" id="badgePhotoForm" action="../Backend/atualizar-foto-cracha.php"
-            method="post" enctype="multipart/form-data">
-            <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
-
-            <label class="badge-photo-picker">
-              <input id="badgePhotoInput" name="foto_cracha" type="file" accept="image/jpeg,image/png,image/webp" />
-              <span><i class="bi bi-image"></i>Selecionar foto</span>
-            </label>
-
-            <button class="secondary-button compact-button" id="saveBadgePhotoButton" type="submit" disabled>
-              <i class="bi bi-cloud-arrow-up"></i>
-              Salvar foto
-            </button>
-
-            <small>JPG, PNG ou WebP ate 2 MB.</small>
-          </form>
-
-          <div id="badgePhotoMessage" class="form-message" role="status" aria-live="polite"></div>
-        </article>
-
-      </section>
-
-      <!-- Grade principal de cards. Cada article representa uma área de configuração. -->
-      <section class="settings-grid" aria-label="Painel de configura&ccedil;&otilde;es">
-        <!-- Dados operacionais do perfil, exibidos de forma somente leitura. -->
-        <article class="content-card profile-card" aria-labelledby="profileTitle">
-          <div class="card-header">
-            <div>
-              <p class="section-tag">Conta</p>
-              <h3 id="profileTitle">Perfil operacional</h3>
-            </div>
-          </div>
-
-          <div class="profile-details">
-            <div class="profile-field"><span>Nome</span><strong><?php echo $nomeUsuario; ?></strong></div>
-            <div class="profile-field"><span>Email</span><strong><?php echo $emailUsuario; ?></strong></div>
-            <div class="profile-field"><span>Cargo</span><strong><?php echo $tipoUsuario; ?></strong></div>
-            <div class="profile-field"><span>Departamento</span><strong><?php echo $departamentoUsuario; ?></strong>
-            </div>
-            <div class="profile-field"><span>Celular</span><strong><?php echo $celularUsuario; ?></strong></div>
-            <div class="profile-field"><span>RG</span><strong><?php echo $rgUsuario; ?></strong></div>
-            <div class="profile-field"><span>CPF</span><strong><?php echo $cpfUsuario; ?></strong></div>
-            <div class="profile-field"><span>Criado em</span><strong><?php echo e($criadoEm); ?></strong></div>
-            <div class="profile-field"><span>Atualizado em</span><strong><?php echo e($atualizadoEm); ?></strong></div>
-          </div>
-
-          <details class="account-permissions-panel">
-            <summary class="account-permissions-summary">
-              <span>
-                <span class="section-tag">Permiss&otilde;es</span>
-                <strong>Acessos liberados</strong>
-                <small><?php echo e($resumoPermissoes); ?></small>
-              </span>
-              <span class="account-permissions-summary-meta">
-                <strong><?php echo e((string) $totalPermissoesUsuario); ?></strong>
-                <i class="bi bi-chevron-down" aria-hidden="true"></i>
-              </span>
-            </summary>
-
-            <?php if ($permissoesVisiveis): ?>
-              <div class="account-permissions-grid" aria-label="Permiss&otilde;es liberadas">
-                <?php foreach ($permissoesVisiveis as $grupoPermissao): ?>
-                  <section class="account-permission-group">
-                    <span class="account-permission-title">
-                      <i class="bi <?php echo e((string) ($grupoPermissao["icone"] ?? "bi-shield-check")); ?>"></i>
-                      <?php echo e((string) ($grupoPermissao["titulo"] ?? "Permissao")); ?>
-                    </span>
-                    <div class="account-permission-chips">
-                      <?php foreach (($grupoPermissao["permissoes"] ?? []) as $rotuloPermissao): ?>
-                        <span><i class="bi bi-check2"></i><?php echo e((string) $rotuloPermissao); ?></span>
-                      <?php endforeach; ?>
-                    </div>
-                  </section>
-                <?php endforeach; ?>
+              <div class="badge-grid">
+                <div>
+                  <span>Departamento</span>
+                  <strong><?php echo $departamentoUsuario; ?></strong>
+                </div>
+                <div>
+                  <span>Empresa</span>
+                  <strong><?php echo $empresaUsuario; ?></strong>
+                </div>
+                <div>
+                  <span>&Uacute;ltimo acesso</span>
+                  <strong><?php echo e($ultimoAcesso); ?></strong>
+                </div>
               </div>
-            <?php else: ?>
-              <div class="account-permissions-empty">
-                <i class="bi bi-lock"></i>
-                <span>Nenhuma permiss&atilde;o liberada para este usu&aacute;rio.</span>
-              </div>
-            <?php endif; ?>
-          </details>
-        </article>
 
-        <!-- Preferências visuais salvas pelo JavaScript, como tema, cor e densidade da interface. -->
-        <article class="content-card preferences-card" id="interface" aria-labelledby="interfaceTitle">
-          <div class="card-header">
-            <div>
-              <p class="section-tag">Interface</p>
-              <h3 id="interfaceTitle">Prefer&ecirc;ncias visuais</h3>
-            </div>
-            <button class="secondary-button compact-preference-button settings-accent-button" id="resetPreferences"
-              type="button">
-              <i class="bi bi-arrow-counterclockwise"></i>
-              Restaurar
-            </button>
-          </div>
+              <form class="badge-photo-form" id="badgePhotoForm" action="../Backend/atualizar-foto-cracha.php"
+                method="post" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
 
-          <form class="preferences-form" id="preferencesForm">
-            <!-- Cores de destaque da interface. O JS converte a posicao no circulo em uma cor hexadecimal. -->
-            <fieldset class="preference-group">
-              <legend>Prefer&ecirc;ncia de cor</legend>
-              <div class="accent-wheel-control" data-accent-wheel-control>
-                <button class="accent-color-wheel" id="accentColorWheel" type="button"
-                  aria-label="Escolher cor de destaque pelo anel colorido">
-                  <span class="accent-wheel-thumb" id="accentWheelThumb" aria-hidden="true"></span>
+                <label class="badge-photo-picker">
+                  <input id="badgePhotoInput" name="foto_cracha" type="file" accept="image/jpeg,image/png,image/webp" />
+                  <span><i class="bi bi-image"></i>Selecionar foto</span>
+                </label>
+
+                <button class="secondary-button compact-button" id="saveBadgePhotoButton" type="submit" disabled>
+                  <i class="bi bi-cloud-arrow-up"></i>
+                  Salvar foto
                 </button>
 
-                <div class="accent-color-panel">
-                  <div class="accent-current-card">
-                    <span class="accent-current-swatch" id="accentCurrentSwatch" aria-hidden="true"></span>
+                <small>JPG, PNG ou WebP ate 2 MB.</small>
+              </form>
+
+              <div id="badgePhotoMessage" class="form-message" role="status" aria-live="polite"></div>
+            </article>
+
+          </section>
+
+          <!-- Grade principal de cards. Cada article representa uma área de configuração. -->
+          <section class="settings-grid" aria-label="Painel de configura&ccedil;&otilde;es">
+            <!-- Dados operacionais do perfil, exibidos de forma somente leitura. -->
+            <article class="content-card profile-card" aria-labelledby="profileTitle">
+              <div class="card-header">
+                <div>
+                  <p class="section-tag">Conta</p>
+                  <h3 id="profileTitle">Perfil operacional</h3>
+                </div>
+              </div>
+
+              <div class="profile-details">
+                <div class="profile-field"><span>Nome</span><strong><?php echo $nomeUsuario; ?></strong></div>
+                <div class="profile-field"><span>Email</span><strong><?php echo $emailUsuario; ?></strong></div>
+                <div class="profile-field"><span>Cargo</span><strong><?php echo $tipoUsuario; ?></strong></div>
+                <div class="profile-field"><span>Departamento</span><strong><?php echo $departamentoUsuario; ?></strong>
+                </div>
+                <div class="profile-field"><span>Celular</span><strong><?php echo $celularUsuario; ?></strong></div>
+                <div class="profile-field"><span>RG</span><strong><?php echo $rgUsuario; ?></strong></div>
+                <div class="profile-field"><span>CPF</span><strong><?php echo $cpfUsuario; ?></strong></div>
+                <div class="profile-field"><span>Criado em</span><strong><?php echo e($criadoEm); ?></strong></div>
+                <div class="profile-field"><span>Atualizado em</span><strong><?php echo e($atualizadoEm); ?></strong>
+                </div>
+              </div>
+
+              <details class="account-permissions-panel">
+                <summary class="account-permissions-summary">
+                  <span>
+                    <span class="section-tag">Permiss&otilde;es</span>
+                    <strong>Acessos liberados</strong>
+                    <small><?php echo e($resumoPermissoes); ?></small>
+                  </span>
+                  <span class="account-permissions-summary-meta">
+                    <strong><?php echo e((string) $totalPermissoesUsuario); ?></strong>
+                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                  </span>
+                </summary>
+
+                <?php if ($permissoesVisiveis): ?>
+                  <div class="account-permissions-grid" aria-label="Permiss&otilde;es liberadas">
+                    <?php foreach ($permissoesVisiveis as $grupoPermissao): ?>
+                      <section class="account-permission-group">
+                        <span class="account-permission-title">
+                          <i class="bi <?php echo e((string) ($grupoPermissao["icone"] ?? "bi-shield-check")); ?>"></i>
+                          <?php echo e((string) ($grupoPermissao["titulo"] ?? "Permissao")); ?>
+                        </span>
+                        <div class="account-permission-chips">
+                          <?php foreach (($grupoPermissao["permissoes"] ?? []) as $rotuloPermissao): ?>
+                            <span><i class="bi bi-check2"></i><?php echo e((string) $rotuloPermissao); ?></span>
+                          <?php endforeach; ?>
+                        </div>
+                      </section>
+                    <?php endforeach; ?>
+                  </div>
+                <?php else: ?>
+                  <div class="account-permissions-empty">
+                    <i class="bi bi-lock"></i>
+                    <span>Nenhuma permiss&atilde;o liberada para este usu&aacute;rio.</span>
+                  </div>
+                <?php endif; ?>
+              </details>
+            </article>
+
+            <!-- Preferências visuais salvas pelo JavaScript, como tema, cor e densidade da interface. -->
+            <article class="content-card preferences-card" id="interface" aria-labelledby="interfaceTitle">
+              <div class="card-header">
+                <div>
+                  <p class="section-tag">Interface</p>
+                  <h3 id="interfaceTitle">Prefer&ecirc;ncias visuais</h3>
+                </div>
+                <button class="secondary-button compact-preference-button settings-accent-button" id="resetPreferences"
+                  type="button">
+                  <i class="bi bi-arrow-counterclockwise"></i>
+                  Restaurar
+                </button>
+              </div>
+
+              <form class="preferences-form" id="preferencesForm">
+                <!-- Cores de destaque da interface. O JS converte a posicao no circulo em uma cor hexadecimal. -->
+                <fieldset class="preference-group">
+                  <legend>Prefer&ecirc;ncia de cor</legend>
+                  <div class="accent-wheel-control" data-accent-wheel-control>
+                    <button class="accent-color-wheel" id="accentColorWheel" type="button"
+                      aria-label="Escolher cor de destaque pelo anel colorido">
+                      <span class="accent-wheel-thumb" id="accentWheelThumb" aria-hidden="true"></span>
+                    </button>
+
+                    <div class="accent-color-panel">
+                      <div class="accent-current-card">
+                        <span class="accent-current-swatch" id="accentCurrentSwatch" aria-hidden="true"></span>
+                        <div>
+                          <span>Cor atual</span>
+                          <strong id="accentCurrentLabel">#66D5C2</strong>
+                        </div>
+                      </div>
+
+                      <label class="accent-hex-field">
+                        <span>HEX</span>
+                        <input id="accentColorValue" type="text" value="#66D5C2" maxlength="7" spellcheck="false"
+                          inputmode="text" />
+                      </label>
+
+                      <input class="accent-native-color" id="accentNativeColor" type="color" value="#66d5c2"
+                        aria-label="Selecionar cor pelo controle do navegador" />
+
+                      <div class="accent-preset-strip" aria-label="Cores rapidas">
+                        <button type="button" style="--preset-color: #66d5c2" data-accent-preset="#66d5c2"
+                          aria-label="Usar ciano TI TECH"></button>
+                        <button type="button" style="--preset-color: #22c55e" data-accent-preset="#22c55e"
+                          aria-label="Usar verde"></button>
+                        <button type="button" style="--preset-color: #38bdf8" data-accent-preset="#38bdf8"
+                          aria-label="Usar azul"></button>
+                        <button type="button" style="--preset-color: #a78bfa" data-accent-preset="#a78bfa"
+                          aria-label="Usar violeta"></button>
+                        <button type="button" style="--preset-color: #ff2d75" data-accent-preset="#ff2d75"
+                          aria-label="Usar magenta"></button>
+                      </div>
+                    </div>
+                  </div>
+                </fieldset>
+
+                <!-- Escolha do tema visual: escuro, claro ou automático pelo sistema. -->
+                <fieldset class="preference-group">
+                  <legend>Modo de tela</legend>
+                  <div class="segmented-control three-options" role="radiogroup" aria-label="Modo de tela">
+                    <label><input type="radio" name="theme" value="dark" /><span><i class="bi bi-moon-stars-fill"></i>
+                        Escuro</span></label>
+                    <label><input type="radio" name="theme" value="light" /><span><i class="bi bi-sun-fill"></i>
+                        Claro</span></label>
+                    <label><input type="radio" name="theme" value="auto" /><span><i class="bi bi-circle-half"></i>
+                        Auto</span></label>
+                  </div>
+                </fieldset>
+
+                <!-- Tamanho da fonte aplicado no site inteiro para melhorar a leitura sem depender do zoom do navegador. -->
+                <fieldset class="preference-group">
+                  <legend>Tamanho da fonte</legend>
+                  <div class="segmented-control four-options font-size-control" role="radiogroup"
+                    aria-label="Tamanho da fonte do site">
+                    <label><input type="radio" name="fontSize" value="small" /><span><i class="bi bi-type"></i>
+                        Pequena</span></label>
+                    <label><input type="radio" name="fontSize" value="default" /><span><i class="bi bi-type"></i>
+                        Padr&atilde;o</span></label>
+                    <label><input type="radio" name="fontSize" value="large" /><span><i class="bi bi-fonts"></i>
+                        Grande</span></label>
+                    <label><input type="radio" name="fontSize" value="extra" /><span><i class="bi bi-fonts"></i>
+                        Extra</span></label>
+                  </div>
+                </fieldset>
+
+                <!-- Ajustes finos de experiência para adaptar a tela ao jeito de trabalho do usuário. -->
+                <fieldset class="preference-group">
+                  <legend>Ajustes de UX</legend>
+                  <div class="toggle-list">
+                    <label class="toggle-row">
+                      <span><strong>Interface compacta</strong><small>Reduz espa&ccedil;amentos para ver mais
+                          informa&ccedil;&otilde;es.</small></span>
+                      <input type="checkbox" id="densityToggle" name="density" value="compact" />
+                    </label>
+                    <label class="toggle-row">
+                      <span><strong>Reduzir anima&ccedil;&otilde;es</strong><small>Deixa transi&ccedil;&otilde;es mais
+                          discretas.</small></span>
+                      <input type="checkbox" id="motionToggle" name="motion" value="reduced" />
+                    </label>
+                    <label class="toggle-row">
+                      <span><strong>Realce do cursor</strong><small>Aumenta o feedback visual em links, bot&otilde;es e
+                          campos.</small></span>
+                      <input type="checkbox" id="cursorToggle" name="cursor" value="enhanced" />
+                    </label>
+                  </div>
+                </fieldset>
+              </form>
+              <div class="form-message success" id="preferencesMessage" role="status"></div>
+            </article>
+
+            <!-- Área de segurança. O navegador orienta o usuário e o backend valida e atualiza a senha real. -->
+            <article class="content-card security-card wide-card" id="seguranca" aria-labelledby="securityTitle">
+              <div class="card-header security-card-header">
+                <div class="security-title-group">
+                  <span class="security-title-icon" aria-hidden="true"><i class="bi bi-shield-lock"></i></span>
+                  <div>
+                    <p class="section-tag">Seguran&ccedil;a da conta</p>
+                    <h3 id="securityTitle">Alterar senha</h3>
+                    <span class="card-subtitle">Confirme sua identidade e escolha uma senha exclusiva para o
+                      portal.</span>
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="password-change-layout">
+                <!-- A confirmação da senha atual reduz o impacto de uma sessão aberta indevidamente. -->
+                <form class="password-form password-form-panel" id="passwordForm"
+                  action="../Backend/atualizar-senha.php" method="post">
+                  <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
+
+                  <div class="password-step-heading">
+                    <span class="password-step-number" aria-hidden="true">1</span>
                     <div>
-                      <span>Cor atual</span>
-                      <strong id="accentCurrentLabel">#66D5C2</strong>
+                      <strong>Confirme sua identidade</strong>
+                      <small>Digite a senha que voc&ecirc; usa atualmente para entrar.</small>
                     </div>
                   </div>
 
-                  <label class="accent-hex-field">
-                    <span>HEX</span>
-                    <input id="accentColorValue" type="text" value="#66D5C2" maxlength="7" spellcheck="false"
-                      inputmode="text" />
-                  </label>
-
-                  <input class="accent-native-color" id="accentNativeColor" type="color" value="#66d5c2"
-                    aria-label="Selecionar cor pelo controle do navegador" />
-
-                  <div class="accent-preset-strip" aria-label="Cores rapidas">
-                    <button type="button" style="--preset-color: #66d5c2" data-accent-preset="#66d5c2"
-                      aria-label="Usar ciano TI TECH"></button>
-                    <button type="button" style="--preset-color: #22c55e" data-accent-preset="#22c55e"
-                      aria-label="Usar verde"></button>
-                    <button type="button" style="--preset-color: #38bdf8" data-accent-preset="#38bdf8"
-                      aria-label="Usar azul"></button>
-                    <button type="button" style="--preset-color: #a78bfa" data-accent-preset="#a78bfa"
-                      aria-label="Usar violeta"></button>
-                    <button type="button" style="--preset-color: #ff2d75" data-accent-preset="#ff2d75"
-                      aria-label="Usar magenta"></button>
+                  <div class="asset-field password-field">
+                    <label for="currentPassword">Senha atual</label>
+                    <span class="input-shell password-input-shell">
+                      <i class="bi bi-lock" aria-hidden="true"></i>
+                      <input id="currentPassword" name="senha_atual" type="password" autocomplete="current-password"
+                        maxlength="128" placeholder="Digite sua senha atual" required />
+                      <button class="password-visibility-toggle" type="button" data-password-toggle="currentPassword"
+                        aria-label="Mostrar senha atual" aria-pressed="false">
+                        <i class="bi bi-eye" aria-hidden="true"></i>
+                      </button>
+                    </span>
                   </div>
-                </div>
-              </div>
-            </fieldset>
 
-            <!-- Escolha do tema visual: escuro, claro ou automático pelo sistema. -->
-            <fieldset class="preference-group">
-              <legend>Modo de tela</legend>
-              <div class="segmented-control three-options" role="radiogroup" aria-label="Modo de tela">
-                <label><input type="radio" name="theme" value="dark" /><span><i class="bi bi-moon-stars-fill"></i>
-                    Escuro</span></label>
-                <label><input type="radio" name="theme" value="light" /><span><i class="bi bi-sun-fill"></i>
-                    Claro</span></label>
-                <label><input type="radio" name="theme" value="auto" /><span><i class="bi bi-circle-half"></i>
-                    Auto</span></label>
-              </div>
-            </fieldset>
+                  <div class="password-section-divider" aria-hidden="true"></div>
 
-            <!-- Tamanho da fonte aplicado no site inteiro para melhorar a leitura sem depender do zoom do navegador. -->
-            <fieldset class="preference-group">
-              <legend>Tamanho da fonte</legend>
-              <div class="segmented-control four-options font-size-control" role="radiogroup"
-                aria-label="Tamanho da fonte do site">
-                <label><input type="radio" name="fontSize" value="small" /><span><i class="bi bi-type"></i>
-                    Pequena</span></label>
-                <label><input type="radio" name="fontSize" value="default" /><span><i class="bi bi-type"></i>
-                    Padr&atilde;o</span></label>
-                <label><input type="radio" name="fontSize" value="large" /><span><i class="bi bi-fonts"></i>
-                    Grande</span></label>
-                <label><input type="radio" name="fontSize" value="extra" /><span><i class="bi bi-fonts"></i>
-                    Extra</span></label>
-              </div>
-            </fieldset>
+                  <div class="password-step-heading">
+                    <span class="password-step-number" aria-hidden="true">2</span>
+                    <div>
+                      <strong>Crie sua nova senha</strong>
+                      <small>Os requisitos abaixo s&atilde;o atualizados enquanto voc&ecirc; digita.</small>
+                    </div>
+                  </div>
 
-            <!-- Ajustes finos de experiência para adaptar a tela ao jeito de trabalho do usuário. -->
-            <fieldset class="preference-group">
-              <legend>Ajustes de UX</legend>
-              <div class="toggle-list">
-                <label class="toggle-row">
-                  <span><strong>Interface compacta</strong><small>Reduz espa&ccedil;amentos para ver mais
-                      informa&ccedil;&otilde;es.</small></span>
-                  <input type="checkbox" id="densityToggle" name="density" value="compact" />
-                </label>
-                <label class="toggle-row">
-                  <span><strong>Reduzir anima&ccedil;&otilde;es</strong><small>Deixa transi&ccedil;&otilde;es mais
-                      discretas.</small></span>
-                  <input type="checkbox" id="motionToggle" name="motion" value="reduced" />
-                </label>
-                <label class="toggle-row">
-                  <span><strong>Realce do cursor</strong><small>Aumenta o feedback visual em links, bot&otilde;es e
-                      campos.</small></span>
-                  <input type="checkbox" id="cursorToggle" name="cursor" value="enhanced" />
-                </label>
-              </div>
-            </fieldset>
-          </form>
-          <div class="form-message success" id="preferencesMessage" role="status"></div>
-        </article>
+                  <div class="password-field-grid">
+                    <div class="asset-field password-field">
+                      <label for="newPassword">Nova senha</label>
+                      <span class="input-shell password-input-shell">
+                        <i class="bi bi-key" aria-hidden="true"></i>
+                        <input id="newPassword" name="nova_senha" type="password" autocomplete="new-password"
+                          minlength="8" maxlength="128" placeholder="Crie uma senha forte"
+                          aria-describedby="passwordRules" required />
+                        <button class="password-visibility-toggle" type="button" data-password-toggle="newPassword"
+                          aria-label="Mostrar nova senha" aria-pressed="false">
+                          <i class="bi bi-eye" aria-hidden="true"></i>
+                        </button>
+                      </span>
+                    </div>
 
-        <!-- Área de segurança. O navegador orienta o usuário e o backend valida e atualiza a senha real. -->
-        <article class="content-card security-card wide-card" id="seguranca" aria-labelledby="securityTitle">
-          <div class="card-header security-card-header">
-            <div class="security-title-group">
-              <span class="security-title-icon" aria-hidden="true"><i class="bi bi-shield-lock"></i></span>
-              <div>
-                <p class="section-tag">Seguran&ccedil;a da conta</p>
-                <h3 id="securityTitle">Alterar senha</h3>
-                <span class="card-subtitle">Confirme sua identidade e escolha uma senha exclusiva para o portal.</span>
-              </div>
-            </div>
-            <span class="password-protection-badge">
-              <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
-              Altera&ccedil;&atilde;o protegida
-            </span>
-          </div>
+                    <div class="asset-field password-field">
+                      <label for="confirmPassword">Confirmar nova senha</label>
+                      <span class="input-shell password-input-shell">
+                        <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                        <input id="confirmPassword" name="confirmacao_senha" type="password" autocomplete="new-password"
+                          minlength="8" maxlength="128" placeholder="Repita a nova senha"
+                          aria-describedby="passwordRules" required />
+                        <button class="password-visibility-toggle" type="button" data-password-toggle="confirmPassword"
+                          aria-label="Mostrar confirma&ccedil;&atilde;o da senha" aria-pressed="false">
+                          <i class="bi bi-eye" aria-hidden="true"></i>
+                        </button>
+                      </span>
+                    </div>
+                  </div>
 
-          <div class="password-change-layout">
-            <!-- A confirmação da senha atual reduz o impacto de uma sessão aberta indevidamente. -->
-            <form class="password-form password-form-panel" id="passwordForm"
-              action="../Backend/atualizar-senha.php" method="post">
-              <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
+                  <p class="password-caps-warning" id="passwordCapsLock" role="status" aria-live="polite" hidden>
+                    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                    Caps Lock est&aacute; ativado.
+                  </p>
 
-              <div class="password-step-heading">
-                <span class="password-step-number" aria-hidden="true">1</span>
-                <div>
-                  <strong>Confirme sua identidade</strong>
-                  <small>Digite a senha que voc&ecirc; usa atualmente para entrar.</small>
-                </div>
-              </div>
+                  <div class="password-strength-card" aria-live="polite">
+                    <div class="password-strength-heading">
+                      <span>For&ccedil;a da senha</span>
+                      <strong id="strengthLabel">Digite uma nova senha</strong>
+                    </div>
+                    <div class="strength-track" aria-hidden="true"><span id="strengthBar"></span></div>
+                  </div>
 
-              <div class="asset-field password-field">
-                <label for="currentPassword">Senha atual</label>
-                <span class="input-shell password-input-shell">
-                  <i class="bi bi-lock" aria-hidden="true"></i>
-                  <input id="currentPassword" name="senha_atual" type="password" autocomplete="current-password"
-                    maxlength="128" placeholder="Digite sua senha atual" required />
-                  <button class="password-visibility-toggle" type="button" data-password-toggle="currentPassword"
-                    aria-label="Mostrar senha atual" aria-pressed="false">
-                    <i class="bi bi-eye" aria-hidden="true"></i>
-                  </button>
-                </span>
-              </div>
+                  <ul class="password-rules" id="passwordRules" aria-label="Requisitos da nova senha">
+                    <li data-rule="length"><i class="bi bi-circle" aria-hidden="true"></i>Pelo menos 8 caracteres</li>
+                    <li data-rule="uppercase"><i class="bi bi-circle" aria-hidden="true"></i>Letra mai&uacute;scula</li>
+                    <li data-rule="number"><i class="bi bi-circle" aria-hidden="true"></i>N&uacute;mero</li>
+                    <li data-rule="special"><i class="bi bi-circle" aria-hidden="true"></i>Caractere especial</li>
+                    <li data-rule="match"><i class="bi bi-circle" aria-hidden="true"></i>Confirma&ccedil;&atilde;o igual
+                    </li>
+                  </ul>
 
-              <div class="password-section-divider" aria-hidden="true"></div>
+                  <div id="passwordMessage" class="form-message" role="status" aria-live="polite"></div>
 
-              <div class="password-step-heading">
-                <span class="password-step-number" aria-hidden="true">2</span>
-                <div>
-                  <strong>Crie sua nova senha</strong>
-                  <small>Os requisitos abaixo s&atilde;o atualizados enquanto voc&ecirc; digita.</small>
-                </div>
-              </div>
-
-              <div class="password-field-grid">
-                <div class="asset-field password-field">
-                  <label for="newPassword">Nova senha</label>
-                  <span class="input-shell password-input-shell">
-                    <i class="bi bi-key" aria-hidden="true"></i>
-                    <input id="newPassword" name="nova_senha" type="password" autocomplete="new-password" minlength="8"
-                      maxlength="128" placeholder="Crie uma senha forte" aria-describedby="passwordRules" required />
-                    <button class="password-visibility-toggle" type="button" data-password-toggle="newPassword"
-                      aria-label="Mostrar nova senha" aria-pressed="false">
-                      <i class="bi bi-eye" aria-hidden="true"></i>
+                  <div class="password-form-actions">
+                    <span class="password-session-note">
+                      <i class="bi bi-info-circle" aria-hidden="true"></i>
+                      A senha ser&aacute; atualizada no acesso principal e no perfil local.
+                    </span>
+                    <button class="primary-button password-submit-button" id="updatePasswordButton" type="submit">
+                      <i class="bi bi-shield-check" aria-hidden="true"></i>
+                      Salvar nova senha
                     </button>
-                  </span>
-                </div>
+                  </div>
+                </form>
 
-                <div class="asset-field password-field">
-                  <label for="confirmPassword">Confirmar nova senha</label>
-                  <span class="input-shell password-input-shell">
-                    <i class="bi bi-check2-circle" aria-hidden="true"></i>
-                    <input id="confirmPassword" name="confirmacao_senha" type="password" autocomplete="new-password"
-                      minlength="8" maxlength="128" placeholder="Repita a nova senha" aria-describedby="passwordRules"
-                      required />
-                    <button class="password-visibility-toggle" type="button" data-password-toggle="confirmPassword"
-                      aria-label="Mostrar confirma&ccedil;&atilde;o da senha" aria-pressed="false">
-                      <i class="bi bi-eye" aria-hidden="true"></i>
-                    </button>
-                  </span>
-                </div>
+                <aside class="password-guidance-panel" aria-labelledby="passwordGuidanceTitle">
+                  <span class="password-guidance-icon" aria-hidden="true"><i class="bi bi-fingerprint"></i></span>
+                  <p class="section-tag">Boas pr&aacute;ticas</p>
+                  <h4 id="passwordGuidanceTitle">Uma senha mais dif&iacute;cil de adivinhar</h4>
+                  <p>Prefira uma combina&ccedil;&atilde;o exclusiva e f&aacute;cil de guardar em um gerenciador de
+                    senhas.</p>
+
+                  <ul class="password-tips-list">
+                    <li><i class="bi bi-check2" aria-hidden="true"></i>N&atilde;o reutilize a senha do e-mail
+                      corporativo.</li>
+                    <li><i class="bi bi-check2" aria-hidden="true"></i>Evite nomes, datas e informa&ccedil;&otilde;es
+                      pessoais.</li>
+                    <li><i class="bi bi-check2" aria-hidden="true"></i>Use um gerenciador para criar e guardar senhas.
+                    </li>
+                  </ul>
+
+                  <div class="password-sync-note">
+                    <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                    <div>
+                      <strong>Sincroniza&ccedil;&atilde;o autom&aacute;tica</strong>
+                      <span>Depois de salvar, a nova senha passa a valer no pr&oacute;ximo acesso.</span>
+                    </div>
+                  </div>
+                </aside>
               </div>
+            </article>
 
-              <p class="password-caps-warning" id="passwordCapsLock" role="status" aria-live="polite" hidden>
-                <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
-                Caps Lock est&aacute; ativado.
-              </p>
-
-              <div class="password-strength-card" aria-live="polite">
-                <div class="password-strength-heading">
-                  <span>For&ccedil;a da senha</span>
-                  <strong id="strengthLabel">Digite uma nova senha</strong>
+            <!-- Diagnóstico do ambiente do usuário. Os dados com id são preenchidos pelo JavaScript no navegador. -->
+            <article class="content-card diagnostics-card wide-card" id="sistema" aria-labelledby="systemTitle">
+              <div class="card-header">
+                <div>
+                  <p class="section-tag">Sistema</p>
+                  <h3 id="systemTitle">Diagn&oacute;stico para suporte</h3>
                 </div>
-                <div class="strength-track" aria-hidden="true"><span id="strengthBar"></span></div>
-              </div>
-
-              <ul class="password-rules" id="passwordRules" aria-label="Requisitos da nova senha">
-                <li data-rule="length"><i class="bi bi-circle" aria-hidden="true"></i>Pelo menos 8 caracteres</li>
-                <li data-rule="uppercase"><i class="bi bi-circle" aria-hidden="true"></i>Letra mai&uacute;scula</li>
-                <li data-rule="number"><i class="bi bi-circle" aria-hidden="true"></i>N&uacute;mero</li>
-                <li data-rule="special"><i class="bi bi-circle" aria-hidden="true"></i>Caractere especial</li>
-                <li data-rule="match"><i class="bi bi-circle" aria-hidden="true"></i>Confirma&ccedil;&atilde;o igual</li>
-              </ul>
-
-              <div id="passwordMessage" class="form-message" role="status" aria-live="polite"></div>
-
-              <div class="password-form-actions">
-                <span class="password-session-note">
-                  <i class="bi bi-info-circle" aria-hidden="true"></i>
-                  A senha ser&aacute; atualizada no acesso principal e no perfil local.
-                </span>
-                <button class="primary-button password-submit-button" id="updatePasswordButton" type="submit">
-                  <i class="bi bi-shield-check" aria-hidden="true"></i>
-                  Salvar nova senha
+                <button class="secondary-button compact-preference-button settings-accent-button" id="copyDiagnostics"
+                  type="button">
+                  <i class="bi bi-clipboard-check"></i>
+                  Copiar informa&ccedil;&otilde;es
                 </button>
               </div>
-            </form>
-
-            <aside class="password-guidance-panel" aria-labelledby="passwordGuidanceTitle">
-              <span class="password-guidance-icon" aria-hidden="true"><i class="bi bi-fingerprint"></i></span>
-              <p class="section-tag">Boas pr&aacute;ticas</p>
-              <h4 id="passwordGuidanceTitle">Uma senha mais dif&iacute;cil de adivinhar</h4>
-              <p>Prefira uma combina&ccedil;&atilde;o exclusiva e f&aacute;cil de guardar em um gerenciador de senhas.</p>
-
-              <ul class="password-tips-list">
-                <li><i class="bi bi-check2" aria-hidden="true"></i>N&atilde;o reutilize a senha do e-mail corporativo.</li>
-                <li><i class="bi bi-check2" aria-hidden="true"></i>Evite nomes, datas e informa&ccedil;&otilde;es pessoais.</li>
-                <li><i class="bi bi-check2" aria-hidden="true"></i>Use um gerenciador para criar e guardar senhas.</li>
-              </ul>
-
-              <div class="password-sync-note">
-                <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
-                <div>
-                  <strong>Sincroniza&ccedil;&atilde;o autom&aacute;tica</strong>
-                  <span>Depois de salvar, a nova senha passa a valer no pr&oacute;ximo acesso.</span>
-                </div>
+              <div class="diagnostics-grid">
+                <div><span>Navegador</span><strong id="diagBrowser">--</strong></div>
+                <div><span>Sistema operacional</span><strong id="diagOs">--</strong></div>
+                <div><span>Largura da tela</span><strong id="diagWidth">--</strong></div>
+                <div><span>Data/hora local</span><strong id="diagTime">--</strong></div>
               </div>
-            </aside>
-          </div>
-        </article>
+            </article>
+          </section>
 
-        <!-- Diagnóstico do ambiente do usuário. Os dados com id são preenchidos pelo JavaScript no navegador. -->
-        <article class="content-card diagnostics-card wide-card" id="sistema" aria-labelledby="systemTitle">
-          <div class="card-header">
-            <div>
-              <p class="section-tag">Sistema</p>
-              <h3 id="systemTitle">Diagn&oacute;stico para suporte</h3>
-            </div>
-            <button class="secondary-button compact-preference-button settings-accent-button" id="copyDiagnostics"
-              type="button">
-              <i class="bi bi-clipboard-check"></i>
-              Copiar informa&ccedil;&otilde;es
-            </button>
-          </div>
-          <div class="diagnostics-grid">
-            <div><span>Navegador</span><strong id="diagBrowser">--</strong></div>
-            <div><span>Sistema operacional</span><strong id="diagOs">--</strong></div>
-            <div><span>Largura da tela</span><strong id="diagWidth">--</strong></div>
-            <div><span>Data/hora local</span><strong id="diagTime">--</strong></div>
-          </div>
-        </article>
-      </section>
-
-      <!-- Toast usado para mensagens rápidas sem interromper a navegação. -->
+          <!-- Toast usado para mensagens rápidas sem interromper a navegação. -->
         </div>
       </div>
 

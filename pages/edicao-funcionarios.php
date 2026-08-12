@@ -119,7 +119,11 @@ $funcionariosInativos = 0;
 $ultimoMovimento = "--";
 $erroBanco = "";
 $csrfToken = e((string) $_SESSION["csrf_token"]);
-$departamentos = ["TI", "Operacao", "Financeiro", "Administrativo", "Gestao"];
+$departamentos = [
+  "Comercial" => "Comercial",
+  "TI" => "TI",
+  "Administrativo" => "Administração",
+];
 
 try {
   // Abre a conexão compartilhada somente quando esta etapa precisa acessar o banco.
@@ -524,8 +528,8 @@ try {
                 <div class="input-shell">
                   <i class="bi bi-diagram-3"></i>
                   <select id="editEmployeeDepartment" name="departamento" required>
-                    <?php foreach ($departamentos as $departamento): ?>
-                      <option value="<?php echo e($departamento); ?>"><?php echo e($departamento); ?></option>
+                    <?php foreach ($departamentos as $valorDepartamento => $rotuloDepartamento): ?>
+                      <option value="<?php echo e($valorDepartamento); ?>"><?php echo e($rotuloDepartamento); ?></option>
                     <?php endforeach; ?>
                   </select>
                 </div>

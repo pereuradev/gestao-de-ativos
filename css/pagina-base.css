@@ -836,6 +836,66 @@ body.theme-light .sidebar-user-info small {
     padding var(--transition);
 }
 
+.sidebar-request-link {
+  position: relative;
+}
+
+.sidebar-notification-badge {
+  display: inline-grid;
+  min-width: 24px;
+  min-height: 22px;
+  margin-left: auto;
+  padding: 3px 7px;
+  place-items: center;
+  color: #ffffff;
+  border: 2px solid var(--sidebar-bg, #04111d);
+  border-radius: 999px;
+  background: #ef4444;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.32);
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.sidebar-notification-badge[hidden] {
+  display: none;
+}
+
+body.menu-lateral-compacto .sidebar-notification-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 19px;
+  min-height: 19px;
+  padding: 2px 4px;
+  border-width: 1px;
+  font-size: 0.56rem;
+}
+
+.access-request-floating-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10020;
+  display: flex;
+  max-width: min(380px, calc(100vw - 32px));
+  align-items: center;
+  gap: 11px;
+  padding: 14px 17px;
+  color: var(--text);
+  border: 1px solid color-mix(in srgb, var(--accent, var(--teal)) 48%, transparent);
+  border-radius: 15px;
+  background: var(--surface-strong);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.access-request-floating-notification i {
+  color: var(--accent, var(--teal));
+  font-size: 1.1rem;
+}
+
 .topbar {
   position: sticky;
   top: 0;

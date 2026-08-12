@@ -210,6 +210,64 @@
   min-width: 210px;
 }
 
+.asset-cell-stack {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.asset-cell-stack > * {
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .asset-view-card .records-table-wrap {
+    width: 100%;
+    overflow: visible;
+  }
+
+  .asset-view-table {
+    width: 100%;
+    min-width: 0 !important;
+    table-layout: fixed;
+  }
+
+  .asset-view-table tr {
+    width: 100%;
+    max-width: 100%;
+    padding: 10px;
+  }
+
+  .asset-view-table td {
+    width: 100%;
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 6px;
+    padding: 7px 0;
+    align-items: start;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .asset-view-table td::before {
+    line-height: 1.35;
+  }
+
+  .asset-view-table td > *,
+  .asset-view-table td strong,
+  .asset-view-table td span,
+  .asset-view-table td a {
+    max-width: 100%;
+    min-width: 0 !important;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .asset-view-table .status-badge,
+  .asset-view-table .asset-datasheet-link {
+    width: fit-content;
+  }
+}
+
 .asset-datasheet-link {
   min-height: 34px;
   padding: 0 12px;

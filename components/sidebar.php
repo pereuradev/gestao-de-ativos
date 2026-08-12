@@ -178,6 +178,7 @@ $componentSidebarCanCreateCategories = $componentSidebarHasPermission("cadastrar
 $componentSidebarCanEditEmployees = $componentSidebarHasPermission("editar_funcionarios");
 $componentSidebarCanEditGroups = $componentSidebarHasPermission("editar_grupos");
 $componentSidebarCanEditCategories = $componentSidebarHasPermission("editar_categorias");
+$componentSidebarCanManageAccessRequests = $componentSidebarHasPermission("gerenciar_solicitacoes_acesso");
 
 // Listas de telas que pertencem aos grupos expansivos da sidebar.
 // Elas controlam quando Visualizacoes, Cadastros ou Edicao devem iniciar abertos.
@@ -386,6 +387,15 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
       </div>
     </div>
 
+    <?php if ($componentSidebarCanManageAccessRequests): ?>
+      <a class="<?php echo $componentSidebarLinkClass("gerenciar-solicitacoes-acesso.php"); ?> sidebar-request-link"
+        href="gerenciar-solicitacoes-acesso.php" <?php echo $componentSidebarCurrentAttr("gerenciar-solicitacoes-acesso.php"); ?>>
+        <i class="bi bi-person-check-fill" aria-hidden="true"></i>
+        <span>Solicita&ccedil;&otilde;es</span>
+        <strong id="sidebarAccessRequestBadge" class="sidebar-notification-badge" hidden aria-label="0 solicitacoes pendentes">0</strong>
+      </a>
+    <?php endif; ?>
+
     <!-- Configuracoes permanece como link principal por nao pertencer aos fluxos expansivos. -->
     <a class="<?php echo $componentSidebarLinkClass("configuracoes.php"); ?>" href="configuracoes.php" <?php echo $componentSidebarCurrentAttr("configuracoes.php"); ?>>
       <i class="bi bi-gear-fill" aria-hidden="true"></i>
@@ -423,3 +433,7 @@ $componentSidebarEditingOpen = $componentSidebarSubmenuIsOpen($componentSidebarE
 
 <!-- Backdrop usado pelo JavaScript para fechar a sidebar em telas menores. -->
 <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<?php if ($componentSidebarCanManageAccessRequests): ?>
+  <script src="../js/ui/notificacoes-solicitacoes-acesso.js?v=20260806-arquivos-claros" defer></script>
+<?php endif; ?>
