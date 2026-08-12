@@ -17,8 +17,8 @@ if (ini_get("session.use_cookies")) {
         time() - 42000,
         $parametrosCookie["path"],
         $parametrosCookie["domain"],
-        (bool)$parametrosCookie["secure"],
-        (bool)$parametrosCookie["httponly"]
+        (bool) $parametrosCookie["secure"],
+        (bool) $parametrosCookie["httponly"]
     );
 }
 
@@ -26,5 +26,5 @@ if (ini_get("session.use_cookies")) {
 session_destroy();
 
 // Redireciona com um parametro para a tela mostrar a mensagem correta.
-header("Location: ../pages/Pagina-login.html?sessao=encerrada");
+header("Location: ../pages/Pagina-login.html");
 exit;

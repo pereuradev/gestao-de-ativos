@@ -70,6 +70,7 @@ const REGRAS_PERMISSAO_PAGINA = {
   "edicao-funcionarios.php": { permission: "editar_funcionarios", resource: "Edicao de funcionarios" },
   "cadastro-grupos.php": { permission: "cadastrar_grupos", resource: "Cadastro de grupos" },
   "edicao-grupos.php": { permission: "editar_grupos", resource: "Edicao de grupos" },
+  "gerenciar-solicitacoes-acesso.php": { permission: "gerenciar_solicitacoes_acesso", resource: "Solicitacoes de acesso" },
 };
 const ATALHOS_PERMISSAO_DESABILITADOS = {
   Funcionarios: { permission: "visualizar_funcionarios", href: "funcionarios.php" },
@@ -81,6 +82,7 @@ const ATALHOS_PERMISSAO_DESABILITADOS = {
   "Edicao de categorias": { permission: "editar_categorias", href: "edicao-categorias.php" },
   "Cadastro de grupos": { permission: "cadastrar_grupos", href: "cadastro-grupos.php" },
   "Edicao de grupos": { permission: "editar_grupos", href: "edicao-grupos.php" },
+  "Solicitacoes de acesso": { permission: "gerenciar_solicitacoes_acesso", href: "gerenciar-solicitacoes-acesso.php" },
 };
 
 // Paletas que podem ser escolhidas nas configuracoes do usuario.

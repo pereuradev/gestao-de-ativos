@@ -277,10 +277,10 @@ try {
   <!-- Estilos compartilhados e regras específicas deste fluxo. -->
   <link rel="stylesheet" href="../css/pagina-base.css?v=20260731-sidebar-compact" />
   <link rel="stylesheet" href="../css/cadastro-ativos.css?v=20260619-select-options" />
-  <link rel="stylesheet" href="../css/edicao-ativos.css?v=20260629-pagination" />
+  <link rel="stylesheet" href="../css/edicao-ativos.css?v=20260811-mobile-cards" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260630-reduced-motion" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
-  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260803-desktop-density" />
+  <link rel="stylesheet" href="../css/responsivo-global.css?v=20260811-asset-edit-mobile" />
   <!-- Scripts da interface; os módulos compartilhados devem carregar antes do script da página. -->
   <script src="../js/animations/efeito-digitacao.js?v=20260803-static-headings" defer></script>
   <script src="../js/ui/feedback-interface.js?v=20260630-reduced-motion" defer></script>
@@ -505,8 +505,10 @@ try {
                   data-created="<?php echo e(formatarDataAtivo((string) ($ativo["criado_em"] ?? ""))); ?>"
                   data-search="<?php echo e($searchData); ?>">
                   <td data-label="Ativo">
-                    <strong data-asset-name><?php echo e($nome ?: "--"); ?></strong>
-                    <span data-asset-property><?php echo e($propriedade); ?></span>
+                    <div class="asset-edit-cell-stack">
+                      <strong data-asset-name><?php echo e($nome ?: "--"); ?></strong>
+                      <span data-asset-property><?php echo e($propriedade); ?></span>
+                    </div>
                   </td>
                   <td data-label="Categoria" data-asset-category><?php echo e($categoria); ?></td>
                   <td data-label="Marca" data-asset-brand><?php echo e($marca !== "" ? $marca : "--"); ?></td>

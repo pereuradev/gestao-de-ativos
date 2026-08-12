@@ -352,9 +352,69 @@
   margin-top: 22px;
 }
 
+@media (min-width: 641px) {
+  .dashboard-products-page .dashboard-asset-evolution .asset-chart-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .dashboard-products-page .dashboard-asset-evolution.is-loading canvas {
   opacity: 0.34;
   filter: saturate(0.72);
+}
+
+.dashboard-products-page .dashboard-loading-indicator {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 192px;
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 0 20px;
+  border: 1px solid color-mix(in srgb, var(--cyan, #4aa3c7) 46%, var(--line));
+  border-radius: 999px;
+  color: var(--text, #f6fbff);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--surface, #081d2d) 88%, transparent),
+      color-mix(in srgb, var(--soft, rgba(255, 255, 255, 0.08)) 82%, transparent)
+    );
+  box-shadow: 0 20px 45px rgba(3, 16, 29, 0.24);
+  font-size: 0.88rem;
+  font-weight: 900;
+  line-height: 1.1;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, calc(-50% + 8px));
+  transition:
+    opacity 180ms ease,
+    visibility 180ms ease,
+    transform 180ms ease;
+  pointer-events: none;
+}
+
+.dashboard-products-page
+  .dashboard-asset-evolution.is-loading
+  .asset-evolution-loading {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%);
+}
+
+.dashboard-products-page .dashboard-loading-spinner {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border: 3px solid color-mix(in srgb, var(--cyan, #4aa3c7) 26%, transparent);
+  border-top-color: var(--mint, #66d5c2);
+  border-radius: 50%;
+  animation: dashboardIconSpin 0.72s linear infinite;
 }
 
 /* Cabecalho interno dos paineis, com titulo e metricas auxiliares. */
@@ -529,9 +589,27 @@
 }
 
 /* Lista lateral com ranking dos dados visiveis no grafico. */
+.dashboard-products-page .details-card {
+  position: relative;
+}
+
 .dashboard-products-page .ranking-list {
   display: grid;
   gap: 13px;
+  transition:
+    opacity 0.22s ease,
+    filter 0.22s ease;
+}
+
+.dashboard-products-page.dashboard-filtering .details-card .ranking-list {
+  opacity: 0.34;
+  filter: saturate(0.72);
+}
+
+.dashboard-products-page.dashboard-filtering .ranking-loading {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%);
 }
 
 .dashboard-products-page .ranking-item {
@@ -728,5 +806,10 @@
 
   .dashboard-products-page .chart-wrapper {
     height: 300px;
+  }
+
+  .dashboard-products-page .asset-evolution-shell {
+    height: 260px !important;
+    padding: 12px 8px 8px;
   }
 }

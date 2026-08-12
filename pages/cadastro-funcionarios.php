@@ -39,10 +39,21 @@ function formatarData(?string $value): string
   }
 }
 
+$usuarioPodeGerenciarAdministradores = usuarioGrupoAcessoAdministradorConfirmado($pdo);
 $usuario = $_SESSION["usuario"];
 $csrfToken = e((string) $_SESSION["csrf_token"]);
 
-$departamentos = ["TI", "Comercial", "Administrativo"];
+$departamentos = [
+  "Comercial" => "Comercial",
+  "TI" => "TI",
+  "Administrativo" => "Administração",
+];
+$tituloCadastro = $usuarioPodeGerenciarAdministradores
+  ? "Cadastre administradores e colaboradores."
+  : "Cadastre novos colaboradores.";
+$frasesCadastro = $usuarioPodeGerenciarAdministradores
+  ? "Cadastre administradores e colaboradores.|Controle quem entra no portal.|Centralize o acesso por perfil."
+  : "Cadastre novos colaboradores.|Organize os acessos da equipe.|Mantenha os dados corporativos completos.";
 $totalFuncionarios = 0;
 $totalAdministradores = 0;
 $totalColaboradores = 0;
@@ -97,7 +108,7 @@ try {
 
   <title>Cadastro de funcion&aacute;rios | TI TECH Solutions</title>
   <meta name="description"
-    content="Cadastro interno de funcion&aacute;rios do portal da TI TECH Solutions, restrito a administradores." />
+    content="Cadastro interno de funcion&aacute;rios do portal da TI TECH Solutions para usu&aacute;rios autorizados." />
   <!-- Identidade visual, tipografia e ícones usados pela página. -->
   <link rel="icon" type="image/png" href="../assets/favicon.png?v=20260630-ti-favicon" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -108,7 +119,7 @@ try {
   <!-- Estilos compartilhados e regras específicas deste fluxo. -->
   <link rel="stylesheet" href="../css/pagina-base.css?v=20260731-sidebar-compact" />
   <link rel="stylesheet" href="../css/cadastro-ativos.css?v=20260701-admin-employee-register-v2" />
-  <link rel="stylesheet" href="../css/cadastro-funcionarios.css?v=20260702-employee-hero-gradient" />
+  <link rel="stylesheet" href="../css/cadastro-funcionarios.css?v=20260811-form-layout" />
   <link rel="stylesheet" href="../css/typewriter.css?v=20260701-admin-employee-register-v2" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
   <link rel="stylesheet" href="../css/responsivo-global.css?v=20260803-desktop-density" />
@@ -119,7 +130,7 @@ try {
   <script src="../js/animations/entrada-pagina.js?v=20260730-sidebar-contract" defer></script>
   <script src="../js/ui/menu-lateral.js?v=20260731-sidebar-compact" defer></script>
   <script src="../js/base-interface.js?v=20260730-sidebar-contract" defer></script>
-  <script src="../js/pages/cadastro-funcionarios.js?v=20260702-confirm-dialogs" defer></script>
+  <script src="../js/pages/cadastro-funcionarios.js?v=20260811-form-layout" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="../js/ui/widgets-react.js?v=20260626-react-responsive" defer></script>
@@ -165,13 +176,15 @@ try {
           <p class="section-tag">Acesso interno</p>
           <h2 id="employeeRegisterTitle">
             <span class="typewriter-heading" style="--typewriter-min: 35ch" data-typewriter-loop
-              data-typewriter-phrases="Cadastre administradores e colaboradores.|Controle quem entra no portal.|Centralize o acesso por perfil.">Cadastre
-              administradores e colaboradores.</span><span aria-hidden="true"></span>
+              data-typewriter-phrases="<?php echo e($frasesCadastro); ?>"><?php echo e($tituloCadastro); ?></span><span
+              aria-hidden="true"></span>
           </h2>
           <p>
-            Esta &aacute;rea &eacute; exclusiva para administradores. Use-a para criar novos acessos com o perfil
-            correto,
-            dados corporativos completos e rastreabilidade desde o primeiro login.
+            <?php if ($usuarioPodeGerenciarAdministradores): ?>
+              Crie novos acessos e defina o perfil correto com dados corporativos completos.
+            <?php else: ?>
+              Crie acessos operacionais para colaboradores. Perfis administrativos continuam protegidos.
+            <?php endif; ?>
           </p>
         </div>
       </section>
@@ -238,148 +251,209 @@ try {
               <p class="section-tag">Formulario</p>
               <h3>Novo funcion&aacute;rio</h3>
               <span class="card-subtitle">
-                Crie o acesso com dados completos. O perfil define se o usu&aacute;rio entrar&aacute; como administrador
-                ou colaborador no portal.
+                Preencha os dados obrigat&oacute;rios e revise as informa&ccedil;&otilde;es antes de concluir.
               </span>
             </div>
 
 
+            <div class="employee-permission-badge <?php echo $usuarioPodeGerenciarAdministradores ? "is-admin" : "is-operational"; ?>">
+              <i class="bi <?php echo $usuarioPodeGerenciarAdministradores ? "bi-shield-lock-fill" : "bi-person-check-fill"; ?>"></i>
+              <span>
+                <small>Cadastro permitido</small>
+                <strong><?php echo $usuarioPodeGerenciarAdministradores ? "Todos os perfis" : "Somente colaboradores"; ?></strong>
+              </span>
+            </div>
           </div>
 
           <form id="employeeSignupForm" class="enhanced-asset-form" action="../Backend/cadastrar-usuario.php" method="post"
-            novalidate>
+            data-permite-administrador="<?php echo $usuarioPodeGerenciarAdministradores ? "true" : "false"; ?>" novalidate>
             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>" />
             <input id="selectedEmployeeRole" type="hidden" name="tipo_usuario" value="Colaborador" />
 
-            <div class="asset-form-grid">
-              <div class="form-section-title">
-                <i class="bi bi-person-plus"></i>
-                <span>Dados principais</span>
-              </div>
+            <div class="employee-form-sections">
+              <fieldset class="employee-form-section">
+                <legend class="employee-form-section-heading">
+                  <span class="employee-section-number">01</span>
+                  <i class="bi bi-person-vcard-fill" aria-hidden="true"></i>
+                  <span class="employee-section-copy">
+                    <strong>Dados pessoais e contato</strong>
+                    <small>Identifica&ccedil;&atilde;o b&aacute;sica do novo funcion&aacute;rio</small>
+                  </span>
+                </legend>
 
-              <label class="asset-field wide-field">
-                <span>Nome completo <strong>*</strong></span>
-                <div class="input-shell">
-                  <i class="bi bi-person"></i>
-                  <input id="employeeFullName" name="nome_completo" type="text" placeholder="Nome e sobrenome"
-                    autocomplete="name" required />
+                <div class="employee-fields-grid">
+                  <label class="asset-field wide-field">
+                    <span>Nome completo <strong>*</strong></span>
+                    <div class="input-shell">
+                      <i class="bi bi-person"></i>
+                      <input id="employeeFullName" name="nome_completo" type="text" placeholder="Nome e sobrenome"
+                        autocomplete="name" maxlength="150" required />
+                    </div>
+                  </label>
+
+                  <label class="asset-field">
+                    <span>Data de nascimento <strong>*</strong></span>
+                    <div class="input-shell">
+                      <i class="bi bi-calendar3"></i>
+                      <input id="employeeBirthDate" name="data_nascimento" type="date" autocomplete="bday"
+                        max="<?php echo date("Y-m-d"); ?>" required />
+                    </div>
+                  </label>
+
+                  <label class="asset-field">
+                    <span>Celular <strong>*</strong></span>
+                    <div class="input-shell">
+                      <i class="bi bi-phone"></i>
+                      <input id="employeeCellphone" name="celular" type="tel" placeholder="(00) 00000-0000"
+                        inputmode="tel" autocomplete="tel" maxlength="15" required />
+                    </div>
+                  </label>
+
+                  <label class="asset-field">
+                    <span>RG <strong>*</strong></span>
+                    <div class="input-shell">
+                      <i class="bi bi-card-text"></i>
+                      <input id="employeeRg" name="rg" type="text" placeholder="00.000.000-0" inputmode="numeric"
+                        autocomplete="off" maxlength="12" required />
+                    </div>
+                  </label>
+
+                  <label class="asset-field">
+                    <span>CPF <strong>*</strong></span>
+                    <div class="input-shell">
+                      <i class="bi bi-person-vcard"></i>
+                      <input id="employeeCpf" name="cpf" type="text" placeholder="000.000.000-00" inputmode="numeric"
+                        autocomplete="off" maxlength="14" required />
+                    </div>
+                  </label>
                 </div>
-              </label>
+              </fieldset>
 
-              <label class="asset-field">
-                <span>E-mail corporativo <strong>*</strong></span>
-                <div class="input-shell">
-                  <i class="bi bi-envelope"></i>
-                  <input id="employeeEmail" name="email" type="email" placeholder="nome@titechsolutions.com.br"
-                    autocomplete="email" required />
+              <fieldset class="employee-form-section">
+                <legend class="employee-form-section-heading">
+                  <span class="employee-section-number">02</span>
+                  <i class="bi bi-buildings-fill" aria-hidden="true"></i>
+                  <span class="employee-section-copy">
+                    <strong>V&iacute;nculo corporativo</strong>
+                    <small>Dados usados no perfil e na organiza&ccedil;&atilde;o da equipe</small>
+                  </span>
+                </legend>
+
+                <div class="employee-fields-grid">
+                  <label class="asset-field wide-field">
+                    <span>E-mail corporativo <strong>*</strong></span>
+                    <div class="input-shell">
+                      <i class="bi bi-envelope"></i>
+                      <input id="employeeEmail" name="email" type="email" placeholder="nome@titechsolutions.com.br"
+                        autocomplete="email" maxlength="160" required />
+                    </div>
+                  </label>
+
+                  <label class="asset-field">
+                    <span>Departamento <strong>*</strong></span>
+                    <div class="input-shell">
+                      <i class="bi bi-diagram-3"></i>
+                      <select id="employeeDepartment" name="departamento" required>
+                        <option value="">Selecione o departamento</option>
+                        <?php foreach ($departamentos as $valorDepartamento => $rotuloDepartamento): ?>
+                          <option value="<?php echo e($valorDepartamento); ?>"><?php echo e($rotuloDepartamento); ?></option>
+                        <?php endforeach; ?>
+                      </select>
+                    </div>
+                  </label>
+
+                  <label class="asset-field">
+                    <span>Empresa <strong>*</strong></span>
+                    <div class="input-shell">
+                      <i class="bi bi-buildings"></i>
+                      <input id="employeeCompany" name="empresa" type="text" placeholder="Nome da empresa"
+                        autocomplete="organization" maxlength="150" required />
+                    </div>
+                  </label>
                 </div>
-              </label>
+              </fieldset>
 
-              <label class="asset-field">
-                <span>Departamento <strong>*</strong></span>
-                <div class="input-shell">
-                  <i class="bi bi-diagram-3"></i>
-                  <select id="employeeDepartment" name="departamento" required>
-                    <option value="">Selecione o departamento</option>
-                    <?php foreach ($departamentos as $departamento): ?>
-                      <option value="<?php echo e($departamento); ?>"><?php echo e($departamento); ?></option>
-                    <?php endforeach; ?>
-                  </select>
+              <fieldset class="employee-form-section">
+                <legend class="employee-form-section-heading">
+                  <span class="employee-section-number">03</span>
+                  <i class="bi bi-shield-lock-fill" aria-hidden="true"></i>
+                  <span class="employee-section-copy">
+                    <strong>Seguran&ccedil;a e acesso</strong>
+                    <small>Defina o perfil e a senha inicial de entrada</small>
+                  </span>
+                </legend>
+
+                <div class="employee-fields-grid">
+                  <div class="asset-field wide-field">
+                    <span>Perfil de acesso <strong>*</strong></span>
+                    <?php if ($usuarioPodeGerenciarAdministradores): ?>
+                      <div class="segment-control employee-role-control" id="employeeRoleControl" data-active="Colaborador"
+                        role="radiogroup" aria-label="Perfil de acesso do funcion&aacute;rio">
+                        <button class="active" data-role="Colaborador" type="button" role="radio" aria-checked="true">
+                          <i class="bi bi-person-badge-fill"></i>
+                          <span><strong>Colaborador</strong><small>Acesso definido por grupos</small></span>
+                        </button>
+                        <button data-role="Administrador" type="button" role="radio" aria-checked="false">
+                          <i class="bi bi-shield-lock-fill"></i>
+                          <span><strong>Administrador</strong><small>Acesso ampliado ao portal</small></span>
+                        </button>
+                      </div>
+                    <?php else: ?>
+                      <div class="employee-role-locked" aria-label="Perfil de acesso fixado como colaborador">
+                        <span class="employee-role-locked-icon"><i class="bi bi-person-check-fill"></i></span>
+                        <span>
+                          <strong>Colaborador</strong>
+                          <small>O acesso administrativo s&oacute; pode ser concedido por outro administrador.</small>
+                        </span>
+                        <i class="bi bi-lock-fill employee-role-lock" aria-hidden="true"></i>
+                      </div>
+                    <?php endif; ?>
+                  </div>
+
+                  <div class="asset-field wide-field employee-password-field">
+                    <label for="employeePassword">Senha inicial <strong>*</strong></label>
+                    <div class="input-shell">
+                      <i class="bi bi-key"></i>
+                      <input id="employeePassword" name="senha" type="password" placeholder="M&iacute;nimo de 6 caracteres"
+                        autocomplete="new-password" minlength="6" maxlength="128"
+                        aria-describedby="employeePasswordStrengthText" required />
+                      <button class="password-toggle" data-target="employeePassword" type="button"
+                        aria-label="Mostrar senha">
+                        <i class="bi bi-eye"></i>
+                      </button>
+                    </div>
+
+                    <div class="password-meter" aria-live="polite">
+                      <div class="meter-track">
+                        <span id="employeePasswordStrengthBar"></span>
+                      </div>
+                      <small id="employeePasswordStrengthText">For&ccedil;a da senha: aguardando</small>
+                    </div>
+                  </div>
                 </div>
-              </label>
-
-              <div class="asset-field wide-field">
-                <span>Perfil de acesso <strong>*</strong></span>
-                <div class="segment-control" id="employeeRoleControl" data-active="Colaborador"
-                  aria-label="Perfil de acesso do funcion&aacute;rio">
-                  <button class="active" data-role="Colaborador" type="button">Colaborador</button>
-                  <button data-role="Administrador" type="button">Administrador</button>
-                </div>
-              </div>
-
-              <div class="form-section-title secondary-section">
-                <i class="bi bi-patch-check"></i>
-                <span>Identificacao e contato</span>
-              </div>
-
-              <label class="asset-field">
-                <span>RG <strong>*</strong></span>
-                <div class="input-shell">
-                  <i class="bi bi-card-text"></i>
-                  <input id="employeeRg" name="rg" type="text" placeholder="00.000.000-0" inputmode="numeric"
-                    autocomplete="off" required />
-                </div>
-              </label>
-
-              <label class="asset-field">
-                <span>CPF <strong>*</strong></span>
-                <div class="input-shell">
-                  <i class="bi bi-person-vcard"></i>
-                  <input id="employeeCpf" name="cpf" type="text" placeholder="000.000.000-00" inputmode="numeric"
-                    autocomplete="off" required />
-                </div>
-              </label>
-
-              <label class="asset-field">
-                <span>Celular <strong>*</strong></span>
-                <div class="input-shell">
-                  <i class="bi bi-phone"></i>
-                  <input id="employeeCellphone" name="celular" type="tel" placeholder="(00) 00000-0000" inputmode="tel"
-                    autocomplete="tel" required />
-                </div>
-              </label>
-
-              <label class="asset-field">
-                <span>Data de nascimento <strong>*</strong></span>
-                <div class="input-shell">
-                  <i class="bi bi-calendar3"></i>
-                  <input id="employeeBirthDate" name="data_nascimento" type="date" autocomplete="bday" required />
-                </div>
-              </label>
-
-              <label class="asset-field">
-                <span>Empresa <strong>*</strong></span>
-                <div class="input-shell">
-                  <i class="bi bi-buildings"></i>
-                  <input id="employeeCompany" name="empresa" type="text" placeholder="Nome da empresa"
-                    autocomplete="organization" required />
-                </div>
-              </label>
-
-              <label class="asset-field">
-                <span>Senha inicial <strong>*</strong></span>
-                <div class="input-shell">
-                  <i class="bi bi-key"></i>
-                  <input id="employeePassword" name="senha" type="password" placeholder="Minimo de 6 caracteres"
-                    autocomplete="new-password" required />
-                  <button class="password-toggle" data-target="employeePassword" type="button"
-                    aria-label="Mostrar senha">
-                    <i class="bi bi-eye"></i>
-                  </button>
-                </div>
-              </label>
-            </div>
-
-            <div class="password-meter" aria-live="polite">
-              <div class="meter-track">
-                <span id="employeePasswordStrengthBar"></span>
-              </div>
-              <small id="employeePasswordStrengthText">Força da senha: aguardando</small>
+              </fieldset>
             </div>
 
             <div id="employeeFormMessage" class="form-message employee-form-message" role="status" aria-live="polite">
             </div>
 
-            <div class="asset-form-actions enhanced-form-actions">
-              <button class="form-action-button danger-button" type="reset">
-                <i class="bi bi-arrow-counterclockwise"></i>
-                <span>Limpar campos</span>
-              </button>
+            <div class="employee-form-footer">
+              <p class="employee-form-review-note">
+                <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                <span>Revise os dados antes de concluir o cadastro.</span>
+              </p>
 
-              <button id="employeeSubmitButton" class="form-action-button success-button" type="submit">
-                <i class="bi bi-person-plus-fill"></i>
-                <span>Cadastrar funcion&aacute;rio</span>
-              </button>
+              <div class="asset-form-actions enhanced-form-actions">
+                <button class="form-action-button employee-reset-button" type="reset">
+                  <i class="bi bi-arrow-counterclockwise"></i>
+                  <span>Limpar formul&aacute;rio</span>
+                </button>
+
+                <button id="employeeSubmitButton" class="form-action-button success-button" type="submit">
+                  <i class="bi bi-person-plus-fill"></i>
+                  <span>Cadastrar funcion&aacute;rio</span>
+                </button>
+              </div>
             </div>
           </form>
         </article>
@@ -396,7 +470,11 @@ try {
             <h4>Regras do cadastro</h4>
             <ul class="employee-note-list">
               <li>O e-mail deve ser corporativo da TI TECH Solutions.</li>
-              <li>Administrador tem acesso ampliado a configuracoes e cadastros.</li>
+              <?php if ($usuarioPodeGerenciarAdministradores): ?>
+                <li>Administrador tem acesso ampliado a configura&ccedil;&otilde;es e cadastros.</li>
+              <?php else: ?>
+                <li>Somente administradores podem criar ou promover outros administradores.</li>
+              <?php endif; ?>
               <li>Colaborador entra no portal com perfil operacional.</li>
             </ul>
           </div>

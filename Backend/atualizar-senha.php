@@ -176,7 +176,7 @@ try {
 
     // O bloqueio serializa duas trocas concorrentes da mesma conta.
     $consultaPerfil = $pdo->prepare("
-        select id::text, email, status
+        select id::text, email, status, senha
           from public.perfis_usuarios
          where id = cast(:id as uuid)
            and lower(btrim(email)) = lower(btrim(:email))
@@ -196,6 +196,46 @@ try {
     if (strtolower(trim((string) ($perfil["status"] ?? ""))) !== "ativo") {
         cancelarTransacaoAtualizacaoSenha($pdo);
         responderAtualizacaoSenha(false, "Conta inativa. Entre em contato com um administrador.", 403);
+    }
+
+    $senhaHashLocal = (string) ($perfil["senha"] ?? "");
+    $senhaAtualConfereLocalmente = $senhaHashLocal !== ""
+        && password_verify($senhaAtual, $senhaHashLocal);
+
+    if ($senhaAtualConfereLocalmente) {
+        // Contas aprovadas pela fila podem existir apenas no perfil local.
+        // Nesse caso nao ha identidade no Auth para sincronizar, mas a mesma verificacao Argon2ID protege a troca.
+        $consultaIdentidadeSupabase = $pdo->prepare("
+            select 1
+              from auth.users
+             where id = cast(:id as uuid)
+               and lower(btrim(email)) = lower(btrim(:email))
+             limit 1
+        ");
+        $consultaIdentidadeSupabase->execute([
+            ":id" => $usuarioId,
+            ":email" => $emailSessao,
+        ]);
+
+        if ($consultaIdentidadeSupabase->fetchColumn() === false) {
+            $atualizarSenhaLocal = $pdo->prepare("
+                update public.perfis_usuarios
+                   set senha = :senha,
+                       atualizado_em = now()
+                 where id = cast(:id as uuid)
+            ");
+            $atualizarSenhaLocal->execute([
+                ":senha" => gerarHashAtualizacaoSenha($novaSenha),
+                ":id" => $usuarioId,
+            ]);
+
+            if (!$pdo->commit()) {
+                throw new RuntimeException("Nao foi possivel confirmar a atualizacao local da senha.");
+            }
+
+            session_regenerate_id(true);
+            responderAtualizacaoSenha(true, "Senha atualizada com sucesso.");
+        }
     }
 
     // A senha atual e confirmada diretamente no provedor de identidade.

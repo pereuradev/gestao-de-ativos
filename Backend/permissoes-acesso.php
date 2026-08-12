@@ -79,12 +79,14 @@ function exigirPermissaoApi(string $permissao, ?string $recurso = null): void
 // Áreas estritamente administrativas mantêm uma verificação separada das permissões por recurso.
 function exigirAdministradorPagina(?string $recurso = null): void
 {
+    global $pdo;
+
     if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
         header("Location: Pagina-login.html?sessao=expirada");
         exit;
     }
 
-    if (usuarioGrupoAcessoAdministrador($_SESSION["usuario"])) {
+    if (usuarioGrupoAcessoAdministradorConfirmado($pdo)) {
         return;
     }
 
@@ -95,6 +97,8 @@ function exigirAdministradorPagina(?string $recurso = null): void
 
 function exigirAdministradorApi(?string $recurso = null): void
 {
+    global $pdo;
+
     header("Content-Type: application/json; charset=utf-8");
 
     if (empty($_SESSION["usuario"]) || !is_array($_SESSION["usuario"])) {
@@ -106,7 +110,7 @@ function exigirAdministradorApi(?string $recurso = null): void
         exit;
     }
 
-    if (usuarioGrupoAcessoAdministrador($_SESSION["usuario"])) {
+    if (usuarioGrupoAcessoAdministradorConfirmado($pdo)) {
         return;
     }
 
@@ -118,4 +122,18 @@ function exigirAdministradorApi(?string $recurso = null): void
         "message" => "Apenas administradores podem acessar {$nomeRecurso}.",
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
+}
+
+// Criar, promover, rebaixar ou editar um administrador exige confirmacao no banco.
+function exigirAdministradorParaGerenciarPerfilApi(
+    ?string $tipoUsuarioAtual,
+    string $tipoUsuarioPretendido,
+    ?string $recurso = null
+): void {
+    $perfilAdministrativo = tipoUsuarioGrupoAcessoAdministrador((string) $tipoUsuarioAtual)
+        || tipoUsuarioGrupoAcessoAdministrador($tipoUsuarioPretendido);
+
+    if ($perfilAdministrativo) {
+        exigirAdministradorApi($recurso ?? "perfis administrativos");
+    }
 }

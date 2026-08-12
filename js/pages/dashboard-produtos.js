@@ -7,6 +7,8 @@
   const CHAVE_ARMAZENAMENTO_DESTAQUE = "titech-accent";
   const TRANSICAO_TEMA_MS = 660;
   const TEMPO_LIMITE_PAINEL_MS = 12000;
+  const ALTURA_POR_PRODUTO_GRAFICO_PX = 24;
+  const ESPACO_EIXOS_GRAFICO_PX = 72;
 
   // Paletas aceitas pela tela de configuracoes. O dashboard usa as mesmas variaveis
   // para graficos, botoes e estados visuais.
@@ -36,6 +38,145 @@
       accent: "#a78bfa",
     },
   };
+
+  const CORES_STATUS_ATIVOS = {
+    disponivel: "#22c55e",
+    disponiveis: "#22c55e",
+    "em uso": "#fbbf24",
+    manutencao: "#ef4444",
+    homologacao: "#c4b5fd",
+    "em homologacao": "#c4b5fd",
+  };
+
+  class CoresGrafico {
+    obterCores() {
+      throw new Error("A classe de cores deve implementar obterCores().");
+    }
+  }
+
+  class CoresPadrao extends CoresGrafico {
+    obterCores(linhasGrafico, coresBase) {
+      return linhasGrafico.map(
+        (itemIgnorado, indice) => coresBase[indice % coresBase.length],
+      );
+    }
+  }
+
+  class CoresStatus extends CoresGrafico {
+    constructor(coresPorStatus) {
+      super();
+      this.coresPorStatus = coresPorStatus;
+    }
+
+    obterCores(linhasGrafico, coresBase) {
+      return linhasGrafico.map((linha, indice) => {
+        const chaveStatus = normalizarChaveStatus(linha.nome);
+
+        return (
+          this.coresPorStatus[chaveStatus] ||
+          coresBase[indice % coresBase.length]
+        );
+      });
+    }
+  }
+
+  class ClienteApiDashboard {
+    async buscarJson(endereco, sinal, mensagemErro) {
+      const resposta = await fetch(endereco, {
+        headers: {
+          Accept: "application/json",
+        },
+        signal: sinal,
+      });
+
+      if (resposta.status === 401) {
+        window.location.href = "Pagina-login.html?sessao=expirada";
+        return null;
+      }
+
+      if (!resposta.ok) {
+        throw new Error(mensagemErro);
+      }
+
+      return resposta.json();
+    }
+  }
+
+  class RequisicaoDashboard {
+    constructor(tempoLimiteMs = 0) {
+      this.tempoLimiteMs = tempoLimiteMs;
+      this.controlador = null;
+      this.temporizador = null;
+      this.idAtual = 0;
+      this.tempoLimiteEsgotado = false;
+    }
+
+    iniciar() {
+      this.cancelarAtual();
+      this.idAtual += 1;
+      this.controlador = new AbortController();
+      this.tempoLimiteEsgotado = false;
+
+      const id = this.idAtual;
+
+      if (this.tempoLimiteMs > 0) {
+        this.temporizador = window.setTimeout(() => {
+          if (!this.ehAtual(id)) {
+            return;
+          }
+
+          this.tempoLimiteEsgotado = true;
+          this.controlador?.abort();
+        }, this.tempoLimiteMs);
+      }
+
+      return {
+        id,
+        sinal: this.controlador.signal,
+      };
+    }
+
+    ehAtual(id) {
+      return id === this.idAtual;
+    }
+
+    foiInterrompida(erro) {
+      return erro?.name === "AbortError";
+    }
+
+    finalizar(id) {
+      if (!this.ehAtual(id)) {
+        return false;
+      }
+
+      this.limparTemporizador();
+      this.controlador = null;
+      return true;
+    }
+
+    cancelarAtual() {
+      this.limparTemporizador();
+      this.controlador?.abort();
+      this.controlador = null;
+    }
+
+    limparTemporizador() {
+      if (this.temporizador !== null) {
+        window.clearTimeout(this.temporizador);
+        this.temporizador = null;
+      }
+    }
+  }
+
+  const CORES_PADRAO = new CoresPadrao();
+  const CORES_POR_METRICA = {
+    status: new CoresStatus(CORES_STATUS_ATIVOS),
+  };
+  const clienteApiDashboard = new ClienteApiDashboard();
+  const requisicaoProdutos = new RequisicaoDashboard(
+    TEMPO_LIMITE_PAINEL_MS,
+  );
+  const requisicaoEvolucao = new RequisicaoDashboard();
 
   // Estrutura vazia usada antes do banco responder ou quando ocorre algum erro.
   const DADOS_PAINEL_PADRAO = {
@@ -118,10 +259,6 @@
   let graficoProdutos = null;
   let graficoEvolucaoAtivos = null;
   let temporizadorTema = null;
-  let controladorRequisicaoPainel = null;
-  let controladorRequisicaoEvolucao = null;
-  let idRequisicaoPainel = 0;
-  let idRequisicaoEvolucao = 0;
   const cachePainel = new Map();
   let periodoEvolucaoAtivos = "semana";
   let dadosEvolucaoAtivos = {
@@ -362,17 +499,13 @@
 
     filtroCategoria?.addEventListener("change", () => {
       estado.categoriaId = filtroCategoria.value || "todos";
-      definirMetricaPainel(
-        estado.categoriaId === "todos" ? "categorias" : "marcas",
-      );
+      definirMetricaPainel(obterMetricaSugeridaFiltros());
       carregarProdutosPainel();
     });
 
     filtroMarca?.addEventListener("change", () => {
       estado.marca = filtroMarca.value || "todos";
-      definirMetricaPainel(
-        estado.marca === "todos" ? estado.metrica : "categorias",
-      );
+      definirMetricaPainel(obterMetricaSugeridaFiltros());
       carregarProdutosPainel();
     });
 
@@ -431,7 +564,7 @@
 
     definirTexto(
       "assetEvolutionSubtitle",
-      `Acompanhe o acumulado do invent\u00e1rio e os novos cadastros ${PERIODOS_EVOLUCAO_ATIVOS[periodoSeguro].detalhe}.`,
+      `Acompanhe o total acumulado do invent\u00e1rio ${PERIODOS_EVOLUCAO_ATIVOS[periodoSeguro].detalhe}.`,
     );
 
     if (deveRenderizar) {
@@ -453,6 +586,19 @@
     }
   }
 
+  function obterMetricaSugeridaFiltros() {
+    // A visualizacao acompanha a hierarquia natural: tipo, marca e localizacao.
+    if (estado.marca !== "todos") {
+      return "locais";
+    }
+
+    if (estado.categoriaId !== "todos") {
+      return "marcas";
+    }
+
+    return "categorias";
+  }
+
   async function carregarProdutosPainel(
     exibirCarregamento = true,
     opcoes = {},
@@ -471,17 +617,7 @@
       return;
     }
 
-    controladorRequisicaoPainel?.abort();
-    controladorRequisicaoPainel = new AbortController();
-    const controladorAtual = controladorRequisicaoPainel;
-    let tempoLimiteEsgotado = false;
-    const temporizadorLimite = window.setTimeout(() => {
-      tempoLimiteEsgotado = true;
-      controladorAtual.abort();
-    }, TEMPO_LIMITE_PAINEL_MS);
-
-    // ID incremental evita que uma resposta antiga sobrescreva uma selecao mais recente.
-    const idRequisicao = ++idRequisicaoPainel;
+    const requisicao = requisicaoProdutos.iniciar();
 
     if (exibirCarregamento) {
       definirCarregandoPainel(true);
@@ -495,33 +631,16 @@
     });
 
     try {
-      const resposta = await fetch(
+      const dadosResposta = await clienteApiDashboard.buscarJson(
         `${ENDPOINT_PRODUTOS_PAINEL}?${parametros.toString()}`,
-        {
-          headers: {
-            Accept: "application/json",
-          },
-          signal: controladorAtual.signal,
-        },
+        requisicao.sinal,
+        "Falha ao carregar dashboard de produtos.",
       );
 
-      if (idRequisicao !== idRequisicaoPainel) {
-        return;
-      }
-
-      if (resposta.status === 401) {
-        // Sessao expirada: manda o usuario para o login com mensagem adequada.
-        window.location.href = "Pagina-login.html?sessao=expirada";
-        return;
-      }
-
-      if (!resposta.ok) {
-        throw new Error("Falha ao carregar dashboard de produtos.");
-      }
-
-      const dadosResposta = await resposta.json();
-
-      if (idRequisicao !== idRequisicaoPainel) {
+      if (
+        dadosResposta === null ||
+        !requisicaoProdutos.ehAtual(requisicao.id)
+      ) {
         return;
       }
 
@@ -532,73 +651,62 @@
         formatarUltimaAtualizacao(dadosPainel.gerado_em),
       );
     } catch (erro) {
-      if (erro.name === "AbortError" && !tempoLimiteEsgotado) {
+      if (
+        requisicaoProdutos.foiInterrompida(erro) &&
+        !requisicaoProdutos.tempoLimiteEsgotado
+      ) {
         return;
       }
 
-      if (idRequisicao !== idRequisicaoPainel) {
+      if (!requisicaoProdutos.ehAtual(requisicao.id)) {
         return;
       }
 
       console.error(erro);
       definirStatus(
-        tempoLimiteEsgotado
+        requisicaoProdutos.tempoLimiteEsgotado
           ? "O resumo demorou mais que o esperado."
           : "Não foi possível atualizar o resumo.",
         "A evolução segue disponível. Use Atualizar para tentar novamente.",
       );
     } finally {
-      window.clearTimeout(temporizadorLimite);
-      if (idRequisicao === idRequisicaoPainel) {
-        controladorRequisicaoPainel = null;
+      if (requisicaoProdutos.finalizar(requisicao.id)) {
         definirCarregandoPainel(false);
       }
     }
   }
 
   async function carregarEvolucaoAtivos(exibirCarregamento = true) {
-    controladorRequisicaoEvolucao?.abort();
-    controladorRequisicaoEvolucao = new AbortController();
-
-    const idRequisicao = ++idRequisicaoEvolucao;
+    const requisicao = requisicaoEvolucao.iniciar();
 
     if (exibirCarregamento) {
       definirCarregandoEvolucao(true);
     }
 
     try {
-      const resposta = await fetch(ENDPOINT_METRICAS_GERAIS, {
-        headers: {
-          Accept: "application/json",
-        },
-        signal: controladorRequisicaoEvolucao.signal,
-      });
+      const dadosResposta = await clienteApiDashboard.buscarJson(
+        ENDPOINT_METRICAS_GERAIS,
+        requisicao.sinal,
+        "Falha ao carregar evolucao de ativos.",
+      );
 
-      if (idRequisicao !== idRequisicaoEvolucao) {
+      if (
+        dadosResposta === null ||
+        !requisicaoEvolucao.ehAtual(requisicao.id)
+      ) {
         return;
       }
-
-      if (resposta.status === 401) {
-        window.location.href = "Pagina-login.html?sessao=expirada";
-        return;
-      }
-
-      if (!resposta.ok) {
-        throw new Error("Falha ao carregar evolucao de ativos.");
-      }
-
-      const dadosResposta = await resposta.json();
       dadosEvolucaoAtivos = normalizarEvolucoesAtivos(
         dadosResposta?.ativos_evolucao,
         dadosResposta?.estoque_evolucao,
       );
       renderizarEvolucaoAtivos();
     } catch (erro) {
-      if (erro.name === "AbortError") {
+      if (requisicaoEvolucao.foiInterrompida(erro)) {
         return;
       }
 
-      if (idRequisicao !== idRequisicaoEvolucao) {
+      if (!requisicaoEvolucao.ehAtual(requisicao.id)) {
         return;
       }
 
@@ -610,8 +718,7 @@
         "O grafico principal continua disponivel.",
       );
     } finally {
-      if (idRequisicao === idRequisicaoEvolucao) {
-        controladorRequisicaoEvolucao = null;
+      if (requisicaoEvolucao.finalizar(requisicao.id)) {
         definirCarregandoEvolucao(false);
       }
     }
@@ -654,10 +761,12 @@
       ".dashboard-products-page .app-main",
     );
     const cartaoGrafico = document.querySelector(".main-chart-card");
+    const cartaoDadosExibidos = document.querySelector(".details-card");
     const botaoAtualizar = document.getElementById("refreshDashboard");
 
     areaPrincipal?.setAttribute("aria-busy", String(estaCarregando));
     cartaoGrafico?.setAttribute("aria-busy", String(estaCarregando));
+    cartaoDadosExibidos?.setAttribute("aria-busy", String(estaCarregando));
 
     if (botaoAtualizar) {
       botaoAtualizar.disabled = estaCarregando;
@@ -984,18 +1093,23 @@
     const linhasGrafico = linhas.length
       ? linhas
       : [{ nome: "Sem dados", total: 0 }];
-    const tipoGrafico = obterTipoGraficoSeguro(
-      estado.tipoGrafico,
-      estado.metrica,
-    );
+    const tipoGrafico = obterTipoGraficoSeguro(estado.tipoGrafico);
     const estilos = getComputedStyle(document.body);
     const corTexto = estilos.getPropertyValue("--text").trim() || "#f6fbff";
     const corSuave = estilos.getPropertyValue("--muted").trim() || "#9cb8c9";
     const corGrade =
       estilos.getPropertyValue("--line").trim() || "rgba(255,255,255,.13)";
-    const paleta = montarPaletaGrafico(linhasGrafico.length);
+    const paleta = montarPaletaGrafico(linhasGrafico);
     const ehLinha = tipoGrafico === "line";
     const ehCircular = ["pie", "doughnut", "polarArea"].includes(tipoGrafico);
+    const ehGraficoHorizontal =
+      tipoGrafico === "bar" && linhasGrafico.length >= 7;
+
+    ajustarAlturaGraficoProdutos(
+      telaGrafico,
+      linhasGrafico.length,
+      ehGraficoHorizontal,
+    );
 
     graficoProdutos = new Chart(telaGrafico, {
       type: tipoGrafico,
@@ -1028,8 +1142,7 @@
               duration: 240,
               easing: "easeOutQuart",
             },
-        indexAxis:
-          tipoGrafico === "bar" && linhasGrafico.length >= 7 ? "y" : "x",
+        indexAxis: ehGraficoHorizontal ? "y" : "x",
         plugins: {
           legend: {
             display: ehCircular,
@@ -1110,6 +1223,7 @@
               y: {
                 beginAtZero: true,
                 ticks: {
+                  autoSkip: !ehGraficoHorizontal,
                   color: corSuave,
                   precision: 0,
                   font: {
@@ -1123,6 +1237,37 @@
             },
       },
     });
+  }
+
+  function ajustarAlturaGraficoProdutos(
+    telaGrafico,
+    quantidadeProdutos,
+    ehGraficoHorizontal,
+  ) {
+    const recipienteGrafico = telaGrafico.closest(".chart-wrapper");
+
+    if (!recipienteGrafico) {
+      return;
+    }
+
+    // Remove a altura calculada anteriormente ao alternar para outro tipo de grafico.
+    recipienteGrafico.style.removeProperty("height");
+
+    if (!ehGraficoHorizontal) {
+      return;
+    }
+
+    const alturaBase = Number.parseFloat(
+      getComputedStyle(recipienteGrafico).height,
+    );
+    const alturaNecessaria =
+      quantidadeProdutos * ALTURA_POR_PRODUTO_GRAFICO_PX +
+      ESPACO_EIXOS_GRAFICO_PX;
+
+    recipienteGrafico.style.height = `${Math.max(
+      Number.isFinite(alturaBase) ? alturaBase : 0,
+      alturaNecessaria,
+    )}px`;
   }
 
   function renderizarEvolucaoAtivos() {
@@ -1153,8 +1298,7 @@
     const corGrade =
       estilos.getPropertyValue("--line").trim() || "rgba(255,255,255,.13)";
     const corPrimaria = estilos.getPropertyValue("--mint").trim() || "#66d5c2";
-    const corSecundaria =
-      estilos.getPropertyValue("--cyan").trim() || "#4aa3c7";
+    const configuracaoResponsiva = obterConfiguracaoResponsivaEvolucaoAtivos();
 
     graficoEvolucaoAtivos = new Chart(telaGrafico, {
       type: "bar",
@@ -1167,11 +1311,12 @@
             data: linhasGrafico.map((linha) => linha.total),
             borderColor: corPrimaria,
             backgroundColor: "rgba(102, 213, 194, 0.16)",
-            borderWidth: 3,
+            borderWidth: configuracaoResponsiva.telaCompacta ? 2 : 3,
             fill: true,
             tension: 0.36,
-            pointRadius: 3,
+            pointRadius: configuracaoResponsiva.telaCompacta ? 0 : 3,
             pointHoverRadius: 6,
+            pointHitRadius: configuracaoResponsiva.telaCompacta ? 10 : 6,
             yAxisID: "total",
           },
         ],
@@ -1197,10 +1342,11 @@
               color: corTexto,
               boxWidth: 12,
               boxHeight: 12,
-              padding: 18,
+              padding: configuracaoResponsiva.telaCompacta ? 12 : 18,
               font: {
                 family: "Inter, system-ui, sans-serif",
                 weight: "800",
+                size: configuracaoResponsiva.telaCompacta ? 10 : 12,
               },
             },
           },
@@ -1225,8 +1371,14 @@
           x: {
             ticks: {
               color: corSuave,
+              autoSkip: true,
+              maxTicksLimit: configuracaoResponsiva.limiteRotulos,
+              minRotation: 0,
+              maxRotation: 0,
+              padding: configuracaoResponsiva.telaCompacta ? 8 : 6,
               font: {
                 weight: "700",
+                size: configuracaoResponsiva.telaCompacta ? 9 : 12,
               },
             },
             grid: {
@@ -1239,26 +1391,14 @@
             ticks: {
               color: corSuave,
               precision: 0,
+              maxTicksLimit: configuracaoResponsiva.telaCompacta ? 5 : 8,
               font: {
                 weight: "700",
+                size: configuracaoResponsiva.telaCompacta ? 9 : 12,
               },
             },
             grid: {
               color: corGrade,
-            },
-          },
-          novos: {
-            beginAtZero: true,
-            position: "right",
-            ticks: {
-              color: corSuave,
-              precision: 0,
-              font: {
-                weight: "700",
-              },
-            },
-            grid: {
-              drawOnChartArea: false,
             },
           },
         },
@@ -1266,14 +1406,28 @@
     });
   }
 
+  function obterConfiguracaoResponsivaEvolucaoAtivos() {
+    const telaCompacta = window.matchMedia?.("(max-width: 640px)").matches
+      ?? window.innerWidth <= 640;
+    const limitesCompactos = {
+      hoje: 5,
+      semana: 7,
+      mes: 5,
+      ano: 6,
+    };
+
+    return {
+      telaCompacta,
+      limiteRotulos: telaCompacta
+        ? limitesCompactos[periodoEvolucaoAtivos] || 5
+        : periodoEvolucaoAtivos === "mes" ? 12 : 14,
+    };
+  }
+
   function atualizarResumoEvolucaoAtivos(linhas) {
     const primeiraLinha = linhas[0] || { total: 0, novos: 0 };
     const ultimaLinha = linhas[linhas.length - 1] || { total: 0 };
     const totalAtual = normalizarNumero(ultimaLinha.total);
-    const novosPeriodo = linhas.reduce(
-      (soma, linha) => soma + normalizarNumero(linha.novos),
-      0,
-    );
     const totalAntesPeriodo = Math.max(
       0,
       normalizarNumero(primeiraLinha.total) -
@@ -1282,11 +1436,10 @@
     const crescimentoPeriodo = Math.max(0, totalAtual - totalAntesPeriodo);
 
     definirTexto("stockPeriodTotal", formatarNumero(totalAtual));
-    definirTexto("stockPeriodNew", formatarNumero(novosPeriodo));
     definirTexto("stockPeriodDelta", `+${formatarNumero(crescimentoPeriodo)}`);
   }
 
-  function obterTipoGraficoSeguro(tipoGrafico, metrica) {
+  function obterTipoGraficoSeguro(tipoGrafico) {
     // Protege contra valores inesperados vindos do DOM ou de alteracoes manuais.
     if (["bar", "pie", "doughnut", "line", "polarArea"].includes(tipoGrafico)) {
       return tipoGrafico;
@@ -1295,7 +1448,7 @@
     return "bar";
   }
 
-  function montarPaletaGrafico(tamanho) {
+  function montarPaletaGrafico(linhasGrafico) {
     const estilos = getComputedStyle(document.body);
     const coresBase = [
       estilos.getPropertyValue("--mint").trim() || "#66d5c2",
@@ -1311,11 +1464,17 @@
       "#ec4899",
       "#84cc16",
     ];
+    const coresGrafico = CORES_POR_METRICA[estado.metrica] || CORES_PADRAO;
 
-    return Array.from(
-      { length: tamanho },
-      (itemIgnorado, indice) => coresBase[indice % coresBase.length],
-    );
+    return coresGrafico.obterCores(linhasGrafico, coresBase);
+  }
+
+  function normalizarChaveStatus(valor) {
+    return String(valor || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLocaleLowerCase("pt-BR");
   }
 
   function renderizarRanking(linhas, total) {

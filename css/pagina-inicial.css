@@ -288,6 +288,7 @@ body.theme-light .company-access-card {
 
 .social-link {
   --social-link-color: var(--accent, var(--teal));
+  --social-link-icon-background: var(--social-link-color);
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr) auto;
   align-items: center;
@@ -312,6 +313,30 @@ body.theme-light .company-access-card {
     box-shadow 180ms ease;
 }
 
+.social-link--linkedin {
+  --social-link-color: #0a66c2;
+}
+
+.social-link--youtube {
+  --social-link-color: #ff0000;
+}
+
+.social-link--instagram {
+  --social-link-color: #d62976;
+  --social-link-icon-background: linear-gradient(
+    135deg,
+    #feda75 0%,
+    #fa7e1e 25%,
+    #d62976 50%,
+    #962fbf 75%,
+    #4f5bd5 100%
+  );
+}
+
+.social-link--facebook {
+  --social-link-color: #1877f2;
+}
+
 .social-link:hover {
   transform: translateY(-3px);
   border-color: color-mix(in srgb, var(--social-link-color) 52%, var(--line));
@@ -328,10 +353,11 @@ body.theme-light .company-access-card {
   place-items: center;
   width: 42px;
   height: 42px;
-  color: var(--social-link-color);
+  color: #ffffff;
   border: 1px solid color-mix(in srgb, var(--social-link-color) 32%, transparent);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--social-link-color) 13%, transparent);
+  background: var(--social-link-icon-background);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--social-link-color) 20%, transparent);
   font-size: 1.08rem;
 }
 

@@ -34,7 +34,7 @@ exigirPermissaoPagina("visualizar_dashboard", "Dashboard");
 
   <link rel="stylesheet" href="../css/pagina-base.css?v=20260731-sidebar-compact" />
   <link rel="stylesheet" href="../css/ux-profissional.css?v=20260724-toast-contrast" />
-  <link rel="stylesheet" href="../css/dashboard-produtos.css?v=20260728-evolucao-ativos" />
+  <link rel="stylesheet" href="../css/dashboard-produtos.css?v=20260810-loading-evolucao" />
   <link rel="stylesheet" href="../css/responsivo-global.css?v=20260803-desktop-density" />
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
@@ -43,7 +43,7 @@ exigirPermissaoPagina("visualizar_dashboard", "Dashboard");
   <script src="../js/animations/entrada-pagina.js?v=20260730-sidebar-contract" defer></script>
   <script src="../js/ui/menu-lateral.js?v=20260731-sidebar-compact" defer></script>
   <script src="../js/base-interface.js?v=20260730-sidebar-contract" defer></script>
-  <script src="../js/pages/dashboard-produtos.js?v=20260803-dashboard-timeout" defer></script>
+  <script src="../js/pages/dashboard-produtos.js?v=20260810-classes-dashboard" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin defer></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
   <script src="../js/ui/widgets-react.js?v=20260626-react-responsive" defer></script>
@@ -88,7 +88,7 @@ exigirPermissaoPagina("visualizar_dashboard", "Dashboard");
             <span class="eyebrow">Evolu&ccedil;&atilde;o dos ativos</span>
             <h2 id="assetEvolutionTitle">Ativos cadastrados no tempo</h2>
             <p class="chart-subtitle" id="assetEvolutionSubtitle">
-              Acompanhe o acumulado do invent&aacute;rio e os novos cadastros por per&iacute;odo.
+              Acompanhe o total acumulado do invent&aacute;rio no per&iacute;odo selecionado.
             </p>
           </div>
 
@@ -114,16 +114,16 @@ exigirPermissaoPagina("visualizar_dashboard", "Dashboard");
             <strong id="stockPeriodTotal">--</strong>
           </div>
           <div>
-            <span>Novos no per&iacute;odo</span>
-            <strong id="stockPeriodNew">--</strong>
-          </div>
-          <div>
             <span>Crescimento</span>
             <strong id="stockPeriodDelta">--</strong>
           </div>
         </div>
 
         <div class="chart-shell asset-evolution-shell">
+          <div class="dashboard-loading-indicator asset-evolution-loading" role="status" aria-live="polite">
+            <span class="dashboard-loading-spinner" aria-hidden="true"></span>
+            <span>Atualizando dados</span>
+          </div>
           <canvas id="stockEvolutionChart" aria-label="Gr&aacute;fico de evolu&ccedil;&atilde;o dos ativos cadastrados"
             role="img"></canvas>
         </div>
@@ -205,6 +205,11 @@ exigirPermissaoPagina("visualizar_dashboard", "Dashboard");
               <span class="eyebrow">Leitura r&aacute;pida</span>
               <h2>Dados exibidos</h2>
             </div>
+          </div>
+
+          <div class="dashboard-loading-indicator ranking-loading" role="status" aria-live="polite">
+            <span class="dashboard-loading-spinner" aria-hidden="true"></span>
+            <span>Atualizando dados</span>
           </div>
 
           <div id="dashboardRanking" class="ranking-list" aria-live="polite">

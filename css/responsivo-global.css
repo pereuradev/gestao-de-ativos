@@ -136,9 +136,7 @@ button {
     width: 100%;
   }
 
-  .records-table,
-  .asset-view-table,
-  .asset-edit-table,
+  .records-table:not(.asset-view-table):not(.asset-edit-table),
   .brand-table,
   .location-table {
     min-width: 760px;
@@ -223,6 +221,22 @@ button {
     scroll-snap-align: start;
   }
 
+  /* Na listagem de ativos, a leitura vertical é mais útil que o carrossel de métricas. */
+  .asset-list-metrics {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    padding: 2px 0 10px;
+    overflow-x: visible;
+    scroll-snap-type: none;
+  }
+
+  .asset-list-metrics .metric-card {
+    width: 100%;
+    min-width: 0;
+    flex: initial;
+    scroll-snap-align: none;
+  }
+
   .content-card,
   .metric-card {
     padding: 16px !important;
@@ -257,9 +271,7 @@ button {
     font-size: 1rem !important;
   }
 
-  .records-table,
-  .asset-view-table,
-  .asset-edit-table,
+  .records-table:not(.asset-view-table):not(.asset-edit-table),
   .brand-table,
   .location-table {
     min-width: 680px;

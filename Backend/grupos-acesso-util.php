@@ -32,6 +32,7 @@ function permissoesGruposAcesso(): array
         "editar_locais" => "Editar localizacoes",
         "editar_marcas" => "Editar marcas",
         "editar_propriedades" => "Editar propriedades",
+        "gerenciar_solicitacoes_acesso" => "Gerenciar solicitacoes de acesso",
     ];
 }
 
@@ -82,6 +83,14 @@ function permissoesGruposAcessoAgrupadas(): array
                 "editar_propriedades" => "Propriedades",
             ],
         ],
+        [
+            "titulo" => "Gerenciar",
+            "descricao" => "Permite analisar e decidir solicitacoes de novos acessos.",
+            "icone" => "bi-person-check-fill",
+            "permissoes" => [
+                "gerenciar_solicitacoes_acesso" => "Solicitacoes de acesso",
+            ],
+        ],
     ];
 
     return array_map(static function (array $grupo) use ($rotulos): array {
@@ -91,12 +100,62 @@ function permissoesGruposAcessoAgrupadas(): array
     }, $grupos);
 }
 
+function tipoUsuarioGrupoAcessoAdministrador(string $tipoUsuario): bool
+{
+    $tipoNormalizado = strtolower(trim($tipoUsuario));
+
+    return in_array($tipoNormalizado, ["adm", "admin", "administrador"], true);
+}
+
 function usuarioGrupoAcessoAdministrador(?array $usuario = null): bool
 {
     $usuarioAtual = $usuario ?? ($_SESSION["usuario"] ?? []);
-    $tipo = strtolower(trim((string) ($usuarioAtual["tipo_usuario"] ?? "")));
 
-    return in_array($tipo, ["adm", "admin", "administrador"], true);
+    return tipoUsuarioGrupoAcessoAdministrador((string) ($usuarioAtual["tipo_usuario"] ?? ""));
+}
+
+// Operacoes sensiveis confirmam o perfil no banco para nao confiar em uma sessao antiga ou adulterada.
+function usuarioGrupoAcessoAdministradorConfirmado(PDO $pdo, ?array $usuario = null): bool
+{
+    $usuarioAtual = $usuario ?? ($_SESSION["usuario"] ?? []);
+    $usuarioId = trim((string) ($usuarioAtual["id"] ?? ""));
+    $email = trim((string) ($usuarioAtual["email"] ?? ""));
+
+    if (uuidGrupoAcessoValido($usuarioId)) {
+        $consultaPreparada = $pdo->prepare("
+            select tipo_usuario, status
+              from public.perfis_usuarios
+             where id = cast(:usuario_id as uuid)
+             limit 1
+        ");
+        $consultaPreparada->execute([":usuario_id" => $usuarioId]);
+    } elseif ($email !== "") {
+        $consultaPreparada = $pdo->prepare("
+            select tipo_usuario, status
+              from public.perfis_usuarios
+             where lower(btrim(email)) = lower(btrim(:email))
+             limit 1
+        ");
+        $consultaPreparada->execute([":email" => $email]);
+    } else {
+        return false;
+    }
+
+    $perfilAtual = $consultaPreparada->fetch();
+
+    if (!is_array($perfilAtual)) {
+        return false;
+    }
+
+    $tipoUsuario = (string) ($perfilAtual["tipo_usuario"] ?? "");
+    $status = strtolower(trim((string) ($perfilAtual["status"] ?? "")));
+
+    if ($usuario === null && !empty($_SESSION["usuario"]) && is_array($_SESSION["usuario"])) {
+        $_SESSION["usuario"]["tipo_usuario"] = $tipoUsuario;
+        $_SESSION["usuario"]["status"] = (string) ($perfilAtual["status"] ?? "");
+    }
+
+    return tipoUsuarioGrupoAcessoAdministrador($tipoUsuario) && $status === "ativo";
 }
 
 function uuidGrupoAcessoValido(string $uuid): bool
@@ -112,7 +171,7 @@ function permissoesUsuarioGrupoAcesso(PDO $pdo, ?array $usuario = null): array
     $usuarioAtual = $usuario ?? ($_SESSION["usuario"] ?? []);
     $permissoesDisponiveis = permissoesGruposAcesso();
 
-    if (usuarioGrupoAcessoAdministrador($usuarioAtual)) {
+    if (usuarioGrupoAcessoAdministradorConfirmado($pdo, $usuario)) {
         return array_keys($permissoesDisponiveis);
     }
 
@@ -176,10 +235,6 @@ function sincronizarPermissoesUsuarioSessao(PDO $pdo): array
 
 function usuarioTemPermissaoGrupoAcesso(PDO $pdo, string $permissao, ?array $usuario = null): bool
 {
-    if (usuarioGrupoAcessoAdministrador($usuario)) {
-        return true;
-    }
-
     return in_array($permissao, permissoesUsuarioGrupoAcesso($pdo, $usuario), true);
 }
 

@@ -260,9 +260,10 @@ $tipoUsuario = validarCampoPermitido(
     ["Colaborador", "Administrador"],
     "Colaborador"
 );
+exigirAdministradorParaGerenciarPerfilApi(null, $tipoUsuario, "o cadastro de administradores");
 $departamento = validarCampoPermitido(
     campo("departamento"),
-    ["TI", "Operacao", "Financeiro", "Administrativo", "Gestao"],
+    ["Comercial", "TI", "Administrativo"],
     ""
 );
 $empresa = campo("empresa");

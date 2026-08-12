@@ -113,8 +113,145 @@
   grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.55fr);
 }
 
-.employee-form-card .asset-form-grid {
-  margin-top: 22px;
+.employee-form-card {
+  padding: 24px 26px 28px;
+}
+
+.employee-form-card .asset-card-header {
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.employee-form-sections {
+  display: grid;
+  gap: 26px;
+  margin-top: 24px;
+}
+
+.employee-form-section {
+  display: grid;
+  min-width: 0;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.employee-form-section + .employee-form-section {
+  padding-top: 26px;
+  border-top: 1px solid var(--asset-border);
+}
+
+.employee-form-section-heading {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 0;
+  color: var(--asset-text);
+}
+
+.employee-section-number {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent, var(--asset-teal)) 42%, var(--asset-border));
+  border-radius: 11px;
+  color: var(--accent, var(--asset-teal));
+  background: color-mix(in srgb, var(--accent, var(--asset-teal)) 12%, transparent);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+
+.employee-form-section-heading > i {
+  color: var(--accent, var(--asset-teal));
+  font-size: 1.02rem;
+}
+
+.employee-section-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.employee-section-copy strong {
+  font-size: 0.96rem;
+}
+
+.employee-section-copy small {
+  color: var(--asset-muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.employee-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.employee-fields-grid .wide-field {
+  grid-column: 1 / -1;
+}
+
+.employee-form-card .employee-password-field > label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--asset-muted-strong);
+  font-size: 0.82rem;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+}
+
+.employee-form-card .employee-password-field > label strong {
+  color: var(--asset-teal);
+  font-weight: 900;
+}
+
+.employee-permission-badge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 190px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent, var(--asset-teal)) 40%, var(--asset-border));
+  border-radius: 16px;
+  color: var(--asset-text);
+  background: color-mix(in srgb, var(--accent, var(--asset-teal)) 10%, var(--asset-field-bg));
+}
+
+.employee-permission-badge > i {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--accent, var(--asset-teal));
+  background: color-mix(in srgb, var(--accent, var(--asset-teal)) 16%, transparent);
+}
+
+.employee-permission-badge span {
+  display: grid;
+  gap: 2px;
+}
+
+.employee-permission-badge small {
+  color: var(--asset-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.employee-permission-badge strong {
+  font-size: 0.82rem;
 }
 
 /* Seletor visual do tipo de usuário enviado pelo formulário. */
@@ -159,22 +296,99 @@
 .employee-form-card .segment-control button {
   position: relative;
   z-index: 1;
-  min-height: 42px;
+  display: flex;
+  min-height: 68px;
+  align-items: center;
+  gap: 12px;
   border: 0;
   border-radius: 14px;
-  padding: 10px 12px;
+  padding: 10px 14px;
   color: var(--asset-muted);
   background: transparent;
   font: inherit;
   font-weight: 800;
+  text-align: left;
   transition:
     color 180ms ease,
     transform 180ms ease;
 }
 
+.employee-form-card .segment-control button > i {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 11px;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.employee-form-card .segment-control button > span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.employee-form-card .segment-control button strong,
+.employee-form-card .segment-control button small {
+  color: inherit;
+}
+
+.employee-form-card .segment-control button small {
+  font-size: 0.72rem;
+  font-weight: 650;
+  opacity: 0.78;
+}
+
 .employee-form-card .segment-control button.active {
   color: #ffffff;
   transform: translateY(-1px);
+}
+
+.employee-role-locked {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 76px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent, var(--asset-teal)) 34%, var(--asset-border));
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent, var(--asset-teal)) 10%, transparent), transparent 58%),
+    var(--asset-field-bg);
+  box-shadow: var(--asset-inner-shadow);
+}
+
+.employee-role-locked > span:not(.employee-role-locked-icon) {
+  display: grid;
+  gap: 4px;
+}
+
+.employee-role-locked strong {
+  color: var(--asset-text);
+  font-size: 0.95rem;
+}
+
+.employee-role-locked small {
+  color: var(--asset-muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.employee-role-locked-icon {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 14px;
+  color: var(--accent, var(--asset-teal));
+  background: color-mix(in srgb, var(--accent, var(--asset-teal)) 15%, transparent);
+}
+
+.employee-role-lock {
+  color: var(--asset-muted);
+  opacity: 0.72;
 }
 
 .employee-form-card .password-toggle {
@@ -247,7 +461,7 @@
 .password-meter {
   display: grid;
   gap: 8px;
-  margin: 16px 0 12px;
+  margin: 4px 0 0;
 }
 
 .meter-track {
@@ -298,6 +512,84 @@
 
 .theme-light .employee-form-message.is-success {
   color: #0f8b6e;
+}
+
+.employee-form-card .asset-field.is-invalid .input-shell {
+  border-color: rgba(255, 105, 117, 0.88);
+  box-shadow:
+    0 0 0 4px rgba(255, 72, 88, 0.12),
+    var(--asset-inner-shadow);
+}
+
+.employee-form-card .asset-field.is-invalid .input-shell > i {
+  color: #ff6975;
+}
+
+.employee-field-error {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #ff929b;
+  font-size: 0.76rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.employee-field-error::before {
+  content: "\F33A";
+  font-family: "bootstrap-icons";
+  font-size: 0.86rem;
+}
+
+.theme-light .employee-field-error {
+  color: #b42318;
+}
+
+.employee-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--asset-border);
+}
+
+.employee-form-review-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  color: var(--asset-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.employee-form-review-note i {
+  color: var(--accent, var(--asset-teal));
+  font-size: 1rem;
+}
+
+.employee-form-footer .enhanced-form-actions {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.asset-form-actions .employee-reset-button {
+  color: var(--asset-text);
+  border-color: var(--asset-border);
+  background: var(--asset-field-bg);
+  box-shadow: var(--asset-inner-shadow);
+}
+
+.asset-form-actions .employee-reset-button:hover {
+  border-color: var(--asset-border-strong);
+  background: var(--asset-field-bg-focus);
+  box-shadow:
+    0 14px 28px rgba(0, 24, 38, 0.16),
+    0 0 0 4px color-mix(in srgb, var(--accent, var(--asset-teal)) 10%, transparent);
 }
 
 .employee-side-card {
@@ -400,6 +692,34 @@
     grid-template-columns: 1fr;
   }
 
+  .employee-form-card {
+    padding: 18px 16px 20px;
+  }
+
+  .employee-form-sections {
+    gap: 22px;
+  }
+
+  .employee-form-section + .employee-form-section {
+    padding-top: 22px;
+  }
+
+  .employee-fields-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .employee-fields-grid .wide-field {
+    grid-column: auto;
+  }
+
+  .employee-form-section-heading {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .employee-form-section-heading > i {
+    display: none;
+  }
+
   .employee-form-card .segment-control {
     grid-template-columns: 1fr;
   }
@@ -407,10 +727,36 @@
   .employee-form-card .segment-control::before,
   .employee-form-card .segment-control[data-active="Administrador"]::before {
     width: calc(100% - 12px);
+    height: calc((100% - 20px) / 2);
     transform: translateX(0);
   }
 
   .employee-form-card .segment-control[data-active="Administrador"]::before {
     transform: translateY(calc(100% + 8px));
+  }
+
+  .employee-form-card .asset-card-header {
+    align-items: stretch;
+  }
+
+  .employee-permission-badge {
+    width: 100%;
+  }
+
+  .employee-form-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .employee-form-footer .enhanced-form-actions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  .employee-form-footer .form-action-button,
+  .employee-form-footer .success-button {
+    width: 100%;
+    min-width: 0;
   }
 }

@@ -141,7 +141,7 @@ if (!in_array($tipoUsuario, ["Colaborador", "Administrador"], true)) {
     responderFuncionario(false, "Perfil de acesso invalido.", 422);
 }
 
-if (!in_array($departamento, ["TI", "Operacao", "Financeiro", "Administrativo", "Gestao"], true)) {
+if (!in_array($departamento, ["Comercial", "TI", "Administrativo"], true)) {
     responderFuncionario(false, "Departamento invalido.", 422);
 }
 
@@ -167,13 +167,39 @@ if (!dataFuncionarioValida($dataNascimento)) {
 
 $usuarioSessaoId = (string) ($_SESSION["usuario"]["id"] ?? "");
 
-if ($usuarioSessaoId === $id && ($status !== "Ativo" || $tipoUsuario !== "Administrador")) {
-    responderFuncionario(false, "Voce nao pode remover seu proprio acesso de administrador.", 422);
-}
-
 try {
     // Abre a conexão compartilhada somente quando esta etapa precisa acessar o banco.
     require_once __DIR__ . "/Conexao.php";
+
+    $consultaPerfilAtual = $pdo->prepare("
+        select tipo_usuario
+          from public.perfis_usuarios
+         where id = cast(:id as uuid)
+         limit 1
+    ");
+    $consultaPerfilAtual->execute([":id" => $id]);
+    $perfilAtual = $consultaPerfilAtual->fetch();
+
+    if (!is_array($perfilAtual)) {
+        responderFuncionario(false, "Funcionario nao encontrado.", 404);
+    }
+
+    $tipoUsuarioAtual = (string) ($perfilAtual["tipo_usuario"] ?? "Colaborador");
+    $perfilAdministrativo = tipoUsuarioGrupoAcessoAdministrador($tipoUsuarioAtual)
+        || tipoUsuarioGrupoAcessoAdministrador($tipoUsuario);
+
+    exigirAdministradorParaGerenciarPerfilApi(
+        $tipoUsuarioAtual,
+        $tipoUsuario,
+        "alteracoes de perfis administrativos"
+    );
+
+    $usuarioSessaoAdministrador = $perfilAdministrativo
+        || usuarioGrupoAcessoAdministradorConfirmado($pdo);
+
+    if ($usuarioSessaoId === $id && $usuarioSessaoAdministrador && ($status !== "Ativo" || $tipoUsuario !== "Administrador")) {
+        responderFuncionario(false, "Voce nao pode remover seu proprio acesso de administrador.", 422);
+    }
 
     $consultaDuplicado = $pdo->prepare("
         select cpf, rg
@@ -203,10 +229,17 @@ try {
         }
     }
 
+    $atribuicaoTipoUsuario = $usuarioSessaoAdministrador
+        ? "tipo_usuario = :tipo_usuario,"
+        : "";
+    $restricaoPerfilAdministrativo = $usuarioSessaoAdministrador
+        ? ""
+        : "and lower(btrim(tipo_usuario)) not in ('adm', 'admin', 'administrador')";
+
     $consultaPreparada = $pdo->prepare("
         update public.perfis_usuarios
            set nome_completo = :nome_completo,
-               tipo_usuario = :tipo_usuario,
+               {$atribuicaoTipoUsuario}
                departamento = :departamento,
                empresa = :empresa,
                rg = :rg,
@@ -216,6 +249,7 @@ try {
                status = :status,
                atualizado_em = now()
          where id::text = :id
+               {$restricaoPerfilAdministrativo}
      returning
                id,
                nome_completo,
@@ -231,10 +265,9 @@ try {
                criado_em,
                atualizado_em
     ");
-    $consultaPreparada->execute([
+    $parametrosAtualizacao = [
         ":id" => $id,
         ":nome_completo" => $nomeCompleto,
-        ":tipo_usuario" => $tipoUsuario,
         ":departamento" => $departamento,
         ":empresa" => $empresa,
         ":rg" => $rg,
@@ -242,12 +275,18 @@ try {
         ":celular" => $celular,
         ":data_nascimento" => $dataNascimento,
         ":status" => $status,
-    ]);
+    ];
+
+    if ($usuarioSessaoAdministrador) {
+        $parametrosAtualizacao[":tipo_usuario"] = $tipoUsuario;
+    }
+
+    $consultaPreparada->execute($parametrosAtualizacao);
 
     $funcionario = $consultaPreparada->fetch();
 
     if (!$funcionario) {
-        responderFuncionario(false, "Funcionario nao encontrado.", 404);
+        responderFuncionario(false, "O perfil foi alterado ou exige autorizacao de administrador.", 409);
     }
 
     if ($usuarioSessaoId === $id) {
